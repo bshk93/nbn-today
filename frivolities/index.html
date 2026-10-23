@@ -316,6 +316,77 @@
     }
     .plot-readout a:hover { text-decoration: underline; }
 
+    /* ── quadrants ── */
+    .quad-controls { flex-direction: column; align-items: stretch; gap: 0.85rem; }
+    .quad-row { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: flex-end; }
+    .quad-controls .plot-field { min-width: 0; }
+    .quad-title-field input { font-size: 0.95rem; font-weight: 600; width: 100%; box-sizing: border-box; }
+    .quad-controls .ui-segmented { flex-wrap: wrap; max-width: 100%; }
+    #qf-chart svg { min-width: 600px; }
+    .quad-check {
+      display: flex; align-items: center; gap: 0.3rem;
+      text-transform: none !important; letter-spacing: 0 !important; font-weight: 500 !important;
+      font-size: 0.72rem !important; cursor: pointer;
+    }
+    .quad-captions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 1.25rem; }
+    .quad-captions input { width: 100%; box-sizing: border-box; }
+    .quad-custom, .quad-list { display: none !important; }
+    .quad-mode-custom .quad-custom { display: flex !important; }
+    .quad-mode-list .quad-list { display: flex !important; }
+    .quad-mode-list .quad-top { display: none !important; }
+    .quad-custom input, .quad-top input[type="number"] { width: 5.5rem; }
+    .quad-search { position: relative; }
+    .quad-search input { width: 14rem; }
+    .quad-suggest {
+      position: absolute; top: 100%; left: 0; z-index: 20; min-width: 16rem; margin-top: 4px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); overflow: hidden;
+    }
+    .quad-suggest button {
+      display: flex; justify-content: space-between; gap: 1rem; width: 100%;
+      padding: 0.45rem 0.65rem; background: none; border: 0; text-align: left;
+      color: var(--text-primary); font: inherit; font-size: 0.82rem; cursor: pointer;
+    }
+    .quad-suggest button span { color: var(--text-muted); font-size: 0.75rem; white-space: nowrap; }
+    .quad-suggest button:hover, .quad-suggest button:first-child:focus-visible { background: var(--bg-page); }
+    .quad-suggest-empty { padding: 0.5rem 0.65rem; color: var(--text-muted); font-size: 0.8rem; }
+    .quad-chips { flex-wrap: wrap; gap: 0.4rem; }
+    .quad-chip {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.15rem 0.25rem 0.15rem 0.6rem; border: 1px solid var(--border); border-radius: 999px;
+      background: var(--bg-page); font-size: 0.78rem; color: var(--text-primary);
+    }
+    .quad-chip--missing { opacity: 0.55; text-decoration: line-through; }
+    .quad-chip button {
+      border: 0; background: none; color: var(--text-muted); cursor: pointer;
+      font-size: 0.95rem; line-height: 1; padding: 0 0.3rem;
+    }
+    .quad-chip button:hover { color: var(--text-primary); }
+    .quad-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.6rem; }
+    .quad-status { color: var(--text-secondary); font-size: 0.8rem; }
+    .quad-face { cursor: pointer; }
+    .quad-face--hl circle:last-of-type { stroke: var(--text-primary); stroke-width: 3.5; }
+    .quad-gallery-title { margin-top: 1.75rem; }
+    .quad-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; }
+    .quad-gallery .plot-empty { grid-column: 1 / -1; }
+    .quad-card {
+      position: relative; padding: 0.75rem 2rem 0.75rem 0.9rem; cursor: pointer;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    }
+    .quad-card:hover, .quad-card.active { border-color: var(--link); }
+    .quad-card-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+    .quad-card-meta { margin-top: 0.2rem; font-size: 0.74rem; color: var(--text-muted); }
+    .quad-card-del {
+      position: absolute; top: 0.4rem; right: 0.4rem; border: 0; background: none;
+      color: var(--text-muted); font-size: 1.05rem; cursor: pointer; padding: 0.1rem 0.35rem;
+    }
+    .quad-card-del:hover { color: var(--danger, #e5484d); }
+    @media (max-width: 560px) {
+      .quad-captions { grid-template-columns: 1fr; }
+      .quad-search input { width: 100%; }
+      .quad-search { flex: 1 1 100%; }
+    }
+
     @media (max-width: 1000px) { .team-grid { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 700px)  { .team-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 480px)  { .team-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -469,6 +540,7 @@
       <button class="tab-btn ui-tab" data-tab="attributes">Team Attributes</button>
       <button class="tab-btn ui-tab" data-tab="earnings">Career Earnings</button>
       <button class="tab-btn ui-tab" data-tab="plot">Plot Anything</button>
+      <button class="tab-btn ui-tab" data-tab="quadrant">Quadrants</button>
       <button class="tab-btn ui-tab" data-tab="retros">Trade Retros</button>
     </div>
 
@@ -494,6 +566,10 @@
 
     <div id="tab-plot" class="tab-panel">
       <div id="plot-root"><div class="loading">Loading...</div></div>
+    </div>
+
+    <div id="tab-quadrant" class="tab-panel">
+      <div id="quad-root"><div class="loading">Loading...</div></div>
     </div>
 
     <div id="tab-retros" class="tab-panel">
@@ -1230,29 +1306,11 @@
           const G = +r.G;
           if (!G || isNaN(G)) return null;
           const season = (r.SEASON || '').replace(' Playoffs', '').trim();
-          const FGM = +r.FGM, FGA = +r.FGA, TPM = +r['3PM'], TPA = +r['3PA'];
-          const FTA = +r.FTA, PTS = +r.PTS;
-          const twoA = FGA - TPA, twoM = FGM - TPM;
-          const tsDen = 2 * (FGA + 0.44 * FTA);
+          const tot = {};
+          for (const k of TOTAL_COLS) tot[k] = +r[k];
           const salary = parseSalary(bios[r.SLUG]?.salaries?.[season]);
-          const vals = {
-            age:  ageAtSeason(r.DOB, season),
-            salary,
-            ppg:  PTS / G,
-            rpg:  +r.REB / G,
-            apg:  +r.AST / G,
-            spg:  +r.STL / G,
-            bpg:  +r.BLK / G,
-            topg: +r.TOV / G,
-            pfpg: +r.PF / G,
-            'fg%': FGA > 0 ? (FGM / FGA) * 100 : null,
-            '2p%': twoA > 0 ? (twoM / twoA) * 100 : null,
-            '3p%': TPA > 0 ? (TPM / TPA) * 100 : null,
-            'ts%': tsDen > 0 ? (PTS / tsDen) * 100 : null,
-            gmsc: +r.GMSC / G,
-          };
-          for (const k in vals) if (vals[k] != null && !isFinite(vals[k])) vals[k] = null;
-          return { name: r.PLAYER, slug: r.SLUG, season, team: r.TEAM, G, isPlayoffs, vals };
+          const vals = valsFromTotals(tot, ageAtSeason(r.DOB, season), salary);
+          return { name: r.PLAYER, slug: r.SLUG, season, team: r.TEAM, G, isPlayoffs, dob: r.DOB, tot, vals };
         }).filter(Boolean);
       }
 
@@ -1263,8 +1321,38 @@
       const seasons = [...new Set(rows.map(r => r.season))].filter(Boolean).sort();
       const teams = [...new Set(rows.map(r => r.team))].filter(t => t && t !== 'NA').sort();
 
-      _plotCache = { rows, seasons, teams };
+      _plotCache = { rows, seasons, teams, bios };
       return _plotCache;
+    }
+
+    // The raw season totals every per-game stat is built from. Kept on each row
+    // so the quadrant tab can merge rows (a traded player's teams, a career)
+    // and recompute rather than average averages.
+    const TOTAL_COLS = ['G', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF',
+                        'FGM', 'FGA', '3PM', '3PA', 'FTA', 'GMSC'];
+
+    function valsFromTotals(t, age, salary) {
+      const G = t.G;
+      const twoA = t.FGA - t['3PA'], twoM = t.FGM - t['3PM'];
+      const tsDen = 2 * (t.FGA + 0.44 * t.FTA);
+      const vals = {
+        age,
+        salary,
+        ppg:  t.PTS / G,
+        rpg:  t.REB / G,
+        apg:  t.AST / G,
+        spg:  t.STL / G,
+        bpg:  t.BLK / G,
+        topg: t.TOV / G,
+        pfpg: t.PF / G,
+        'fg%': t.FGA > 0 ? (t.FGM / t.FGA) * 100 : null,
+        '2p%': twoA > 0 ? (twoM / twoA) * 100 : null,
+        '3p%': t['3PA'] > 0 ? (t['3PM'] / t['3PA']) * 100 : null,
+        'ts%': tsDen > 0 ? (t.PTS / tsDen) * 100 : null,
+        gmsc: t.GMSC / G,
+      };
+      for (const k in vals) if (vals[k] != null && !isFinite(vals[k])) vals[k] = null;
+      return vals;
     }
 
     function renderPlotTab() {
@@ -1470,6 +1558,806 @@
       });
     }
 
+    // ── viz: quadrant creator ─────────────────────────────────────────────────
+    //
+    // Pick a stat per axis, caption the four quadrants, and each player is drawn
+    // as his face at his real values. One face per player: a traded player's
+    // teams are merged, and "Career" merges every season, both from raw totals.
+    //
+    // The whole chart is one config object (quadDefaults). It is what the
+    // #quadrant?c= link encodes, what the gallery saves (POST /api/quadrants,
+    // nbn-api routers/quadrants.py, which validates the stat keys against this
+    // file's AXIS_VARS + ovr), and what a loaded chart is drawn from — so a
+    // saved chart is a recipe and moves with the numbers.
+    //
+    // Faces come from /api/players/{slug}/headshot: the same photo, served from
+    // our origin, so the PNG export can draw it to a canvas. A face that 404s
+    // falls back to the bio's photo_url for display, then to initials.
+
+    const QUAD_VARS = { ...AXIS_VARS, ovr: { label: 'OVR', fmt: v => String(Math.round(v)) } };
+
+    const qEsc = s => String(s ?? '').replace(/[&<>"']/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+    function quadDefaults(season) {
+      return {
+        v: 1, title: '', x: 'ppg', y: 'ts%', dataset: 'reg', season: season || '',
+        team: '', minG: 10, invertX: false, invertY: false, names: true,
+        split: { mode: 'median', x: null, y: null },
+        labels: { tl: '', tr: '', bl: '', br: '' },
+        pick: { mode: 'top', by: 'gmsc', n: 20, slugs: [] },
+      };
+    }
+
+    // Fill anything a shared or saved config is missing, and drop what this
+    // page can't draw, so an old link never breaks the builder.
+    function quadNormalize(c, defaultSeason) {
+      const d = quadDefaults(defaultSeason);
+      const out = { ...d, ...c,
+        split: { ...d.split, ...(c && c.split) },
+        labels: { ...d.labels, ...(c && c.labels) },
+        pick: { ...d.pick, ...(c && c.pick) } };
+      if (!QUAD_VARS[out.x]) out.x = d.x;
+      if (!QUAD_VARS[out.y]) out.y = d.y;
+      if (!QUAD_VARS[out.pick.by]) out.pick.by = d.pick.by;
+      out.pick.slugs = (out.pick.slugs || []).slice(0, 60);
+      out.pick.n = Math.max(1, Math.min(60, parseInt(out.pick.n, 10) || d.pick.n));
+      return out;
+    }
+
+    const b64urlEncode = s => btoa(unescape(encodeURIComponent(s)))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const b64urlDecode = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+
+    function quadParams() {
+      const q = location.hash.split('?')[1] || '';
+      return new URLSearchParams(q);
+    }
+
+    function quadToken() {
+      try { return localStorage.getItem('nbn_token'); } catch { return null; }
+    }
+
+    let _quadOvr = null;
+    async function loadQuadOvr() {
+      if (_quadOvr) return _quadOvr;
+      _quadOvr = {};
+      try {
+        const res = await fetch('/api/ovr').then(r => r.json());
+        for (const [slug, entries] of Object.entries(res)) {
+          if (entries.length) _quadOvr[slug] = entries[entries.length - 1].ovr;
+        }
+      } catch { /* OVR axis just has no points */ }
+      return _quadOvr;
+    }
+
+    // One entry per player under the filters, merged from raw totals.
+    function quadGroups(rows, cfg, ovr, latestSeason) {
+      const byKey = new Map();
+      for (const r of rows) {
+        if (cfg.dataset === 'reg' && r.isPlayoffs) continue;
+        if (cfg.dataset === 'po' && !r.isPlayoffs) continue;
+        if (cfg.season && r.season !== cfg.season) continue;
+        if (cfg.team && r.team !== cfg.team) continue;
+        let g = byKey.get(r.slug);
+        if (!g) {
+          g = { slug: r.slug, name: r.name, dob: r.dob, tot: {}, teamG: {}, seasons: new Set(), lastSeason: '' };
+          for (const k of TOTAL_COLS) g.tot[k] = 0;
+          byKey.set(r.slug, g);
+        }
+        for (const k of TOTAL_COLS) g.tot[k] += r.tot[k];
+        g.teamG[r.team] = (g.teamG[r.team] || 0) + r.G;
+        g.seasons.add(r.season);
+        if (r.season > g.lastSeason) { g.lastSeason = r.season; g.lastTeam = r.team; g.salary = r.vals.salary; }
+      }
+      const out = [];
+      for (const g of byKey.values()) {
+        if (!(g.tot.G > 0) || g.tot.G < cfg.minG) continue;
+        const ref = cfg.season || g.lastSeason;
+        g.vals = valsFromTotals(g.tot, ageAtSeason(g.dob, ref), cfg.season ? g.salary : (g.salary ?? null));
+        // OVR is a current rating, so it only means something on the current season.
+        g.vals.ovr = (cfg.season === latestSeason && ovr[g.slug] != null) ? ovr[g.slug] : null;
+        const teams = Object.entries(g.teamG).sort((a, b) => b[1] - a[1]).map(([t]) => t);
+        g.team = cfg.season ? teams[0] : (g.lastTeam || teams[0]);
+        g.teamsLabel = cfg.season ? teams.join('/') : `${g.seasons.size} season${g.seasons.size === 1 ? '' : 's'}`;
+        out.push(g);
+      }
+      return out;
+    }
+
+    const median = arr => {
+      const s = [...arr].sort((a, b) => a - b), m = s.length >> 1;
+      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+    };
+    const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    // "Stephen Curry" → "Curry"; keeps a suffix ("Jaren Jackson Jr." → "Jackson Jr.").
+    function shortName(name) {
+      const parts = formatName(name).split(/\s+/).filter(Boolean);
+      if (parts.length < 2) return parts[0] || '';
+      const last = parts[parts.length - 1];
+      return /^(jr\.?|sr\.?|ii|iii|iv)$/i.test(last) && parts.length > 2 ? `${parts[parts.length - 2]} ${last}` : last;
+    }
+
+    function initials(name) {
+      const parts = formatName(name).split(/\s+/).filter(Boolean);
+      return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+    }
+
+    // Greedy de-overlap: each face takes its true spot if free, else the
+    // nearest free spot on a widening spiral, so the order faces are placed in
+    // (best first) decides who keeps his exact position.
+    // With names on, a face's footprint is a box that includes the name under
+    // it, so a neighbour can't land on the name.
+    function placeFaces(pts, R, box, names) {
+      const placed = [];
+      const wx = names ? R * 2.5 : R * 1.85, wy = names ? R * 1.85 + 12 : R * 1.85;
+      const free = (x, y) => placed.every(p => Math.abs(p.fx - x) >= wx || Math.abs(p.fy - y) >= wy);
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      for (const p of pts) {
+        let fx = p.px, fy = p.py;
+        if (!free(fx, fy)) {
+          let found = false;
+          for (let ring = 1; ring <= 14 && !found; ring++) {
+            const dist = ring * R * 0.6, steps = 8 + ring * 4;
+            for (let i = 0; i < steps; i++) {
+              const a = (i / steps) * Math.PI * 2;
+              const x = clamp(p.px + Math.cos(a) * dist, box.l + R, box.r - R);
+              const y = clamp(p.py + Math.sin(a) * dist, box.t + R, box.b - R);
+              if (free(x, y)) { fx = x; fy = y; found = true; break; }
+            }
+          }
+        }
+        placed.push(Object.assign(p, { fx, fy }));
+      }
+      return placed;
+    }
+
+    function renderQuadrantTab() {
+      const root = document.getElementById('quad-root');
+      const ctl = {};
+
+      Promise.all([loadPlotData(), loadQuadOvr()]).then(([{ rows, seasons, teams, bios }, ovr]) => {
+        const latestSeason = seasons[seasons.length - 1] || '';
+        // Default to the newest season that has a chart's worth of players past
+        // the default games floor — early in a season, the current one doesn't.
+        const floor = quadDefaults('').minG;
+        const defaultSeason = [...seasons].reverse().find(sn =>
+          rows.filter(r => r.season === sn && !r.isPlayoffs && r.G >= floor).length >= 40) || latestSeason;
+        let cfg = quadDefaults(defaultSeason);
+        let loadedId = null;     // the gallery chart on screen, until it's edited
+        let groups = [];
+        let me = null;           // signed-in member name, for delete buttons
+
+        const statOpts = sel => Object.entries(QUAD_VARS).map(([k, v]) =>
+          `<option value="${k}"${k === sel ? ' selected' : ''}>${v.label}</option>`).join('');
+        const opts = (arr) => arr.map(v => `<option value="${v}">${v}</option>`).join('');
+
+        root.innerHTML = `
+          <div class="plot-controls quad-controls">
+            <div class="plot-field quad-title-field">
+              <label for="qf-title">Title</label>
+              <input id="qf-title" type="text" maxlength="100" placeholder="e.g. Who actually earns their shots?">
+            </div>
+            <div class="quad-row">
+              <div class="plot-field">
+                <label for="qf-x">X axis</label>
+                <select id="qf-x">${statOpts(cfg.x)}</select>
+                <label class="quad-check"><input type="checkbox" id="qf-invx"> flip</label>
+              </div>
+              <div class="plot-field">
+                <label for="qf-y">Y axis</label>
+                <select id="qf-y">${statOpts(cfg.y)}</select>
+                <label class="quad-check"><input type="checkbox" id="qf-invy"> flip</label>
+              </div>
+              <div class="plot-field">
+                <label>&nbsp;</label>
+                <button id="qf-swap" class="plot-swap" title="Swap X and Y axes">⇄ Swap</button>
+              </div>
+              <div class="plot-field">
+                <label for="qf-dataset">Games</label>
+                <select id="qf-dataset">
+                  <option value="reg">Regular season</option>
+                  <option value="po">Playoffs</option>
+                  <option value="all">Both</option>
+                </select>
+              </div>
+              <div class="plot-field">
+                <label for="qf-season">Season</label>
+                <select id="qf-season"><option value="">Career</option>${opts(seasons)}</select>
+              </div>
+              <div class="plot-field">
+                <label for="qf-team">Team</label>
+                <select id="qf-team"><option value="">All</option>${opts(teams)}</select>
+              </div>
+              <div class="plot-field">
+                <label for="qf-ming">Min games</label>
+                <input id="qf-ming" type="number" min="0" max="200" step="1">
+              </div>
+            </div>
+            <div class="quad-row">
+              <div class="plot-field">
+                <label>Quadrant lines at</label>
+                <div class="ui-segmented" role="group" id="qf-split">
+                  <button data-v="median" title="Median of the players shown">Median</button>
+                  <button data-v="mean" title="Average of the players shown">Average</button>
+                  <button data-v="league" title="Median of everyone under the filters, shown or not">League median</button>
+                  <button data-v="custom">Custom</button>
+                </div>
+              </div>
+              <div class="plot-field quad-custom">
+                <label for="qf-sx">X at</label>
+                <input id="qf-sx" type="number" step="any">
+              </div>
+              <div class="plot-field quad-custom">
+                <label for="qf-sy">Y at</label>
+                <input id="qf-sy" type="number" step="any">
+              </div>
+            </div>
+            <div class="quad-captions">
+              <div class="plot-field"><label for="qf-tl">↖ Top-left caption</label><input id="qf-tl" type="text" maxlength="60"></div>
+              <div class="plot-field"><label for="qf-tr">↗ Top-right caption</label><input id="qf-tr" type="text" maxlength="60"></div>
+              <div class="plot-field"><label for="qf-bl">↙ Bottom-left caption</label><input id="qf-bl" type="text" maxlength="60"></div>
+              <div class="plot-field"><label for="qf-br">↘ Bottom-right caption</label><input id="qf-br" type="text" maxlength="60"></div>
+            </div>
+            <div class="quad-row">
+              <div class="plot-field">
+                <label>Players</label>
+                <div class="ui-segmented" role="group" id="qf-pickmode">
+                  <button data-v="top">Top N</button>
+                  <button data-v="list">Pick players</button>
+                </div>
+              </div>
+              <div class="plot-field quad-top">
+                <label for="qf-n">Top</label>
+                <input id="qf-n" type="number" min="1" max="60" step="1">
+              </div>
+              <div class="plot-field quad-top">
+                <label for="qf-by">By</label>
+                <select id="qf-by">${statOpts(cfg.pick.by)}</select>
+              </div>
+              <div class="plot-field quad-list quad-search">
+                <label for="qf-search">Add a player</label>
+                <input id="qf-search" type="search" placeholder="Search…" autocomplete="off">
+                <div class="quad-suggest" id="qf-suggest" hidden></div>
+              </div>
+              <div class="plot-field quad-list">
+                <label>&nbsp;</label>
+                <button class="plot-swap" id="qf-fill" title="Replace the list with the current top N">Fill with top N</button>
+              </div>
+              <div class="plot-field">
+                <label>&nbsp;</label>
+                <label class="quad-check"><input type="checkbox" id="qf-names"> Show names</label>
+              </div>
+            </div>
+            <div class="quad-chips quad-list" id="qf-chips"></div>
+            <div class="quad-actions">
+              <button class="ui-btn ui-btn--sm" id="qf-copy">Copy link</button>
+              <button class="ui-btn ui-btn--sm" id="qf-png">Download PNG</button>
+              <button class="ui-btn ui-btn--sm ui-btn--primary" id="qf-save" hidden>Save to gallery</button>
+              <span class="quad-status" id="qf-status" role="status"></span>
+              <span class="plot-count" id="qf-count"></span>
+            </div>
+          </div>
+          <div class="plot-card"><div class="plot-scroll" id="qf-chart"></div></div>
+          <div class="plot-readout" id="qf-readout"><span class="pr-hint">Tap or hover a face to inspect it.</span></div>
+          <h2 class="ui-section-title quad-gallery-title">Gallery</h2>
+          <div class="quad-gallery" id="qf-gallery"><div class="loading">Loading…</div></div>
+        `;
+
+        const $ = id => document.getElementById(id);
+        const chartEl = $('qf-chart'), readoutEl = $('qf-readout'), statusEl = $('qf-status');
+        let statusTimer = null;
+        const status = (msg, sticky) => {
+          statusEl.textContent = msg;
+          clearTimeout(statusTimer);
+          if (!sticky) statusTimer = setTimeout(() => { statusEl.textContent = ''; }, 3500);
+        };
+
+        // ── config ⇄ controls ──
+        const seg = (id, v) => $(id).querySelectorAll('button').forEach(b => {
+          const on = b.dataset.v === v;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-pressed', String(on));
+        });
+
+        function toControls() {
+          $('qf-title').value = cfg.title;
+          $('qf-x').value = cfg.x; $('qf-y').value = cfg.y;
+          $('qf-invx').checked = cfg.invertX; $('qf-invy').checked = cfg.invertY;
+          $('qf-names').checked = cfg.names;
+          $('qf-dataset').value = cfg.dataset;
+          $('qf-season').value = seasons.includes(cfg.season) ? cfg.season : '';
+          $('qf-team').value = teams.includes(cfg.team) ? cfg.team : '';
+          $('qf-ming').value = cfg.minG;
+          seg('qf-split', cfg.split.mode);
+          $('qf-sx').value = cfg.split.x ?? ''; $('qf-sy').value = cfg.split.y ?? '';
+          for (const k of ['tl', 'tr', 'bl', 'br']) $('qf-' + k).value = cfg.labels[k];
+          seg('qf-pickmode', cfg.pick.mode);
+          $('qf-n').value = cfg.pick.n; $('qf-by').value = cfg.pick.by;
+          syncModes();
+        }
+
+        // Which conditional fields show. Separate from toControls so an edit
+        // never rewrites the field being typed in.
+        function syncModes() {
+          seg('qf-split', cfg.split.mode);
+          seg('qf-pickmode', cfg.pick.mode);
+          root.classList.toggle('quad-mode-list', cfg.pick.mode === 'list');
+          root.classList.toggle('quad-mode-custom', cfg.split.mode === 'custom');
+        }
+
+        function fromControls() {
+          const num = (v, d) => { const n = parseFloat(v); return Number.isFinite(n) ? n : d; };
+          cfg.title = $('qf-title').value;
+          cfg.x = $('qf-x').value; cfg.y = $('qf-y').value;
+          cfg.invertX = $('qf-invx').checked; cfg.invertY = $('qf-invy').checked;
+          cfg.names = $('qf-names').checked;
+          cfg.dataset = $('qf-dataset').value;
+          cfg.season = $('qf-season').value;
+          cfg.team = $('qf-team').value;
+          cfg.minG = Math.max(0, parseInt($('qf-ming').value, 10) || 0);
+          cfg.split.x = num($('qf-sx').value, null); cfg.split.y = num($('qf-sy').value, null);
+          for (const k of ['tl', 'tr', 'bl', 'br']) cfg.labels[k] = $('qf-' + k).value;
+          cfg.pick.n = Math.max(1, Math.min(60, parseInt($('qf-n').value, 10) || 20));
+          cfg.pick.by = $('qf-by').value;
+        }
+
+        // Every edit rewrites the URL in place (replaceState — filters aren't
+        // Back stops), so the address bar is always a working share link.
+        function syncUrl() {
+          if (!document.getElementById('tab-quadrant').classList.contains('active')) return;
+          const url = loadedId != null ? `#quadrant?id=${loadedId}` : `#quadrant?c=${b64urlEncode(JSON.stringify(cfg))}`;
+          history.replaceState(null, '', url);
+        }
+
+        function edited() {
+          fromControls();
+          loadedId = null;
+          syncModes();
+          draw();
+          syncUrl();
+        }
+
+        // ── picking players ──
+        const sortKeyDesc = key => (a, b) => (b.vals[key] ?? -Infinity) - (a.vals[key] ?? -Infinity);
+
+        function topN() {
+          return groups.filter(g => g.vals[cfg.pick.by] != null)
+            .sort(sortKeyDesc(cfg.pick.by)).slice(0, cfg.pick.n);
+        }
+
+        function selected() {
+          if (cfg.pick.mode === 'top') return { shown: topN(), missing: [] };
+          const bySlug = new Map(groups.map(g => [g.slug, g]));
+          const shown = [], missing = [];
+          for (const s of cfg.pick.slugs) (bySlug.get(s) ? shown : missing).push(bySlug.get(s) || s);
+          return { shown, missing };
+        }
+
+        function renderChips(missing) {
+          const nameOf = s => formatName(bios[s]?.name || s);
+          $('qf-chips').innerHTML = cfg.pick.slugs.length
+            ? cfg.pick.slugs.map(s => `<span class="quad-chip${missing.includes(s) ? ' quad-chip--missing' : ''}"
+                title="${missing.includes(s) ? 'No stats under these filters' : ''}">${qEsc(nameOf(s))}
+                <button data-slug="${qEsc(s)}" aria-label="Remove ${qEsc(nameOf(s))}">×</button></span>`).join('')
+            : `<span class="pr-hint">No players yet — search above, or fill with the top ${cfg.pick.n}.</span>`;
+        }
+
+        $('qf-chips').addEventListener('click', e => {
+          const b = e.target.closest('button[data-slug]');
+          if (!b) return;
+          cfg.pick.slugs = cfg.pick.slugs.filter(s => s !== b.dataset.slug);
+          edited();
+        });
+
+        const suggestEl = $('qf-suggest');
+        function suggest() {
+          const q = $('qf-search').value.trim().toLowerCase();
+          if (!q) { suggestEl.hidden = true; return; }
+          const have = new Set(cfg.pick.slugs);
+          const hits = groups.filter(g => !have.has(g.slug) && formatName(g.name).toLowerCase().includes(q))
+            .sort(sortKeyDesc('gmsc')).slice(0, 8);
+          suggestEl.innerHTML = hits.length
+            ? hits.map(g => `<button data-slug="${qEsc(g.slug)}">${qEsc(formatName(g.name))}
+                <span>${qEsc(g.team || '')} · ${g.tot.G} G</span></button>`).join('')
+            : `<div class="quad-suggest-empty">No one under these filters</div>`;
+          suggestEl.hidden = false;
+        }
+        $('qf-search').addEventListener('input', suggest);
+        $('qf-search').addEventListener('keydown', e => {
+          if (e.key === 'Enter') { suggestEl.querySelector('button')?.click(); e.preventDefault(); }
+          if (e.key === 'Escape') suggestEl.hidden = true;
+        });
+        suggestEl.addEventListener('click', e => {
+          const b = e.target.closest('button[data-slug]');
+          if (!b || cfg.pick.slugs.length >= 60) return;
+          cfg.pick.slugs.push(b.dataset.slug);
+          $('qf-search').value = '';
+          suggestEl.hidden = true;
+          edited();
+          $('qf-search').focus();
+        });
+        document.addEventListener('click', e => {
+          if (!e.target.closest('.quad-search')) suggestEl.hidden = true;
+        });
+        $('qf-fill').addEventListener('click', () => {
+          cfg.pick.slugs = topN().map(g => g.slug);
+          edited();
+        });
+
+        // ── drawing ──
+        const W = 960, H = 680;
+        const PAD = { t: 70, r: 34, b: 66, l: 80 };
+
+        function draw() {
+          groups = quadGroups(rows, cfg, ovr, latestSeason);
+          const { shown, missing } = selected();
+          if (cfg.pick.mode === 'list') renderChips(missing);
+          const xV = QUAD_VARS[cfg.x], yV = QUAD_VARS[cfg.y];
+          const pts = shown.filter(g => g.vals[cfg.x] != null && g.vals[cfg.y] != null);
+          $('qf-count').textContent = `${pts.length} player${pts.length === 1 ? '' : 's'}`;
+          resetReadout();
+
+          if (!pts.length) {
+            const why = (cfg.x === 'ovr' || cfg.y === 'ovr') && cfg.season !== latestSeason
+              ? `OVR is a current rating, so it only plots on ${latestSeason}.`
+              : 'No players match these filters.';
+            chartEl.innerHTML = `<div class="plot-empty">${why}</div>`;
+            return;
+          }
+
+          // Quadrant lines: over the players shown (median, average), or over
+          // everyone under the filters (league) — a top-20 chart sits entirely
+          // above the league median, so that one is opt-in.
+          const shownVals = k => pts.map(p => p.vals[k]);
+          const leagueVals = k => groups.map(g => g.vals[k]).filter(v => v != null);
+          const at = (k, custom) => {
+            const m = cfg.split.mode;
+            if (m === 'custom' && custom != null) return custom;
+            if (m === 'mean') return mean(shownVals(k));
+            if (m === 'league') return median(leagueVals(k));
+            return median(shownVals(k));
+          };
+          const mx = at(cfg.x, cfg.split.x), my = at(cfg.y, cfg.split.y);
+
+          const n = pts.length;
+          const R = n <= 12 ? 26 : n <= 25 ? 21 : n <= 40 ? 17 : 14;
+          const cW = W - PAD.l - PAD.r, cH = H - PAD.t - PAD.b;
+          const ext = arr => {
+            let lo = Math.min(...arr), hi = Math.max(...arr);
+            if (lo === hi) { lo -= 1; hi += 1; }
+            // Room for a face's radius on each side, in data units.
+            const padX = (hi - lo) * 0.06;
+            return [lo - padX, hi + padX];
+          };
+          let [x0, x1] = ext([...pts.map(p => p.vals[cfg.x]), mx]);
+          let [y0, y1] = ext([...pts.map(p => p.vals[cfg.y]), my]);
+          const fx = v => (v - x0) / (x1 - x0), fy = v => (v - y0) / (y1 - y0);
+          // Keep faces clear of the caption rows (when there are captions) and
+          // leave room under the lowest face for its name.
+          const capT = cfg.labels.tl || cfg.labels.tr ? 30 : 0;
+          const capB = (cfg.labels.bl || cfg.labels.br ? 30 : 0) + (cfg.names ? 14 : 0);
+          const sx = v => PAD.l + R + (cfg.invertX ? 1 - fx(v) : fx(v)) * (cW - 2 * R);
+          const sy = v => PAD.t + R + capT + (cfg.invertY ? fy(v) : 1 - fy(v)) * (cH - 2 * R - capT - capB);
+          const box = { l: PAD.l, r: PAD.l + cW, t: PAD.t, b: PAD.t + cH };
+
+          const ticks = (lo, hi) => Array.from({ length: 6 }, (_, i) => lo + (hi - lo) * i / 5);
+          const xGrid = ticks(x0, x1).map(t => {
+            const x = sx(t);
+            return `<line x1="${x}" y1="${box.t}" x2="${x}" y2="${box.b}" stroke="var(--border-subtle)"/>
+              <text x="${x}" y="${box.b + 18}" text-anchor="middle" fill="var(--text-muted)" font-size="11">${xV.fmt(t)}</text>`;
+          }).join('');
+          const yGrid = ticks(y0, y1).map(t => {
+            const y = sy(t);
+            return `<line x1="${box.l}" y1="${y}" x2="${box.r}" y2="${y}" stroke="var(--border-subtle)"/>
+              <text x="${box.l - 8}" y="${y + 4}" text-anchor="end" fill="var(--text-muted)" font-size="11">${yV.fmt(t)}</text>`;
+          }).join('');
+
+          const qx = sx(mx), qy = sy(my);
+          const shade = `
+            <rect x="${box.l}" y="${box.t}" width="${qx - box.l}" height="${qy - box.t}" fill="var(--text-primary)" fill-opacity="0.035"/>
+            <rect x="${qx}" y="${qy}" width="${box.r - qx}" height="${box.b - qy}" fill="var(--text-primary)" fill-opacity="0.035"/>`;
+          const divider = `
+            <line x1="${qx}" y1="${box.t}" x2="${qx}" y2="${box.b}" stroke="var(--text-dim)" stroke-width="1.5" stroke-dasharray="6 4"/>
+            <line x1="${box.l}" y1="${qy}" x2="${box.r}" y2="${qy}" stroke="var(--text-dim)" stroke-width="1.5" stroke-dasharray="6 4"/>`;
+          const cap = (txt, x, y, anchor) => txt
+            ? `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="var(--text-secondary)" font-size="15" font-weight="700" opacity="0.85">${qEsc(txt)}</text>` : '';
+          const captions = cap(cfg.labels.tl, box.l + 10, box.t + 22, 'start') +
+            cap(cfg.labels.tr, box.r - 10, box.t + 22, 'end') +
+            cap(cfg.labels.bl, box.l + 10, box.b - 12, 'start') +
+            cap(cfg.labels.br, box.r - 10, box.b - 12, 'end');
+
+          // Best first, so the stronger players keep their exact spots.
+          const order = [...pts].sort(sortKeyDesc(cfg.pick.mode === 'top' ? cfg.pick.by : 'gmsc'));
+          const placed = placeFaces(order.map(g => ({ g, px: sx(g.vals[cfg.x]), py: sy(g.vals[cfg.y]) })), R, box, cfg.names);
+
+          const leaders = placed.filter(p => Math.hypot(p.fx - p.px, p.fy - p.py) > 1).map(p =>
+            `<line x1="${p.px.toFixed(1)}" y1="${p.py.toFixed(1)}" x2="${p.fx.toFixed(1)}" y2="${p.fy.toFixed(1)}" stroke="var(--text-dim)" stroke-width="1"/>
+             <circle cx="${p.px.toFixed(1)}" cy="${p.py.toFixed(1)}" r="2.2" fill="var(--text-dim)"/>`).join('');
+
+          // Drawn last-placed first, so the best players sit on top of any overlap.
+          const faces = [...placed].reverse().map(({ g, fx: x, fy: y }) => {
+            const color = TEAM_COLORS[g.team] || '#6b7280';
+            const label = `${formatName(g.name)} · ${cfg.season || 'Career'} ${g.teamsLabel} · ${xV.label} ${xV.fmt(g.vals[cfg.x])} · ${yV.label} ${yV.fmt(g.vals[cfg.y])}`;
+            return `<g class="quad-face" transform="translate(${x.toFixed(1)},${y.toFixed(1)})" data-label="${qEsc(label)}" data-slug="${qEsc(g.slug)}">
+                <circle r="${R}" fill="${color}"/>
+                <text y="${(R * 0.34).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="${Math.round(R * 0.82)}" font-weight="700">${qEsc(initials(g.name))}</text>
+                <image opacity="0" href="/api/players/${encodeURIComponent(g.slug)}/headshot" data-fallback="${qEsc(bios[g.slug]?.photo_url || '')}"
+                  x="${-R}" y="${-R}" width="${2 * R}" height="${2 * R}" preserveAspectRatio="xMidYMin slice" clip-path="url(#quad-clip)"/>
+                <circle r="${R}" fill="none" stroke="${color}" stroke-width="${R > 18 ? 3 : 2.4}"/>
+                ${cfg.names ? `<text class="quad-name" y="${R + 12}" text-anchor="middle" fill="var(--text-primary)" font-size="11" font-weight="600"
+                  stroke="var(--bg-card)" stroke-width="3" paint-order="stroke">${qEsc(shortName(g.name))}</text>` : ''}
+              </g>`;
+          }).join('');
+
+          const seasonTxt = cfg.season || 'Career';
+          const dsTxt = { reg: 'regular season', po: 'playoffs', all: 'regular season + playoffs' }[cfg.dataset];
+          const sub = [`${xV.label} vs ${yV.label}`, `${seasonTxt} ${dsTxt}`,
+            cfg.team || null, cfg.minG ? `min ${cfg.minG} G` : null,
+            `lines at ${{ median: 'median', mean: 'average', league: 'league median', custom: 'custom values' }[cfg.split.mode]}`].filter(Boolean).join(' · ');
+          const arrow = (inv) => inv ? ' ←' : ' →';
+
+          chartEl.innerHTML = `
+            <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif" id="qf-svg">
+              <defs><clipPath id="quad-clip" clipPathUnits="userSpaceOnUse"><circle r="${R - 1}"/></clipPath></defs>
+              <rect class="quad-bg" x="0" y="0" width="${W}" height="${H}" fill="var(--bg-card)"/>
+              <text x="${box.l}" y="30" fill="var(--text-primary)" font-size="22" font-weight="800">${qEsc(cfg.title || `${xV.label} vs ${yV.label}`)}</text>
+              <text x="${box.l}" y="52" fill="var(--text-muted)" font-size="12.5">${qEsc(sub)}</text>
+              ${shade}${xGrid}${yGrid}
+              <line x1="${box.l}" y1="${box.t}" x2="${box.l}" y2="${box.b}" stroke="var(--text-dim)"/>
+              <line x1="${box.l}" y1="${box.b}" x2="${box.r}" y2="${box.b}" stroke="var(--text-dim)"/>
+              ${divider}${captions}${leaders}${faces}
+              <text x="${box.l + cW / 2}" y="${H - 18}" text-anchor="middle" fill="var(--text-muted)" font-size="13" font-weight="600">${qEsc(xV.label)}${cfg.invertX ? ' (flipped)' : ''}</text>
+              <text transform="translate(20,${box.t + cH / 2}) rotate(-90)" text-anchor="middle" fill="var(--text-muted)" font-size="13" font-weight="600">${qEsc(yV.label)}${cfg.invertY ? ' (flipped)' : ''}</text>
+              <text x="${W - 12}" y="${H - 10}" text-anchor="end" fill="var(--text-dim)" font-size="11">nbn.today</text>
+            </svg>`;
+
+          // A headshot that 404s (no photo, or the proxy can't reach it) tries
+          // the bio's own URL — fine to look at, though it can't go in a PNG —
+          // and then leaves the initials showing.
+          // Hidden until it loads, so a slow or failed photo never shows the
+          // browser's broken-image icon over the initials.
+          chartEl.querySelectorAll('image').forEach(img => {
+            img.addEventListener('load', () => img.removeAttribute('opacity'));
+            img.addEventListener('error', () => {
+              const fb = img.dataset.fallback;
+              if (fb && img.getAttribute('href') !== fb) img.setAttribute('href', fb);
+              else img.remove();
+            });
+          });
+        }
+
+        // ── readout (same pattern as Plot Anything) ──
+        const HINT = '<span class="pr-hint">Tap or hover a face to inspect it.</span>';
+        let hl = null;
+        function resetReadout() {
+          hl?.classList.remove('quad-face--hl');
+          hl = null;
+          readoutEl.innerHTML = HINT;
+        }
+        function showInfo(g) {
+          readoutEl.innerHTML = `<span>${qEsc(g.dataset.label)}</span> <a href="/players/?p=${encodeURIComponent(g.dataset.slug)}">View player →</a>`;
+        }
+        chartEl.addEventListener('mousemove', e => {
+          const g = e.target.closest('g[data-label]');
+          if (!g) { tooltip.style.display = 'none'; return; }
+          tooltip.textContent = g.dataset.label;
+          tooltip.style.display = 'block';
+          const x = e.clientX + 14, y = e.clientY - 36;
+          tooltip.style.left = Math.min(x, window.innerWidth - tooltip.offsetWidth - 8) + 'px';
+          tooltip.style.top = (y < 8 ? e.clientY + 14 : y) + 'px';
+          showInfo(g);
+        });
+        chartEl.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+        chartEl.addEventListener('click', e => {
+          const g = e.target.closest('g[data-label]');
+          if (!g) return;
+          hl?.classList.remove('quad-face--hl');
+          g.classList.add('quad-face--hl');
+          g.parentNode.appendChild(g);     // bring it above its neighbours
+          hl = g;
+          showInfo(g);
+        });
+
+        // ── share / export ──
+        $('qf-copy').addEventListener('click', async () => {
+          syncUrl();
+          try { await navigator.clipboard.writeText(location.href); status('Link copied'); }
+          catch { status('Copy the address bar to share'); }
+        });
+
+        const fileName = () => (cfg.title || `${QUAD_VARS[cfg.x].label} vs ${QUAD_VARS[cfg.y].label}`)
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'quadrant';
+
+        $('qf-png').addEventListener('click', async () => {
+          const svg = document.getElementById('qf-svg');
+          if (!svg) return;
+          status('Rendering…', true);
+          try {
+            const clone = svg.cloneNode(true);
+            // A canvas only draws images it can read, so each face is inlined
+            // as a data URI. Our /api/players/*/headshot is same-origin; a face
+            // showing the cross-origin fallback can't be read and keeps its initials.
+            await Promise.all([...clone.querySelectorAll('image')].map(async img => {
+              try {
+                const r = await fetch(img.getAttribute('href'));
+                if (!r.ok) throw 0;
+                const blob = await r.blob();
+                const data = await new Promise((res, rej) => {
+                  const fr = new FileReader();
+                  fr.onload = () => res(fr.result); fr.onerror = rej;
+                  fr.readAsDataURL(blob);
+                });
+                img.setAttribute('href', data);
+                img.removeAttribute('opacity');
+              } catch { img.remove(); }
+            }));
+            // An SVG drawn as an image can't see the page's CSS, so the theme's
+            // var(--…) colours are resolved to real values first.
+            const cs = getComputedStyle(document.body);
+            const text = new XMLSerializer().serializeToString(clone)
+              .replace(/var\((--[\w-]+)\)/g, (_, v) => cs.getPropertyValue(v).trim() || '#888');
+            const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(text);
+            const im = new Image();
+            await new Promise((res, rej) => { im.onload = res; im.onerror = rej; im.src = url; });
+            const scale = 2;
+            const canvas = document.createElement('canvas');
+            canvas.width = W * scale; canvas.height = H * scale;
+            canvas.getContext('2d').drawImage(im, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName() + '.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            status('PNG downloaded');
+          } catch (err) {
+            status('Couldn’t render the PNG');
+          }
+        });
+
+        // ── gallery ──
+        const authHeaders = () => ({ Authorization: `Bearer ${quadToken()}` });
+
+        async function loadGallery() {
+          const el = $('qf-gallery');
+          let items;
+          try {
+            const r = await fetch('/api/quadrants');
+            if (!r.ok) throw new Error(r.status);
+            items = await r.json();
+          } catch {
+            el.innerHTML = `<div class="plot-empty">The gallery isn’t available right now.</div>`;
+            return;
+          }
+          if (!items.length) {
+            el.innerHTML = `<div class="plot-empty">No saved charts yet${quadToken() ? ' — make one and save it.' : '. Sign in to save the first.'}</div>`;
+            return;
+          }
+          const lbl = k => QUAD_VARS[k]?.label || k;
+          el.innerHTML = items.map(q => `
+            <div class="quad-card${q.id === loadedId ? ' active' : ''}" data-id="${q.id}" role="button" tabindex="0">
+              <div class="quad-card-title">${qEsc(q.title)}</div>
+              <div class="quad-card-meta">${qEsc(lbl(q.x))} vs ${qEsc(lbl(q.y))} · ${qEsc(q.author)} · ${qEsc((q.created_at || '').slice(0, 10))}</div>
+              ${me && (q.author === me.name || me.admin) ? `<button class="quad-card-del" data-del="${q.id}" title="Delete" aria-label="Delete ${qEsc(q.title)}">×</button>` : ''}
+            </div>`).join('');
+        }
+
+        async function openSaved(id, push) {
+          try {
+            const r = await fetch(`/api/quadrants/${id}`);
+            if (!r.ok) throw new Error(r.status);
+            const q = await r.json();
+            cfg = quadNormalize({ ...q.config, title: q.title }, defaultSeason);
+            loadedId = q.id;
+            toControls(); draw();
+            const url = `#quadrant?id=${q.id}`;
+            if (push) history.pushState(null, '', url); else history.replaceState(null, '', url);
+            $('qf-gallery').querySelectorAll('.quad-card').forEach(c => c.classList.toggle('active', +c.dataset.id === q.id));
+          } catch {
+            status('That chart couldn’t be loaded');
+          }
+        }
+
+        $('qf-gallery').addEventListener('click', async e => {
+          const del = e.target.closest('[data-del]');
+          if (del) {
+            e.stopPropagation();
+            if (!confirm('Delete this chart from the gallery?')) return;
+            const r = await fetch(`/api/quadrants/${del.dataset.del}`, { method: 'DELETE', headers: authHeaders() });
+            if (r.ok) { if (+del.dataset.del === loadedId) loadedId = null; loadGallery(); status('Deleted'); }
+            else status('Couldn’t delete that chart');
+            return;
+          }
+          const card = e.target.closest('.quad-card');
+          if (card) openSaved(+card.dataset.id, true);
+        });
+        $('qf-gallery').addEventListener('keydown', e => {
+          if (e.key === 'Enter' && e.target.matches('.quad-card')) e.target.click();
+        });
+
+        $('qf-save').addEventListener('click', async () => {
+          fromControls();
+          if (!cfg.title.trim()) { status('Give it a title first'); $('qf-title').focus(); return; }
+          if (cfg.pick.mode === 'list' && !cfg.pick.slugs.length) { status('Add some players first'); return; }
+          const { title, ...config } = cfg;
+          try {
+            const r = await fetch('/api/quadrants', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...authHeaders() },
+              body: JSON.stringify({ title: title.trim(), config }),
+            });
+            if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.status);
+            const q = await r.json();
+            loadedId = q.id;
+            history.replaceState(null, '', `#quadrant?id=${q.id}`);
+            status(`Saved as #${q.id}`);
+            loadGallery();
+          } catch (err) {
+            status(`Couldn’t save: ${typeof err.message === 'string' ? err.message : 'check the fields'}`);
+          }
+        });
+
+        if (quadToken()) {
+          fetch('/api/auth/me', { headers: authHeaders() }).then(r => r.json()).then(m => {
+            if (!m || !m.name) return;
+            me = { name: m.name, admin: (m.roles || []).includes('admin') };
+            $('qf-save').hidden = false;
+            loadGallery();
+          }).catch(() => {});
+        }
+
+        // ── wiring ──
+        ['qf-x', 'qf-y', 'qf-invx', 'qf-invy', 'qf-names', 'qf-dataset', 'qf-season', 'qf-team', 'qf-by']
+          .forEach(id => $(id).addEventListener('change', edited));
+        ['qf-title', 'qf-ming', 'qf-sx', 'qf-sy', 'qf-n', 'qf-tl', 'qf-tr', 'qf-bl', 'qf-br']
+          .forEach(id => $(id).addEventListener('input', edited));
+        $('qf-swap').addEventListener('click', () => {
+          [cfg.x, cfg.y] = [cfg.y, cfg.x];
+          [cfg.invertX, cfg.invertY] = [cfg.invertY, cfg.invertX];
+          [cfg.split.x, cfg.split.y] = [cfg.split.y, cfg.split.x];
+          [cfg.labels.tr, cfg.labels.bl] = [cfg.labels.bl, cfg.labels.tr];   // mirror over the diagonal
+          toControls(); loadedId = null; draw(); syncUrl();
+        });
+        $('qf-split').addEventListener('click', e => {
+          const b = e.target.closest('button[data-v]');
+          if (!b) return;
+          cfg.split.mode = b.dataset.v;
+          if (cfg.split.mode === 'custom' && cfg.split.x == null) {
+            // Start custom from where the median lines are now.
+            const uni = k => selected().shown.map(g => g.vals[k]).filter(v => v != null);
+            const r1 = v => Math.round(v * 10) / 10;
+            if (uni(cfg.x).length) cfg.split.x = r1(median(uni(cfg.x)));
+            if (uni(cfg.y).length) cfg.split.y = r1(median(uni(cfg.y)));
+          }
+          toControls(); loadedId = null; draw(); syncUrl();
+        });
+        $('qf-pickmode').addEventListener('click', e => {
+          const b = e.target.closest('button[data-v]');
+          if (!b) return;
+          cfg.pick.mode = b.dataset.v;
+          if (cfg.pick.mode === 'list' && !cfg.pick.slugs.length) cfg.pick.slugs = topN().map(g => g.slug);
+          toControls(); loadedId = null; draw(); syncUrl();
+        });
+
+        // ── landing: ?c= (a shared link), ?id= (a saved chart), or defaults ──
+        ctl.fromHash = () => {
+          const p = quadParams();
+          if (p.get('id')) return openSaved(parseInt(p.get('id'), 10), false);
+          if (p.get('c')) {
+            try { cfg = quadNormalize(JSON.parse(b64urlDecode(p.get('c'))), defaultSeason); }
+            catch { status('That link is damaged — showing the default chart'); cfg = quadDefaults(defaultSeason); }
+          }
+          loadedId = null;
+          toControls(); draw();
+        };
+        ctl.fromHash();
+        loadGallery();
+      });
+      return ctl;
+    }
+
     // ── tooltip ───────────────────────────────────────────────────────────────
 
     const tooltip = document.getElementById('tooltip');
@@ -1501,6 +2389,7 @@
       earnings: renderEarningsTab,
     };
     const rendered = new Set();
+    let quadCtl = null;
 
     async function activateTab(name) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
@@ -1510,6 +2399,8 @@
         rendered.add(name);
         if (name === 'plot') {
           renderPlotTab();   // loads its own player-season data
+        } else if (name === 'quadrant') {
+          quadCtl = renderQuadrantTab();   // same data as plot, read from the #hash
         } else if (name === 'retros') {
           // Defined in a later <script>, so read it off window at call time.
           window.renderRetrosTab();   // loads trades, seasons and bios itself
@@ -1521,10 +2412,11 @@
     }
 
     // #hash names the tab, so /frivolities#retros lands on Trade Retros — the
-    // old /trade-retros/ URL is a redirect to exactly that.
-    const TABS = ['roster', 'league', 'attributes', 'earnings', 'plot', 'retros'];
+    // old /trade-retros/ URL is a redirect to exactly that. Anything after a
+    // "?" belongs to the tab (#quadrant?c=… is a shared chart).
+    const TABS = ['roster', 'league', 'attributes', 'earnings', 'plot', 'quadrant', 'retros'];
     const tabFromHash = () => {
-      const h = location.hash.replace(/^#/, '');
+      const h = location.hash.replace(/^#/, '').split('?')[0];
       return TABS.includes(h) ? h : 'roster';
     };
 
@@ -1540,7 +2432,14 @@
       });
     });
 
-    window.addEventListener('popstate', () => activateTab(tabFromHash()));
+    // Back from one gallery chart to another stays on the tab, so the tab
+    // re-reads its #hash rather than waiting to be rendered.
+    window.addEventListener('popstate', () => {
+      const name = tabFromHash();
+      const again = rendered.has(name);
+      activateTab(name);
+      if (name === 'quadrant' && again) quadCtl?.fromHash?.();
+    });
 
     // Deferred to DOMContentLoaded because the retros tab's renderer is defined
     // by a later <script>: landing on #retros would otherwise call it before it
