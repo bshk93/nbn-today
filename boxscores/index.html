@@ -238,7 +238,8 @@
     const pct = (m, a) => a ? (m / a * 100).toFixed(1) : '—';
 
     // Columns after the player name. `grp` starts a visual group; `sum` is
-    // added up for the team totals row.
+    // added up for the team totals row. A shooting column sorts by makes, then
+    // attempts (`pct` names the pair).
     const COLS = [
       { h: "MIN", k: "min", sum: true },
       { h: "PTS", k: "pts", sum: true, cls: "pts" },
@@ -333,8 +334,24 @@
         ? `<a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.player))}</a>`
         : esc(nbnPlayerName(p.player));
 
-      const rows = on.map(p => `<tr><td class="pname">${name(p)}</td>${
-        COLS.map(c => cell(c, typeof c.k === 'function' ? c.k(p) : (p[c.k] ?? '—'))).join('')}</tr>`).join('');
+      const row = p => `<tr><td class="pname">${name(p)}</td>${
+        COLS.map(c => cell(c, typeof c.k === 'function' ? c.k(p) : (p[c.k] ?? '—'))).join('')}</tr>`;
+
+      // Each table sorts on its own, starting from minutes. -1 is descending;
+      // a new stat column opens high to low, the Player column A to Z.
+      let sortIdx = 0, sortDir = -1;
+      const cmpBy = idx => {
+        if (idx < 0) return (a, b) => surname(a).localeCompare(surname(b)) || nbnPlayerName(a.player).localeCompare(nbnPlayerName(b.player));
+        const c = COLS[idx];
+        return c.pct
+          ? (a, b) => ((a[c.pct[0]] || 0) - (b[c.pct[0]] || 0)) || ((a[c.pct[1]] || 0) - (b[c.pct[1]] || 0))
+          : (a, b) => (a[c.k] || 0) - (b[c.k] || 0);
+      };
+      const sorted = () => {
+        const cmp = cmpBy(sortIdx);
+        return on.slice().sort((a, b) => sortDir * cmp(a, b) || (b.min - a.min) || (b.pts - a.pts));
+      };
+      const th = (h, idx, cls = '') => `<th class="${cls}" data-idx="${idx}"${idx === sortIdx ? ' data-active="true"' : ''}>${h}<span class="sort-arrow">${idx === sortIdx ? (sortDir < 0 ? '↓' : '↑') : ''}</span></th>`;
 
       const tot = {};
       ['min','pts','reb','ast','stl','blk','tov','pf','oreb','dreb','fgm','fga','tpm','tpa','ftm','fta']
@@ -344,11 +361,25 @@
 
       section.insertAdjacentHTML('beforeend', `<div class="ui-table-wrap">
         <table class="ui-table ui-table--dense ui-table--sticky-first bx-table">
-          <thead><tr><th>Player</th>${COLS.map(c => `<th class="${c.grp ? 'grp' : ''}">${c.h}</th>`).join('')}</tr></thead>
-          <tbody>${rows}</tbody>
+          <thead><tr>${th('Player', -1)}${COLS.map((c, i) => th(c.h, i, c.grp ? 'grp' : '')).join('')}</tr></thead>
+          <tbody>${sorted().map(row).join('')}</tbody>
           <tfoot>${on.length ? totRow + pctRow : ''}</tfoot>
         </table>
       </div>${dnp.length ? `<div class="dnp"><b>Did not play:</b> ${dnp.map(p => esc(nbnPlayerName(p.player))).join(', ')}</div>` : ''}`);
+
+      // Only the player rows re-sort; the team totals stay in the footer.
+      const table = section.querySelector('table');
+      table.querySelectorAll('thead th').forEach(h => h.addEventListener('click', () => {
+        const idx = Number(h.dataset.idx);
+        if (idx === sortIdx) sortDir = -sortDir;
+        else { sortIdx = idx; sortDir = idx < 0 ? 1 : -1; }
+        table.querySelectorAll('thead th').forEach(x => {
+          const active = Number(x.dataset.idx) === sortIdx;
+          if (active) x.dataset.active = 'true'; else delete x.dataset.active;
+          x.querySelector('.sort-arrow').textContent = active ? (sortDir < 0 ? '↓' : '↑') : '';
+        });
+        table.tBodies[0].innerHTML = sorted().map(row).join('');
+      }));
       parent.appendChild(section);
     }
 
