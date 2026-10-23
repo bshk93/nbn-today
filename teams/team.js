@@ -240,9 +240,6 @@ const coachingConfigReady = new Promise(resolve => {
      then grows proportionally (75% of viewport) up to a 1600px ceiling
      for wide/ultrawide monitors. */
   .page { max-width: var(--page-width-wide); margin: 0 auto; }
-  .nav { margin-bottom: 2rem; font-size: 0.875rem; }
-  .nav a { color: var(--text-muted); text-decoration: none; }
-  .nav a:hover { color: var(--text-primary); }
   .team-header-nav {
     display: flex;
     align-items: center;
@@ -1055,7 +1052,7 @@ function attachTooltip(el, textOrFn) {
 }
 
 document.body.innerHTML = `
-  <div class="page">
+  <div class="page ui-page">
     <nav class="nav"><a href="/teams">← Teams</a></nav>
     <div class="team-header-nav">
       ${prevAbbr ? `<a class="team-nav-btn" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
