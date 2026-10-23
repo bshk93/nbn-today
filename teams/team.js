@@ -302,6 +302,13 @@ const coachingConfigReady = new Promise(resolve => {
     }
     .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
   }
+  .settings-card.note-card { display: block; margin-bottom: 1rem; }
+  .sn-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.85rem; color: var(--text-primary); }
+  .sn-meta { margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted); }
+  .sn-meta.open { color: var(--gold); }
+  .sn-meta.clear { color: var(--success-light); }
+  .sn-edit textarea { width: 100%; min-height: 5rem; resize: vertical; }
+  .sn-count { font-size: 0.72rem; color: var(--text-dim); margin-right: auto; }
   .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 1.9rem; margin-bottom: 0.5rem; }
   .settings-head .settings-subtitle { margin-bottom: 0; }
   .settings-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
@@ -351,6 +358,9 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-num-input { width: 2.2rem; text-align: center; }
   .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
   .ts-sec-select { width: auto; color: var(--text-secondary); }
+  .ts-sec-select.ts-sec-illegal { color: var(--danger-light); border-color: var(--danger-light); }
+  .ts-pos2.ts-pos2-illegal { color: var(--danger-light); font-weight: 700; }
+  .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
   .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.75rem; cursor: pointer; user-select: none; }
   .ts-pin-mark { margin-left: 0.25rem; font-size: 0.7rem; }
   .ts-pos-wait { margin-left: 0.3rem; font-size: 0.68rem; color: var(--gold); }
@@ -1140,13 +1150,20 @@ document.body.innerHTML = `
       <section>
         <h2 class="section-title">Settings</h2>
         <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
+        <div class="settings-card note-card">
+          <div class="settings-head">
+            <h3 class="settings-subtitle">Note to the streamer</h3>
+            <div class="settings-actions" id="streamer-note-actions"></div>
+          </div>
+          <div id="streamer-note-wrap"><div class="status">Loading…</div></div>
+        </div>
         <div class="settings-card">
           <div class="settings-subsection">
             <div class="settings-head">
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick 📌 to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update.</p>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick 📌 to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked ⚠ is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -5701,6 +5718,12 @@ function secondaryPosOptions(primary) {
   if (i < 0) return [];
   return [POSITION_ORDER[i - 1], POSITION_ORDER[i + 1]].filter(Boolean);
 }
+// § 2.3's one step. A team may still pick a secondary outside it: there are
+// exceptions, so it is saved, flagged, and the streamer OKs it by setting it
+// in 2K. Mirrors secondary_is_legal in nbn-api routers/players.py.
+function secondaryIsLegal(primary, sec) {
+  return !sec || sec === 'none' || secondaryPosOptions(primary).includes(sec);
+}
 
 // 2K's own secondary position, second in the scrape's 2k_pos, but only when
 // it is one step from the primary (§ 2.3). One that isn't is not allowed, and
@@ -5762,6 +5785,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
     if (!editing) renderReadView();
   }).catch(() => {});
   const posLocked = slug => (posChecks.pinned || []).includes(slug);
+  // slug -> {secondary, approved} for a secondary outside § 2.3's one step.
+  const posException = slug => (posChecks.exceptions || {})[slug] || null;
   const posWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.changed);
   const jerseyWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.jersey_changed);
 
@@ -5833,16 +5858,20 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   // Where a player may start: his 2K primary, one step either side of it,
-  // or the secondary his team gave him (§ 2.3 keeps that within one step
-  // already). Null when there's no 2K primary yet, which isn't checked.
-  // Mirrors starter_positions in nbn-api routers/coaching_settings.py.
+  // or his secondary. A secondary outside § 2.3 counts only once a streamer
+  // has OK'd it. Null when there's no 2K primary yet, which isn't checked.
+  // Mirrors starter_positions / counted_secondary in nbn-api
+  // routers/coaching_settings.py.
   function startPositions(slug) {
     const primary = primaryPosFromAttrs(attributesData[slug]);
     const i = POSITION_ORDER.indexOf(primary);
     if (i < 0) return null;
     const ok = new Set([POSITION_ORDER[i - 1], primary, POSITION_ORDER[i + 1]].filter(Boolean));
     const secondary = effectiveSecondary(biosData[slug], attributesData[slug]);
-    if (secondary) ok.add(secondary);
+    const exc = posException(slug);
+    if (secondary && (secondaryIsLegal(primary, secondary) || (exc && exc.approved && exc.secondary === secondary))) {
+      ok.add(secondary);
+    }
     return POSITION_ORDER.filter(p => ok.has(p));
   }
 
@@ -5989,6 +6018,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         sec.textContent = ` / ${secondary}`;
         if (!bio.secondary_pos) sec.title = "2K's secondary position";
         posTd.appendChild(sec);
+        if (!secondaryIsLegal(primary, secondary)) {
+          const exc = posException(row.SLUG);
+          const ok = exc && exc.approved && exc.secondary === secondary;
+          sec.classList.add('ts-pos2-illegal');
+          sec.textContent += ' ⚠';
+          sec.title = ok ? `Outside § 2.3 (one step from ${primary}). A streamer OK'd it.`
+            : `Outside § 2.3 (one step from ${primary}). It counts once a streamer OKs it.`;
+          if (ok) sec.classList.add('ok');
+        }
       }
       if (posLocked(row.SLUG)) {
         const pin = document.createElement('span');
@@ -6136,6 +6174,32 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       startersNote.textContent = [...bad.values()].join('. ');
       saveBtn.disabled = blocking > 0;
       saveBtn.title = blocking ? 'A starter is out of position' : '';
+    }
+
+    // Secondaries outside § 2.3, named so the team knows the streamer has to
+    // OK them. Never blocks the save.
+    const secNote = document.createElement('div');
+    secNote.className = 'ts-2w-note';
+    secNote.hidden = true;
+
+    function refreshSecNote() {
+      const lines = fields.map(f => {
+        const sec = f.secSel.value || twoKSecondaryFromAttrs(attributesData[f.slug]);
+        if (secondaryIsLegal(f.primary, sec)) return null;
+        const name = displayNameFromBio((biosData[f.slug] || {}).name || '') || f.slug;
+        const exc = posException(f.slug);
+        const ok = exc && exc.approved && exc.secondary === sec;
+        return `${name} at ${sec}${ok ? " (OK'd)" : ''}`;
+      }).filter(Boolean);
+      fields.forEach(f => {
+        const sec = f.secSel.value || twoKSecondaryFromAttrs(attributesData[f.slug]);
+        f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(f.primary, sec));
+      });
+      secNote.hidden = !lines.length;
+      secNote.textContent = lines.length
+        ? `⚠ Outside § 2.3, which allows one step from the primary: ${lines.join(', ')}. `
+          + 'The streamer has to OK an exception before it counts, including for starting.'
+        : '';
     }
 
     function refreshMinutesTotal() {
@@ -6314,18 +6378,28 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       posWrap.className = 'ts-pos-edit';
       posWrap.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG])));
       // Rulebook § 2.3: the secondary is one step either side of the 2K
-      // primary (a PG only SG, a C only PF). The API enforces the same rule.
+      // primary (a PG only SG, a C only PF). Any other position can still be
+      // picked, marked ⚠: it is an exception the streamer has to OK.
       // Blank keeps 2K's own secondary; 'none' removes it.
-      const eligiblePos = secondaryPosOptions(primaryPosFromAttrs(attributesData[row.SLUG]));
+      const rowPrimary = primaryPosFromAttrs(attributesData[row.SLUG]);
+      const eligiblePos = secondaryPosOptions(rowPrimary);
+      const otherPos = POSITION_ORDER.includes(rowPrimary)
+        ? POSITION_ORDER.filter(p => p !== rowPrimary && !eligiblePos.includes(p)) : [];
       const twoKSec = twoKSecRow;
       const secSel = document.createElement('select');
       secSel.className = 'ts-input ts-sec-select';
       secSel.setAttribute('aria-label', 'Secondary position');
       [{ value: '', label: twoKSec ? `/ ${twoKSec} (2K)` : '/ – (2K)' },
        ...(twoKSec ? [{ value: 'none', label: '/ none' }] : []),
-       ...eligiblePos.filter(p => p !== twoKSec).map(p => ({ value: p, label: `/ ${p}` }))].forEach(o => {
+       ...eligiblePos.filter(p => p !== twoKSec).map(p => ({ value: p, label: `/ ${p}` })),
+       ...otherPos.map(p => ({ value: p, label: `/ ${p} ⚠` }))].forEach(o => {
         secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
       });
+      // Keep a saved exception selectable even if the primary has moved.
+      if (secondaryPos && ![...secSel.options].some(o => o.value === secondaryPos)) {
+        secSel.appendChild(new Option(`/ ${secondaryPos} ⚠`, secondaryPos, false, true));
+      }
+      secSel.addEventListener('change', () => refreshSecNote());
       posWrap.appendChild(secSel);
       // 📌: check this position before every game. With no secondary it
       // means "make sure 2K has none", since 2K can add one back.
@@ -6404,7 +6478,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       }
 
       fields.push({
-        slug: row.SLUG, jerseyInput, secSel, pinCheck,
+        slug: row.SLUG, primary: rowPrimary, jerseyInput, secSel, pinCheck,
         originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
       });
     });
@@ -6415,6 +6489,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
     refreshMinutesTotal();
     mountTable(table, meter);
+    refreshSecNote();
+    wrapEl.insertBefore(secNote, wrapEl.lastChild);
     wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
     wrapEl.insertBefore(startersNote, wrapEl.lastChild);
 
@@ -6497,6 +6573,124 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   renderReadView();
+}
+
+// Note to the streamer — one free-text note per team, for whoever streams
+// its games. A streamer marks it clear on /committees/stream; saving it
+// again reopens it. Stored apart from the coach profile
+// (GET/PUT /api/coaching-notes), private the same way.
+const STREAMER_NOTE_MAX = 1000;
+function setupStreamerNote() {
+  const wrapEl = document.getElementById('streamer-note-wrap');
+  const actionsEl = document.getElementById('streamer-note-actions');
+  if (!wrapEl) return;
+  const canEdit = canEditCoachingSettings(abbr);
+  let note = null;
+
+  const authHeaders = () => {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+  const fmtWhen = iso => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+
+  function btn(label, variant) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `ui-btn ui-btn--sm${variant ? ` ui-btn--${variant}` : ''}`;
+    b.textContent = label;
+    return b;
+  }
+
+  function renderRead() {
+    wrapEl.innerHTML = '';
+    actionsEl.innerHTML = '';
+    if (!note || !note.text) {
+      const empty = document.createElement('div');
+      empty.className = 'sn-meta';
+      empty.textContent = 'No note.';
+      wrapEl.appendChild(empty);
+    } else {
+      const text = document.createElement('div');
+      text.className = 'sn-text';
+      text.textContent = note.text;
+      const meta = document.createElement('div');
+      meta.className = 'sn-meta ' + (note.cleared_at ? 'clear' : 'open');
+      meta.textContent = note.cleared_at
+        ? `✓ Marked clear by ${note.cleared_by || 'a streamer'}, ${fmtWhen(note.cleared_at)}`
+        : `Waiting for the streamer · saved ${fmtWhen(note.updated_at)} by ${note.updated_by || 'unknown'}`;
+      wrapEl.append(text, meta);
+    }
+    if (canEdit) {
+      const b = btn(note && note.text ? 'Edit' : 'Write note');
+      b.addEventListener('click', () => withToken(() => renderEdit()));
+      actionsEl.appendChild(b);
+    }
+  }
+
+  async function save(text, statusEl, buttons) {
+    buttons.forEach(b => { b.disabled = true; });
+    statusEl.textContent = 'Saving…';
+    try {
+      const r = await fetch(`/api/coaching-notes/${abbr}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ text }),
+      });
+      if (!r.ok) {
+        if (r.status === 401) localStorage.removeItem(TOKEN_KEY);
+        const err = await r.json().catch(() => ({}));
+        statusEl.textContent = r.status === 401 ? 'Invalid token — cleared. Try again.' : `Error: ${err.detail || r.status}`;
+        buttons.forEach(b => { b.disabled = false; });
+        return;
+      }
+      const rec = await r.json();
+      note = rec && rec.text ? rec : null;
+      renderRead();
+    } catch {
+      statusEl.textContent = 'Network error';
+      buttons.forEach(b => { b.disabled = false; });
+    }
+  }
+
+  function renderEdit() {
+    wrapEl.innerHTML = '';
+    actionsEl.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'sn-edit';
+    const ta = document.createElement('textarea');
+    ta.className = 'ui-textarea';
+    ta.maxLength = STREAMER_NOTE_MAX;
+    ta.value = (note && note.text) || '';
+    ta.placeholder = 'Anything the streamer should know before your games';
+    ta.setAttribute('aria-label', 'Note to the streamer');
+    const count = document.createElement('span');
+    count.className = 'sn-count';
+    const syncCount = () => { count.textContent = `${ta.value.length} / ${STREAMER_NOTE_MAX}`; };
+    ta.addEventListener('input', syncCount);
+    syncCount();
+    box.appendChild(ta);
+    wrapEl.appendChild(box);
+
+    const saveBtn = btn('Save', 'primary');
+    const cancelBtn = btn('Cancel', 'ghost');
+    const buttons = [saveBtn, cancelBtn];
+    actionsEl.append(count);
+    if (note && note.text) {
+      const delBtn = btn('Delete', 'ghost');
+      delBtn.addEventListener('click', () => save('', count, buttons.concat(delBtn)));
+      buttons.push(delBtn);
+      actionsEl.appendChild(delBtn);
+    }
+    actionsEl.append(cancelBtn, saveBtn);
+    cancelBtn.addEventListener('click', () => renderRead());
+    saveBtn.addEventListener('click', () => save(ta.value, count, buttons));
+    ta.focus();
+  }
+
+  fetch('/api/coaching-notes', { headers: authHeaders() })
+    .then(r => r.ok ? r.json() : {})
+    .catch(() => ({}))
+    .then(data => { note = (data && data[abbr]) || null; renderRead(); });
 }
 
 // Coaching Settings tab — a team's 2K coach profile (schema in
@@ -8439,6 +8633,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     }, rosterCellConfig(rosterHeaders, biosData));
     setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, coachingRecord, currentOvr);
     setupCoachingSettingsTab('coaching-settings-wrap', biosData, coachingRecord);
+    if (canViewCoachingSettings(abbr)) setupStreamerNote();
 
     setupDeadCapEditable(
       document.getElementById('dead-cap-edit-wrap'),
