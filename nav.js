@@ -1093,6 +1093,12 @@ function _buildAccount() {
 
   const divider = () => Object.assign(document.createElement('div'), { className: 'sb-acct-divider' });
 
+  // The Change Log, with the version the site is on beside it.
+  const changelog = _acctItem('a', 'Change Log', 'tag', '/changelog');
+  fetch('/version.json').then(r => r.json()).then(d => {
+    if (d?.version) changelog.insertAdjacentHTML('beforeend', `<span class="sb-acct-item-meta">v${d.version}</span>`);
+  }).catch(() => {});
+
   const signedOut = () => {
     menu.replaceChildren();
     const signIn = _acctItem('button', 'Sign in', 'person-plus');
@@ -1105,7 +1111,7 @@ function _buildAccount() {
       if (navBtn && navBtn.tagName === 'BUTTON') { navBtn.click(); return; }
       if (await promptForToken()) location.reload();
     });
-    menu.append(signIn, divider(), themeRow, themeList);
+    menu.append(signIn, divider(), themeRow, themeList, changelog);
     _refreshThemeMenu();
   };
   signedOut();
@@ -1130,7 +1136,7 @@ function _buildAccount() {
     signOut.classList.add('sb-acct-signout');
     signOut.addEventListener('click', nbnSignOut);
     const teamSlot = document.createElement('div');
-    menu.replaceChildren(head, profile, teamSlot, inbox, nby, divider(), themeRow, themeList, divider(), signOut);
+    menu.replaceChildren(head, profile, teamSlot, inbox, nby, divider(), themeRow, themeList, changelog, divider(), signOut);
     _refreshThemeMenu();
 
     // Unread mail shows on the avatar too — the inbox used to be its own
@@ -1401,7 +1407,8 @@ const NAV_SECTIONS = [
     { title: 'Constitution', href: '/constitution/', icon: 'charter' },
     { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
     { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
-    { title: 'Changelog', href: '/changelog', icon: 'tag' },
+    // Searchable, but its own entry in the sidebar's account menu (_buildAccount).
+    { title: 'Change Log', href: '/changelog', icon: 'tag', searchOnly: true },
     // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
     { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
     { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
