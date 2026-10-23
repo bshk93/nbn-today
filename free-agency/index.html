@@ -298,6 +298,7 @@
     // ── State ─────────────────────────────────────────────────────────────────
 
     let allRows = {};        // year → row[]
+    const CURRENT_YEARS = new Set();   // class years the pool marks `current` (in FA now)
     let activeYear = null;
     const activePos = new Set();
     let sortField = 'ovr';
@@ -332,7 +333,9 @@
       { key: 'priorSalary', label: 'Prior Salary', sortField: 'priorSalary', cls: 'salary-cell', numeric: true, defaultDir: -1 },
       // The team he was last with — the one holding his rights or hold. Last, not
       // first: on a list of free agents the player leads, not a team he's leaving.
-      { key: 'team',   label: 'Prior Team', sortField: 'team', cls: '',         numeric: false, defaultDir:  1 },
+      // A future class is still under contract, so there it is just his team.
+      { key: 'team',   label: () => CURRENT_YEARS.has(activeYear) ? 'Prior Team' : 'Team',
+        sortField: 'team', cls: '', numeric: false, defaultDir:  1 },
     ];
 
     function visibleRows() {
@@ -445,7 +448,7 @@
       COLS.forEach(col => {
         const th = document.createElement('th');
         const isActive = col.sortField === sortField;
-        th.appendChild(document.createTextNode(col.label));
+        th.appendChild(document.createTextNode(typeof col.label === 'function' ? col.label() : col.label));
         if (col.cls.includes('right') || col.cls.includes('ovr-cell') || col.cls.includes('salary-cell')) th.style.textAlign = 'right';
         if (col.cls.includes('center')) th.style.textAlign = 'center';
         // The ⋯ column holds no value to sort on, so it gets no arrow and no
@@ -490,7 +493,7 @@
           activeYear = yr;
           container.querySelectorAll('.year-chip').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          rebuildBody();
+          buildTable();   // not just the body: a header label depends on the year
         });
         container.appendChild(btn);
       });
@@ -2008,6 +2011,7 @@
           };
 
           const yr = entry.class_year;
+          if (entry.current) CURRENT_YEARS.add(yr);
           if (!allRows[yr]) allRows[yr] = [];
           allRows[yr].push(row);
         });
