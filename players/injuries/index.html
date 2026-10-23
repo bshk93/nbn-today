@@ -50,9 +50,11 @@
     .tile-sub { font-size: 0.75rem; color: var(--text-muted); min-height: 1em; }
 
     /* Body map: the figure faces you, so his right is on your left. */
-    .body { display: grid; grid-template-columns: 19rem minmax(0, 1fr); gap: var(--space-5); align-items: start; }
-    @media (max-width: 600px) { .body { grid-template-columns: minmax(0, 1fr); } .body-figs { max-width: 19rem; margin: 0 auto; } }
-    .body-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+    /* The figures large and centred, the list under them, so a short list
+       doesn't leave half the section empty. */
+    .body { display: grid; gap: var(--space-4); }
+    .body-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); width: 100%; max-width: 30rem; margin: 0 auto; }
+    @media (max-width: 600px) { .body-figs { gap: var(--space-3); } }
     .body-figs figure { margin: 0; }
     .body-figs svg { width: 100%; height: auto; display: block; }
     .body-figs figcaption { text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
