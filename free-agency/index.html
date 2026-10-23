@@ -321,12 +321,14 @@
     };
 
     const COLS = [
-      { key: 'team',   label: 'Team',   sortField: 'team',   cls: '',             numeric: false, defaultDir:  1 },
       { key: 'player', label: 'Player', sortField: 'player', cls: 'bold',         numeric: false, defaultDir:  1 },
       { key: 'pos',    label: 'POS',    sortField: 'pos',    cls: 'muted center', numeric: false, defaultDir:  1 },
       { key: 'ovr',    label: 'OVR',    sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
       { key: 'age',    label: 'Age',    sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
       { key: 'salary', label: 'Salary', sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
+      // The team he was last with — the one holding his rights or hold. Last, not
+      // first: on a list of free agents the player leads, not a team he's leaving.
+      { key: 'team',   label: 'Prior Team', sortField: 'team', cls: '',         numeric: false, defaultDir:  1 },
     ];
 
     function visibleRows() {
@@ -1936,7 +1938,7 @@
       const statusEl = document.getElementById('status');
       try {
         const signedIn = maybeSignedIn();
-        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson] = await Promise.all([
+        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson, seasonsCsv] = await Promise.all([
           fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
@@ -1946,6 +1948,7 @@
           fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
           signedIn ? api('/fa/offers').catch(() => []) : Promise.resolve([]),
           fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
+          fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
         ]);
 
         POOL = pool;
@@ -1964,6 +1967,16 @@
         loadWaivers();
         setInterval(loadWaivers, 30000);
 
+        // Prior team: the roster he is on (an option or hold year still sits on
+        // one), else the last NBN team he played a game for. A renounced or
+        // released player is on no roster, so the team map alone shows him as —.
+        const lastTeam = {};
+        (seasonsCsv ? parseCSV(seasonsCsv) : []).forEach(r => {
+          if (!r.SLUG || !TEAM_ABBRS.has(r.TEAM)) return;
+          const prev = lastTeam[r.SLUG];
+          if (!prev || r.LAST_DATE > prev.date) lastTeam[r.SLUG] = { team: r.TEAM, date: r.LAST_DATE };
+        });
+
         // The pool (class_year, hold_type, hold_amount per player) is derived
         // server-side by GET /api/fa/pool — see nbn-api routers/free_agency.py.
         // This just joins it against bio/OVR/team data for display.
@@ -1974,7 +1987,7 @@
           const row = {
             slug,
             player: displayName(bio.name || slug),
-            team: teamMapJson[slug] || '',
+            team: teamMapJson[slug] || (lastTeam[slug] || {}).team || '',
             pos: (bio.pos || []).join('/') || '—',
             ovr: String(ovrJson[slug] || ''),
             age: calcAge(bio.dob),
