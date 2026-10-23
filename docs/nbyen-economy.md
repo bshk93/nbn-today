@@ -172,7 +172,7 @@ already in the code on the new scale.
 | 6 | Bio fills, Perry | 1 per field; 10 / 5 / 2.5 | Nothing. |
 | 7 | Themes, avatar, name colour | 500, 500, 50 | Nothing. |
 | 8 | Trivia | — | **The server must track the streak.** Today the browser reports its own streak, so the endpoint pays whatever it's told. |
-| 9 | The market (`/invest`) | — | The appendix's § 3 rules, and `buy_shares` has to stop taking the money before it checks for an open short. |
+| 9 | The market (`/invest`) | — | **Built 2026-10-23** (§ 3's rules, and a buy now refuses before taking the money). Off until `invest` is switched on in `wallet.KINDS` and `invest-market.json` is unlocked. |
 
 When the first of 2, 3, 5 or 6 comes back, add the shared monthly cap on free
 earning from the appendix (§ 1c) at the same time.
@@ -439,11 +439,12 @@ results, not a market.** It keeps the results-driven price and stops pretending
 to be an exchange. Everything below follows from that one choice.
 
 Thirty team tickers plus eight index tickers (conferences and divisions). Every
-price starts at 100 and moves with real game results. On top of that sits a
-**sentiment** overlay driven by member trades:
-`market_price = algo_price × (1 + sentiment)`, where sentiment is
-`±nbyen / SENTIMENT_DIVISOR` per trade, `SENTIMENT_DIVISOR = 50_000`, capped at
-`SENTIMENT_CAP = 0.50` and decaying to zero over 82 games.
+price started at 100 in 20-21 and moves after each game by
+`× (1 + diff_diff / MOVE_DIVISOR)`, where `diff_diff` is the margin plus the
+opponent's average margin so far that season (doubled in the playoffs). An index
+moves by the average of its teams' factors that day. Returns are a percentage, so
+how far a price has drifted from 100 doesn't matter. Until the 2026-10 rebuild a
+**sentiment** overlay sat on top, moved by member trades; it is gone (below).
 
 **There is no counterparty.** Unlike a pool bet, every NB¥ of profit is minted by
 the league and every loss is burned. That is what makes it a subsidy, and the
@@ -470,10 +471,10 @@ whole design problem is bounding the size of that subsidy.
 
 | | |
 |---|---|
-| **Price** | `algo_price` only. Sentiment removed entirely. |
-| **Position cap** | **2,500 NB¥ per ticker, 10,000 NB¥ deployed in total.** Shorts count against the same caps. |
-| **Settlement delay** | No selling a position until **5 further games** have been played by that team — roughly two weeks. It makes the feature a call on a stretch of basketball rather than a scalp against stale data. |
-| **Fee** | 1% on buy and on sell, burned. A drag on churn, not a defence — a 50% move clears it without noticing. |
+| **Price** | Game results only. Sentiment removed entirely. `MOVE_DIVISOR = 3000` (was 1000), compounded at full precision — rounding to cents every game froze any team priced under about ¥1. |
+| **Position cap** | **2,500 NB¥ per ticker, 10,000 NB¥ deployed in total**, counted at cost. Shorts count against the same caps. |
+| **Pending games** | A team can't be traded while one of its games has been played but its box score isn't in, and an index can't while any of its teams can't. Today's games count as played once Pick'em's lock says the day started. Without it, anyone who watched the stream could buy before the price saw the result. This replaced the 5-game settlement delay that was planned here (decided 2026-10-23): the delay only diluted that edge, and cost every honest trader two weeks of locked money. |
+| **Fee** | 1% on every trade, charged on top of a buy or short and out of a sale or cover, burned. A drag on churn, not a defence — a 50% move clears it without noticing. |
 | **Shorts** | Kept, and the capped loss (`max(0, …)`) is kept with them. Going negative in a play-money economy is worse than the asymmetry. The asymmetry is real and is priced into the budget below. |
 | **Achievements** | Investing achievements pay no NB¥ (§ 1d, already true). Paying for trading volume pays people to churn. |
 
@@ -481,11 +482,14 @@ whole design problem is bounding the size of that subsidy.
 
 The position caps are the lever; the budget is what they are tuned against.
 
-At 20 traders fully deployed that is 200,000 NB¥ of capital at risk. Team prices
-run roughly 60 to 150 over a season off a base of 100, so if members pick
-reasonably well the aggregate return might be **+20%, or about 40,000 NB¥/year**.
-That is 4.6% of the total mint (§ 5) — a proportionate price for a fun feature,
-and small enough that being wrong about it by half does not matter.
+At 20 traders fully deployed that is 200,000 NB¥ of capital at risk. The first
+version of this section assumed a season's moves ran −40% to +50%. Replayed
+against 20-21 to 25-26 at the old `/1000`, they ran about −70% to +250% (+505%
+once), and simply buying the five hottest teams after 20 games returned **+93% a
+season** — about 185,000 NB¥/year, four times the budget. At `/3000` the same
+strategy returns **+24%**, about **48,000 NB¥/year**, 5.5% of the total mint (§ 5):
+a proportionate price for a fun feature, and small enough that being wrong about
+it by half does not matter. (`/5000` would be +13%, if it needs to come down.)
 
 The caps are also a sanity check against history: the ORL position that was being
 used to pump the price was 18,533 NB¥ in one ticker. **A 2,500 per-ticker cap

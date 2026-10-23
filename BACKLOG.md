@@ -651,7 +651,7 @@ Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
 `lineupReady` / `contractReady` are, not by touching the shells.
 
-### [P3] Futures markets: no roster model for opening odds, insider trading open, `/invest` overlaps
+### [P3] Futures markets: no roster model for opening odds, insider trading open
 Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
 
 - **Opening odds come from the bookie or the latest power rankings** (by
@@ -666,9 +666,6 @@ Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
   `docs/nbyen-economy.md` § 4a). If it becomes a problem: pause a team's
   outcome while it has an open TRC request (but the pause itself leaks that a
   trade is coming). Decide once there's real trading to look at.
-- **`/invest`'s team stocks overlap**: a second team price that doesn't pay
-  out on anything. Its money is paused (`invest` in `wallet.KINDS`). Decide
-  whether futures replace it.
 
 ### [P3] Seed `/suggestions` with the member-facing part of this file
 The board is no longer empty (checked 2026-08-08: two live suggestions, #4 MCP

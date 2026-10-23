@@ -85,7 +85,7 @@ PAGES = {
  '/hof/': (None, 'NBN Hall of Fame scores, rings and career totals for the league’s best players.'),
  '/injuries/': (None, 'Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.'),
  '/inbox/': (None, 'Your NBN notifications.'),
- '/invest/': (None, 'Buy and sell shares in NBN players. Wall Street, but the asset is a power forward.'),
+ '/invest/': (None, 'Buy and sell shares in NBN teams. Prices move with game results.'),
  '/invest/preview/': (None, 'How the NBN Wall Street pricing algorithm values a player.'),
  '/join/': (None, 'How to join the NBN sim league — what a GM does and how to get a team.'),
  '/legal/': (None, 'NBN disciplinary record — filings, findings and penalties.'),

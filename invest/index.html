@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>Wall Street - NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="Buy and sell shares in NBN players. Wall Street, but the asset is a power forward.">
+  <meta name="description" content="Buy and sell shares in NBN teams. Prices move with game results.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="Wall Street - NBN">
-  <meta property="og:description" content="Buy and sell shares in NBN players. Wall Street, but the asset is a power forward.">
+  <meta property="og:description" content="Buy and sell shares in NBN teams. Prices move with game results.">
   <meta property="og:url" content="https://nbn.today/invest/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -31,6 +31,7 @@
     .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
     .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 20px; padding: 0.2rem 0.65rem; white-space: nowrap; }
     .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
+    .pending-tag { font-size: 0.68rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
     .market-badge.locked { background: var(--purple-bg); color: var(--danger); border: 1px solid var(--danger-border-strong); }
 
     /* Tabs */
@@ -196,7 +197,6 @@
           <tr>
             <th style="width:180px">Team</th>
             <th class="right">Price</th>
-            <th class="right">Sentiment</th>
             <th class="right">Change</th>
             <th class="right">Change %</th>
             <th class="right" style="color:var(--market-positive)">Long Shares</th>
@@ -207,7 +207,7 @@
           </tr>
         </thead>
         <tbody id="market-tbody">
-          <tr><td colspan="10" class="empty-state">Loading…</td></tr>
+          <tr><td colspan="9" class="empty-state">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -220,7 +220,6 @@
             <tr>
               <th style="width:220px">Index</th>
               <th class="right">Price</th>
-              <th class="right">Sentiment</th>
               <th class="right">Change</th>
               <th class="right">Change %</th>
               <th class="right" style="color:var(--market-positive)">Long Shares</th>
@@ -231,7 +230,7 @@
             </tr>
           </thead>
           <tbody id="index-tbody">
-            <tr><td colspan="10" class="empty-state">Loading…</td></tr>
+            <tr><td colspan="9" class="empty-state">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -335,12 +334,35 @@ function fmtPct(v) {
 function chgClass(v) {
   return v > 0 ? 'chg-pos' : v < 0 ? 'chg-neg' : 'chg-neu';
 }
-function fmtSentiment(v) {
-  if (!v || Math.abs(v) < 0.0001) return '<span style="color:var(--text-dim)">—</span>';
-  const pct  = (v * 100).toFixed(1);
-  const sign = v > 0 ? '+' : '';
-  const col  = v > 0 ? 'var(--market-positive)' : 'var(--danger)';
-  return `<span style="color:${col};font-size:0.78rem;font-weight:600">${sign}${pct}%</span>`;
+
+// ── Rules and pending games ──────────────────────────────────────────────────
+
+function rules() {
+  return marketData?.rules || { ticker_cap: 2500, total_cap: 10000, fee_rate: 0.01 };
+}
+function tickerEntry(ticker) {
+  return marketData?.teams?.find(t => t.team === ticker) || marketData?.indexes?.find(i => i.ticker === ticker);
+}
+// A ticker with a played game whose box score isn't in yet can't be traded.
+function pendingText(p) {
+  return p ? `Waiting on the ${p.away_team} @ ${p.home_team} box score (${p.date})` : '';
+}
+function pendingTag(p) {
+  return p ? `<span class="pending-tag" title="${pendingText(p)}">box score pending</span>` : '';
+}
+function tradeOff(entry) {
+  return !me || marketData.locked || !!entry?.pending;
+}
+// NB¥ at cost: what's in each ticker, and how much more this one can take.
+function deployed() {
+  const by = {};
+  (myHoldings || []).forEach(h => { by[h.team] = (by[h.team] || 0) + (h.cost || 0); });
+  return by;
+}
+function roomIn(ticker) {
+  const dep = deployed();
+  const total = Object.values(dep).reduce((a, b) => a + b, 0);
+  return Math.max(0, Math.min(rules().ticker_cap - (dep[ticker] || 0), rules().total_cap - total));
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -463,10 +485,10 @@ function renderMarketTable() {
           <img class="team-logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="${t.team}" onerror="this.style.display='none'">
           <span class="team-abbr">${t.team}</span>
           ${held > 0 ? `<span style="font-size:0.7rem;color:var(--gold)">${held.toFixed(3)}sh</span>` : ''}
+          ${pendingTag(t.pending)}
         </div>
       </td>
       <td class="right"><span class="price-val">${fmtNBY(t.price)}</span></td>
-      <td class="right">${fmtSentiment(t.sentiment)}</td>
       <td class="right"><span class="${cc}">${fmtNBY(t.change)}</span></td>
       <td class="right"><span class="${cc}">${fmtPct(t.change_pct)}</span></td>
       <td class="right" style="color:var(--market-positive)">${t.total_shares > 0 ? t.total_shares.toFixed(4) : '—'}</td>
@@ -474,8 +496,8 @@ function renderMarketTable() {
       <td class="right" style="color:var(--danger)">${t.total_short > 0 ? t.total_short.toFixed(4) : '—'}</td>
       <td class="right" style="color:var(--danger)">${t.total_short > 0 ? fmtNBY(t.total_short * t.price) : '—'}</td>
       <td class="right" style="white-space:nowrap">
-        <button class="buy-btn" onclick="event.stopPropagation();openModal('${t.team}','buy')" ${!me || marketData.locked ? 'disabled' : ''}>Buy</button>
-        <button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${t.team}','short')" ${!me || marketData.locked ? 'disabled' : ''}>Short</button>
+        <button class="buy-btn" onclick="event.stopPropagation();openModal('${t.team}','buy')" ${tradeOff(t) ? 'disabled' : ''}>Buy</button>
+        <button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${t.team}','short')" ${tradeOff(t) ? 'disabled' : ''}>Short</button>
       </td>`;
     row.addEventListener('click', () => toggleChart(t.team));
     tbody.appendChild(row);
@@ -484,7 +506,7 @@ function renderMarketTable() {
     const cRow = document.createElement('tr');
     cRow.className = 'chart-row';
     cRow.id = `chart-row-${t.team}`;
-    cRow.innerHTML = `<td colspan="10"><div class="chart-wrap">
+    cRow.innerHTML = `<td colspan="9"><div class="chart-wrap">
       <button class="chart-reset" onclick="resetTeamChart('${t.team}')">Reset</button>
       <canvas id="canvas-${t.team}" onclick="event.stopPropagation()"></canvas>
       <div class="chart-hint">Scroll to zoom · Drag to select range · Reset to zoom out</div>
@@ -499,7 +521,7 @@ function renderIndexTable() {
   const tbody = document.getElementById('index-tbody');
   const indexes = marketData?.indexes;
   if (!indexes || !indexes.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No index data available.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No index data available.</td></tr>';
     return;
   }
 
@@ -509,7 +531,7 @@ function renderIndexTable() {
   for (const group of INDEX_GROUPS) {
     const grpRow = document.createElement('tr');
     grpRow.className = 'idx-group-row';
-    grpRow.innerHTML = `<td colspan="10">${group.label}</td>`;
+    grpRow.innerHTML = `<td colspan="9">${group.label}</td>`;
     tbody.appendChild(grpRow);
 
     for (const ticker of group.tickers) {
@@ -528,10 +550,10 @@ function renderIndexTable() {
             <span class="team-abbr">${idx.name}</span>
             <span class="idx-badge">${ticker}</span>
             ${held > 0 ? `<span style="font-size:0.7rem;color:var(--gold)">${held.toFixed(3)}sh</span>` : ''}
+            ${pendingTag(idx.pending)}
           </div>
         </td>
         <td class="right"><span class="price-val">${fmtNBY(idx.price)}</span></td>
-        <td class="right">${fmtSentiment(idx.sentiment)}</td>
         <td class="right"><span class="${cc}">${fmtNBY(idx.change)}</span></td>
         <td class="right"><span class="${cc}">${fmtPct(idx.change_pct)}</span></td>
         <td class="right" style="color:var(--market-positive)">${idx.total_shares > 0 ? idx.total_shares.toFixed(4) : '—'}</td>
@@ -539,8 +561,8 @@ function renderIndexTable() {
         <td class="right" style="color:var(--danger)">${idx.total_short > 0 ? idx.total_short.toFixed(4) : '—'}</td>
         <td class="right" style="color:var(--danger)">${idx.total_short > 0 ? fmtNBY(idx.total_short * idx.price) : '—'}</td>
         <td class="right" style="white-space:nowrap">
-          <button class="buy-btn" onclick="event.stopPropagation();openModal('${ticker}','buy')" ${!me || marketData.locked ? 'disabled' : ''}>Buy</button>
-          <button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${ticker}','short')" ${!me || marketData.locked ? 'disabled' : ''}>Short</button>
+          <button class="buy-btn" onclick="event.stopPropagation();openModal('${ticker}','buy')" ${tradeOff(idx) ? 'disabled' : ''}>Buy</button>
+          <button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${ticker}','short')" ${tradeOff(idx) ? 'disabled' : ''}>Short</button>
         </td>`;
       row.addEventListener('click', () => toggleChart(ticker));
       tbody.appendChild(row);
@@ -548,7 +570,7 @@ function renderIndexTable() {
       const cRow = document.createElement('tr');
       cRow.className = 'chart-row';
       cRow.id = `chart-row-${ticker}`;
-      cRow.innerHTML = `<td colspan="10"><div class="chart-wrap">
+      cRow.innerHTML = `<td colspan="9"><div class="chart-wrap">
         <button class="chart-reset" onclick="resetTeamChart('${ticker}')">Reset</button>
         <canvas id="canvas-${ticker}" onclick="event.stopPropagation()"></canvas>
         <div class="chart-hint">Scroll to zoom · Drag to select range · Reset to zoom out</div>
@@ -579,12 +601,9 @@ async function toggleChart(team) {
 
     // Append a synthetic "Now" point using the current market price so the
     // chart always extends to today regardless of when the last game was played.
-    const cur = marketData?.teams?.find(t => t.team === team);
+    const cur = tickerEntry(team);
     if (cur) {
-      history = [...history, {
-        date: 'Now', market_price: cur.price, price: cur.algo_price,
-        is_playoff: false, is_now: true,
-      }];
+      history = [...history, { date: 'Now', price: cur.price, is_playoff: false, is_now: true }];
     }
 
     drawTeamChart(team, history);
@@ -619,7 +638,7 @@ function drawTeamChart(team, history) {
   const canvas = document.getElementById(`canvas-${team}`);
   if (!canvas) return;
   const labels     = history.map(p => p.date);
-  const prices     = history.map(p => p.market_price ?? p.price);
+  const prices     = history.map(p => p.price);
   const playoffIdx = new Set(history.map((p, i) => p.is_playoff ? i : -1).filter(i => i >= 0));
   const pointRadius = history.map(p => p.is_now ? 5 : 0);
   const pointStyle  = history.map(p => p.is_now ? 'rectRot' : 'circle');
@@ -659,7 +678,6 @@ function drawTeamChart(team, history) {
               if (h.is_now) s += '  ← Now';
               else if (h.is_playoff) s += '  🏆 Playoff';
               else if (h.diff != null) s += `  (${h.diff >= 0 ? '+' : ''}${h.diff})`;
-              if (h.sentiment) s += `  sentiment ${(h.sentiment*100).toFixed(1)}%`;
               return s;
             },
           },
@@ -704,7 +722,7 @@ function renderPortfolio() {
   const equity   = s?.equity   ?? 0;
   const liquid   = s?.liquid   ?? myBalance;
   const netWorth = s?.net_worth ?? (equity + liquid);
-  const pl       = s?.pl       ?? (netWorth - 1000);
+  const pl       = s?.pl       ?? netWorth;
   const plClass  = pl >= 0 ? 'pos' : 'neg';
   const chart    = myPortfolio?.equity_chart ?? [];
 
@@ -725,6 +743,10 @@ function renderPortfolio() {
       <div class="summary-card">
         <div class="label">Total P/L</div>
         <div class="val ${plClass}">${pl >= 0 ? '+' : ''}${fmtNBY(pl)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Invested</div>
+        <div class="val">${fmtNBY(Object.values(deployed()).reduce((a, b) => a + b, 0), 0)} <span style="font-size:0.75rem;color:var(--text-muted)">of ${fmtNBY(rules().total_cap, 0)}</span></div>
       </div>
     </div>`;
 
@@ -756,18 +778,20 @@ function renderPortfolio() {
       const plC    = chgClass(h.pl);
       const isLong = h.side === 'long';
       const idxEntry = marketData?.indexes?.find(i => i.ticker === h.team);
+      const off      = tradeOff(tickerEntry(h.team));
       const sideLabel = isLong
         ? `<span style="color:var(--market-positive);font-size:0.75rem;font-weight:700">LONG</span>`
         : `<span style="color:var(--danger);font-size:0.75rem;font-weight:700">SHORT</span>`;
       const closeBtn = isLong
-        ? `<button class="buy-btn" style="background:var(--danger-border);color:var(--danger-light);border-color:var(--danger-border)" onclick="openModal('${h.team}','sell')" ${marketData?.locked ? 'disabled' : ''}>Sell</button>`
-        : `<button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border)" onclick="openModal('${h.team}','cover')" ${marketData?.locked ? 'disabled' : ''}>Cover</button>`;
+        ? `<button class="buy-btn" style="background:var(--danger-border);color:var(--danger-light);border-color:var(--danger-border)" onclick="openModal('${h.team}','sell')" ${off ? 'disabled' : ''}>Sell</button>`
+        : `<button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border)" onclick="openModal('${h.team}','cover')" ${off ? 'disabled' : ''}>Cover</button>`;
       const teamCell = idxEntry
         ? `<span class="team-abbr">${idxEntry.name}</span><span class="idx-badge">${h.team}</span>`
         : `<img class="team-logo" src="/logos/sm/logo-${h.team.toLowerCase()}.webp" alt="${h.team}" onerror="this.style.display='none'"><span class="team-abbr">${h.team}</span>`;
       html += `<tr>
         <td><div class="team-cell">
           ${teamCell}
+          ${pendingTag(tickerEntry(h.team)?.pending)}
         </div></td>
         <td>${sideLabel}</td>
         <td class="right">${h.shares.toFixed(4)}</td>
@@ -866,7 +890,7 @@ function openModal(ticker, forceMode) {
   const teamEntry = marketData?.teams?.find(t => t.team === ticker);
   const idxEntry  = marketData?.indexes?.find(i => i.ticker === ticker);
   const entry     = teamEntry || idxEntry;
-  if (!entry) return;
+  if (!entry || tradeOff(entry)) return;
   modalTeam  = ticker;
   modalPrice = entry.price;
   // Held shares by side
@@ -914,30 +938,38 @@ function setMode(mode) {
 
 function updatePreview() {
   const el = document.getElementById('modal-preview');
-  if (modalMode === 'buy') {
-    const nby = parseFloat(document.getElementById('input-nbyen').value) || 0;
-    if (!nby) { el.textContent = 'Enter a ¥ amount above.'; return; }
+  const feeRate = rules().fee_rate;
+  const feePct  = `${(feeRate * 100).toFixed(0)}%`;
+  if (modalMode === 'buy' || modalMode === 'short') {
+    const room = roomIn(modalTeam);
+    const nby  = parseFloat(document.getElementById('input-nbyen').value) || 0;
+    const roomLine = `You can put up to <span class="highlight">${fmtNBY(room)}</span> into ${modalTeam} `
+      + `(${fmtNBY(rules().ticker_cap, 0)} per ticker, ${fmtNBY(rules().total_cap, 0)} in total).`;
+    if (!nby) {
+      el.innerHTML = modalMode === 'short'
+        ? `Profit if the price falls; you can lose at most your collateral.<br>${roomLine}`
+        : roomLine;
+      return;
+    }
+    const fee       = nby * feeRate;
     const shares    = nby / modalPrice;
-    const remaining = myBalance - nby;
-    let html = `You'll receive <span class="highlight">${shares.toFixed(4)} shares</span> at ¥${modalPrice.toFixed(2)}.`;
-    html += `<br>Balance after: <span class="${remaining < 0 ? 'warn' : 'highlight'}">${fmtNBY(remaining)}</span>`;
-    el.innerHTML = html;
-  } else if (modalMode === 'short') {
-    const nby = parseFloat(document.getElementById('input-nbyen').value) || 0;
-    if (!nby) { el.textContent = 'Enter collateral amount. Profit if price falls, max loss = collateral.'; return; }
-    const shares    = nby / modalPrice;
-    const remaining = myBalance - nby;
-    const wipeout   = modalPrice * 2;
-    let html = `Short <span class="highlight">${shares.toFixed(4)} shares</span> at ¥${modalPrice.toFixed(2)}.`;
-    html += `<br>Break-even: price stays at ¥${modalPrice.toFixed(2)} · Total loss if price hits <span class="warn">¥${wipeout.toFixed(2)}</span>`;
-    html += `<br>Balance after: <span class="${remaining < 0 ? 'warn' : 'highlight'}">${fmtNBY(remaining)}</span>`;
+    const remaining = myBalance - nby - fee;
+    let html = modalMode === 'short'
+      ? `Short <span class="highlight">${shares.toFixed(4)} shares</span> at ¥${modalPrice.toFixed(2)}. `
+        + `Total loss if the price hits <span class="warn">¥${(modalPrice * 2).toFixed(2)}</span>.`
+      : `You'll receive <span class="highlight">${shares.toFixed(4)} shares</span> at ¥${modalPrice.toFixed(2)}.`;
+    html += `<br>Costs ${fmtNBY(nby + fee)} (incl. ${fmtNBY(fee)} ${feePct} fee). `
+      + `Balance after: <span class="${remaining < 0 ? 'warn' : 'highlight'}">${fmtNBY(remaining)}</span>`;
+    if (nby > room + 0.005) html += `<br><span class="warn">That's over your limit by ${fmtNBY(nby - room)}.</span>`;
     el.innerHTML = html;
   } else if (modalMode === 'sell') {
     const sh = parseFloat(document.getElementById('input-shares').value) || 0;
     if (!sh) { el.textContent = `You hold ${modalHeld.toFixed(4)} long shares. Enter shares to sell.`; return; }
     const nby      = sh * modalPrice;
+    const fee      = nby * feeRate;
     const overHeld = sh > modalHeld + 1e-6;
-    let html = `You'll receive <span class="highlight">${fmtNBY(nby)}</span> for ${sh.toFixed(4)} shares.`;
+    let html = `You'll receive <span class="highlight">${fmtNBY(nby - fee)}</span> for ${sh.toFixed(4)} shares `
+      + `(after a ${fmtNBY(fee)} ${feePct} fee).`;
     if (overHeld) html += `<br><span class="warn">You only hold ${modalHeld.toFixed(4)} shares.</span>`;
     el.innerHTML = html;
   } else {
@@ -945,9 +977,10 @@ function updatePreview() {
     const sh = parseFloat(document.getElementById('input-shares').value) || 0;
     if (!sh) { el.textContent = `You hold ${modalHeldShort.toFixed(4)} short shares. Enter shares to cover.`; return; }
     const payout   = Math.max(0, sh * (2 * modalAvgOpen - modalPrice));
+    const fee      = payout * feeRate;
     const overHeld = sh > modalHeldShort + 1e-6;
     const pl       = payout - sh * modalAvgOpen;
-    let html = `You'll receive <span class="highlight">${fmtNBY(payout)}</span>.`;
+    let html = `You'll receive <span class="highlight">${fmtNBY(payout - fee)}</span> (after a ${fmtNBY(fee)} ${feePct} fee).`;
     html += ` P/L: <span class="${pl >= 0 ? 'highlight' : 'warn'}">${pl >= 0 ? '+' : ''}${fmtNBY(pl)}</span>`;
     if (overHeld) html += `<br><span class="warn">You only hold ${modalHeldShort.toFixed(4)} short shares.</span>`;
     el.innerHTML = html;
@@ -1032,8 +1065,8 @@ function computeMovers(win) {
     const hist = priceHistoriesCache[t.team];
     if (!hist || hist.length < 2) return { team: t.team, pct: 0, abs: 0, price: t.price };
     const slice      = hist.slice(-Math.min(win + 1, hist.length));
-    const startPrice = slice[0].market_price ?? slice[0].price;
-    const endPrice   = slice[slice.length - 1].market_price ?? slice[slice.length - 1].price;
+    const startPrice = slice[0].price;
+    const endPrice   = slice[slice.length - 1].price;
     const abs        = endPrice - startPrice;
     const pct        = startPrice > 0 ? abs / startPrice * 100 : 0;
     return { team: t.team, pct, abs, price: endPrice, games: slice.length - 1 };
