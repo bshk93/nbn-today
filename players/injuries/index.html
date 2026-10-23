@@ -63,10 +63,10 @@
     .body .bm { fill: color-mix(in srgb, var(--text-muted) 32%, var(--bg-card)); stroke: var(--bg-page); stroke-width: 2; }
     .body .bm.hair { fill: color-mix(in srgb, var(--text-muted) 18%, var(--bg-card)); }
     /* Severity, light to dark: one scale for the body, the list and the legend. */
-    .body { --sev1: color-mix(in srgb, var(--gold) 60%, #fff); --sev2: var(--warning);
+    #content { --sev1: color-mix(in srgb, var(--gold) 60%, #fff); --sev2: var(--warning);
             --sev3: color-mix(in srgb, var(--warning) 40%, var(--danger)); --sev4: color-mix(in srgb, var(--danger) 82%, #000); }
-    .body .sev1 { fill: var(--sev1); background: var(--sev1); } .body .sev2 { fill: var(--sev2); background: var(--sev2); }
-    .body .sev3 { fill: var(--sev3); background: var(--sev3); } .body .sev4 { fill: var(--sev4); background: var(--sev4); }
+    #content .sev1 { fill: var(--sev1); background-color: var(--sev1); } #content .sev2 { fill: var(--sev2); background-color: var(--sev2); }
+    #content .sev3 { fill: var(--sev3); background-color: var(--sev3); } #content .sev4 { fill: var(--sev4); background-color: var(--sev4); }
     .sev-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-secondary); }
     .sev-legend i { display: inline-block; width: 0.75rem; height: 0.5rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; }
     .body .bm.hit { cursor: pointer; }
@@ -95,16 +95,15 @@
     .tl-season { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
     .tl-track { position: relative; height: 1.25rem; background: var(--bg-subtle); border-radius: 4px; }
     .tl-month { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-subtle); }
-    .tl-bar { position: absolute; top: 3px; bottom: 3px; min-width: 5px; border-radius: 3px; background: var(--warning); cursor: pointer; border: 0; padding: 0; }
-    .tl-bar.out { background: var(--danger); }
-    .tl-bar.open { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,0.25) 4px 8px); }
+    .tl-bar { position: absolute; top: 3px; bottom: 3px; min-width: 5px; border-radius: 3px; cursor: pointer; border: 0; padding: 0; }
+    .tl-bar.open { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(0,0,0,0.22) 4px 8px); }
     .tl-bar:hover, .tl-bar:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
     .tl-today { position: absolute; top: -2px; bottom: -2px; border-left: 2px dashed var(--text-muted); }
     .tl-axis { position: relative; height: 1rem; font-size: 0.65rem; color: var(--text-muted); }
     .tl-axis span { position: absolute; transform: translateX(-50%); }
     .tl-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
-    .tl-legend i { display: inline-block; width: 0.8rem; height: 0.55rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; background: var(--warning); }
-    .tl-legend i.out { background: var(--danger); }
+    .tl-legend i { display: inline-block; width: 0.8rem; height: 0.55rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; }
+    .tl-legend i.open { background-color: var(--sev2); background-image: repeating-linear-gradient(135deg, transparent 0 3px, rgba(0,0,0,0.22) 3px 6px); }
 
     /* The log. */
     .log td { white-space: nowrap; }
@@ -388,8 +387,8 @@
         if (IH.seasonOf(s.start) > season || IH.seasonOf(end) < season) return '';
         const from = IH.seasonOf(s.start) === season ? pct(season, s.start) : 0;
         const to = IH.seasonOf(end) === season ? pct(season, end) : 100;
-        const label = `${s.injury || s.duration || s.status}: ${fmt(s.start)} – ${s.end ? fmt(s.end) : 'now'}`;
-        return `<button class="tl-bar${IH.isOut(s.worst) ? ' out' : ''}${s.end ? '' : ' open'}" data-i="${i}"
+        const label = `${s.injury || s.duration || s.status} (${IH.SEVERITY[IH.severity(s, today)].toLowerCase()}): ${fmt(s.start)} – ${s.end ? fmt(s.end) : 'now'}`;
+        return `<button class="tl-bar sev${IH.severity(s, today)}${s.end ? '' : ' open'}" data-i="${i}"
           style="left:${from.toFixed(2)}%;width:${Math.max(0.6, to - from).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"></button>`;
       }).join('');
       const now = IH.seasonOf(today) === season ? `<span class="tl-today" style="left:${pct(season, today).toFixed(2)}%" title="Today"></span>` : '';
@@ -399,7 +398,7 @@
     return `<div class="section">
       <h2 class="ui-section-title">Timeline</h2>
       <div class="tl">${lanes}<div></div><div class="tl-axis">${axis}</div></div>
-      <div class="tl-legend"><span><i class="out"></i>Out at some point</span><span><i></i>Hurt (could still play)</span><span>Striped: still injured</span></div>
+      <div class="tl-legend">${[1, 2, 3, 4].map(n => `<span><i class="sev${n}"></i>${IH.SEVERITY[n]}</span>`).join('')}<span><i class="open"></i>Still injured</span></div>
     </div>`;
   }
 
