@@ -292,6 +292,23 @@
 const API = '/api';
 const TOKEN_KEY = 'nbn_token';
 
+// A canvas can't read CSS variables, so chart colours are looked up from the
+// current theme each time a chart is drawn.
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function cssFill(name, alpha) {
+  const v = cssVar(name);
+  const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1].length === 3 ? hex[1].replace(/./g, c => c + c) : hex[1];
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  const rgb = v.match(/^rgba?\(([^,]+),([^,]+),([^,)]+)/);
+  return rgb ? `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${alpha})` : 'transparent';
+}
+
 let me = null;           // current user name (null if not logged in)
 let marketData = null;   // response from /api/invest/market
 let allHoldings = null;  // response from /api/invest/holdings/all
@@ -642,7 +659,7 @@ function drawTeamChart(team, history) {
   const playoffIdx = new Set(history.map((p, i) => p.is_playoff ? i : -1).filter(i => i >= 0));
   const pointRadius = history.map(p => p.is_now ? 5 : 0);
   const pointStyle  = history.map(p => p.is_now ? 'rectRot' : 'circle');
-  const pointColors = history.map(p => p.is_now ? 'var(--gold)' : 'transparent');
+  const pointColors = history.map(p => p.is_now ? cssVar('--gold') : 'transparent');
 
   teamCharts[team] = new Chart(canvas, {
     type: 'line',
@@ -651,9 +668,9 @@ function drawTeamChart(team, history) {
       datasets: [{
         data: prices,
         segment: {
-          borderColor: ctx => playoffIdx.has(ctx.p1DataIndex) ? 'var(--purple)' : 'var(--link)',
+          borderColor: ctx => playoffIdx.has(ctx.p1DataIndex) ? cssVar('--purple') : cssVar('--link'),
         },
-        backgroundColor: 'rgba(96,165,250,0.08)',
+        backgroundColor: cssFill('--link', 0.12),
         borderWidth: 1.5,
         tension: 0.1,
         fill: true,
@@ -687,8 +704,8 @@ function drawTeamChart(team, history) {
             wheel: { enabled: true, speed: 0.15 },
             drag: {
               enabled: true,
-              backgroundColor: 'rgba(96,165,250,0.08)',
-              borderColor: 'var(--link)',
+              backgroundColor: cssFill('--link', 0.12),
+              borderColor: cssVar('--link'),
               borderWidth: 1,
             },
             pinch: { enabled: true },
@@ -701,8 +718,8 @@ function drawTeamChart(team, history) {
       scales: {
         x: { display: false },
         y: {
-          ticks: { color: 'var(--text-muted)', font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
-          grid: { color: 'var(--bg-card)' },
+          ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+          grid: { color: cssVar('--border') },
         },
       },
     },
@@ -818,8 +835,8 @@ function renderPortfolio() {
         labels: chart.map(p => p.date),
         datasets: [{
           data: chart.map(p => p.equity),
-          borderColor: 'var(--market-positive)',
-          backgroundColor: 'rgba(52,211,153,0.08)',
+          borderColor: cssVar('--market-positive'),
+          backgroundColor: cssFill('--market-positive', 0.12),
           borderWidth: 1.5,
           tension: 0.2,
           fill: true,
@@ -838,8 +855,8 @@ function renderPortfolio() {
         scales: {
           x: { display: false },
           y: {
-            ticks: { color: 'var(--text-muted)', font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
-            grid: { color: 'var(--bg-card)' },
+            ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+            grid: { color: cssVar('--border') },
           },
         },
       },

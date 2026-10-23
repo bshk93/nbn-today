@@ -109,6 +109,23 @@
 
 <script>
 const API = '/api';
+
+// A canvas can't read CSS variables, so chart colours are looked up from the
+// current theme each time a chart is drawn.
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function cssFill(name, alpha) {
+  const v = cssVar(name);
+  const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1].length === 3 ? hex[1].replace(/./g, c => c + c) : hex[1];
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  const rgb = v.match(/^rgba?\(([^,]+),([^,]+),([^,)]+)/);
+  return rgb ? `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${alpha})` : 'transparent';
+}
 const charts = {};
 
 async function init() {
@@ -209,7 +226,7 @@ async function toggleChart(team) {
         {
           label: 'Current',
           data: h1.map(p => p.price),
-          borderColor: 'var(--link)',
+          borderColor: cssVar('--link'),
           backgroundColor: 'transparent',
           borderWidth: 1.5,
           pointRadius: 0,
@@ -218,7 +235,7 @@ async function toggleChart(team) {
         {
           label: 'Preview',
           data: h2.map(p => p.price),
-          borderColor: 'var(--warning)',
+          borderColor: cssVar('--warning'),
           backgroundColor: 'transparent',
           borderWidth: 1.5,
           pointRadius: 0,
@@ -241,8 +258,8 @@ async function toggleChart(team) {
       scales: {
         x: { display: false },
         y: {
-          ticks: { color: 'var(--text-muted)', font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
-          grid:  { color: 'var(--bg-card)' },
+          ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+          grid:  { color: cssVar('--border') },
         },
       },
     },
