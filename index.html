@@ -363,7 +363,9 @@
     /* Ticker: the latest night's finals, its top performers, then the
        injury report, on a loop.
        The strip holds the items twice and slides by half its width, so the
-       second copy lands exactly where the first began. */
+       second copy lands exactly where the first began.
+       It scrolls even under prefers-reduced-motion, on purpose: hover and
+       focus pause it, and the still fallback was a bare scrollbar. */
     .ticker[hidden] { display: none; }
     .ticker {
       display: flex; align-items: stretch; min-width: 0; height: 2.5rem;
@@ -405,11 +407,6 @@
       display: inline-flex; align-items: center; padding: 0 1rem; height: 100%; white-space: nowrap;
       color: var(--accent); font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
       border-right: 1px solid var(--border);
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .ticker-strip { animation: none; }
-      .ticker-strip [aria-hidden="true"] { display: none; }
-      .ticker-track { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
     }
     @media (max-width: 600px) {
       .ticker-label span { display: none; }
