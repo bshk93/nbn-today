@@ -50,16 +50,19 @@
     .tile-sub { font-size: 0.75rem; color: var(--text-muted); min-height: 1em; }
 
     /* Body map: the figure faces you, so his right is on your left. */
-    .body { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--space-5); align-items: start; }
-    @media (max-width: 600px) { .body { grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--space-3); } }
-    .body svg { width: 100%; height: auto; display: block; }
-    .body .rg { fill: var(--bg-subtle); stroke: var(--border); stroke-width: 1.2; transition: fill-opacity 0.15s; }
-    .body .rg.hit { stroke: var(--bg-card); cursor: pointer; }
-    .body .rg.hit:hover { stroke: var(--text-primary); }
-    .body .rg.cur { stroke: var(--text-primary); stroke-width: 2; animation: rg-pulse 1.6s ease-in-out infinite; }
-    @keyframes rg-pulse { 50% { stroke-opacity: 0.25; } }
-    @media (prefers-reduced-motion: reduce) { .body .rg.cur { animation: none; } }
-    .body .side { font-size: 11px; font-weight: 600; fill: var(--text-muted); text-anchor: middle; }
+    .body { display: grid; grid-template-columns: 19rem minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+    @media (max-width: 600px) { .body { grid-template-columns: minmax(0, 1fr); } .body-figs { max-width: 19rem; margin: 0 auto; } }
+    .body-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+    .body-figs figure { margin: 0; }
+    .body-figs svg { width: 100%; height: auto; display: block; }
+    .body-figs figcaption { text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
+    .body .bm { fill: color-mix(in srgb, var(--text-muted) 32%, var(--bg-card)); stroke: var(--bg-page); stroke-width: 2; }
+    .body .bm.hair { fill: color-mix(in srgb, var(--text-muted) 18%, var(--bg-card)); }
+    .body .bm.hit { cursor: pointer; }
+    .body .bm.hit:hover { stroke: var(--text-primary); }
+    .body .bm.cur { animation: bm-pulse 1.6s ease-in-out infinite; }
+    @keyframes bm-pulse { 50% { fill-opacity: 0.35; } }
+    @media (prefers-reduced-motion: reduce) { .body .bm.cur { animation: none; } }
     .parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; font-size: var(--text-sm); }
     .parts li { display: grid; grid-template-columns: 0.7rem 7.5rem 1.6rem minmax(0, 1fr); gap: var(--space-2); align-items: baseline;
                 padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
@@ -136,6 +139,7 @@
 
 <script src="/names.js"></script>
 <script src="/injury-history.js"></script>
+<script src="/vendor/body-highlighter-3.2.0.js"></script>
 <script>
 (function () {
   const IH = window.InjuryHistory;
@@ -256,40 +260,33 @@
     </div>`;
   }
 
-  // The figure, as you face him: his right side is on your left. Each shape is
-  // [region, svg]; a paired part's region is `part-L` / `part-R`. Back has no
-  // place on a front view, so it is the strip down the middle of the torso.
-  const FIGURE = [
-    ['head', '<ellipse cx="100" cy="36" rx="21" ry="25"/>'],
-    ['neck', '<rect x="91" y="59" width="18" height="15" rx="5"/>'],
-    ['shoulder-R', '<ellipse cx="63" cy="86" rx="15" ry="11"/>'],
-    ['shoulder-L', '<ellipse cx="137" cy="86" rx="15" ry="11"/>'],
-    ['chest', '<rect x="73" y="76" width="54" height="50" rx="12"/>'],
-    ['abdomen', '<rect x="76" y="128" width="48" height="36" rx="8"/>'],
-    ['back', '<rect x="95" y="82" width="10" height="80" rx="5"/>'],
-    ['arm-R', '<rect x="45" y="96" width="17" height="48" rx="8"/>'],
-    ['arm-L', '<rect x="138" y="96" width="17" height="48" rx="8"/>'],
-    ['elbow-R', '<circle cx="53" cy="151" r="9"/>'],
-    ['elbow-L', '<circle cx="147" cy="151" r="9"/>'],
-    ['forearm-R', '<rect x="44" y="160" width="16" height="40" rx="7"/>'],
-    ['forearm-L', '<rect x="140" y="160" width="16" height="40" rx="7"/>'],
-    ['wrist-R', '<rect x="44" y="202" width="15" height="9" rx="4"/>'],
-    ['wrist-L', '<rect x="141" y="202" width="15" height="9" rx="4"/>'],
-    ['hand-R', '<ellipse cx="51" cy="225" rx="10" ry="13"/>'],
-    ['hand-L', '<ellipse cx="149" cy="225" rx="10" ry="13"/>'],
-    ['hip-R', '<rect x="74" y="166" width="25" height="27" rx="9"/>'],
-    ['hip-L', '<rect x="101" y="166" width="25" height="27" rx="9"/>'],
-    ['thigh-R', '<rect x="75" y="195" width="23" height="66" rx="10"/>'],
-    ['thigh-L', '<rect x="102" y="195" width="23" height="66" rx="10"/>'],
-    ['knee-R', '<ellipse cx="86" cy="272" rx="12" ry="11"/>'],
-    ['knee-L', '<ellipse cx="114" cy="272" rx="12" ry="11"/>'],
-    ['leg-R', '<rect x="77" y="285" width="19" height="62" rx="9"/>'],
-    ['leg-L', '<rect x="104" y="285" width="19" height="62" rx="9"/>'],
-    ['ankle-R', '<rect x="78" y="349" width="17" height="11" rx="5"/>'],
-    ['ankle-L', '<rect x="105" y="349" width="17" height="11" rx="5"/>'],
-    ['foot-R', '<ellipse cx="83" cy="370" rx="15" ry="8"/>'],
-    ['foot-L', '<ellipse cx="117" cy="370" rx="15" ry="8"/>'],
-  ];
+  // Where each place on the body is drawn on the outline (/vendor/body-highlighter-3.2.0.js):
+  // [view, part] pairs, narrowed by the injury's own words where they say more
+  // (a hamstring is the back of the thigh, a quad the front).
+  const OUTLINE = {
+    head: [['front', 'head'], ['back', 'head']],
+    neck: [['front', 'neck'], ['back', 'neck']],
+    shoulder: [['front', 'deltoids'], ['back', 'deltoids']],
+    arm: t => /bicep/.test(t) ? [['front', 'biceps']] : /tricep/.test(t) ? [['back', 'triceps']] : [['front', 'biceps'], ['back', 'triceps']],
+    elbow: [['front', 'forearm'], ['back', 'forearm']],
+    forearm: [['front', 'forearm'], ['back', 'forearm']],
+    wrist: [['front', 'hands'], ['back', 'hands']],
+    hand: [['front', 'hands'], ['back', 'hands']],
+    chest: [['front', 'chest']],
+    back: t => /lower|lumbar/.test(t) ? [['back', 'lower-back']] : /upper/.test(t) ? [['back', 'upper-back']] : [['back', 'upper-back'], ['back', 'lower-back']],
+    abdomen: t => /oblique/.test(t) ? [['front', 'obliques']] : [['front', 'abs'], ['front', 'obliques']],
+    hip: t => /glute/.test(t) ? [['back', 'gluteal']] : /groin|adductor/.test(t) ? [['front', 'adductors']] : [['front', 'adductors'], ['back', 'gluteal']],
+    thigh: t => /hamstring/.test(t) ? [['back', 'hamstring']] : /quad/.test(t) ? [['front', 'quadriceps']] : [['front', 'quadriceps'], ['back', 'hamstring']],
+    knee: [['front', 'knees']],
+    leg: t => /calf/.test(t) ? [['back', 'calves']] : /shin|tibia/.test(t) ? [['front', 'tibialis']] : [['front', 'tibialis'], ['back', 'calves']],
+    ankle: t => /achilles/.test(t) ? [['back', 'ankles']] : [['front', 'ankles'], ['back', 'ankles']],
+    foot: [['front', 'feet'], ['back', 'feet']],
+  };
+  // The outline's left and right are the drawing's, so his right is its left
+  // from the front and its right from the back.
+  const drawnSide = (view, side) => (side == null ? null : view === 'front' ? (side === 'R' ? 'left' : 'right') : (side === 'R' ? 'right' : 'left'));
+  // Cropped to the drawing (its own boxes are 724 × 1448 with room to spare).
+  const VIEWBOX = { front: '40 84 648 1270', back: '760 84 648 1270' };
 
   function renderBody(stints) {
     // One entry per place he's been hurt. A paired part with no side given
@@ -305,29 +302,38 @@
       if (!places.has(key)) places.set(key, { key, label, part: at.part, pair: at.pair && !at.side, list: [] });
       places.get(key).list.push({ s, i });
     });
-    // Which places paint which shapes.
+    // Which places paint which outline parts: `view|part|side`, side null for both.
     const region = new Map();
     places.forEach(p => {
-      const keys = p.pair ? [`${p.part}-R`, `${p.part}-L`] : [p.key];
-      keys.forEach(k => {
+      const at = IH.locate(p.list[0].s.injury);
+      const m = OUTLINE[p.part];
+      const spots = typeof m === 'function' ? m((p.list.map(x => x.s.injury).join(' ')).toLowerCase()) : m;
+      spots.forEach(([view, part]) => {
+        const k = `${view}|${part}|${p.pair ? '' : drawnSide(view, at.side) || ''}`;
         const r = region.get(k) || { list: [], labels: [] };
         r.list.push(...p.list);
         r.labels.push(p.label);
         region.set(k, r);
       });
     });
-    const tone = list => list.some(x => IH.isOut(x.s.worst)) ? 'var(--danger)' : 'var(--warning)';
-    const shapes = FIGURE.map(([k, svg]) => {
-      const r = region.get(k);
-      if (!r) return svg.replace('/>', ' class="rg"/>');
-      const op = Math.min(1, 0.72 + 0.14 * (r.list.length - 1));
-      const cur = r.list.some(x => !x.s.end);
-      const newest = r.list.reduce((a, b) => (b.i > a.i ? b : a));
-      const tip = `${r.labels[0]}: ${r.list.map(x => `${x.s.injury} (${fmt(x.s.start || x.s.end)})`).join('; ')}`;
-      return svg.replace('/>', ` class="rg hit${cur ? ' cur' : ''}" data-i="${newest.i}" style="fill:${tone(r.list)};fill-opacity:${op}"><title>${esc(tip)}</title></${svg.match(/^<(\w+)/)[1]}>`);
-    }).join('');
-    const svg = `<svg viewBox="20 6 160 390" role="img" aria-label="Where he has been injured">${shapes}
-      <text class="side" x="62" y="392">R</text><text class="side" x="138" y="392">L</text></svg>`;
+    const lit = (view, part, side) => region.get(`${view}|${part}|${side}`) || region.get(`${view}|${part}|`);
+    const outline = window.BodyOutline;
+    const figure = view => {
+      const paths = outline ? outline[view].flatMap(part => Object.entries(part.path).flatMap(([side, ds]) => {
+        const r = part.slug === 'hair' ? null : lit(view, part.slug, side === 'common' ? '' : side);
+        return ds.map(d => {
+          if (!r) return `<path class="bm${part.slug === 'hair' ? ' hair' : ''}" d="${d}"/>`;
+          const out = r.list.some(x => IH.isOut(x.s.worst)), cur = r.list.some(x => !x.s.end);
+          const newest = r.list.reduce((a, b) => (b.i > a.i ? b : a));
+          const tip = `${r.labels[0]}: ${r.list.map(x => `${x.s.injury} (${fmt(x.s.start || x.s.end)})`).join('; ')}`;
+          const op = Math.min(1, 0.7 + 0.15 * (r.list.length - 1));
+          return `<path class="bm hit${cur ? ' cur' : ''}" data-i="${newest.i}" d="${d}" style="fill:${out ? 'var(--danger)' : 'var(--warning)'};fill-opacity:${op}"><title>${esc(tip)}</title></path>`;
+        });
+      })).join('') : '';
+      return `<figure><svg viewBox="${VIEWBOX[view]}" role="img" aria-label="${view === 'front' ? 'Front' : 'Back'} of the body">${paths}</svg>
+        <figcaption>${view === 'front' ? 'Front' : 'Back'}</figcaption></figure>`;
+    };
+    const svg = `<div class="body-figs">${figure('front')}${figure('back')}</div>`;
 
     const row = (dot, name, n, what, i) => `<li${i != null ? ` class="click" data-i="${i}"` : ''}><span class="dot ${dot}"></span>
       <span class="part-name">${name}</span><span class="part-n">${n}</span><span class="part-what">${what}</span></li>`;
@@ -343,7 +349,7 @@
     const note = placed ? '' : `<div class="body-note">None of his injuries on record say where. Older reports were backfilled from Discord, which kept only Out or Hurt; new 2K reports name the injury, so this fills in from here.</div>`;
     return `<div class="section">
       <h2 class="ui-section-title">Where he’s been hurt</h2>
-      <div class="body"><div>${svg}</div><div><ul class="parts">${items.join('')}</ul>${note}</div></div>
+      <div class="body">${svg}<div><ul class="parts">${items.join('')}</ul>${note}</div></div>
     </div>`;
   }
 
@@ -436,7 +442,7 @@
       row.addEventListener('click', () => toggle(row));
       row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(row); } });
     });
-    content.querySelectorAll('.tl-bar, .rg.hit, .parts li.click').forEach(bar => bar.addEventListener('click', () => {
+    content.querySelectorAll('.tl-bar, .bm.hit, .parts li.click').forEach(bar => bar.addEventListener('click', () => {
       const row = content.querySelector(`tr.stint[data-i="${bar.dataset.i}"]`);
       toggle(row, true);
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
