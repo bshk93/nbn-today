@@ -1409,7 +1409,8 @@
   function urgency(p) {
     const dl = (p.ffa || {}).deadline;
     const t = dl ? new Date(dl).getTime() : 0;
-    if (p.needs_result) return [1, t];
+    if (p.needs_result || p.needs_void) return [1, t];
+    if (p.stage === 'left_pool') return [5, 1];
     if (p.finalized) return [5, 0];
     if (p.stage === 'awaiting_agent') return [0, t];
     if (p.stage === 'with_committee') return [1, t];
@@ -1431,7 +1432,7 @@
     // local reading of the clock.
     const queueCount = entries.filter(([, p]) => p.stage === 'awaiting_agent').length;
     const holdCount = entries.filter(([, p]) => p.claimed_by === ME.name).length;
-    const resultCount = entries.filter(([, p]) => p.needs_result).length;
+    const resultCount = entries.filter(([, p]) => p.needs_result || p.needs_void).length;
     const tabDefs = [];
     if (IS_FAC) tabDefs.push(['mine', `My free agents (${mineCount})`]);
     if (IS_AGENT) {
@@ -1452,7 +1453,7 @@
       LIST_MODE === 'all' ? true
       : LIST_MODE === 'queue' ? p.stage === 'awaiting_agent'
       : LIST_MODE === 'holding' ? p.claimed_by === ME.name
-      : LIST_MODE === 'result' ? p.needs_result
+      : LIST_MODE === 'result' ? p.needs_result || p.needs_void
       : p.mine);
     rows.sort((a, b) => {
       const ua = urgency(a[1]), ub = urgency(b[1]);
@@ -1510,6 +1511,8 @@
 
       const tags = el('div', 'prow-tags');
       if (p.needs_result) tags.appendChild(el('span', 'chip chip-warn', 'needs a result'));
+      else if (p.needs_void) tags.appendChild(el('span', 'chip chip-warn', 'left the pool · void bids'));
+      else if (p.stage === 'left_pool') tags.appendChild(el('span', 'chip', 'left the pool'));
       else if (p.finalized) tags.appendChild(el('span', 'chip chip-ok', 'locked'));
       else if (p.stage === 'awaiting_agent') tags.appendChild(el('span', 'chip chip-warn', 'needs an agent'));
       else if (p.stage === 'with_agent') {
@@ -1571,7 +1574,7 @@
       return renderHistoryPanel(slug, box);
     }
 
-    if (review) {
+    if (review && !review.left_pool) {
       try {
         ballots = await api('/fa/players/' + encodeURIComponent(slug) + '/ballots');
       } catch (e) {
@@ -1606,6 +1609,17 @@
       return;
     }
 
+    // He can't be signed any more, so no agent, ballot or finalize controls:
+    // the only thing left is voiding the bids still on him.
+    if (review.left_pool) {
+      box.appendChild(el('div', 'banner bad',
+        (review.left_pool === 'retired' ? 'Marked retired' : 'No longer a free agent')
+        + ' since he was nominated, so none of these offers can be signed. '
+        + (IS_HEAD ? 'Void each one to take it out of the teams’ commitments.'
+                   : 'The FAC head voids them.')));
+      box.appendChild(offersSection(review));
+      return;
+    }
     if (IS_AGENT) box.appendChild(agentPanel(slug, entry, review));
     if (IS_HEAD) box.appendChild(headControls(slug, entry, review, ballots));
     box.appendChild(offersSection(review));
@@ -2363,7 +2377,7 @@
       card.appendChild(n);
     }
 
-    if (canCurate(review) && o.status === 'submitted') {
+    if (canCurate(review) && o.status === 'submitted' && !review.left_pool) {
       const b = el('button', 'btn-danger', 'Send back for revision…');
       b.addEventListener('click', () => remandModal(o));
       card.appendChild(b);
@@ -2372,11 +2386,11 @@
     // its keep: a send-back the team never answers has no other end.
     if (canCurate(review)) {
       const b = el('button', 'btn-danger', 'Void…');
-      b.style.marginLeft = o.status === 'submitted' ? '0.4rem' : '';
+      b.style.marginLeft = o.status === 'submitted' && !review.left_pool ? '0.4rem' : '';
       b.addEventListener('click', () => voidModal(o));
       card.appendChild(b);
     }
-    if (IS_HEAD) {
+    if (IS_HEAD && !review.left_pool) {
       const b = el('button', 'btn-primary', 'Enter agreed terms…');
       b.style.marginLeft = '0.4rem';
       b.addEventListener('click', () => amendModal(o, season));
