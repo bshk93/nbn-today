@@ -508,6 +508,10 @@
     .ins-when { white-space: nowrap; font-size: var(--text-sm); }
     .ins-active { color: var(--success) !important; font-weight: 600; }
     .ins-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
+    /* Injury History: Team and OVR drop on a phone, like the /injuries table. */
+    .inj-table td { white-space: nowrap; }
+    .inj-table td.inj-what { white-space: normal; }
+    @media (max-width: 600px) { .inj-table .inj-ovr, .inj-table .inj-team { display: none; } }
     .splits-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
     .splits-head .ui-select { width: auto; }
     .splits-opp { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
@@ -2709,6 +2713,88 @@
     container.appendChild(source);
   }
 
+  // One row per injury, built from GET /api/injuries/history's change log:
+  // `new` opens one, `changed` updates it, `healed` closes it. Hidden when the
+  // player has never been on a 2K injury report.
+  function renderInjuryHistory(container, playerSlug) {
+    const wrap = document.createElement('div');
+    container.appendChild(wrap);
+
+    fetch(`/api/injuries/history?slug=${encodeURIComponent(playerSlug)}`)
+      .then(r => r.ok ? r.json() : [])
+      .catch(() => [])
+      .then(events => {
+        if (!Array.isArray(events) || !events.length) { wrap.remove(); return; }
+
+        const injuries = [];
+        let open = null;
+        // The API sends newest first; walk oldest first to pair up each stint.
+        [...events].reverse().forEach(e => {
+          const a = e.after || {}, b = e.before || {};
+          if (e.kind === 'new' || (e.kind === 'changed' && !open)) {
+            open = { start: e.date, team: e.team, status: a.status, worst: a.status, injury: a.injury,
+                     duration: a.duration, ovr: a.ovr, ovr_delta: a.ovr_delta, updates: 0, end: null };
+            injuries.push(open);
+          } else if (e.kind === 'changed') {
+            Object.assign(open, { status: a.status, injury: a.injury, duration: a.duration,
+                                  ovr: a.ovr, ovr_delta: a.ovr_delta, team: e.team || open.team });
+            if (/^out$/i.test(a.status || '')) open.worst = a.status;
+            open.updates++;
+          } else if (e.kind === 'healed') {
+            if (!open) {
+              open = { start: null, team: e.team, status: b.status, worst: b.status, injury: b.injury,
+                       duration: b.duration, ovr: b.ovr, ovr_delta: b.ovr_delta, updates: 0 };
+              injuries.push(open);
+            }
+            open.end = e.date;
+            open = null;
+          }
+        });
+        if (!injuries.length) { wrap.remove(); return; }
+
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const fmt = iso => {
+          if (!iso) return '—';
+          const [y, m, d] = iso.split('-').map(Number);
+          return `${months[m - 1]} ${d}, ${y}`;
+        };
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const badge = s => `<span class="ui-badge ${/^out$/i.test(s || '') ? 'ui-badge--danger' : 'ui-badge--warning'}">${esc(s)}</span>`;
+
+        const h2 = document.createElement('h2');
+        h2.className = 'section-heading';
+        h2.textContent = 'Injury History';
+        wrap.appendChild(h2);
+
+        const scrollWrap = document.createElement('div');
+        scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
+        const rows = [...injuries].reverse().map(i => {
+          const status = i.worst && i.worst !== i.status ? `${badge(i.worst)} → ${badge(i.status)}` : badge(i.status);
+          const ovr = i.ovr != null ? `${esc(i.ovr)}${i.ovr_delta ? ` <span style="color:var(--danger)">(${esc(i.ovr_delta)})</span>` : ''}` : '—';
+          const cleared = i.end ? fmt(i.end) : '<span class="ui-badge ui-badge--accent">Current</span>';
+          const title = i.updates ? ` title="Updated ${i.updates} time${i.updates === 1 ? '' : 's'} on later reports"` : '';
+          return `<tr${title}>
+            <td>${fmt(i.start)}</td>
+            <td class="inj-team">${esc(i.team || '')}</td>
+            <td class="inj-what">${esc(i.injury)}</td>
+            <td>${status}</td>
+            <td>${esc(i.duration)}</td>
+            <td class="right inj-ovr">${ovr}</td>
+            <td>${cleared}</td></tr>`;
+        }).join('');
+        scrollWrap.innerHTML = `<table class="salary-table inj-table">
+          <thead><tr><th>Injured</th><th class="inj-team">Team</th><th>Injury</th><th>Status</th><th>Duration</th>
+            <th class="right inj-ovr">OVR</th><th>Cleared</th></tr></thead>
+          <tbody>${rows}</tbody></table>`;
+        wrap.appendChild(scrollWrap);
+
+        const source = document.createElement('div');
+        source.style.cssText = 'font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;';
+        source.innerHTML = `Source: 2K injury reports · duration and OVR as last reported · <a href="/injuries/#history">League injury history</a>`;
+        wrap.appendChild(source);
+      });
+  }
+
   function renderHistorySection(container, playerSlug) {
     const attrHistory = allAttributes[playerSlug];
     if (attrHistory && attrHistory.length) {
@@ -3997,6 +4083,7 @@
     if (tiles.childNodes.length) content.appendChild(tiles);
     renderContractTimeline(content, bio, bioSlug);
     renderSalaryTable(content, bio);
+    renderInjuryHistory(content, bioSlug);
     renderHistorySection(content, bioSlug);
     renderAttributes(content, bioSlug);
     renderTransactionHistory(content, bioSlug, [], {}, [], bio);
@@ -4607,6 +4694,7 @@
     renderInsights(insightsEl, slug);
     renderContractTimeline(content, bio, slug);
     renderSalaryTable(content, bio);
+    renderInjuryHistory(content, slug);
     renderHistorySection(content, slug);
     renderAttributes(content, slug);
     renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows, bio);
