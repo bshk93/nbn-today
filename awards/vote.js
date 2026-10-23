@@ -57,7 +57,7 @@
       display: flex; align-items: center; gap: 0.45rem;
       padding: 0.45rem 0.65rem;
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 6px; margin-bottom: 3px;
+      border-radius: var(--radius-sm); margin-bottom: 3px;
       user-select: none;
     }
     .pick-item[draggable="true"] { cursor: grab; }
@@ -96,7 +96,7 @@
     .search-input {
       width: 100%; padding: 0.45rem 0.65rem;
       background: var(--bg-page); border: 1px solid var(--border-subtle);
-      border-radius: 6px; color: var(--text-primary);
+      border-radius: var(--radius-sm); color: var(--text-primary);
       font-size: 0.85rem; outline: none; font-family: inherit;
     }
     .search-input:focus { border-color: var(--text-dim); }
@@ -105,7 +105,7 @@
     .search-dropdown {
       position: absolute; top: calc(100% + 2px); left: 0; right: 0;
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 6px; z-index: 20;
+      border-radius: var(--radius-sm); z-index: 20;
       max-height: 220px; overflow-y: auto;
     }
     .search-option {
@@ -129,7 +129,7 @@
 
     /* Readonly banner */
     .readonly-banner {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.75rem 1rem; margin-bottom: 1.5rem;
       font-size: 0.875rem; color: var(--text-muted);
     }

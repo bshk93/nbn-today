@@ -25,7 +25,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-    .txn-badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px;
+    .txn-badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
     .txn-badge-sign    { background: var(--market-positive-bg); color: var(--market-positive); }
     .txn-badge-pick    { background: var(--accent-panel-bg); color: var(--accent-light); }
@@ -62,12 +62,12 @@
     .tt-popup {
       position: absolute; z-index: 500; max-width: 260px;
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-      padding: 0.35rem 0.6rem; border-radius: 5px; font-size: 0.75rem;
+      padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.75rem;
       white-space: pre-line; line-height: 1.5; text-align: left;
       pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
     }
     .txn-pagination { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0 0.25rem; font-size: 0.8rem; color: var(--text-muted); }
-    .txn-page-btn { padding: 0.28rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+    .txn-page-btn { padding: 0.28rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-muted); font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, color 0.12s; }
     .txn-page-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-secondary); }
     .txn-page-btn:disabled { opacity: 0.35; cursor: default; }

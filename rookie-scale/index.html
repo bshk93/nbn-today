@@ -28,7 +28,7 @@
     .years { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .year-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.25rem 1.5rem;
     }
     .year-card h2 {
@@ -45,7 +45,7 @@
     tbody td:first-child { text-align: center; color: var(--text-muted); font-size: 0.75rem; }
 
     input[type=number] {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.8rem; font-family: inherit;
       padding: 0.2rem 0.35rem; outline: none; width: 100%; text-align: right;
       font-variant-numeric: tabular-nums;

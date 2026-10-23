@@ -46,7 +46,7 @@
       background: var(--border);
       border: 1px solid var(--text-dim);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.3rem 0.75rem;
       cursor: pointer;
       font-size: 0.8rem;
@@ -58,7 +58,7 @@
     .form-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 1.5rem;
       margin-bottom: 2rem;
     }
@@ -113,7 +113,7 @@
       background: var(--bg-page);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.5rem 0.625rem;
       font-size: 0.875rem;
       font-family: inherit;
@@ -152,7 +152,7 @@
     .salary-rows { display: flex; flex-direction: column; gap: 0.5rem; }
     .scale-note {
       font-size: 0.78rem; line-height: 1.45; margin-bottom: 0.6rem;
-      padding: 0.55rem 0.75rem; border-radius: 6px;
+      padding: 0.55rem 0.75rem; border-radius: var(--radius-sm);
       background: var(--accent-panel-bg); color: var(--text-muted);
       border-left: 3px solid var(--accent);
     }
@@ -182,21 +182,21 @@
       background: var(--bg-page);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.5rem 0.5rem;
       font-size: 0.8rem;
       font-family: inherit;
     }
 
     /* Guarantee steps */
-    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1.25rem; padding: 0.3rem 0.6rem; background: rgba(0,0,0,0.25); border-left: 2px solid var(--border); border-radius: 0 4px 4px 0; }
+    .gtd-steps { display: none; flex-direction: column; gap: 0.2rem; margin-left: 1.25rem; padding: 0.3rem 0.6rem; background: rgba(0,0,0,0.25); border-left: 2px solid var(--border); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
     .gtd-steps.visible { display: flex; }
     .gtd-step { display: flex; gap: 0.4rem; align-items: center; }
     .gtd-step .gtd-step-amount { max-width: 9rem; }
     .gtd-step .gtd-step-date { max-width: 9.5rem; }
     .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
     .gtd-step .gtd-step-remove:hover { color: var(--danger); }
-    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: 3px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
     .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
 
     .salary-row-main button {
@@ -214,7 +214,7 @@
       background: none;
       border: 1px dashed var(--border);
       color: var(--text-muted);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.3rem 0.75rem;
       cursor: pointer;
       font-size: 0.8rem;
@@ -227,7 +227,7 @@
     .contract-helper {
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       margin-bottom: 0.6rem;
     }
 
@@ -275,7 +275,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.4rem 0.5rem;
       font-size: 0.85rem;
       font-family: inherit;
@@ -286,7 +286,7 @@
       background: #1e3a8a;
       border: 1px solid var(--accent);
       color: #dbeafe;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.4rem 0.9rem;
       cursor: pointer;
       font-size: 0.8rem;
@@ -313,7 +313,7 @@
       background: var(--accent-dark);
       border: none;
       color: var(--text-on-accent);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.55rem 1.5rem;
       font-size: 0.875rem;
       font-weight: 600;
@@ -331,7 +331,7 @@
 
     .validation-panel {
       display: none; margin-top: 1rem;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 1rem 1.25rem;
     }
     .validation-panel h4 {
@@ -353,7 +353,7 @@
     }
     .btn-force {
       background: #92400e; color: #fde68a; border: 1px solid var(--gold-dim);
-      border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+      border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
       padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit;
     }
     .btn-force:hover { background: var(--gold-dim); }
@@ -375,7 +375,7 @@
     .modal {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 1.5rem;
       width: 360px;
       max-width: 90vw;
@@ -390,7 +390,7 @@
       background: var(--bg-page);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.5rem 0.625rem;
       font-size: 0.875rem;
       width: 100%;
@@ -399,7 +399,7 @@
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 
     .modal-actions button {
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.4rem 1rem;
       font-size: 0.85rem;
       cursor: pointer;
@@ -514,7 +514,7 @@
     .txn-table.admin-mode .del-col { display: table-cell; }
     .delete-txn-btn {
       background: none; border: none; color: var(--text-dim); cursor: pointer;
-      font-size: 1rem; padding: 0.15rem 0.4rem; border-radius: 4px; line-height: 1;
+      font-size: 1rem; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); line-height: 1;
     }
     .delete-txn-btn:hover { color: var(--danger); }
     /* Rescind (§ 3.10) — restores a renounced free agent from the snapshot the
@@ -523,14 +523,14 @@
        leaves the log alone and puts the player back. */
     .rescind-txn-btn {
       background: none; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
-      font-size: 0.7rem; padding: 0.1rem 0.35rem; border-radius: 4px; line-height: 1.3;
+      font-size: 0.7rem; padding: 0.1rem 0.35rem; border-radius: var(--radius-sm); line-height: 1.3;
       font-family: inherit; margin-right: 0.25rem;
     }
     .rescind-txn-btn:hover { color: var(--gold); border-color: var(--gold); }
     /* Open offer sheets (§ 3.15) */
     .offers-panel {
       border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
-      border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;
+      border-radius: var(--radius); padding: 0.85rem 1rem; margin-bottom: 1.25rem;
     }
     .offers-panel.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
     .offers-panel h2 {
@@ -550,7 +550,7 @@
       text-transform: uppercase; letter-spacing: 0.04em;
     }
     .offer-btn {
-      border-radius: 6px; font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.7rem;
+      border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.7rem;
       cursor: pointer; background: transparent; font-family: inherit;
       border: 1px solid var(--border); color: var(--text-secondary);
     }
@@ -561,7 +561,7 @@
     .txn-table.admin-mode .note-cell:hover { background: var(--bg-subtle); }
     .txn-table.admin-mode .note-cell.empty::before { content: "+ Add note"; color: var(--text-dim); font-style: italic; }
     .note-edit-input {
-      width: 100%; background: var(--bg-page); border: 1px solid var(--accent); border-radius: 4px;
+      width: 100%; background: var(--bg-page); border: 1px solid var(--accent); border-radius: var(--radius-sm);
       color: var(--text-secondary); font: inherit; padding: 0.2rem 0.4rem;
     }
     .badge-release        { background: var(--danger-bg); color: var(--danger); }
@@ -587,25 +587,25 @@
     .badge-tbd     { background: var(--border); color: var(--text-muted); font-size: 0.68rem; }
 
     /* ── Trade builder ── */
-    .trade-leg { background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem; }
+    .trade-leg { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; }
     .trade-leg-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-    .trade-team-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.85rem; font-family: inherit; outline: none; }
+    .trade-team-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.85rem; font-family: inherit; outline: none; }
     .trade-team-sel:focus { border-color: var(--accent); }
     .trade-leg-arrow { color: var(--text-muted); font-size: 1.1rem; }
     .trade-asset-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
-    .trade-asset-sel { flex: 1; min-width: 160px; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-asset-sel { flex: 1; min-width: 160px; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
     .trade-asset-sel:focus { border-color: var(--accent); }
-    .trade-prot-inp { width: 5rem; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-prot-inp { width: 5rem; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
     .trade-prot-inp:focus { border-color: var(--accent); }
-    .trade-swap-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-swap-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
     .trade-swap-sel:focus { border-color: var(--accent); }
-    .trade-add-asset-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 4px; padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; font-family: inherit; margin-top: 0.15rem; }
+    .trade-add-asset-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; font-family: inherit; margin-top: 0.15rem; }
     .trade-add-asset-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
-    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: 6px; padding: 0.4rem; cursor: pointer; font-size: 0.82rem; font-family: inherit; margin-bottom: 0.75rem; }
+    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.4rem; cursor: pointer; font-size: 0.82rem; font-family: inherit; margin-bottom: 0.75rem; }
     .trade-add-main-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
     .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
     .remove-leg-btn:hover, .remove-asset-btn:hover { color: var(--danger); }
-    .legality-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
+    .legality-section { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
     .legality-header { background: var(--bg-card); padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
     .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
     .legality-row:last-child { border-bottom: none; }
@@ -626,7 +626,7 @@
     .rubric-verdict.bad { color: var(--danger); }
 
     .trade-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; }
-    .trade-summary-card { background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: 6px; padding: 0.55rem 0.65rem; }
+    .trade-summary-card { background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: var(--radius-sm); padding: 0.55rem 0.65rem; }
     .trade-summary-team { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
     .trade-summary-net { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.35rem; }
     .trade-summary-net.pos { color: var(--danger); }
@@ -657,7 +657,7 @@
       padding: 0.3rem 0.7rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -679,7 +679,7 @@
       right: 0;
       background: var(--bg-card);
       border: 1px solid var(--text-dim);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       max-height: 220px;
       overflow-y: auto;
       z-index: 50;

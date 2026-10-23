@@ -60,12 +60,12 @@
     .form-grid label { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--text-muted); gap: 0.25rem; }
     .stat-row {
       display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end;
-      background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem; margin-bottom: 0.5rem;
     }
     .stat-row label { display: flex; flex-direction: column; font-size: 0.68rem; color: var(--text-muted); gap: 0.2rem; }
     .stat-row input, .stat-row select {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); padding: 0.3rem 0.4rem; font-size: 0.8rem; font-family: inherit; width: 110px;
     }
     .stat-row .player-field input { width: 160px; }
@@ -78,7 +78,7 @@
 
     .toast {
       position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 1rem; font-size: 0.85rem; z-index: 50;
     }
     .toast.bad { border-color: var(--danger-border); color: var(--danger-light); }

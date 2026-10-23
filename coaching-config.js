@@ -322,7 +322,7 @@
     const tip = document.createElement('div');
     tip.setAttribute('role', 'tooltip');
     tip.style.cssText = 'position:absolute;z-index:1000;max-width:300px;padding:0.5rem 0.65rem;'
-      + 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:6px;'
+      + 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:var(--radius-sm);'
       + 'box-shadow:0 4px 14px rgba(0,0,0,0.35);color:var(--text-secondary,#ccc);'
       + 'font-size:0.75rem;font-weight:400;line-height:1.4;white-space:pre-line;pointer-events:none';
     tip.textContent = text;
@@ -408,7 +408,7 @@
 
   function groupCard(title, note) {
     const card = document.createElement('div');
-    card.style.cssText = 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.9rem';
+    card.style.cssText = 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
     const h = document.createElement('div');
     h.style.cssText = 'font-weight:700;font-size:0.95rem;margin-bottom:0.4rem';
     h.textContent = title;

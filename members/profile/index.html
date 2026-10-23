@@ -30,14 +30,14 @@
     .profile-meta { color: var(--text-muted); font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .team-badge {
       display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px;
+      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm);
       background: var(--success-bg); color: var(--success-light);
     }
     .team-badge a { color: inherit; }
 
     .balance-pill {
       display: inline-flex; align-items: center; gap: 0.6rem;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.5rem 1rem; margin: 1.5rem 0 1.75rem;
     }
     .balance-label { color: var(--text-muted); font-size: 0.8rem; }
@@ -57,7 +57,7 @@
        settings drawer instead of a titled page section. */
     .profile-editor-bar {
       margin-top: 2.5rem; background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 8px; overflow: hidden;
+      border-radius: var(--radius-sm); overflow: hidden;
     }
     .pe-toggle {
       width: 100%; display: flex; align-items: center; gap: 0.5rem;
@@ -74,7 +74,7 @@
     .pe-label { color: var(--text-secondary); font-size: 0.875rem; display: flex; align-items: center; gap: 0.5rem; }
     .pe-input {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 5px; padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: inherit;
+      border-radius: var(--radius-sm); padding: 0.2rem 0.5rem; font-size: 0.8rem; font-family: inherit;
     }
     .pe-group-label { color: var(--text-muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
     .pe-hint { font-size: 0.78rem; color: var(--text-muted); }
@@ -117,7 +117,7 @@
       gap: 0.6rem;
     }
     .ach-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.75rem 0.4rem 0.65rem; text-align: center;
       cursor: pointer; transition: border-color 0.12s;
       -webkit-tap-highlight-color: transparent;
@@ -140,7 +140,7 @@
     .ach-tier {
       display: inline-block; font-size: 0.6rem; font-weight: 700;
       letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.1rem 0.4rem; border-radius: 3px;
+      padding: 0.1rem 0.4rem; border-radius: var(--radius-sm);
     }
     .tier-bronze  { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .tier-silver  { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
@@ -150,7 +150,7 @@
 
     /* Tips */
     .tip-form {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.25rem; margin-bottom: 1.25rem;
     }
     .tip-form-title { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.85rem; }
@@ -159,35 +159,35 @@
     .tip-prefix {
       background: var(--border); border: 1px solid var(--text-dim); border-right: none;
       color: var(--text-muted); font-size: 0.875rem; padding: 0.45rem 0.65rem;
-      border-radius: 6px 0 0 6px;
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     }
     .tip-amount {
       background: var(--bg-page); border: 1px solid var(--text-dim); color: var(--text-primary);
-      border-radius: 0 6px 6px 0; padding: 0.45rem 0.6rem; font-size: 0.875rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 0.45rem 0.6rem; font-size: 0.875rem;
       width: 90px; font-family: inherit;
     }
     .tip-amount:focus { outline: none; border-color: var(--link); }
     .tip-msg-wrap { margin-top: 0.75rem; }
     .tip-msg {
       background: var(--bg-page); border: 1px solid var(--text-dim); color: var(--text-primary);
-      border-radius: 6px; padding: 0.5rem 0.65rem; font-size: 0.875rem;
+      border-radius: var(--radius-sm); padding: 0.5rem 0.65rem; font-size: 0.875rem;
       width: 100%; font-family: inherit; resize: vertical; min-height: 64px;
     }
     .tip-msg:focus { outline: none; border-color: var(--link); }
     .tip-msg-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem; }
     .btn-tip {
       background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
-      border-radius: 6px; padding: 0.45rem 1rem; cursor: pointer;
+      border-radius: var(--radius-sm); padding: 0.45rem 1rem; cursor: pointer;
       font-size: 0.875rem; font-family: inherit; white-space: nowrap;
     }
     .btn-tip:hover { background: var(--accent-dark); }
     .btn-tip:disabled { opacity: 0.5; cursor: not-allowed; }
-    .tip-error { font-size: 0.8rem; color: var(--danger-light); background: var(--danger-bg); border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
-    .tip-success { font-size: 0.8rem; color: var(--success-light); background: var(--success-dark-bg); border-radius: 6px; padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+    .tip-error { font-size: 0.8rem; color: var(--danger-light); background: var(--danger-bg); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
+    .tip-success { font-size: 0.8rem; color: var(--success-light); background: var(--success-dark-bg); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin-top: 0.6rem; }
 
     .signin-prompt {
       font-size: 0.85rem; color: var(--text-muted);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.75rem 1rem; margin-bottom: 1.25rem;
     }
 
@@ -210,7 +210,7 @@
       display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem;
     }
     .cs-box {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.65rem 0.9rem; flex: 1 1 100px;
     }
     .cs-label {

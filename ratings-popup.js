@@ -77,7 +77,7 @@
         max-width: calc(100vw - 1.5rem);
         background: var(--bg-page);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: var(--radius);
         box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         padding: 0.7rem 0.8rem;
         color: var(--text-secondary);

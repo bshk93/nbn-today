@@ -22,14 +22,14 @@
     const style = document.createElement('style');
     style.textContent = `
       .tb-teams-container { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start; }
-      .tb-team-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; flex: 1 1 280px; min-width: 260px; max-width: 360px; }
+      .tb-team-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex: 1 1 280px; min-width: 260px; max-width: 360px; }
       .tb-team-panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.6rem; }
-      .tb-team-sel { flex: 1; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.9rem; padding: 0.35rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; }
+      .tb-team-sel { flex: 1; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; padding: 0.35rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; }
       .tb-team-sel:focus { border-color: var(--accent); }
       .tb-team-logo { width: 24px; height: 24px; object-fit: contain; }
-      .tb-remove-team-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: 4px; }
+      .tb-remove-team-btn { flex-shrink: 0; background: none; border: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0.1rem 0.3rem; border-radius: var(--radius-sm); }
       .tb-remove-team-btn:hover { color: var(--danger); background: var(--danger-bg); }
-      .tb-exc-sel { width: 100%; margin-top: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); font-size: 0.78rem; padding: 0.3rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; display: none; }
+      .tb-exc-sel { width: 100%; margin-top: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.78rem; padding: 0.3rem 0.5rem; font-family: inherit; outline: none; cursor: pointer; display: none; }
       .tb-exc-sel:focus { border-color: var(--accent); }
       .tb-exc-sel option { color: var(--text-primary); }
       .tb-panel-body { padding: 0.5rem 0; max-height: 400px; overflow-y: auto; }
@@ -48,32 +48,32 @@
       .tb-release .tb-trade-row input[type=checkbox] { accent-color: var(--danger); }
       .tb-release .tb-trade-row.checked .tb-trade-row-meta { color: var(--danger); }
       .tb-panel-empty, .tb-panel-loading { padding: 1.25rem 1rem; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
-      .tb-dest-sel { width: 100%; margin-top: 0.15rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: 5px; color: var(--gold); font-size: 0.74rem; padding: 0.2rem 0.35rem; font-family: inherit; cursor: pointer; }
+      .tb-dest-sel { width: 100%; margin-top: 0.15rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: var(--radius-sm); color: var(--gold); font-size: 0.74rem; padding: 0.2rem 0.35rem; font-family: inherit; cursor: pointer; }
       .tb-dest-sel.unset { border-color: #f8717199; color: var(--danger-light); }
       .tb-add-team-row { margin-bottom: 1.25rem; }
-      .tb-add-team-btn { background: var(--bg-card); border: 1px dashed var(--text-dim); border-radius: 8px; color: var(--text-muted); font-size: 0.82rem; padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; }
+      .tb-add-team-btn { background: var(--bg-card); border: 1px dashed var(--text-dim); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.82rem; padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; }
       .tb-add-team-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
       .tb-add-team-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-      .tb-type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: 4px; margin-right: 0.4rem; flex-shrink: 0; }
+      .tb-type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); margin-right: 0.4rem; flex-shrink: 0; }
       .tb-type-player      { background: var(--bg-card); color: var(--accent-light); }
       .tb-type-two-way     { background: var(--bg-card); color: var(--purple-light); }
       .tb-type-draft-rights { background: var(--bg-card); color: #fcd34d; }
       .tb-type-cap-hold    { background: var(--gold-bg); color: var(--danger-alt); }
       .tb-type-dead        { background: var(--danger-bg); color: var(--danger); }
-      .tb-sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: 8px; width: 100%; }
+      .tb-sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: var(--radius-sm); width: 100%; }
       .tb-sat-form-title { font-size: 0.7rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
       .tb-sat-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
       .tb-sat-row label { font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; }
-      .tb-sat-row select, .tb-sat-row input[type=number] { background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px; color: var(--text-primary); font-size: 0.78rem; padding: 0.25rem 0.4rem; font-family: inherit; }
+      .tb-sat-row select, .tb-sat-row input[type=number] { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.78rem; padding: 0.25rem 0.4rem; font-family: inherit; }
       .tb-sat-salary-input { width: 110px; }
       .tb-sat-salary-label { font-size: 0.68rem; color: var(--text-muted); margin-right: 0.15rem; }
       .tb-check-status { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem; min-height: 1.1rem; }
       .tb-check-status.evaluating { color: var(--text-muted); }
       .tb-check-status.err { color: var(--danger); }
-      .tb-results { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .tb-results { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
       .tb-results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
       .tb-results-header .tb-rh-title { flex: 1; min-width: 0; }
-      .tb-export-btn { flex-shrink: 0; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); font-family: inherit; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.3rem 0.7rem; cursor: pointer; }
+      .tb-export-btn { flex-shrink: 0; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-secondary); font-family: inherit; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.3rem 0.7rem; cursor: pointer; }
       .tb-export-btn:hover { border-color: var(--accent); color: var(--text-primary); }
       .tb-export-btn.primary { border-color: var(--accent); color: var(--link); }
       .tb-export-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -872,8 +872,8 @@
 
       const hcLabel = HC_LABEL[t.hard_cap_level];
       const hcChip = hcLabel
-        ? `<span style="font-size:0.68rem;font-weight:700;color:var(--danger);border:1px solid var(--danger);border-radius:4px;padding:0.05rem 0.35rem;margin-left:0.5rem;">HARD CAPPED · ${hcLabel}</span>`
-        : `<span style="font-size:0.68rem;color:var(--text-muted);border:1px solid var(--border);border-radius:4px;padding:0.05rem 0.35rem;margin-left:0.5rem;">not hard-capped</span>`;
+        ? `<span style="font-size:0.68rem;font-weight:700;color:var(--danger);border:1px solid var(--danger);border-radius:var(--radius-sm);padding:0.05rem 0.35rem;margin-left:0.5rem;">HARD CAPPED · ${hcLabel}</span>`
+        : `<span style="font-size:0.68rem;color:var(--text-muted);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.05rem 0.35rem;margin-left:0.5rem;">not hard-capped</span>`;
 
       let hardCapRow = '';
       if (t.hard_cap_limit) {

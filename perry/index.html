@@ -31,7 +31,7 @@
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 1.5rem;
       margin-bottom: 1.25rem;
     }
@@ -60,7 +60,7 @@
     }
     .progress-dots { display: flex; gap: 0.5rem; }
     .progress-dot {
-      flex: 1; height: 6px; border-radius: 3px;
+      flex: 1; height: 6px; border-radius: var(--radius-sm);
       background: var(--border);
       transition: background 0.2s;
     }
@@ -76,7 +76,7 @@
     }
     .slot-chip {
       padding: 0.4rem 0;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-page);
       font-size: 0.78rem;
@@ -103,7 +103,7 @@
       font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.1em; color: var(--text-muted);
       background: var(--bg-page); border: 1px solid var(--border);
-      border-radius: 6px; padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm); padding: 0.25rem 0.5rem;
       white-space: nowrap;
     }
     .team-name { font-size: 1.25rem; font-weight: 700; }
@@ -115,7 +115,7 @@
       width: 100%;
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       color: var(--text-primary);
       padding: 0.6rem 0.85rem;
       font-size: 0.9rem;
@@ -128,7 +128,7 @@
       left: 0; right: 0;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       max-height: 200px;
       overflow-y: auto;
       z-index: 100;
@@ -142,12 +142,12 @@
     .autocomplete-item:hover, .autocomplete-item.focused { background: var(--border); }
     .autocomplete-item .pos-tag {
       font-size: 0.68rem; font-weight: 700; color: var(--text-muted);
-      background: var(--bg-page); border-radius: 4px; padding: 0.15rem 0.4rem;
+      background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.15rem 0.4rem;
     }
     .selected-player-row {
       background: var(--accent-panel-bg);
       border: 1px solid var(--accent);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.6rem 0.85rem;
       margin-bottom: 1rem;
       display: flex; justify-content: space-between; align-items: center;
@@ -164,7 +164,7 @@
     .statline-preview {
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 1rem;
       margin-bottom: 1rem;
     }
@@ -199,7 +199,7 @@
     .slot-badge {
       font-size: 0.68rem; font-weight: 700;
       background: var(--border); color: var(--text-muted);
-      border-radius: 5px; padding: 0.2rem 0.45rem;
+      border-radius: var(--radius-sm); padding: 0.2rem 0.45rem;
       display: inline-block;
     }
     .player-name-cell { font-weight: 600; }
@@ -235,7 +235,7 @@
       display: inline-block;
       font-size: 0.72rem; font-weight: 700;
       background: var(--border); color: var(--text-muted);
-      border-radius: 6px; padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm); padding: 0.2rem 0.55rem;
       margin-left: 0.6rem; vertical-align: middle;
     }
 
@@ -243,7 +243,7 @@
       display: inline-block;
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.08em; background: var(--gold-chip-border); color: #fcd34d;
-      border-radius: 5px; padding: 0.2rem 0.45rem; margin-right: 0.4rem;
+      border-radius: var(--radius-sm); padding: 0.2rem 0.45rem; margin-right: 0.4rem;
     }
 
     .instructions {
@@ -261,14 +261,14 @@
       font-size: 0.875rem;
     }
     .history-row:last-child { border-bottom: none; }
-    .history-row:hover { background: #ffffff08; border-radius: 6px; padding-left: 0.25rem; }
+    .history-row:hover { background: #ffffff08; border-radius: var(--radius-sm); padding-left: 0.25rem; }
     .history-date { font-weight: 700; min-width: 90px; }
     .history-teams { color: var(--text-muted); font-size: 0.78rem; flex: 1; }
     .history-winner { color: var(--text-secondary); font-size: 0.8rem; }
     .history-chevron { color: var(--text-dim); margin-left: auto; transition: transform 0.15s; }
     .history-chevron.open { transform: rotate(90deg); }
     .history-detail {
-      background: var(--bg-page); border-radius: 8px;
+      background: var(--bg-page); border-radius: var(--radius-sm);
       padding: 1rem; margin-bottom: 0.5rem;
       font-size: 0.82rem;
     }

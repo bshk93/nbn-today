@@ -40,7 +40,7 @@
     .empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.8rem 0; }
 
     details.req {
-      border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.7rem;
+      border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.7rem;
       background: var(--bg-card); overflow: hidden;
     }
     details.req > summary { list-style: none; cursor: pointer; padding: 0.75rem 0.9rem; }
@@ -72,7 +72,7 @@
     .step.now { color: var(--text-primary); border-color: var(--accent); }
 
     /* The one-line legality verdict, above the detail it summarizes. */
-    .verdict { margin-top: 0.7rem; padding: 0.55rem 0.75rem; border-radius: 8px; font-size: 0.83rem; line-height: 1.5; border: 1px solid; }
+    .verdict { margin-top: 0.7rem; padding: 0.55rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.83rem; line-height: 1.5; border: 1px solid; }
     .verdict.ok   { color: var(--success); border-color: color-mix(in srgb, var(--success) 30%, transparent); background: color-mix(in srgb, var(--success) 7%, transparent); }
     .verdict.warn { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 30%, transparent); background: color-mix(in srgb, var(--gold) 7%, transparent); }
     .verdict.bad  { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); background: color-mix(in srgb, var(--danger) 8%, transparent); }
@@ -81,7 +81,7 @@
     /* One panel per team. Side by side when there's room, stacked on a phone;
        a five-team trade is five panels, wrapping. */
     .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.7rem; margin-top: 0.8rem; }
-    .tp { border: 1px solid var(--border); border-left: 4px solid var(--team-primary, var(--border)); border-radius: 8px; background: var(--bg-subtle); padding: 0.7rem 0.8rem; min-width: 0; }
+    .tp { border: 1px solid var(--border); border-left: 4px solid var(--team-primary, var(--border)); border-radius: var(--radius-sm); background: var(--bg-subtle); padding: 0.7rem 0.8rem; min-width: 0; }
     .tp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
     .tp-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
     .tp-consent { font-size: 0.75rem; }
@@ -129,7 +129,7 @@
 
     .req-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
     .req-actions button {
-      padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem; border-radius: var(--radius-sm); border: 1px solid var(--border);
       background: var(--bg-subtle); color: var(--text-primary); font-family: inherit;
       font-size: 0.8rem; font-weight: 600; cursor: pointer;
     }
@@ -139,12 +139,12 @@
 
     .ballot-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
     .ballot-form textarea {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.4rem 0.6rem;
       flex: 1 1 100%; resize: vertical; min-height: 2.6rem;
     }
     .ballot-form button {
-      padding: 0.4rem 0.9rem; border-radius: 8px; border: 1px solid var(--border);
+      padding: 0.4rem 0.9rem; border-radius: var(--radius-sm); border: 1px solid var(--border);
       background: var(--bg-subtle); font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
     }
     .ballot-form button[data-decision="approve"] { color: var(--success); }
@@ -152,7 +152,7 @@
 
     .toast {
       position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--text-primary); z-index: 9999;
     }
     .toast.bad { border-color: var(--danger,#ef4444); color: var(--danger,#ef4444); }

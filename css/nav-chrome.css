@@ -40,14 +40,14 @@
 .nav-icon-btn {
   display: flex; align-items: center; justify-content: center;
   width: 2.1rem; height: 2.1rem; flex-shrink: 0;
-  border-radius: 50%; background: none; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: none; border: 1px solid var(--border);
   color: var(--text-muted); cursor: pointer; padding: 0; overflow: hidden;
   transition: border-color 0.15s, color 0.15s, background-color 0.15s;
 }
 /* Signed-out "Sign in" button (token-badge.js), sized to sit with the icons. */
 .nav-signin-btn {
   height: 2.1rem; padding: 0 0.9rem; flex-shrink: 0;
-  border-radius: 999px; border: 1px solid var(--border); background: none;
+  border-radius: var(--radius-sm); border: 1px solid var(--border); background: none;
   color: var(--text-secondary); font: inherit; font-size: var(--text-sm); font-weight: 500;
   cursor: pointer; white-space: nowrap;
   transition: border-color 0.15s, color 0.15s, background-color 0.15s;
@@ -73,7 +73,7 @@
 
 /* Search overlay */
 .search-overlay { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 9999; }
-.search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; width: min(620px, 90vw); overflow: hidden; box-shadow: 0 24px 64px var(--shadow-color-strong); }
+.search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: min(620px, 90vw); overflow: hidden; box-shadow: 0 24px 64px var(--shadow-color-strong); }
 .search-input { width: 100%; padding: 0.9rem 1.25rem; font-size: 1rem; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-primary); outline: none; font-family: inherit; }
 .search-results { max-height: 55vh; overflow-y: auto; }
 .search-result { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; text-decoration: none; color: var(--text-primary); border-bottom: 1px solid var(--bg-page); }
@@ -87,7 +87,7 @@
 /* Theme list rows — built by _themeMenuItems in nav.js, shown in the sidebar's account menu */
 .theme-menu {
   position: absolute; top: calc(100% + 0.4rem); right: 0;
-  background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
   box-shadow: 0 8px 24px var(--shadow-color-strong);
   min-width: 220px; padding: 0.3rem; z-index: 10000;
   display: none;
@@ -95,7 +95,7 @@
 .theme-menu.open { display: block; }
 .theme-menu-item {
   display: flex; align-items: center; gap: 0.55rem;
-  padding: 0.45rem 0.6rem; border-radius: 5px;
+  padding: 0.45rem 0.6rem; border-radius: var(--radius-sm);
   font-size: 0.82rem; color: var(--text-secondary); cursor: pointer;
 }
 .theme-menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
@@ -113,6 +113,6 @@
 .theme-menu-item.locked:hover { color: var(--text-secondary); }
 .theme-menu-price {
   font-size: 0.7rem; color: var(--gold); background: var(--gold-bg);
-  border: 1px solid var(--gold-chip-border); border-radius: 999px;
+  border: 1px solid var(--gold-chip-border); border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem; white-space: nowrap; flex-shrink: 0;
 }

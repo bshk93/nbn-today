@@ -31,7 +31,7 @@
     }
     .auth-bar button {
       background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
-      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
     .auth-bar button:hover { background: var(--text-dim); }
@@ -43,7 +43,7 @@
     .section-heading { font-size: 1.125rem; font-weight: 700; }
     .btn-create {
       background: var(--accent-dark); border: 1px solid var(--accent); color: var(--text-on-accent);
-      border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer;
+      border-radius: var(--radius-sm); padding: 0.35rem 0.8rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
     .btn-create:hover { background: var(--accent-dark); }
@@ -62,7 +62,7 @@
     }
     .team-badge {
       display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 4px;
+      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm);
       background: var(--success-bg); color: var(--success-light);
     }
     .team-badge a { color: inherit; }
@@ -72,7 +72,7 @@
     .role-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
     .rbadge {
       font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.15rem 0.45rem; border-radius: 4px;
+      padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
     }
     .rb-admin   { background: var(--danger-bg); color: var(--danger-light); }
     .rb-bod     { background: #3d2200; color: #fcd34d; }
@@ -132,7 +132,7 @@
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.5rem; width: 100%; max-width: 420px;
       display: flex; flex-direction: column; gap: 1rem;
       max-height: 88vh; overflow-y: auto;
@@ -140,7 +140,7 @@
     .modal h3 { font-size: 1rem; font-weight: 600; }
     .modal input, .modal select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.875rem;
       width: 100%; font-family: inherit;
     }
     .modal input:focus, .modal select:focus { outline: none; border-color: var(--link); }
@@ -159,7 +159,7 @@
     .role-check-label input[type=checkbox] { cursor: pointer; accent-color: var(--accent); }
 
     .token-result-box {
-      background: var(--bg-page); border: 1px solid #2d6a30; border-radius: 6px;
+      background: var(--bg-page); border: 1px solid #2d6a30; border-radius: var(--radius-sm);
       padding: 0.65rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem;
     }
     .token-result-label { font-size: 0.7rem; color: var(--text-muted); }
@@ -169,7 +169,7 @@
     }
     .btn-copy-result {
       background: none; border: 1px solid #2d6a30; color: var(--success-light);
-      border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.7rem;
+      border-radius: var(--radius-sm); padding: 0.15rem 0.5rem; font-size: 0.7rem;
       cursor: pointer; font-family: inherit; align-self: flex-start;
     }
     .btn-copy-result:hover { background: var(--success-dark-bg); }
@@ -177,12 +177,12 @@
 
     .error-box {
       font-size: 0.8rem; color: var(--danger-light); background: var(--danger-bg);
-      border-radius: 6px; padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem;
     }
 
     /* Tenure modal */
     .tenure-table-wrap {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       overflow-x: auto;
     }
     .tenure-table-wrap table { font-size: 0.82rem; }
@@ -233,7 +233,7 @@
       margin-bottom: 1rem;
     }
     .team-staff-card {
-      background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: 6px;
+      background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: var(--radius-sm);
       padding: 0.35rem 0.4rem; display: flex; flex-direction: column;
       align-items: center; gap: 0.22rem;
     }
@@ -245,7 +245,7 @@
     .ts-dots { display: flex; gap: 0.15rem; }
     .ts-dot {
       font-size: 0.52rem; font-weight: 800; letter-spacing: 0;
-      width: 1.05rem; height: 1.05rem; border-radius: 3px;
+      width: 1.05rem; height: 1.05rem; border-radius: var(--radius-sm);
       display: flex; align-items: center; justify-content: center;
       cursor: default;
     }
@@ -278,7 +278,7 @@
   </div>
 
   <div id="my-profile-bar" style="display:none;margin-bottom:1.25rem">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
       <button id="my-profile-toggle" onclick="(function(){var c=document.getElementById('my-profile-content'),ch=document.getElementById('my-profile-chevron'),open=c.style.display!=='none';c.style.display=open?'none':'';ch.style.transform=open?'':'rotate(90deg)';})()" style="width:100%;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left">
         <span id="my-profile-chevron" style="color:var(--text-muted);font-size:0.65rem;transition:transform 0.15s">&#9654;</span>
         <span style="color:var(--text-muted);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Profile &amp; Customization</span>
@@ -288,7 +288,7 @@
         <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding-top:0.1rem">
           <label style="color:var(--text-secondary);font-size:0.875rem;display:flex;align-items:center;gap:0.5rem">
             Birthday
-            <input type="date" id="my-dob-input" style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
+            <input type="date" id="my-dob-input" style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit">
           </label>
           <button class="btn-sm" id="my-profile-save">Save</button>
           <span id="my-profile-msg" style="display:none;font-size:0.8rem"></span>
@@ -298,7 +298,7 @@
           <span style="color:var(--text-muted);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em">Cosmetics</span>
           <div class="cosm-swatches" id="cosm-swatches"></div>
           <input type="text" id="cosm-status" maxlength="40" placeholder="Short tagline…"
-            style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
+            style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.2rem 0.5rem;font-size:0.8rem;font-family:inherit;width:12rem">
           <button class="btn-sm" id="cosm-save">Save · 50 NB¥</button>
           <span id="cosm-msg" style="display:none;font-size:0.8rem"></span>
         </div>

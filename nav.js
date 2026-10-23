@@ -1936,32 +1936,6 @@ async function nbnShare({ title, text, url } = {}, btn) {
   }
 }
 
-// Count a headline number up from zero: the homepage countdown, a player's
-// OVR and Hall of Fame tiles. Reads the target from the element's own text
-// ("93", "175.6", "1,204"), keeps its decimals and commas, and writes the
-// final text back exactly, so the end state is identical to not animating.
-// A no-op for reduced motion or text that isn't a number.
-function nbnCountUp(el, ms = 700) {
-  if (!el) return;
-  const text = el.textContent.trim();
-  if (!/^-?[\d,]+(\.\d+)?$/.test(text)) return;
-  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const target = parseFloat(text.replace(/,/g, ''));
-  const decimals = (text.split('.')[1] || '').length;
-  const commas = text.includes(',');
-  const fmt = v => commas
-    ? v.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-    : v.toFixed(decimals);
-  const t0 = performance.now();
-  const step = now => {
-    const p = Math.min(1, (now - t0) / ms);
-    const eased = 1 - Math.pow(1 - p, 3);
-    el.textContent = p < 1 ? fmt(target * eased) : text;
-    if (p < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
 // ── Startup ──────────────────────────────────────────────────────────────────
 // Last in the file on purpose: team.js and the awards pages inject nav.js after
 // the document has loaded, so this runs synchronously the moment the file

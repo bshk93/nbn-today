@@ -60,7 +60,7 @@
       gap: 0.4rem;
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
@@ -89,7 +89,7 @@
       z-index: 30;
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
       padding: 0.7rem;
       min-width: 15rem;
@@ -118,7 +118,7 @@
       width: 100%;
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-secondary);
       font-family: inherit;
       font-size: 0.78rem;
@@ -158,7 +158,7 @@
       width: 100%;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-secondary);
       font-family: inherit;
       font-size: 0.72rem;
@@ -179,7 +179,7 @@
     .attr-add-btn {
       background: transparent;
       border: 1px dashed var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
@@ -222,7 +222,7 @@
     .table-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       overflow-x: auto;
     }
 
@@ -265,7 +265,7 @@
       letter-spacing: 0;
       text-transform: none;
       padding: 0.3rem 0.6rem;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
@@ -299,7 +299,7 @@
     .edit-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
     }
@@ -332,7 +332,7 @@
       color: var(--text-on-accent);
       font-size: 0.68rem;
       padding: 0.1rem 0.45rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       font-weight: 700;
       letter-spacing: 0.04em;
     }
@@ -351,7 +351,7 @@
     .btn-remove {
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       cursor: pointer;
       font-size: 0.75rem;
@@ -376,7 +376,7 @@
     .add-row select, .add-row input[type="text"] {
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-secondary);
       font-size: 0.8rem;
       padding: 0.35rem 0.6rem;
@@ -391,7 +391,7 @@
     .btn-action {
       background: transparent;
       border: 1px solid var(--accent);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--link);
       cursor: pointer;
       font-size: 0.8rem;
@@ -996,7 +996,7 @@
           } else if (col.key === 'player') {
             if (row.isPick) {
               const badge = document.createElement('span');
-              badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:4px;background:var(--purple-bg);color:#a5b4fc;';
+              badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:var(--radius-sm);background:var(--purple-bg);color:#a5b4fc;';
               badge.textContent = row.player;
               if (row.pickApiNotes) {
                 const wrap = document.createElement('span');

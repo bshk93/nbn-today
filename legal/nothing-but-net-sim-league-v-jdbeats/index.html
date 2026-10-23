@@ -58,7 +58,7 @@
 
     .count {
       border: 1px solid var(--border); border-left: 3px solid var(--warning);
-      border-radius: 8px; padding: 0.6rem 1.1rem 1rem; margin: 1.1rem 0;
+      border-radius: var(--radius-sm); padding: 0.6rem 1.1rem 1rem; margin: 1.1rem 0;
       background: var(--bg-subtle);
     }
     .count.dismissed { border-left-color: var(--text-dim); opacity: 0.92; }
@@ -76,7 +76,7 @@
     .hot { color: var(--danger-light); font-weight: 700; }
 
     .callout {
-      background: var(--bg-card); border: 1px solid var(--accent-dark); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm);
       padding: 0.7rem 1rem; margin: 1rem 0; font-size: 0.87rem; color: #bfdbfe;
     }
     .callout.warn { background: #2a1c10; border-color: var(--gold-dim); color: #fcd34d; }

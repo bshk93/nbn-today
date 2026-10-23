@@ -26,7 +26,7 @@
   <style>
     .page { max-width: 980px; margin: 0 auto; }
 
-    .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: 4px; }
+    .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: var(--radius-sm); }
     .badge-setup { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
     .badge-voting { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
     .badge-blurbs { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
@@ -37,11 +37,11 @@
     .sub a { color: var(--link); text-decoration: none; font-weight: 500; }
     .sub a:hover { text-decoration: underline; }
 
-    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem; border: 1px solid transparent; }
+    button { font-family: inherit; cursor: pointer; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem; border: 1px solid transparent; }
     button:disabled { opacity: 0.5; cursor: default; }
                         .btn-tiny { font-size: 0.68rem; padding: 0.18rem 0.5rem; }
 
-    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.15rem; margin-bottom: 1.1rem; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.15rem; margin-bottom: 1.1rem; }
     .panel-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; }
     .panel-note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
     .row-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.8rem; }
@@ -54,11 +54,11 @@
     .part { color: var(--text-dim); }
     .chip button { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; font-size: 0.9rem; line-height: 1; }
     .chip button:hover { color: var(--danger); }
-    .voter-input { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.3rem 0.55rem; font-size: 0.8rem; font-family: inherit; min-width: 190px; }
+    .voter-input { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; font-size: 0.8rem; font-family: inherit; min-width: 190px; }
 
     /* Ballot */
     .ballot-list { display: flex; flex-direction: column; gap: 0.3rem; }
-    .brow { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.6rem; cursor: grab; }
+    .brow { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 0.6rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem; cursor: grab; }
     .brow.dragging { opacity: 0.35; }
     .brow.drop-target { border-color: var(--accent); }
     .brow-rank { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--text-dim); text-align: right; }
@@ -71,7 +71,7 @@
     .brow-btns button:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-dim); }
 
     /* Roster drawer */
-    .roster-drawer { border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; background: var(--bg-page); padding: 0.7rem 0.8rem; margin-top: -0.3rem; }
+    .roster-drawer { border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: var(--bg-page); padding: 0.7rem 0.8rem; margin-top: -0.3rem; }
     .roster-drawer table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
     .roster-drawer th { text-align: left; font-size: 0.63rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); padding: 0.2rem 0.4rem; border-bottom: 1px solid var(--border); }
     .roster-drawer td { padding: 0.22rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); }
@@ -97,7 +97,7 @@
     .blurb-edit-row td { background: var(--bg-card); padding: 0.7rem 0.8rem; }
     .blurb-edit-head { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.45rem; }
     .blurb-edit-head img { width: 22px; height: 22px; object-fit: contain; }
-    .blurb-box textarea { width: 100%; box-sizing: border-box; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 0.55rem 0.7rem; font-size: 0.88rem; line-height: 1.55; font-family: inherit; resize: vertical; min-height: 140px; }
+    .blurb-box textarea { width: 100%; box-sizing: border-box; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; font-size: 0.88rem; line-height: 1.55; font-family: inherit; resize: vertical; min-height: 140px; }
     .blurb-box textarea:focus { outline: none; border-color: var(--accent); }
     .blurb-count { margin-left: auto; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-dim); }
     .blurb-count.near { color: var(--gold); }

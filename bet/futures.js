@@ -12,7 +12,7 @@
 // Futures.load() and Futures.standing() feed the Action view's summary.
 (function () {
   const FUT_CSS = `
-    .fut-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .fut-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-card.done { background: var(--bg-subtle); border-color: var(--border-dark); }
     .fut-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.3rem; }
     .fut-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
@@ -27,8 +27,8 @@
     .fut-table tr.sel td { background: var(--bg-subtle); }
     .fut-table tr.win td { color: var(--gold); font-weight: 700; }
     .fut-table tbody tr { cursor: pointer; }
-    .fut-bar { display: inline-block; height: 6px; border-radius: 3px; background: var(--market-positive); vertical-align: middle; margin-left: 0.4rem; opacity: 0.7; }
-    .fut-trade { display: flex; flex-direction: column; gap: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.9rem; margin: 0.8rem 0 0.5rem; }
+    .fut-bar { display: inline-block; height: 6px; border-radius: var(--radius-sm); background: var(--market-positive); vertical-align: middle; margin-left: 0.4rem; opacity: 0.7; }
+    .fut-trade { display: flex; flex-direction: column; gap: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; margin: 0.8rem 0 0.5rem; }
     .fut-trade-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .fut-trade-row .ui-input { width: 8rem; }
     .fut-quote { font-size: 0.78rem; color: var(--text-secondary); min-height: 1.1em; }
@@ -41,7 +41,7 @@
     .fut-trades td.holds { white-space: normal; min-width: 9rem; color: var(--text-muted); }
     @media (max-width: 520px) { .fut-trades .narrow-hide { display: none; } }
     .fut-trades td.down { color: var(--danger); }
-    .fut-form { display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+    .fut-form { display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.55rem; }
     /* Price chart. Three highlighted series in the dataviz reference palette's
        first three slots — the only ones that stay distinct as every pair
@@ -57,7 +57,7 @@
     .fut-legend .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; vertical-align: middle; margin-right: 0.35rem; }
     .fut-legend .note { color: var(--text-muted); }
     .fut-legend strong { color: var(--text-primary); font-weight: 600; }
-    .fut-tip { position: absolute; top: 0; pointer-events: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+    .fut-tip { position: absolute; top: 0; pointer-events: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.4rem 0.55rem; font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,.3)); display: none; z-index: 2; }
     .fut-tip .when { color: var(--text-muted); margin-bottom: 0.2rem; }
     .fut-tip .row { display: flex; align-items: center; gap: 0.4rem; }

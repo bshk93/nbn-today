@@ -257,7 +257,7 @@ const coachingConfigReady = new Promise(resolve => {
     color: var(--text-muted); font-size: 1.5rem; cursor: pointer;
     text-decoration: none; flex-shrink: 0; line-height: 1;
   }
-  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: 6px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
+  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
   .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   /* On the team-colour band (components.css § Team pages): light on colour. */
   :root[data-team] .team-share-btn { align-self: center; margin-top: 0; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
@@ -278,7 +278,7 @@ const coachingConfigReady = new Promise(resolve => {
   /* One integrated card for Team Settings + Coaching Profile, rather than two
      independent sections (which carry their own 3rem gap and full-weight h2
      each) — same bordered-card shape as .exceptions-card/.ch-card below. */
-  .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; }
+  .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
   .settings-subsection + .settings-subsection { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid var(--border-subtle); }
   .settings-subtitle { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
   .settings-subsub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.65rem; }
@@ -320,7 +320,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-meter-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); }
   .ts-meter.ok .ts-meter-val { color: var(--success-light); }
   .ts-meter.over .ts-meter-val { color: var(--danger-light); }
-  .ts-meter-track { height: 6px; border-radius: 3px; background: var(--bg-subtle); overflow: hidden; }
+  .ts-meter-track { height: 6px; border-radius: var(--radius-sm); background: var(--bg-subtle); overflow: hidden; }
   .ts-meter-fill { height: 100%; background: var(--gold); transition: width 0.15s; }
   .ts-meter.ok .ts-meter-fill { background: var(--success-light); }
   .ts-meter.over .ts-meter-fill { background: var(--danger-light); }
@@ -353,8 +353,8 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
   .ts-minval { display: inline-block; min-width: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
   .ts-minval.dim { color: var(--text-dim); font-weight: 400; }
-  .ts-res-tag { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: 4px; padding: 0.05rem 0.35rem; }
-  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: 0.78rem; border-radius: 5px; }
+  .ts-res-tag { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.35rem; }
+  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: 0.78rem; border-radius: var(--radius-sm); }
   .ts-num-input { width: 2.2rem; text-align: center; }
   .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
   .ts-sec-select { width: auto; color: var(--text-secondary); }
@@ -365,13 +365,13 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pin-mark { margin-left: 0.25rem; font-size: 0.7rem; }
   .ts-pos-wait { margin-left: 0.3rem; font-size: 0.68rem; color: var(--gold); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+  .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
   .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: 0.85rem; cursor: pointer; padding: 0; }
   .ts-stepper button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
   .ts-stepper input { width: 2.2rem; border: none; border-inline: 1px solid var(--border); border-radius: 0; text-align: center; font-size: 0.78rem; padding: 0; -moz-appearance: textfield; }
   .ts-stepper input::-webkit-outer-spin-button, .ts-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .ts-min-edit:has(.ts-res input:checked) .ts-stepper { opacity: 0.35; }
-  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: 5px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
+  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
   .ts-res input { position: absolute; opacity: 0; pointer-events: none; }
   .ts-res:has(input:checked) { color: var(--gold); border-color: var(--gold-border); background: var(--gold-bg); }
   .ts-res:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -392,14 +392,14 @@ const coachingConfigReady = new Promise(resolve => {
   .table-wrap {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
     overflow-x: auto;
   }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
     background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 12px; padding: 0.9rem 1rem;
+    border-radius: var(--radius); padding: 0.9rem 1rem;
   }
   .rec-stat {
     font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
@@ -510,7 +510,7 @@ const coachingConfigReady = new Promise(resolve => {
     width: 58px;
     background: var(--bg-card);
     border: 2px solid var(--border-subtle);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 0.45rem 0.25rem;
     text-align: center;
     cursor: default;
@@ -583,7 +583,7 @@ const coachingConfigReady = new Promise(resolve => {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-top: 3px solid var(--text-muted);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     gap: 0.2rem;
   }
   .retired-no   { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
@@ -601,7 +601,7 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .range-sum-bar {
     display: none; position: fixed; right: 1.25rem; bottom: 1.25rem;
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 0.5rem 1rem; font-size: 0.82rem; color: var(--text-secondary);
     box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 500;
     pointer-events: none; white-space: nowrap;
@@ -633,18 +633,18 @@ const coachingConfigReady = new Promise(resolve => {
   tfoot td.tfoot-count { color: var(--border); font-size: 0.72rem; text-align: right; }
   tfoot tr.tfoot-hardcap td { padding-top: 0.4rem; }
   .hardcap-chip { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
-    padding: 0.05rem 0.35rem; border-radius: 3px; background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+    padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
   .hardcap-chip.apron2 { background: var(--danger-bg); color: var(--danger-light); border-color: var(--danger-border-strong); }
   .cap-edit-form {
     display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
     margin-top: 0.75rem; padding: 0.6rem 0.75rem;
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
     font-size: 0.8rem;
   }
   .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
-  .cap-edit-form input { background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form input { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
   .cap-edit-form input:focus { border-color: var(--accent); }
-  .cap-edit-form select { background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form select { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
   .cap-edit-form select:focus { border-color: var(--accent); }
   .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
   .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
@@ -652,7 +652,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-head-actions { display: flex; align-items: center; gap: 0.75rem; }
   .sched-recap { font-size: 0.85rem; color: var(--link); text-decoration: none; }
   .sched-recap:hover { text-decoration: underline; }
-  .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.5rem; font: inherit; font-size: 0.85rem; }
+  .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; font: inherit; font-size: 0.85rem; }
   .sched-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 0.25rem 0 1rem; }
   .sched-summary:empty { display: none; }
   .sched-stat { display: flex; flex-direction: column; gap: 0.1rem; }
@@ -674,7 +674,7 @@ const coachingConfigReady = new Promise(resolve => {
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
   .rival-card {
     display: flex; flex-direction: column; gap: 0.2rem; padding: 0.8rem 1rem;
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
     border-left: 3px solid var(--team-primary, var(--border));
     color: inherit; text-decoration: none;
   }
@@ -686,19 +686,19 @@ const coachingConfigReady = new Promise(resolve => {
   .rival-sub { font-size: 0.75rem; color: var(--text-muted); }
   .rival-opp { display: inline-flex; align-items: center; gap: 0.4rem; }
   .hard-cap-banner {
-    background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: 8px;
+    background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: var(--radius-sm);
     padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--danger);
     margin-bottom: 1.25rem;
   }
   .hard-cap-banner.apron2 { background: var(--danger-alt-bg); border-color: var(--danger-alt-border); color: var(--danger-alt); }
-  .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: 0.85rem; }
   .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border-subtle); gap: 1rem; }
   .exceptions-row:last-child { border-bottom: none; }
   .exc-label { color: var(--text-muted); font-size: 0.78rem; }
   .exc-mle-type { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.35rem; }
   .exc-remaining { color: var(--success); }
   .exc-used { color: var(--danger); }
-  .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: 0.85rem; }
   .ch-block + .ch-block { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
   .ch-block-title { display: flex; align-items: baseline; gap: 0.6rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
   .ch-block-count { margin-left: auto; font-weight: 600; letter-spacing: normal; text-transform: none; font-size: 0.72rem; color: var(--text-muted); }
@@ -723,13 +723,13 @@ const coachingConfigReady = new Promise(resolve => {
   .ch-warning.caution { color: var(--gold-alt); }
   .ch-foot { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.6rem; line-height: 1.5; }
   .whatif-enter-btn, .whatif-exit-btn {
-    padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: 6px;
+    padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: var(--radius-sm);
     font-size: 0.75rem; font-weight: 600; cursor: pointer; background: transparent;
     color: var(--danger); font-family: inherit; white-space: nowrap;
   }
   .whatif-enter-btn:hover, .whatif-exit-btn:hover { background: var(--danger-bg); }
   .whatif-panel {
-    border: 1px dashed var(--danger-border); border-radius: 10px;
+    border: 1px dashed var(--danger-border); border-radius: var(--radius);
     padding: 0.85rem 1rem; margin-top: 0.85rem;
     background: repeating-linear-gradient(135deg, transparent, transparent 10px, var(--danger-bg) 10px, var(--danger-bg) 20px);
   }
@@ -737,17 +737,17 @@ const coachingConfigReady = new Promise(resolve => {
   .whatif-toolbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .whatif-badge {
     display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em;
-    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 4px;
+    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: var(--radius-sm);
     background: var(--danger-bg); color: var(--danger-light); border: 1px solid var(--danger-border-strong);
   }
   .whatif-add-input {
-    background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
     color: var(--text-primary); font-size: 0.8rem; padding: 0.3rem 0.55rem;
     font-family: inherit; min-width: 240px; outline: none;
   }
   .whatif-add-input:focus { border-color: var(--accent); }
   .whatif-row-action {
-    font-size: 0.68rem; padding: 0.12rem 0.4rem; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 0.68rem; padding: 0.12rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-family: inherit; margin-left: 0.3rem;
     white-space: nowrap;
   }
@@ -768,21 +768,21 @@ const coachingConfigReady = new Promise(resolve => {
   .whatif-attr-total-row .whatif-attr-delta-line { font-weight: 800; }
   .whatif-contract-form {
     display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;
-    padding: 0.6rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.6rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
     font-size: 0.8rem;
   }
   .whatif-contract-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
   .whatif-contract-form input, .whatif-contract-form select {
-    background: var(--bg-page); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);
+    background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary);
     font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 7.5rem; outline: none;
   }
   .whatif-contract-form input:focus, .whatif-contract-form select:focus { border-color: var(--accent); }
-  .whatif-contract-year { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: 6px; }
+  .whatif-contract-year { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
   .whatif-log { display: flex; flex-direction: column; gap: 0.3rem; }
   .whatif-log-entry {
     display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
     font-size: 0.76rem; color: var(--text-secondary);
-    background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 6px;
+    background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
     padding: 0.25rem 0.3rem 0.25rem 0.6rem;
   }
   .whatif-log-entry button {
@@ -802,7 +802,7 @@ const coachingConfigReady = new Promise(resolve => {
   .token-modal {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: var(--radius);
     padding: 1.5rem;
     width: 360px;
     max-width: 90vw;
@@ -813,7 +813,7 @@ const coachingConfigReady = new Promise(resolve => {
     width: 100%;
     background: var(--bg-page);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: var(--text-primary);
     font-size: 0.875rem;
     font-family: var(--font-mono);
@@ -846,7 +846,7 @@ const coachingConfigReady = new Promise(resolve => {
   .move-btn:hover { border-color: var(--text-dim); color: var(--text-primary); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 0.3rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   }
   .move-menu-head {
@@ -856,7 +856,7 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .move-menu button {
     display: block; width: 100%; text-align: left; background: none; border: none;
-    border-radius: 5px; color: var(--text-secondary); cursor: pointer;
+    border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer;
     font-family: inherit; font-size: 0.8rem; padding: 0.4rem 0.5rem;
   }
   .move-menu button:hover:not(:disabled) { background: var(--bg-page); color: var(--text-primary); }
@@ -870,14 +870,14 @@ const coachingConfigReady = new Promise(resolve => {
     padding: 0 0.5rem 0.35rem; margin-top: -0.2rem; white-space: normal;
   }
   .confirm-modal {
-    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
     padding: 1.35rem; width: 520px; max-width: 92vw;
     max-height: 86vh; overflow-y: auto;
   }
   .confirm-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.15rem; }
   .confirm-modal .sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.9rem; }
   .confirm-facts {
-    border: 1px solid var(--border); border-radius: 8px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 0.5rem 0.7rem; margin-bottom: 0.9rem;
   }
   .confirm-fact {
@@ -888,14 +888,14 @@ const coachingConfigReady = new Promise(resolve => {
   .confirm-fact span:last-child  { font-variant-numeric: tabular-nums; font-weight: 600; }
   .confirm-check {
     font-size: 0.76rem; line-height: 1.4; padding: 0.4rem 0.55rem;
-    border-radius: 6px; margin-bottom: 0.4rem; border: 1px solid transparent;
+    border-radius: var(--radius-sm); margin-bottom: 0.4rem; border: 1px solid transparent;
   }
   .confirm-check.ok    { color: var(--text-muted); }
   .confirm-check.warn  { color: hsl(45,90%,72%);  background: hsl(45,60%,12%);  border-color: hsl(45,60%,22%); }
   .confirm-check.error { color: hsl(0,85%,74%);   background: hsl(0,55%,12%);   border-color: hsl(0,55%,24%); }
   .confirm-modal input[type=text] {
     width: 100%; background: var(--bg-page); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text-primary); font-family: inherit;
+    border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit;
     font-size: 0.85rem; padding: 0.45rem 0.65rem; margin-bottom: 0.9rem;
     box-sizing: border-box;
   }
@@ -906,7 +906,7 @@ const coachingConfigReady = new Promise(resolve => {
   .confirm-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
   .confirm-actions .spacer { flex: 1; font-size: 0.75rem; color: var(--danger); }
   .btn-plain, .btn-danger, .btn-go {
-    padding: 0.4rem 0.85rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+    padding: 0.4rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
     cursor: pointer; background: transparent; font-family: inherit;
   }
   .btn-plain  { border: 1px solid var(--border); color: var(--text-secondary); }
@@ -918,12 +918,12 @@ const coachingConfigReady = new Promise(resolve => {
      offer changes what the team can spend and is waiting on somebody. */
   .offer-banner {
     border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
-    border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
+    border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
     font-size: 0.85rem; color: var(--text-secondary);
   }
   .trade-banner {
     border: 1px solid var(--border); background: var(--bg-subtle);
-    border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
+    border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
     font-size: 0.85rem; color: var(--text-secondary);
   }
   .trade-banner b { color: var(--text-primary); }
@@ -967,7 +967,7 @@ const coachingConfigReady = new Promise(resolve => {
   .attr-badges { display: inline-flex; align-items: center; gap: 0.2rem; flex: none; }
   .attr-badge {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 0 0.28rem; height: 14px; border-radius: 3px; flex: none;
+    padding: 0 0.28rem; height: 14px; border-radius: var(--radius-sm); flex: none;
     font-size: 0.56rem; font-weight: 700; letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums; cursor: help;
     color: var(--text-muted); background: rgba(107,114,128,0.08);
@@ -986,7 +986,7 @@ const coachingConfigReady = new Promise(resolve => {
   .tt-popup {
     position: absolute; z-index: 500; max-width: 260px;
     background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-    padding: 0.35rem 0.6rem; border-radius: 5px; font-size: 0.75rem;
+    padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.75rem;
     white-space: pre-line; line-height: 1.5; text-align: left;
     pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
   }
@@ -1006,7 +1006,7 @@ const coachingConfigReady = new Promise(resolve => {
   .hist-controls select {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: var(--text-primary);
     font-size: 0.875rem;
     padding: 0.4rem 0.75rem;
@@ -1786,7 +1786,7 @@ function attachCopyBtn(titleId, wrapId) {
   btn.type = 'button';
   btn.className = 'section-copy-btn';
   btn.textContent = 'Copy';
-  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
   btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
   btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
   btn.addEventListener('click', () => {
@@ -3890,7 +3890,7 @@ const canEditTradeBlock = abbr => AUTH_ROLES.includes(abbr.toLowerCase()) || AUT
 let AUTH_OWNER_OF = [];
 const canRenounce = abbr => AUTH_OWNER_OF.includes(abbr.toUpperCase());
 
-const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
+const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
 
 const CAP_OPTIONS = [
   { value: '',           label: '—'          },
@@ -3925,8 +3925,8 @@ function promptToken(onSuccess) {
       <p>Enter your committee token. It will be saved in this browser.</p>
       <input type="password" id="token-input" placeholder="Paste token…" autocomplete="off" />
       <div class="token-modal-actions">
-        <button style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit" id="tok-cancel">Cancel</button>
-        <button style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit" id="tok-submit">Continue</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit" id="tok-cancel">Cancel</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit" id="tok-submit">Continue</button>
       </div>
     </div>
   `;
@@ -5187,7 +5187,7 @@ function makeEditCell(header, value, config, pickerCtx) {
     input.type = 'text';
     if (ctx.listId) input.setAttribute('list', ctx.listId);
     input.value = value && ctx.slugToDisplay ? (ctx.slugToDisplay.get(value) || value) : (value || '');
-    input.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
+    input.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
     td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
     td.appendChild(input);
     getValue = () => {
@@ -5299,7 +5299,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   addTd.style.cssText = 'padding:0.5rem 1rem;border-top:1px solid var(--border)';
   const addBtn = document.createElement('button');
   addBtn.textContent = '+ Add row';
-  addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:0.25rem 0.75rem;font-family:inherit';
+  addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:0.25rem 0.75rem;font-family:inherit';
   addBtn.onmouseenter = () => { addBtn.style.color = 'var(--text-secondary)'; addBtn.style.borderColor = 'var(--text-muted)'; };
   addBtn.onmouseleave = () => { addBtn.style.color = 'var(--text-muted)'; addBtn.style.borderColor = 'var(--border)'; };
   addBtn.addEventListener('click', () => tbody.insertBefore(makeRow({}), addTr));
@@ -5401,11 +5401,11 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
 
   const saveBtn = document.createElement('button');
   saveBtn.textContent = 'Save';
-  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
   const cancelBtn = document.createElement('button');
   cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
   const statusEl = document.createElement('span');
   statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
@@ -5415,7 +5415,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
 
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
   if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.SLUG)) {
-    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit';
+    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit';
     const onYrEnter = e => { e.target.style.color = 'var(--text-secondary)'; e.target.style.borderColor = 'var(--text-muted)'; };
     const onYrLeave = e => { e.target.style.color = 'var(--text-muted)'; e.target.style.borderColor = 'var(--border)'; };
 
@@ -5498,7 +5498,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
 }
 
 function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPicks = []) {
-  const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+  const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
 
   const playerOpts = [{ slug: '', label: '—' },
     ...Object.entries(bios)
@@ -5525,7 +5525,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
     const btn = document.createElement('button');
     btn.className = 'section-edit-btn';
     btn.textContent = 'Edit';
-    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
     btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
     btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
     btn.addEventListener('click', () => withToken(() => enterPicksEdit(currentPicks)));
@@ -5540,11 +5540,11 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
     const statusEl = document.createElement('span');
     statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
@@ -6742,7 +6742,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     num.type = 'number'; num.min = String(min); num.max = String(max); num.step = String(step);
     num.value = blank ? '' : String(initial);
     if (allowBlank) num.placeholder = 'Default';
-    num.style.cssText = 'width:4.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+    num.style.cssText = 'width:4.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
     const setDim = dim => { range.style.opacity = dim ? '0.35' : ''; };
     setDim(blank);
     range.addEventListener('input', () => { num.value = range.value; setDim(false); onChange(+range.value); });
@@ -6823,7 +6823,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
 
     function groupCard(title, note) {
       const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.9rem';
+      card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
       const h = CS.labelWithNote(title, note, 'display:block;font-weight:700;font-size:0.95rem;margin-bottom:0.6rem');
       card.appendChild(h);
       return card;
@@ -6980,7 +6980,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
     formDl = dl;
 
     formEl = document.createElement('div');
-    formEl.style.cssText = 'margin-top:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:0.75rem;overflow-x:auto';
+    formEl.style.cssText = 'margin-top:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem;overflow-x:auto';
 
     function render() {
       formEl.innerHTML = '';
@@ -7014,7 +7014,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
           inp.type = 'text';
           inp.value = row[s] || '';
           inp.placeholder = '—';
-          inp.style.cssText = 'width:90px;text-align:right;background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 4px;font-size:0.75rem';
+          inp.style.cssText = 'width:90px;text-align:right;background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 4px;font-size:0.75rem';
           inp.addEventListener('input', () => { row[s] = inp.value.trim(); });
           td.appendChild(inp);
         });
@@ -7039,19 +7039,19 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       const nameInp = document.createElement('input');
       nameInp.type = 'text'; nameInp.placeholder = 'Player name';
       nameInp.setAttribute('list', dlId);
-      nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
+      nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
 
       const seasonInp = document.createElement('input');
       seasonInp.type = 'text'; seasonInp.placeholder = currentSeasonYr();
-      seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
+      seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
 
       const amtInp = document.createElement('input');
       amtInp.type = 'text'; amtInp.placeholder = '$X,XXX,XXX';
-      amtInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:0.75rem;width:110px;margin-right:6px';
+      amtInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:0.75rem;width:110px;margin-right:6px';
 
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ Add';
-      addBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:3px;padding:2px 8px;font-size:0.75rem;cursor:pointer';
+      addBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:2px 8px;font-size:0.75rem;cursor:pointer';
       addBtn.addEventListener('click', () => {
         const typed = nameInp.value.trim();
         const slug = nameToSlug.get(typed.toLowerCase()) || '';
@@ -7078,7 +7078,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      saveBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:0.75rem';
       saveBtn.addEventListener('click', () => {
         withToken(token => {
           const payload = rows
@@ -7109,7 +7109,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.cssText = 'background:var(--border);color:var(--text-secondary);border:none;border-radius:4px;padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      cancelBtn.style.cssText = 'background:var(--border);color:var(--text-secondary);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:0.75rem';
       cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; });
 
       btns.append(saveBtn, cancelBtn);
@@ -7906,7 +7906,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     const btn = document.createElement('button');
     btn.className = 'section-edit-btn';
     btn.textContent = 'Edit';
-    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
     btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
     btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
     btn.addEventListener('click', () => {

@@ -15,14 +15,25 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 | `css/team-colors.css` | `[data-team="ABC"]` → `--team-primary` / `--team-accent`. **Generated** by `build/make_team_colors_css.py` from `build/team-colors.json`; the pre-commit hook fails if they disagree. |
 | `names.js` | `nbnPlayerName("MCCOLLUM, CJ")` → `"CJ McCollum"`. Use it instead of writing another name formatter. |
 
+## The look: broadcast
+
+Since 2026-10-23 the site aims to read like a sports broadcast rather than a SaaS dashboard. Before it, the site looked like every generated app: rounded bordered cards, pill chips, a gradient hero and emoji for icons. Four rules:
+
+- **Type does the work, not boxes.** Barlow Condensed in capitals is the voice: page titles, tabs, section titles, table headers, chips, big numbers. Inter is for reading: body text, table cells, forms.
+- **Square and flat.** `--radius-sm` is 2px and `--radius` 4px; no pills (circles stay for avatars and dots). No drop shadows except menus and dialogs, and no gradients except functional masks (the tab-strip fade).
+- **Colour means something.** Chrome is neutral. Bright colour is a team's, a result (win/loss, up/down), or an alert.
+- **Almost no motion.** A 150ms page fade. Nothing rises, staggers, lifts or counts up.
+
 ## Components (`css/components.css`)
 
 - **Container:** `ui-page` (960px) or `ui-page ui-page--wide` (1240px). A few pages keep their own width on purpose: the 30×30 grid (h2h), the games, the article views, the live draft show.
 - **Header:** `ui-header` > `ui-title` + `ui-subtitle`, with `ui-header-actions` on the right.
 - **Tabs:** `ui-tabs` / `ui-tab` switch between *sections of a page*. `ui-segmented` switches between *views of the same data*. Nothing else.
 - **Back button:** a tab switch, or opening another item on the same page (a day, a season, a team, a stat board), is `history.pushState`, and the page listens for `popstate` to redraw it, so Back returns to it. Filters, sorting and search only `replaceState`, or five filter clicks take five Backs to leave. Name the tab in the URL (`#tab`) and read it on load, so a link lands on it too.
-- **Section title:** `ui-section-title`. Sentence case at a real size, not tiny spaced capitals.
-- **Table:** `ui-table-wrap` > `ui-table`. `.num`/`.right`, `.center`, `.muted`, `.strong` cells; `ui-table--dense`, `ui-table--sticky-first`. The wrap scrolls sideways on a phone so a table never widens the page.
+- **Section title:** `ui-section-title`: the display face in capitals at `--text-lg`. Not the tiny spaced Inter capitals pages used to have.
+- **Kicker, rank, stat line:** `ui-kicker` (small label above a title), `ui-rank` (a list position in the display face), `ui-statline` (`<b>29</b><small>pts</small>`).
+- **Chip:** `ui-chip`, one square tag for categories, roles and flags, with the badge's tones; `ui-chip--team` takes `--chip-c`.
+- **Table:** `ui-table-wrap` > `ui-table`. Every `th` on the site, ui-table or not, is the display face at `--text-base` (`:root:root th` in `components.css`, doubled so it outweighs a page's own `.x th` / `.x thead th` that loads after it; only an id-scoped rule still wins). `.num`/`.right`, `.center`, `.muted`, `.strong` cells; `ui-table--dense`, `ui-table--sticky-first`. The wrap scrolls sideways on a phone so a table never widens the page.
 - **Buttons:** `ui-btn` plus `--primary`, `--danger`, `--ghost`, `--sm`. The older names pages already used (`.btn`, `.btn-primary`, `.btn-ghost`, `.btn-danger`, `.btn-secondary`, `.btn-success`, `.btn-cancel`, `.btn-save`, `.btn-sm`) are styled as the same buttons, so don't redefine them locally.
 - **Form fields:** a zero-specificity `:where()` base gives every control the same font, colours, border and focus ring. `ui-input`/`ui-select`/`ui-textarea`/`ui-label` for new forms.
 - **Other:** `ui-card`, `ui-badge` (tones), `ui-empty`, `ui-loading`, `ui-prose` (long-form text and rendered markdown).
@@ -34,7 +45,7 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 - **Heat-map cells** (OVR, ratings, head-to-head) are a translucent tint of the hue plus text at `--heat-text-l`, which is darker on light themes. Never a fixed dark background: that looked muddy and broke light themes.
 - **Signing in** is the sidebar's job: the account block at its bottom left (`_buildAccount` in `nav.js`) signs in through `token-badge.js`'s button, which stays in the nav only on phones, and `nbnSignOut()` in `nav.js` is the one sign-out, in that menu. The theme picker lives there too. Pages don't carry their own sign-in bars; a page that needs a sign-in says so in a line of text.
 - **Check phones.** Every page was checked at 390px wide for no horizontal overflow. A new page should be too.
-- **Motion is subtle and lives in `components.css`** (§ Motion): the page fades in once, the homepage cards rise in one after another, and cards that are links lift on hover. Big numbers count up with `nbnCountUp(el)` from `nav.js`. All of it is off under `prefers-reduced-motion`. Page containers only fade, never move: a transform on them would trap any `position: fixed` dialog inside.
+- **Motion is almost none and lives in `components.css`** (§ Motion): the page fades in once over 150ms, and that is all. Off under `prefers-reduced-motion`. Page containers only fade, never move: a transform on them would trap any `position: fixed` dialog inside.
 - **Small team logos come from `logos/sm/logo-{abbr}.webp`** (96px, ~4KB each), not `logos/logo-{abbr}.png` (480px, up to 120KB). Use the full size only where a logo is drawn bigger than about 48px: the team band and the champions banner. `build/make_logo_thumbs.py` regenerates them.
 - **Icons** (favicon, apple-touch-icon, the manifest's) are in `icons/`, made from `logo.png` by `build/make_icons.py`. The `<link>` tags are written into every page's head by `build/og_tags.py`, so a new page gets them with its OG entry.
 

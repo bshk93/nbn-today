@@ -36,7 +36,7 @@
     .tile {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 0.75rem 0.9rem;
     }
     .tile-count {
@@ -52,7 +52,7 @@
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       margin-bottom: 0.85rem;
       overflow: hidden;
     }
@@ -108,7 +108,7 @@
     /* One team's side of a game: its screenshots, and (for the role) the drop target. */
     .slot {
       min-height: 3.2rem;
-      border: 1px dashed var(--border); border-radius: 8px;
+      border: 1px dashed var(--border); border-radius: var(--radius-sm);
       padding: 0.35rem 0.45rem;
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
       font-size: 0.74rem; color: var(--text-dim);
@@ -130,7 +130,7 @@
     .thumb { position: relative; display: inline-block; }
     .thumb img {
       display: block; height: 3.4rem; width: auto; max-width: 7rem; object-fit: cover;
-      border-radius: 5px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
     }
     .thumb .rm {
       position: absolute; top: -0.4rem; right: -0.4rem;
@@ -146,7 +146,7 @@
 
     .toast {
       position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--text-primary);
       box-shadow: 0 4px 16px var(--shadow-color); z-index: 50; max-width: 90vw;
     }
@@ -156,7 +156,7 @@
 
     .links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
     .link-chip {
-      font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 7px;
+      font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: var(--radius-sm);
       border: 1px solid var(--border); background: rgba(255,255,255,0.03);
       color: var(--text-secondary);
     }
@@ -169,7 +169,7 @@
     .footnote a { color: var(--link); }
     .footnote code {
       font-family: var(--font-mono); font-size: 0.95em;
-      background: rgba(255,255,255,0.06); padding: 0.05rem 0.3rem; border-radius: 4px;
+      background: rgba(255,255,255,0.06); padding: 0.05rem 0.3rem; border-radius: var(--radius-sm);
     }
 
     @media (max-width: 640px) {

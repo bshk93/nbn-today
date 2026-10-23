@@ -66,14 +66,14 @@
       padding: 0.45rem 0.7rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       color: var(--text-primary);
       font-size: 0.85rem;
       font-family: inherit;
     }
     .controls select:focus { outline: none; border-color: var(--accent); }
 
-    .seg { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg { display: flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
     .seg button {
       background: var(--bg-card);
       border: none;
@@ -96,7 +96,7 @@
       color: var(--text-secondary);
       background: var(--bg-subtle);
       border: 1px solid var(--border-subtle);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.55rem 0.8rem;
       margin-bottom: 1rem;
     }
@@ -132,7 +132,7 @@
     .day-slate { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-left: auto; }
     .day-slate .cd-btn { font-size: 0.68rem; padding: 0.15rem 0.5rem; }
     .day-yt-input {
-      width: 11rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      width: 11rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-secondary); font-size: 0.72rem; padding: 0.2rem 0.45rem; font-family: inherit; outline: none;
     }
     .day-yt-input:focus { border-color: var(--accent); }
@@ -150,7 +150,7 @@
     .g-at { color: var(--text-dim); font-size: 0.75rem; }
     .g-note {
       display: inline-block; margin-left: 0.4rem; font-size: 0.65rem; color: var(--gold); background: var(--gold-bg);
-      border-radius: 3px; padding: 0.1rem 0.35rem; white-space: nowrap;
+      border-radius: var(--radius-sm); padding: 0.1rem 0.35rem; white-space: nowrap;
     }
     .g-score { font-size: 0.78rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .g-score.win { color: var(--success); }
@@ -160,7 +160,7 @@
     .streamer-chip {
       display: inline-flex; align-items: center; gap: 0.25rem;
       font-size: 0.68rem; color: var(--purple-light); background: var(--purple-light-bg);
-      border-radius: 3px; padding: 0.1rem 0.4rem; white-space: nowrap;
+      border-radius: var(--radius-sm); padding: 0.1rem 0.4rem; white-space: nowrap;
     }
     .streamer-chip.mine { color: var(--accent-light); background: var(--accent-panel-bg); }
     .chip-x {
@@ -170,7 +170,7 @@
     .chip-x:hover { opacity: 1; }
 
     .g-claim {
-      background: none; border: 1px solid var(--border); border-radius: 6px;
+      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-muted); font-family: inherit; font-size: 0.68rem;
       padding: 0.15rem 0.5rem; cursor: pointer; line-height: 1.2;
       opacity: 0.5; transition: opacity 0.1s, color 0.1s, border-color 0.1s;
@@ -183,7 +183,7 @@
        at a glance, without needing a separate badge next to it. */
     .stream-select {
       width: 100%; font-family: inherit; font-size: 0.72rem; padding: 0.2rem 0.35rem;
-      border: 1px solid var(--border); border-radius: 6px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
       background: var(--bg-card); color: var(--text-muted); cursor: pointer;
     }
     .stream-select:hover { border-color: var(--accent); color: var(--text-secondary); }
@@ -196,7 +196,7 @@
 
     .toast {
       position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--text-primary);
       box-shadow: 0 4px 16px var(--shadow-color); z-index: 50; max-width: 90vw;
     }
@@ -205,13 +205,13 @@
     .more-wrap { display: flex; justify-content: center; padding: 1.5rem 0 0.5rem; }
     .more-btn {
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-      border-radius: 8px; padding: 0.5rem 1.1rem; font-family: inherit; font-size: 0.8rem; cursor: pointer;
+      border-radius: var(--radius-sm); padding: 0.5rem 1.1rem; font-family: inherit; font-size: 0.8rem; cursor: pointer;
     }
     .more-btn:hover { border-color: var(--accent); color: var(--text-primary); }
 
     /* Streams by team: bought (NB¥) vs scheduled (flagged by a streamer). */
     .sc-wrap {
-      border: 1px solid var(--border-subtle); border-radius: 8px; margin-bottom: 1rem;
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); margin-bottom: 1rem;
       background: var(--bg-subtle);
     }
     .sc-wrap > summary {
@@ -250,7 +250,7 @@
     /* ── Coaching Settings tab ────────────────────────────────────────── */
     #coaching-dash-wrap h2 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.15rem; }
     .cd-when { font-size: 0.72rem; color: var(--text-muted); }
-    .cd-btn { font-size: 0.72rem; padding: 0.2rem 0.55rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
+    .cd-btn { font-size: 0.72rem; padding: 0.2rem 0.55rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); cursor: pointer; font-family: inherit; }
     .cd-btn:hover { border-color: var(--accent); color: var(--text-primary); }
     .cd-btn:disabled { opacity: 0.5; cursor: default; }
     .cd-detail { margin-top: 0.6rem; }
@@ -278,7 +278,7 @@
     /* ── My games tab ──────────────────────────────────────────────────── */
     .mine-warn {
       border: 1px solid var(--border); border-left: 3px solid var(--gold, #c9a227);
-      border-radius: 8px; padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem;
+      border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem;
       color: var(--text-secondary);
     }
     .mine-warn b { color: var(--text-primary); }
@@ -286,7 +286,7 @@
     .mine-warn li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
     .stream-req { font-size: 0.72rem; color: var(--gold, #c9a227); white-space: nowrap; margin-right: 0.3rem; }
     .mine-day {
-      border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.8rem; overflow: hidden;
+      border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.8rem; overflow: hidden;
       background: var(--bg-card);
     }
     .mine-day-head {
@@ -302,7 +302,7 @@
     .mine-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
     .mine-team {
       display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
-      font-size: 0.78rem; padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: 7px;
+      font-size: 0.78rem; padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
     }
     .mine-team .t { font-weight: 700; color: var(--text-secondary); }
     .mine-team .st { color: var(--text-muted); }
@@ -315,7 +315,7 @@
        pinned to be checked before every game. */
     .pos-list {
       display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem;
-      border: 1px solid var(--border); border-radius: 12px; padding: 0.9rem 1rem; margin-bottom: 0.9rem;
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; margin-bottom: 0.9rem;
       background: var(--bg-card);
     }
     .pos-list .pos-head { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.2rem; color: var(--text-primary); }
@@ -324,7 +324,7 @@
     .pos-list .pos-row.done { color: var(--text-muted); }
     .pos-list .pos-why { color: var(--text-muted); }
     .pos-illegal {
-      display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 4px;
+      display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: var(--radius-sm);
       font-size: 0.7rem; font-weight: 700; color: var(--danger-light);
       background: var(--danger-bg); border: 1px solid var(--danger-light); cursor: help;
     }
