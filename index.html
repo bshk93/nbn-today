@@ -447,7 +447,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "injuries" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "injuries" "tetris" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -455,6 +455,7 @@
       :root #dash-box-vod   { grid-area: boxvod; }
       :root #dash-feed      { grid-area: feed; }
       :root #dash-injuries  { grid-area: injuries; }
+      :root #dash-tetris    { grid-area: tetris; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
@@ -663,6 +664,37 @@
     }
     .site-footer a { color: inherit; }
     .site-footer a:hover { color: var(--link); }
+
+    /* Tetris, under the injury report. */
+    .tet-wrap { display: flex; gap: var(--space-5); align-items: flex-start; }
+    .tet-board {
+      width: 200px; height: 400px; flex: none; display: block;
+      background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px;
+      touch-action: none;
+    }
+    .tet-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .tet-side { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+    .tet-label { display: block; font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tet-next { width: 80px; height: 80px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px; }
+    .tet-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); }
+    .tet-stats b { font-family: var(--font-display); font-size: 1.4rem; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+    .tet-start { align-self: flex-start; }
+    .tet-help { font-size: var(--text-xs); color: var(--text-muted); max-width: 16rem; }
+    .tet-pad { display: none; gap: var(--space-2); margin-top: var(--space-4); }
+    .tet-pad button {
+      flex: 1 1 0; min-height: 44px; font-size: 1.1rem; cursor: pointer;
+      background: var(--bg-subtle); color: var(--text-primary);
+      border: 1px solid var(--border); border-radius: 8px; touch-action: manipulation;
+    }
+    .tet-pad button:active { border-color: var(--accent); }
+    @media (hover: none), (max-width: 600px) {
+      .tet-pad { display: flex; }
+      .tet-help { display: none; }
+    }
+    @media (max-width: 420px) {
+      .tet-board { width: 180px; height: 360px; }
+      .tet-wrap { gap: var(--space-3); }
+    }
 
     /* Every section is its own rounded box (like ESPN's front page), the
        headline included, so the two columns read as sets of cards and don't
@@ -893,6 +925,32 @@
       </div>
       <!-- The current 2K injury list (GET /api/injuries). Hidden until a report is in. -->
       <div class="dash-card" id="dash-injuries" hidden></div>
+      <!-- Tetris, for the wait between games. Self-contained; see its script block. -->
+      <div class="dash-card" id="dash-tetris">
+        <div class="dash-card-title">Tetris</div>
+        <div class="tet-wrap">
+          <canvas class="tet-board" id="tet-board" tabindex="0" aria-label="Tetris board. Arrow keys move and rotate, space drops, P pauses."></canvas>
+          <div class="tet-side">
+            <div class="tet-label">Next</div>
+            <canvas class="tet-next" id="tet-next" aria-hidden="true"></canvas>
+            <div class="tet-stats">
+              <div><span class="tet-label">Score</span><b id="tet-score">0</b></div>
+              <div><span class="tet-label">Lines</span><b id="tet-lines">0</b></div>
+              <div><span class="tet-label">Level</span><b id="tet-level">1</b></div>
+              <div><span class="tet-label">Best</span><b id="tet-best">0</b></div>
+            </div>
+            <button type="button" class="ui-btn tet-start" id="tet-start">Start</button>
+            <div class="tet-help">← → move · ↑ rotate · ↓ soft drop · space hard drop · P pause</div>
+          </div>
+        </div>
+        <div class="tet-pad" aria-label="Touch controls">
+          <button type="button" tabindex="-1" data-act="left" aria-label="Move left">◀</button>
+          <button type="button" tabindex="-1" data-act="rotate" aria-label="Rotate">⟳</button>
+          <button type="button" tabindex="-1" data-act="right" aria-label="Move right">▶</button>
+          <button type="button" tabindex="-1" data-act="down" aria-label="Soft drop">▼</button>
+          <button type="button" tabindex="-1" data-act="drop" aria-label="Hard drop">⤓</button>
+        </div>
+      </div>
     </div>
 
     <!-- Sidebar: tonight's games, then the races and lists. -->
@@ -940,6 +998,7 @@
     document.addEventListener('keydown', e => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key.length !== 1) return;
+      if (e.target && e.target.closest && e.target.closest('#dash-tetris')) return;  // the game's own keys
       const t = e.target;
       const isFormField = t && (
         t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
@@ -2601,6 +2660,241 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') check();
     });
+  })();
+  </script>
+  <script>
+  // ── Tetris ──────────────────────────────────────────────────────────────
+  //
+  // A plain 10×20 Tetris under the injury report. Nothing is fetched or
+  // saved server-side; the best score is per browser (localStorage). Keys
+  // are only taken while the board has focus, so arrow keys and space still
+  // scroll the page otherwise, and the game pauses when focus leaves it.
+  (function () {
+    const COLS = 10, ROWS = 20;
+    const board = document.getElementById('tet-board');
+    const nextEl = document.getElementById('tet-next');
+    if (!board || !nextEl) return;
+    const ctx = board.getContext('2d'), nctx = nextEl.getContext('2d');
+    const $t = id => document.getElementById(id);
+    const startBtn = $t('tet-start');
+
+    const SHAPES = {
+      I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+      J: [[1,0,0],[1,1,1],[0,0,0]],
+      L: [[0,0,1],[1,1,1],[0,0,0]],
+      O: [[1,1],[1,1]],
+      S: [[0,1,1],[1,1,0],[0,0,0]],
+      T: [[0,1,0],[1,1,1],[0,0,0]],
+      Z: [[1,1,0],[0,1,1],[0,0,0]],
+    };
+    const COLORS = { I: '#22d3ee', J: '#3b82f6', L: '#f97316', O: '#facc15', S: '#22c55e', T: '#a855f7', Z: '#ef4444' };
+    const LINE_POINTS = [0, 100, 300, 500, 800];
+    const BEST_KEY = 'nbn_tetris_best';
+
+    let grid, piece, next, bag, score, lines, level, timer, state = 'idle', best = 0;
+    try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch (e) {}
+    $t('tet-best').textContent = best;
+
+    function css(name, fallback) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+    }
+
+    // Size the canvases to their CSS box at device resolution.
+    function fit(cv, c) {
+      const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      c.setTransform(cv.width / r.width, 0, 0, cv.height / r.height, 0, 0);
+      return r;
+    }
+
+    function rotate(m) { return m[0].map((_, i) => m.map(row => row[i]).reverse()); }
+
+    function draw7() {
+      if (!bag || !bag.length) {
+        bag = Object.keys(SHAPES);
+        for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
+      }
+      const k = bag.pop();
+      return { k, m: SHAPES[k].map(r => r.slice()), x: 0, y: 0 };
+    }
+
+    function collides(m, x, y) {
+      for (let r = 0; r < m.length; r++) for (let c = 0; c < m[r].length; c++) {
+        if (!m[r][c]) continue;
+        const gx = x + c, gy = y + r;
+        if (gx < 0 || gx >= COLS || gy >= ROWS) return true;
+        if (gy >= 0 && grid[gy][gx]) return true;
+      }
+      return false;
+    }
+
+    function spawn() {
+      piece = next || draw7(); next = draw7();
+      piece.x = Math.floor((COLS - piece.m[0].length) / 2);
+      piece.y = piece.k === 'I' ? -1 : 0;
+      if (collides(piece.m, piece.x, piece.y)) gameOver();
+    }
+
+    function speed() { return Math.max(80, 800 - (level - 1) * 70); }
+
+    function schedule() {
+      clearInterval(timer);
+      timer = state === 'play' ? setInterval(tick, speed()) : null;
+    }
+
+    function lock() {
+      piece.m.forEach((row, r) => row.forEach((v, c) => {
+        if (v && piece.y + r >= 0) grid[piece.y + r][piece.x + c] = piece.k;
+      }));
+      let cleared = 0;
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (grid[r].every(Boolean)) { grid.splice(r, 1); grid.unshift(Array(COLS).fill(null)); cleared++; r++; }
+      }
+      if (cleared) {
+        score += LINE_POINTS[cleared] * level;
+        lines += cleared;
+        const lv = Math.floor(lines / 10) + 1;
+        if (lv !== level) { level = lv; schedule(); }
+      }
+      spawn();
+      stats();
+    }
+
+    function move(dx, dy) {
+      if (!collides(piece.m, piece.x + dx, piece.y + dy)) { piece.x += dx; piece.y += dy; return true; }
+      return false;
+    }
+
+    function tick() {
+      if (state !== 'play') return;
+      if (!move(0, 1)) lock();
+      render();
+    }
+
+    const act = {
+      left: () => move(-1, 0),
+      right: () => move(1, 0),
+      down: () => { if (move(0, 1)) score += 1; else lock(); stats(); },
+      drop: () => { let n = 0; while (move(0, 1)) n++; score += n * 2; lock(); },
+      rotate: () => {
+        const m = rotate(piece.m);
+        // Simple wall kicks: try in place, then nudges either side.
+        for (const dx of [0, -1, 1, -2, 2]) {
+          if (!collides(m, piece.x + dx, piece.y)) { piece.m = m; piece.x += dx; return; }
+        }
+      },
+    };
+
+    function stats() {
+      $t('tet-score').textContent = score.toLocaleString();
+      $t('tet-lines').textContent = lines;
+      $t('tet-level').textContent = level;
+      if (score > best) {
+        best = score;
+        $t('tet-best').textContent = best.toLocaleString();
+        try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
+      }
+    }
+
+    function cell(c, x, y, s, color) {
+      c.fillStyle = color; c.fillRect(x * s + 1, y * s + 1, s - 2, s - 2);
+      c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(x * s + 1, y * s + 1, s - 2, 3);
+    }
+
+    function overlay(r, text, sub) {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, r.width, r.height);
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+      ctx.font = '700 22px ' + css('--font-display', 'sans-serif');
+      ctx.fillText(text, r.width / 2, r.height / 2 - 4);
+      if (sub) { ctx.font = '500 12px ' + css('--font-sans', 'sans-serif'); ctx.fillText(sub, r.width / 2, r.height / 2 + 18); }
+    }
+
+    function render() {
+      const r = fit(board, ctx), s = r.width / COLS;
+      ctx.clearRect(0, 0, r.width, r.height);
+      ctx.strokeStyle = css('--border-subtle', 'rgba(128,128,128,0.15)'); ctx.lineWidth = 1;
+      for (let x = 1; x < COLS; x++) { ctx.beginPath(); ctx.moveTo(x * s + 0.5, 0); ctx.lineTo(x * s + 0.5, r.height); ctx.stroke(); }
+      for (let y = 1; y < ROWS; y++) { ctx.beginPath(); ctx.moveTo(0, y * s + 0.5); ctx.lineTo(r.width, y * s + 0.5); ctx.stroke(); }
+      if (grid) grid.forEach((row, y) => row.forEach((k, x) => { if (k) cell(ctx, x, y, s, COLORS[k]); }));
+      if (piece && state !== 'idle') {
+        // Ghost: where a hard drop would land.
+        let gy = piece.y; while (!collides(piece.m, piece.x, gy + 1)) gy++;
+        ctx.globalAlpha = 0.22;
+        piece.m.forEach((row, ry) => row.forEach((v, rx) => { if (v && gy + ry >= 0) cell(ctx, piece.x + rx, gy + ry, s, COLORS[piece.k]); }));
+        ctx.globalAlpha = 1;
+        piece.m.forEach((row, ry) => row.forEach((v, rx) => { if (v && piece.y + ry >= 0) cell(ctx, piece.x + rx, piece.y + ry, s, COLORS[piece.k]); }));
+      }
+      if (state === 'idle') overlay(r, 'Tetris', 'Press Start');
+      if (state === 'pause') overlay(r, 'Paused', 'Click the board or press P');
+      if (state === 'over') overlay(r, 'Game over', 'Score ' + score.toLocaleString());
+
+      const nr = fit(nextEl, nctx);
+      nctx.clearRect(0, 0, nr.width, nr.height);
+      if (next && state !== 'idle') {
+        const m = next.m, ns = nr.width / 5;
+        const ox = (5 - m[0].length) / 2, oy = (5 - m.length) / 2 + (next.k === 'I' ? 0.5 : 0);
+        nctx.save(); nctx.translate(ox * ns, oy * ns);
+        m.forEach((row, y) => row.forEach((v, x) => { if (v) cell(nctx, x, y, ns, COLORS[next.k]); }));
+        nctx.restore();
+      }
+    }
+
+    function start() {
+      grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      bag = null; next = null; score = 0; lines = 0; level = 1;
+      state = 'play'; spawn(); stats(); schedule(); render();
+      startBtn.textContent = 'Restart';
+      board.focus({ preventScroll: true });
+    }
+
+    function pause(on) {
+      if (state !== 'play' && state !== 'pause') return;
+      state = on ? 'pause' : 'play';
+      schedule(); render();
+    }
+
+    function gameOver() { state = 'over'; schedule(); stats(); }
+
+    startBtn.addEventListener('click', start);
+    board.addEventListener('click', () => { if (state === 'pause') pause(false); else if (state !== 'play') start(); });
+    // Leaving the board pauses — but not a tap on the touch pad, which on
+    // some phones takes focus from the board as it fires.
+    let padAt = 0;
+    board.addEventListener('blur', () => { if (Date.now() - padAt > 800) pause(true); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) pause(true); });
+
+    const KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowDown: 'down', ArrowUp: 'rotate', ' ': 'drop', x: 'rotate', X: 'rotate' };
+    board.addEventListener('keydown', e => {
+      if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { if (state === 'play' || state === 'pause') { e.preventDefault(); pause(state === 'play'); } return; }
+      const a = KEYS[e.key];
+      if (!a) return;
+      e.preventDefault();
+      if (state === 'pause') pause(false);
+      if (state !== 'play') return;
+      act[a](); render();
+    });
+
+    // Touch pad: tap to act, hold left/right/down to repeat.
+    document.querySelectorAll('#dash-tetris .tet-pad button').forEach(btn => {
+      let rep = null;
+      const stop = () => { clearTimeout(rep); clearInterval(rep); rep = null; };
+      btn.addEventListener('mousedown', e => e.preventDefault());
+      btn.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        padAt = Date.now();
+        if (state === 'pause') pause(false);
+        if (state !== 'play') return;
+        const a = btn.dataset.act;
+        act[a](); render();
+        if (a === 'left' || a === 'right' || a === 'down') {
+          rep = setTimeout(() => { rep = setInterval(() => { if (state === 'play') { act[a](); render(); } }, 70); }, 220);
+        }
+      });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, () => { padAt = Date.now(); stop(); }));
+    });
+
+    window.addEventListener('resize', render);
+    render();
   })();
   </script>
 </body>
