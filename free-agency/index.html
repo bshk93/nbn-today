@@ -326,7 +326,9 @@
       { key: 'ovr',    label: 'OVR',    sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
       { key: 'age',    label: 'Age',    sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
       { key: 'status', label: 'Status', sortField: 'status', cls: 'status-cell',  numeric: false, defaultDir:  1 },
-      { key: 'salary', label: 'Salary', sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
+      // What he counts against the cap while unsigned: the § 3.10 hold, or the
+      // option year's salary. Renounced and unsigned players carry none.
+      { key: 'salary', label: 'Cap Hold', sortField: 'salary', cls: 'salary-cell', numeric: true,  defaultDir: -1 },
       { key: 'priorSalary', label: 'Prior Salary', sortField: 'priorSalary', cls: 'salary-cell', numeric: true, defaultDir: -1 },
       // The team he was last with — the one holding his rights or hold. Last, not
       // first: on a list of free agents the player leads, not a team he's leaving.
