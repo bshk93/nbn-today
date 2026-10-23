@@ -360,7 +360,8 @@
       html[data-sidebar] .page-wrap { padding-top: 0; }
     }
 
-    /* Ticker: the latest night's finals, then its top performers, on a loop.
+    /* Ticker: the latest night's finals, its top performers, then the
+       injury report, on a loop.
        The strip holds the items twice and slides by half its width, so the
        second copy lands exactly where the first began. */
     .ticker[hidden] { display: none; }
@@ -396,6 +397,10 @@
     .ticker-item b { color: var(--text-primary); }
     .ticker-item .ticker-final { color: var(--text-muted); font-size: var(--text-xs); font-weight: 700; margin-left: 0.15rem; }
     .ticker-item .ticker-stat { color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; margin-right: 0.25rem; }
+    .ticker-item .ticker-out { color: var(--danger); font-size: var(--text-xs); font-weight: 700; }
+    .ticker-item .ticker-hurt { color: var(--gold); font-size: var(--text-xs); font-weight: 700; }
+    a.ticker-head:hover { text-decoration: none; background: var(--bg-hover, transparent); }
+    .ticker-head .ticker-more { margin-left: 0.4rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.02em; text-transform: none; }
     .ticker-head {
       display: inline-flex; align-items: center; padding: 0 1rem; height: 100%; white-space: nowrap;
       color: var(--accent); font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
@@ -853,7 +858,7 @@
   <div class="nav" data-no-home></div>
   <!-- The latest night's finals and top performers, scrolling. Filled from
        latestNight; stays hidden until a night of box scores exists. -->
-  <section class="ticker" id="ticker" aria-label="Latest scores" hidden></section>
+  <section class="ticker" id="ticker" aria-label="Latest scores and injuries" hidden></section>
 
   <p class="visitor-intro" id="visitor-intro" hidden>
     A fantasy NBA GM league, played out in NBA 2K since 2020.
@@ -1616,14 +1621,20 @@
       return m ? +m[1] * { day: 1, week: 7, month: 30 }[m[2].toLowerCase()] : -1;
     };
 
-    jget('/api/injuries').then(data => {
+    // Shared with the ticker, which lists the same report.
+    const injuriesPromise = jget('/api/injuries').catch(() => null);
+    // Out before Hurt, then the longest injury first — the card's order and
+    // the ticker's.
+    const injOrder = (a, b) => (/^out$/i.test(b.status || '') - /^out$/i.test(a.status || ''))
+      || (injDays(b.duration) - injDays(a.duration)) || String(a.name).localeCompare(String(b.name));
+
+    injuriesPromise.then(data => {
       if (!data || !data.last_report) return;
       const card = $('dash-injuries');
       const rows = (data.players || []).map(p => ({
         p, out: /^out$/i.test(p.status || ''),
         text: fold([p.name, p.team, p.injury, p.status].join(' ')),
-      })).sort((a, b) => (b.out - a.out) || (injDays(b.p.duration) - injDays(a.p.duration))
-        || String(a.p.name).localeCompare(String(b.p.name)));
+      })).sort((a, b) => injOrder(a.p, b.p));
 
       const statuses = INJ_STATUSES.filter(s => s.key === 'all' || rows.some(r => s.test(r.p.status)));
       const teams = [...new Set(rows.map(r => r.p.team).filter(Boolean))].sort();
@@ -1810,16 +1821,20 @@
       $('dash-best').hidden = false;
     }).catch(() => {});
 
-    // ── Ticker: the latest night's finals, then its top performers ────────
+    // ── Ticker: the latest night's finals, its top performers, injuries ───
     //
     // Same night and same Game Score as the card above, so the two agree.
+    // The injuries are only the new ones: players whose injury first showed
+    // up on the latest report (`since` is that report's date). In the Injury
+    // Report card's order, capped so a bad night doesn't swamp the scores;
+    // the section head links to the full list.
     // The items are written twice; the CSS slides the strip by half its
     // width for a seamless loop, and the copy is hidden from screen readers
     // (and, under reduced motion, from everyone).
-    latestNight.then(night => {
-      if (!night) return;
+    Promise.all([latestNight.catch(() => null), injuriesPromise]).then(([night, inj]) => {
       const logo = t => `<img src="/logos/sm/logo-${esc(String(t).toLowerCase())}.webp" alt="">`;
-      const finals = night.games.map(g => {
+      const games = night ? night.games : [];
+      const finals = games.map(g => {
         const a = Number(g.away_score), h = Number(g.home_score);
         const side = (t, n, won) => `${logo(t)}${won ? `<b>${esc(t)} ${esc(String(n))}</b>` : `${esc(t)} ${esc(String(n))}`}`;
         return `<a class="ticker-item" href="/boxscores/?date=${encodeURIComponent(night.date)}`
@@ -1827,7 +1842,7 @@
           + `${side(g.away_team, a, a > h)}<span aria-hidden="true">·</span>${side(g.home_team, h, h > a)}`
           + '<span class="ticker-final">F</span></a>';
       });
-      const top = night.games.flatMap(g => [
+      const top = games.flatMap(g => [
         ...(g.away_players || []).map(p => ({ p, team: g.away_team })),
         ...(g.home_players || []).map(p => ({ p, team: g.home_team })),
       ]).map(x => ({ ...x, gmsc: gameScore(x.p) }))
@@ -1841,19 +1856,38 @@
           return `<${tag} class="ticker-item"${href}>${logo(team)}`
             + `<span>${esc(nbnPlayerName(p.player))}</span>${stats}</${tag}>`;
         });
-      if (!finals.length) return;
+      const INJ_MAX = 10;
+      const reportDate = inj && inj.last_report ? inj.last_report.date : null;
+      const hurt = (reportDate ? inj.players || [] : [])
+        .filter(p => p.since === reportDate).sort(injOrder);
+      const injuries = hurt.slice(0, INJ_MAX).map(p => {
+        const out = /^out$/i.test(p.status || '');
+        const tag = p.slug ? 'a' : 'span';
+        const href = p.slug ? ` href="/players/?p=${encodeURIComponent(p.slug)}"` : '';
+        return `<${tag} class="ticker-item"${href}>${p.team ? logo(p.team) : ''}`
+          + `<span>${esc(p.name)}</span>`
+          + `<span class="${out ? 'ticker-out' : 'ticker-hurt'}">${esc(p.status)}</span>`
+          + (p.duration ? `<span class="ticker-stat">${esc(p.duration)}</span>` : '')
+          + `</${tag}>`;
+      });
+      if (!finals.length && !injuries.length) return;
       const items = finals.join('')
-        + (top.length ? '<span class="ticker-head">Top performers</span>' + top.join('') : '');
-      const when = night.date === today ? 'Tonight'
-        : night.date === dayBefore(today) ? 'Last night' : 'Latest';
+        + (top.length ? '<span class="ticker-head">Top performers</span>' + top.join('') : '')
+        + (injuries.length ? '<a class="ticker-head" href="/injuries/">New injuries'
+          + (hurt.length > INJ_MAX ? ` <span class="ticker-more">${hurt.length} · all →</span>` : '')
+          + '</a>' + injuries.join('') : '');
+      const label = finals.length
+        ? `${night.date === today ? 'Tonight' : night.date === dayBefore(today) ? 'Last night' : 'Latest'}`
+          + `<span>${esc(shortDate(night.date))}</span>`
+        : `New injuries<span>${esc(shortDate(reportDate))}</span>`;
       const el = $('ticker');
-      el.innerHTML = `<div class="ticker-label">${when}<span>${esc(shortDate(night.date))}</span></div>`
+      el.innerHTML = `<div class="ticker-label">${label}</div>`
         + '<div class="ticker-track"><div class="ticker-strip">'
         + `<div style="display:flex;height:100%">${items}</div>`
         + `<div style="display:flex;height:100%" aria-hidden="true" inert>${items}</div>`
         + '</div></div>';
       // A constant speed whatever the night's size: ~4s per item.
-      el.style.setProperty('--ticker-dur', `${Math.max(20, (finals.length + top.length + 1) * 4)}s`);
+      el.style.setProperty('--ticker-dur', `${Math.max(20, (finals.length + top.length + injuries.length + 2) * 4)}s`);
       el.hidden = false;
     }).catch(() => {});
 
