@@ -31,7 +31,7 @@
     }
     .auth-bar button {
       background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
-      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
     .auth-bar button:hover { background: var(--text-dim); }
@@ -49,7 +49,7 @@
     }
 
     .member-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem;
     }
     .member-card.has-strikes { border-color: var(--danger-border); }
@@ -70,7 +70,7 @@
     }
     .team-badge {
       display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; padding: 0.12rem 0.45rem; border-radius: 4px;
+      text-transform: uppercase; padding: 0.12rem 0.45rem; border-radius: var(--radius-sm);
       background: var(--success-bg); color: var(--success-light); white-space: nowrap;
     }
     .team-badge a { color: inherit; }
@@ -78,7 +78,7 @@
     .strike-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .strike-row {
       display: flex; align-items: flex-start; gap: 0.5rem;
-      font-size: 0.8rem; background: var(--bg-page); border-radius: 6px; padding: 0.45rem 0.6rem;
+      font-size: 0.8rem; background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem;
     }
     .strike-dot { color: var(--danger); margin-top: 0.1rem; flex-shrink: 0; }
     .strike-body { flex: 1; min-width: 0; }
@@ -96,19 +96,19 @@
 
     .add-strike-btn {
       align-self: flex-start; background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); border-radius: 6px; padding: 0.25rem 0.65rem;
+      color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.25rem 0.65rem;
       font-size: 0.75rem; cursor: pointer; font-family: inherit;
     }
     .add-strike-btn:hover { border-color: var(--danger); color: var(--danger); }
 
     .add-form {
       display: none; flex-direction: column; gap: 0.45rem;
-      background: var(--bg-page); border-radius: 8px; padding: 0.65rem 0.75rem;
+      background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.65rem 0.75rem;
     }
     .add-form.open { display: flex; }
     .add-form input, .add-form textarea {
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.8rem;
+      border-radius: var(--radius-sm); padding: 0.4rem 0.6rem; font-size: 0.8rem;
       font-family: inherit; width: 100%; box-sizing: border-box;
     }
     .add-form input:focus, .add-form textarea:focus { outline: none; border-color: var(--link); }
@@ -116,13 +116,13 @@
     .form-row { display: flex; gap: 0.4rem; justify-content: flex-end; }
     .btn-form-cancel {
       background: transparent; border: 1px solid var(--border); color: var(--text-muted);
-      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.75rem;
       cursor: pointer; font-family: inherit;
     }
     .btn-form-cancel:hover { border-color: var(--text-muted); color: var(--text-secondary); }
     .btn-form-save {
       background: var(--danger-border); border: 1px solid var(--danger-border-strong); color: var(--danger-light);
-      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.75rem;
       cursor: pointer; font-family: inherit;
     }
     .btn-form-save:hover { background: var(--danger-border-strong); }
@@ -160,13 +160,13 @@
 
 <!-- Sign-in modal -->
 <div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
     <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
     <input type="password" id="signin-input" placeholder="Paste your token…"
-      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
     <div style="display:flex;gap:0.5rem;justify-content:flex-end">
-      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
-      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
     </div>
   </div>
 </div>

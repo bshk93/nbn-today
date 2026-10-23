@@ -59,8 +59,11 @@
   --page-width: 960px;
   --page-width-wide: 1240px;
 
-  --radius-sm: 6px;
-  --radius: 10px;
+  /* Corners. Square on purpose: the broadcast look is flat panels and rules,
+     not floating rounded cards. --radius-sm for controls, chips and small
+     boxes; --radius for panels and tables. Circles (avatars, dots) keep 50%. */
+  --radius-sm: 2px;
+  --radius: 4px;
 
   /* Heat-map cells (OVR, ratings, head-to-head): a translucent tint of the
      cell's hue over whatever the background is, with text in the same hue at

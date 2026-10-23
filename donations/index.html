@@ -31,7 +31,7 @@
     }
     .auth-bar button {
       background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
-      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer;
+      border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer;
       font-size: 0.8rem; font-family: inherit;
     }
     .auth-bar button:hover { background: var(--text-dim); }
@@ -48,7 +48,7 @@
       border: 1px solid var(--border);
       color: var(--text-primary);
       padding: 0.4rem 0.75rem;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       font-size: 0.875rem;
       cursor: pointer;
     }
@@ -56,26 +56,26 @@
     .add-donation-btn {
       margin-left: auto;
       background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); border-radius: 6px; padding: 0.35rem 0.75rem;
+      color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.35rem 0.75rem;
       font-size: 0.8rem; cursor: pointer; font-family: inherit;
     }
     .add-donation-btn:hover { border-color: var(--link); color: var(--link); }
 
     .row-form input, .row-form select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 5px; padding: 0.3rem 0.5rem; font-size: 0.8rem;
+      border-radius: var(--radius-sm); padding: 0.3rem 0.5rem; font-size: 0.8rem;
       font-family: inherit; width: 100%; box-sizing: border-box;
     }
     .row-form input:focus, .row-form select:focus { outline: none; border-color: var(--link); }
     .row-actions { display: flex; gap: 0.4rem; white-space: nowrap; }
     .btn-row-save {
       background: var(--accent-dark, #1d4ed8); border: 1px solid var(--accent, #3b82f6);
-      color: var(--text-on-accent, #fff); border-radius: 5px; padding: 0.25rem 0.6rem;
+      color: var(--text-on-accent, #fff); border-radius: var(--radius-sm); padding: 0.25rem 0.6rem;
       font-size: 0.75rem; cursor: pointer; font-family: inherit;
     }
     .btn-row-cancel {
       background: transparent; border: 1px solid var(--border); color: var(--text-muted);
-      border-radius: 5px; padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.75rem;
       cursor: pointer; font-family: inherit;
     }
     .btn-row-edit {
@@ -87,7 +87,7 @@
     .actions-cell { text-align: right; white-space: nowrap; }
 
     .total-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1rem 1.25rem; display: flex; align-items: baseline; justify-content: space-between;
       margin-bottom: 1.25rem;
     }
@@ -154,13 +154,13 @@
 
 <!-- Sign-in modal -->
 <div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
     <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
     <input type="password" id="signin-input" placeholder="Paste your token…"
-      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:6px;padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
     <div style="display:flex;gap:0.5rem;justify-content:flex-end">
-      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
-      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:6px;padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
     </div>
   </div>
 </div>

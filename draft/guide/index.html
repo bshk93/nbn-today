@@ -54,7 +54,7 @@
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 1rem 1.25rem;
       margin: 0.75rem 0;
     }
@@ -66,7 +66,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       padding: 0.15rem 0.45rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       vertical-align: middle;
       margin-right: 0.3rem;
     }
@@ -78,7 +78,7 @@
       display: inline-block;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       padding: 0.1rem 0.4rem;
       font-family: inherit;
       font-size: 0.78rem;
@@ -88,7 +88,7 @@
     .warning {
       background: #2d1b00;
       border: 1px solid #713f12;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
       font-size: 0.85rem;
       color: #fdba74;
@@ -99,7 +99,7 @@
     .tip {
       background: var(--bg-page);
       border: 1px solid var(--accent-panel-bg);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
       font-size: 0.85rem;
       color: var(--accent-light);
@@ -315,7 +315,7 @@
     <hr class="divider">
 
     <div id="bod-signin-prompt" style="padding:1.5rem 0;text-align:center;display:none">
-      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:0.8rem;font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='var(--text-muted)';this.style.borderColor='var(--text-muted)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">BOD? Sign in to see BOD guide</button>
+      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.8rem;font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='var(--text-muted)';this.style.borderColor='var(--text-muted)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">BOD? Sign in to see BOD guide</button>
     </div>
 
     <div id="bod-section">

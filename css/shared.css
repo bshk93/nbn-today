@@ -20,9 +20,10 @@ a:hover { text-decoration: underline; }
 thead th {
   padding: 0.7rem 1rem;
   text-align: left;
-  font-size: 0.7rem;
+  font-family: var(--font-display);
+  font-size: var(--text-base);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);

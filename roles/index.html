@@ -38,7 +38,7 @@
     .role-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 1.25rem 1.5rem;
     }
 
@@ -56,7 +56,7 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       padding: 0.2rem 0.6rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
     }
 
     .badge-admin   { background: var(--danger-bg); color: var(--danger-light); }
@@ -132,7 +132,7 @@
       background: var(--border);
       border: 1px solid var(--text-dim);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.3rem 0.75rem;
       cursor: pointer;
       font-size: 0.8rem;
@@ -161,7 +161,7 @@
       font-size: 0.68rem;
       font-weight: 600;
       padding: 0.15rem 0.5rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -196,7 +196,7 @@
       background: none;
       border: 1px solid var(--border);
       color: var(--text-muted);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       padding: 0.1rem 0.4rem;
       font-size: 0.7rem;
       cursor: pointer;
@@ -218,7 +218,7 @@
       background: var(--accent-dark);
       border: 1px solid var(--accent);
       color: var(--text-on-accent);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.35rem 0.8rem;
       cursor: pointer;
       font-size: 0.8rem;
@@ -231,7 +231,7 @@
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text-muted);
-      border-radius: 5px;
+      border-radius: var(--radius-sm);
       padding: 0.15rem 0.5rem;
       font-size: 0.72rem;
       cursor: pointer;
@@ -286,7 +286,7 @@
     .token-result-box {
       background: var(--bg-page);
       border: 1px solid #2d6a30;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.65rem 0.75rem;
       display: flex;
       flex-direction: column;
@@ -304,7 +304,7 @@
       background: none;
       border: 1px solid #2d6a30;
       color: var(--success-light);
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       padding: 0.15rem 0.5rem;
       font-size: 0.7rem;
       cursor: pointer;
@@ -328,7 +328,7 @@
     .modal {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 1.5rem;
       width: 100%;
       max-width: 380px;
@@ -341,7 +341,7 @@
       background: var(--bg-page);
       border: 1px solid var(--border);
       color: var(--text-primary);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.5rem 0.75rem;
       font-size: 0.875rem;
       width: 100%;
@@ -518,7 +518,7 @@
 
   </div>
 
-  <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6;margin-bottom:2.5rem;padding:0.9rem 1.1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px">
+  <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.6;margin-bottom:2.5rem;padding:0.9rem 1.1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)">
     <strong style="color:var(--text-secondary)">Writing news.</strong> Any signed-in member can draft and submit articles to the newsroom — no special role is required. Articles are published immediately by their author; Curators, BOD, and Admins can publish, unpublish, or reject anyone's work and manage the queue.
   </p>
 

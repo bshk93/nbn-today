@@ -28,7 +28,7 @@
             
             
     button {
-      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-family: inherit; cursor: pointer; border-radius: var(--radius-sm);
       font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.8rem;
       border: 1px solid transparent; transition: background 0.1s;
     }
@@ -61,7 +61,7 @@
     /* Proposal cards */
     .proposal-list { display: flex; flex-direction: column; gap: 0.5rem; }
     .proposal-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem;
       cursor: pointer; text-decoration: none; color: inherit;
       transition: border-color 0.1s, background 0.1s;
@@ -75,7 +75,7 @@
     .badge {
       display: inline-block; font-size: 0.65rem; font-weight: 700;
       letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.5rem;
-      border-radius: 4px; flex-shrink: 0;
+      border-radius: var(--radius-sm); flex-shrink: 0;
     }
     .badge-draft    { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
     .badge-submitted { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
@@ -97,13 +97,13 @@
     }
     .modal-overlay.open { display: flex; }
     .modal {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.5rem; width: 100%; max-width: 380px; margin: 1rem;
     }
     .modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
     .modal input {
       width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.875rem;
       font-family: var(--font-mono); margin-bottom: 0.75rem;
     }
     .modal input:focus { outline: none; border-color: var(--accent); }
@@ -120,7 +120,7 @@
       <h1 class="ui-title">Proposals</h1>
     </div>
     <div class="right-bar ui-header-actions">
-      <a href="/proposals/new/" class="btn-primary" id="btn-new" style="display:none;padding:0.35rem 0.8rem;border-radius:6px;font-size:0.8rem;font-weight:500;background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);">+ New Proposal</a>
+      <a href="/proposals/new/" class="btn-primary" id="btn-new" style="display:none;padding:0.35rem 0.8rem;border-radius:var(--radius-sm);font-size:0.8rem;font-weight:500;background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);">+ New Proposal</a>
     </div>
   </header>
 

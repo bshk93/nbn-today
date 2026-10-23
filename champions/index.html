@@ -46,7 +46,7 @@
 
     /* Hero banner */
     .banner {
-      position: relative; border-radius: 16px; overflow: hidden;
+      position: relative; border-radius: var(--radius); overflow: hidden;
       border: 1px solid var(--border); margin-bottom: 1.5rem;
       background: var(--bg-subtle);
     }
@@ -89,13 +89,13 @@
       gap: 0.6rem;
     }
     .stat-box {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 0.7rem 0.5rem; text-align: center;
     }
     .stat-box .v { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
     .stat-box .l { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
     .badge-foty, .badge-coty {
-      display: inline-block; font-size: 0.62rem; font-weight: 700; border-radius: 4px;
+      display: inline-block; font-size: 0.62rem; font-weight: 700; border-radius: var(--radius-sm);
       padding: 0.05rem 0.3rem; margin-top: 0.3rem;
     }
     .badge-foty { background: var(--gold-bg); color: var(--gold); border: 1px solid #92400e; }
@@ -103,7 +103,7 @@
     /* Playoff run */
     .run { display: flex; flex-direction: column; gap: 0.4rem; }
     .run-series {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
     }
     .run-row {
       display: flex; align-items: center; gap: 0.75rem;
@@ -136,7 +136,7 @@
     /* Front office */
     .fo-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; }
     .fo-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.15rem; min-width: 150px;
       text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s;
     }
@@ -146,7 +146,7 @@
     .fo-card:hover .nm { color: var(--accent-light); }
 
     /* Roster table */
-    .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; }
+    .table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     thead th { white-space: nowrap; }
     tbody td { padding: 0.55rem 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
@@ -160,7 +160,7 @@
     .ply a:hover { color: var(--accent-light); }
     .rings { color: var(--gold); font-weight: 700; white-space: nowrap; }
     .rings .first { color: var(--market-positive); font-size: 0.7rem; font-weight: 700; margin-left: 0.25rem; }
-    .lead-tag { font-size: 0.62rem; font-weight: 700; color: var(--danger-light); background: rgba(220,38,38,0.12); border:1px solid rgba(220,38,38,0.35); border-radius: 4px; padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
+    .lead-tag { font-size: 0.62rem; font-weight: 700; color: var(--danger-light); background: rgba(220,38,38,0.12); border:1px solid rgba(220,38,38,0.35); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
     .num { font-variant-numeric: tabular-nums; }
 
     .loading, .err { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }

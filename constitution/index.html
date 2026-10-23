@@ -47,7 +47,7 @@
     }
     .btn-edit {
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-      border-radius: 6px; padding: 0.4rem 0.9rem; font-size: 0.82rem; font-weight: 500;
+      border-radius: var(--radius-sm); padding: 0.4rem 0.9rem; font-size: 0.82rem; font-weight: 500;
       cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0;
     }
     .btn-edit:hover { background: var(--bg-hover); border-color: var(--text-dim); }
@@ -58,7 +58,7 @@
     /* ── Sidebar TOC ── */
     .toc {
       position: sticky; top: 1.5rem; background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 1rem 0; font-size: 0.78rem;
+      border-radius: var(--radius); padding: 1rem 0; font-size: 0.78rem;
       max-height: calc(100vh - 3rem); overflow-y: auto;
     }
     .toc-heading {
@@ -93,14 +93,14 @@
     .doc-content hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
     .doc-content blockquote {
       border-left: 3px solid var(--accent-dark); background: rgba(29,78,216,0.08);
-      border-radius: 0 6px 6px 0; padding: 0.65rem 1rem; margin: 0.75rem 0 1rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 0.65rem 1rem; margin: 0.75rem 0 1rem;
       color: var(--accent-light); font-size: 0.875rem;
     }
     .doc-content blockquote p { color: var(--accent-light); margin: 0; }
     .doc-content blockquote a { color: var(--accent-light); text-decoration: underline; }
     .doc-content blockquote a:hover { color: #bfdbfe; }
-    .doc-content code { background: var(--bg-card); border-radius: 4px; padding: 0.1em 0.35em; font-size: 0.85em; color: #a5b4fc; }
-    .doc-content pre { background: var(--bg-card); border-radius: 6px; padding: 0.9em 1em; overflow-x: auto; margin: 0.75em 0; }
+    .doc-content code { background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.1em 0.35em; font-size: 0.85em; color: #a5b4fc; }
+    .doc-content pre { background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.9em 1em; overflow-x: auto; margin: 0.75em 0; }
     .doc-content pre code { background: none; padding: 0; color: var(--text-secondary); }
 
     /* ── Version history ── */
@@ -129,23 +129,23 @@
     .edit-layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 
     .editor-wrap {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
     }
     .editor-bar {
       display: flex; align-items: center; gap: 0.2rem;
       padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); background: var(--bg-subtle);
     }
     .fmt-btn {
-      background: transparent; border: none; border-radius: 4px; color: var(--text-muted);
+      background: transparent; border: none; border-radius: var(--radius-sm); color: var(--text-muted);
       cursor: pointer; font-family: inherit; font-size: 0.73rem; font-weight: 700;
       line-height: 1; padding: 0.28rem 0.42rem; min-width: 1.6rem; text-align: center;
     }
     .fmt-btn:hover { background: var(--border); color: var(--text-secondary); }
     .fmt-sep { width: 1px; height: 13px; background: var(--border-dark); margin: 0 0.1rem; flex-shrink: 0; }
-    .mode-tabs { display: flex; background: var(--bg-page); border-radius: 5px; padding: 2px; margin-left: auto; }
+    .mode-tabs { display: flex; background: var(--bg-page); border-radius: var(--radius-sm); padding: 2px; margin-left: auto; }
     .mode-tab {
       padding: 0.18rem 0.6rem; font-size: 0.72rem; font-weight: 600; color: var(--text-dim);
-      background: transparent; border: none; border-radius: 3px; cursor: pointer; font-family: inherit;
+      background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer; font-family: inherit;
     }
     .mode-tab:hover { color: var(--text-muted); }
     .mode-tab.active { background: var(--border); color: var(--text-secondary); }
@@ -171,7 +171,7 @@
     #body-preview a { color: var(--link); }
     #body-preview blockquote {
       border-left: 3px solid var(--accent-dark); background: rgba(29,78,216,0.08);
-      border-radius: 0 6px 6px 0; padding: 0.65rem 1rem; margin: 0.75rem 0;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 0.65rem 1rem; margin: 0.75rem 0;
       color: var(--accent-light); font-size: 0.875rem;
     }
     #body-preview blockquote p { color: var(--accent-light); margin: 0; }
@@ -186,7 +186,7 @@
     }
     .summary-field input {
       width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.875rem; font-family: inherit;
+      border-radius: var(--radius-sm); padding: 0.45rem 0.75rem; font-size: 0.875rem; font-family: inherit;
     }
     .summary-field input:focus { outline: none; border-color: var(--accent); }
 

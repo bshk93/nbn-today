@@ -48,16 +48,16 @@
     .who { font-size: 0.8rem; color: var(--text-muted); }
     .who b { color: var(--text-secondary); font-weight: 600; }
 
-    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.78rem; font-weight: 600; padding: 0.32rem 0.7rem; border: 1px solid transparent; }
+    button { font-family: inherit; cursor: pointer; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; padding: 0.32rem 0.7rem; border: 1px solid transparent; }
                         button:disabled { opacity: 0.45; cursor: default; }
     input, textarea, select {
       font-family: inherit; font-size: 0.82rem; background: var(--bg-page); color: var(--text-primary);
-      border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; outline: none; width: 100%;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.4rem 0.55rem; outline: none; width: 100%;
     }
     textarea { resize: vertical; min-height: 5rem; }
 
     .chip { display: inline-block; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-            padding: 0.12rem 0.4rem; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+            padding: 0.12rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
     .chip-role { border-color: var(--muted-border); color: var(--accent-light); }
     .chip-ok { border-color: var(--success); color: var(--success); }
     .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
@@ -71,12 +71,12 @@
     .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
 
     /* ── board bar ────────────────────────────────────────────────────────── */
-    .boardbar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    .boardbar { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
                 padding: 0.7rem 0.9rem; margin-bottom: 1rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
     .bb-block { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .bb-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
     .bb-val { font-size: 0.82rem; color: var(--text-secondary); }
-    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
     .seg button { border: none; border-radius: 0; background: transparent; color: var(--text-muted); padding: 0.28rem 0.6rem; }
     .seg button.on { background: var(--accent-dark); color: var(--text-on-accent); }
     .seg button:not(.on):hover { background: var(--bg-hover); color: var(--text-primary); }
@@ -85,27 +85,27 @@
        One consistently-styled, clearly bounded box for every control only a
        head (fac_head/poext_head, or admin) can use — instead of a badge next to
        each individual control, which reads as noise once there's more than one. */
-    .head-zone { background: var(--accent-panel-bg); border: 1px solid var(--accent); border-radius: 10px;
+    .head-zone { background: var(--accent-panel-bg); border: 1px solid var(--accent); border-radius: var(--radius);
                  padding: 0.7rem 0.9rem; margin-bottom: 1rem; display: flex; gap: 1.2rem; flex-wrap: wrap; align-items: center; }
     .head-zone-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
                         color: var(--accent-light); font-weight: 800; width: 100%; }
     .section.head-section { background: var(--accent-panel-bg); border: 1px solid var(--accent);
-                             border-radius: 8px; margin: 0.9rem 1rem; padding: 0.9rem 1rem; }
+                             border-radius: var(--radius-sm); margin: 0.9rem 1rem; padding: 0.9rem 1rem; }
     .section.head-section h3 { color: var(--accent-light); }
 
     /* ── panes ────────────────────────────────────────────────────────────── */
     .panes { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 1rem; align-items: start; }
     @media (max-width: 900px) { .panes { grid-template-columns: 1fr; } }
 
-    .pane { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+    .pane { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
     .pane-head { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; }
     .tabs-mini { display: flex; gap: 0.15rem; }
-    .tabs-mini button { background: none; border: none; color: var(--text-muted); padding: 0.2rem 0.45rem; font-size: 0.72rem; border-radius: 5px; }
+    .tabs-mini button { background: none; border: none; color: var(--text-muted); padding: 0.2rem 0.45rem; font-size: 0.72rem; border-radius: var(--radius-sm); }
     .tabs-mini button.on { background: var(--bg-hover); color: var(--text-primary); }
     .history-search { position: relative; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border-subtle); }
     .history-search input { font-size: 0.78rem; padding: 0.35rem 0.5rem; }
     .history-search-results { position: absolute; left: 0.8rem; right: 0.8rem; top: 100%; z-index: 5;
-      background: var(--bg-page); border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px;
+      background: var(--bg-page); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm);
       max-height: 14rem; overflow-y: auto; }
     .history-search-results div { padding: 0.3rem 0.55rem; font-size: 0.78rem; cursor: pointer; }
     .history-search-results div:hover { background: var(--bg-hover); }
@@ -130,7 +130,7 @@
     .section h3 { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; margin-bottom: 0.6rem; }
 
     .offers { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.3rem; align-items: stretch; }
-    .offer { flex: 0 0 320px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 9px; padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.55rem; }
+    .offer { flex: 0 0 320px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.7rem 0.8rem; display: flex; flex-direction: column; gap: 0.55rem; }
     .offer.returned { border-color: var(--gold-border); }
     .offer-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .offer-team { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.02em; }
@@ -154,12 +154,12 @@
     .pitch.open { max-height: none; }
     .linkish { background: none; border: none; color: var(--link); padding: 0; font-size: 0.72rem; font-weight: 600; }
     .lineup { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-    .lu { font-size: 0.68rem; border: 1px solid var(--border); border-radius: 5px; padding: 0.1rem 0.3rem; color: var(--text-muted); }
+    .lu { font-size: 0.68rem; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.1rem 0.3rem; color: var(--text-muted); }
     .lu b { color: var(--text-secondary); font-weight: 600; }
     .lu.signee { border-color: var(--accent); color: var(--accent-light); }
     .lu.signee b { color: var(--accent-light); }
 
-    .banner { border: 1px solid var(--border); border-radius: 7px; padding: 0.5rem 0.65rem; font-size: 0.76rem; color: var(--text-secondary); line-height: 1.5; }
+    .banner { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.65rem; font-size: 0.76rem; color: var(--text-secondary); line-height: 1.5; }
     .banner.warn { border-color: var(--gold-border); background: var(--gold-bg); color: var(--gold); }
     .banner.bad { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
     .banner.info { border-color: var(--muted-border); background: var(--accent-panel-bg); color: var(--text-secondary); }
@@ -169,10 +169,10 @@
     .diff { font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
 
     .ballot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.6rem; }
-    .ballot { border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.7rem; background: var(--bg-subtle); }
+    .ballot { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; background: var(--bg-subtle); }
     .ballot-name { font-size: 0.8rem; font-weight: 600; display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; }
     .bar-row { display: grid; grid-template-columns: 1fr 3.2rem; gap: 0.4rem; align-items: center; font-size: 0.72rem; margin-top: 0.3rem; }
-    .bar { height: 0.5rem; background: var(--bg-page); border-radius: 3px; overflow: hidden; border: 1px solid var(--border-subtle); }
+    .bar { height: 0.5rem; background: var(--bg-page); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border-subtle); }
     .bar span { display: block; height: 100%; background: var(--accent); }
     .bar-lbl { font-size: 0.7rem; color: var(--text-muted); }
     .bar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
@@ -195,7 +195,7 @@
     }
 
     /* ── role-aware instructions (§ 8.5) ──────────────────────────────────── */
-    .howto { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1rem; }
+    .howto { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; }
     .howto > summary { cursor: pointer; padding: 0.55rem 0.9rem; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
     .howto > summary::marker { color: var(--text-dim); }
     .howto-body { padding: 0 0.9rem 0.8rem; }
@@ -204,19 +204,19 @@
     .howto li { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; margin-left: 1rem; }
 
     .commit { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-    .commit-card { border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.65rem; font-size: 0.74rem; color: var(--text-muted); }
+    .commit-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.65rem; font-size: 0.74rem; color: var(--text-muted); }
     .commit-card b { color: var(--text-secondary); }
     .commit-card.over { border-color: var(--gold-border); color: var(--gold); }
 
     /* ── modal ────────────────────────────────────────────────────────────── */
     .scrim { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 1rem; }
-    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.2rem; width: 460px; max-width: 100%; max-height: 85vh; overflow-y: auto; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.2rem; width: 460px; max-width: 100%; max-height: 85vh; overflow-y: auto; }
     .modal h3 { font-size: 0.98rem; font-weight: 700; margin-bottom: 0.5rem; }
     .modal p.note { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.8rem; line-height: 1.5; }
     .modal .row { margin-bottom: 0.7rem; }
     .modal label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.2rem; font-weight: 600; }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.9rem; }
-    .picklist { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 7px; }
+    .picklist { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
     .pickrow { display: flex; gap: 0.5rem; align-items: center; padding: 0.35rem 0.55rem; border-bottom: 1px solid var(--border-subtle); font-size: 0.8rem; }
     .pickrow:last-child { border-bottom: none; }
     .pickrow input[type=checkbox] { width: auto; }

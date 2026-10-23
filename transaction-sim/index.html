@@ -36,7 +36,7 @@
     .mode-tab.active { color: var(--text-primary); border-bottom-color: var(--accent); }
 
     /* Signing / offer-sheet form */
-    .sign-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+    .sign-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
     .sign-row { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: flex-end; margin-bottom: 0.85rem; }
     .sign-row:last-child { margin-bottom: 0; }
     .sign-field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 190px; min-width: 150px; }
@@ -45,23 +45,23 @@
     .sign-field[hidden] { display: none; }
     .sign-field.narrow { flex: 0 1 130px; }
     .sign-field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
-    .sign-field select, .sign-field input { background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 0.85rem; padding: 0.4rem 0.5rem; outline: none; width: 100%; }
+    .sign-field select, .sign-field input { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; padding: 0.4rem 0.5rem; outline: none; width: 100%; }
     .sign-field select:focus, .sign-field input:focus { border-color: var(--accent); }
     .sign-field .hint { font-size: 0.7rem; color: var(--text-muted); }
     .salary-years { display: flex; flex-wrap: wrap; gap: 0.6rem; }
     .salary-year { display: flex; flex-direction: column; gap: 0.2rem; }
     .salary-year label { font-size: 0.65rem; font-weight: 700; color: var(--text-dim); letter-spacing: 0.05em; }
-    .salary-year input { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.35rem 0.5rem; outline: none; }
+    .salary-year input { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.35rem 0.5rem; outline: none; }
     .salary-year input:focus { border-color: var(--accent); }
     .salary-year .raise { font-size: 0.62rem; color: var(--text-muted); }
-    .salary-year .year-opt { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); font-family: inherit; font-size: 0.68rem; padding: 0.15rem 0.3rem; outline: none; cursor: pointer; }
+    .salary-year .year-opt { width: 130px; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-family: inherit; font-size: 0.68rem; padding: 0.15rem 0.3rem; outline: none; cursor: pointer; }
     .salary-year .year-opt:focus { border-color: var(--accent); }
     .sign-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
-    .preset-btn { background: var(--bg-page); border: 1px solid var(--border); border-radius: 5px; color: var(--text-muted); font-family: inherit; font-size: 0.7rem; padding: 0.25rem 0.55rem; cursor: pointer; }
+    .preset-btn { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-family: inherit; font-size: 0.7rem; padding: 0.25rem 0.55rem; cursor: pointer; }
     .preset-btn:hover { border-color: var(--accent); color: var(--text-primary); }
 
     /* Results */
-    .results { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .results { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .results-header { padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
     .results-header .rh-title { flex: 1; min-width: 0; }
     .export-btn.primary { border-color: var(--accent); color: var(--link); }
@@ -85,7 +85,7 @@
     .vc-row.error { color: var(--danger-light); }   .vc-row.error .vc-icon { color: var(--danger); }
 
     /* "What this checks" documentation panel */
-    .checks-doc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 0.4rem 1.1rem; margin-bottom: 1.25rem; }
+    .checks-doc { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.4rem 1.1rem; margin-bottom: 1.25rem; }
     .checks-doc summary { cursor: pointer; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 0.45rem 0; list-style: none; }
     .checks-doc summary::-webkit-details-marker { display: none; }
     .checks-doc summary::before { content: '▸ '; color: var(--text-dim); }
@@ -98,7 +98,7 @@
     .checks-doc h4 { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin: 0.9rem 0 0.3rem; }
     .checks-doc em { color: var(--runnerup-border); font-style: italic; }
     .checks-doc .doc-note { font-size: 0.75rem; color: var(--text-muted); line-height: 1.55; margin: 0.2rem 0 0.5rem; }
-    .checks-doc code { background: var(--bg-page); padding: 0.05rem 0.3rem; border-radius: 4px; font-size: 0.72rem; color: var(--text-muted); }
+    .checks-doc code { background: var(--bg-page); padding: 0.05rem 0.3rem; border-radius: var(--radius-sm); font-size: 0.72rem; color: var(--text-muted); }
   </style>
   <script src="/names.js"></script>
 </head>

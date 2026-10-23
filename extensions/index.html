@@ -39,7 +39,7 @@
     .gate { max-width: 480px; margin: 4rem auto; text-align: center; }
     .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
 
-    .pane { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1rem; }
+    .pane { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; }
     .pane-head { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-md); color: var(--text-primary); font-weight: 600; }
     .prow { padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
     .prow:last-child { border-bottom: none; }
@@ -48,17 +48,17 @@
     .empty { padding: 1.25rem 0.9rem; color: var(--text-dim); font-size: 0.82rem; text-align: center; }
 
     .chip { display: inline-block; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-            padding: 0.12rem 0.4rem; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); }
+            padding: 0.12rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); }
     .chip-live { border-color: var(--accent); color: var(--accent-light); }
     .chip-warn { border-color: var(--gold-border); color: var(--gold); }
     .chip-ok { border-color: var(--success); color: var(--success); }
     .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
 
-    button { font-family: inherit; cursor: pointer; border-radius: 6px; font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; border: 1px solid transparent; }
+    button { font-family: inherit; cursor: pointer; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; border: 1px solid transparent; }
                         button:disabled { opacity: 0.45; cursor: default; }
 
     input, select, textarea { font-family: inherit; font-size: 0.85rem; background: var(--bg-page); color: var(--text-primary);
-      border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.55rem; outline: none; width: 100%; }
+      border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.4rem 0.55rem; outline: none; width: 100%; }
     textarea { resize: vertical; min-height: 4.5rem; }
     .checkbox-line { display: flex; gap: 0.4rem; align-items: center; font-size: 0.82rem; color: var(--text-secondary); padding-top: 0.4rem; }
     .checkbox-line input { width: auto; }
@@ -73,7 +73,7 @@
     .salary-year label { margin: 0; }
 
     .note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
-    .banner { border: 1px solid var(--border); border-radius: 7px; padding: 0.55rem 0.7rem; font-size: 0.78rem; color: var(--text-secondary); margin: 0.7rem 0.9rem; }
+    .banner { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; font-size: 0.78rem; color: var(--text-secondary); margin: 0.7rem 0.9rem; }
     .banner.warn { border-color: var(--gold-border); background: var(--gold-bg); color: var(--gold); }
     .banner.bad { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-light); }
     .banner.info { border-color: var(--muted-border); background: var(--accent-panel-bg); color: var(--text-secondary); }

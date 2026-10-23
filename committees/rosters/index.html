@@ -42,7 +42,7 @@
     .clean-banner {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 1rem 1.25rem;
       color: var(--text-muted);
       font-size: 0.9rem;
@@ -54,7 +54,7 @@
     .legend {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       margin-bottom: 1rem;
       overflow: hidden;
     }
@@ -137,7 +137,7 @@
     .team-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       margin-bottom: 0.75rem;
       overflow: hidden;
     }
@@ -310,7 +310,7 @@
       font-family: var(--font-mono);
       background: rgba(255,255,255,0.06);
       padding: 0.1rem 0.35rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
     }
 
     .chip-row {
@@ -325,7 +325,7 @@
       align-items: baseline;
       gap: 0.45rem;
       padding: 0.4rem 0.8rem;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--bg-card);
       color: var(--text-muted);
@@ -394,7 +394,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-left: 3px solid var(--pc);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.7rem 0.9rem;
       display: grid;
       grid-template-columns: 92px 1fr 1fr;
@@ -436,7 +436,7 @@
       font-family: var(--font-mono);
       font-size: 0.65rem;
       padding: 0.05rem 0.4rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--border);
       color: var(--text-muted);
@@ -457,7 +457,7 @@
       grid-column: 1 / -1;
       margin-bottom: 0.4rem;
       padding: 0.55rem 0.7rem;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       background: rgba(255,255,255,0.04);
       border: 1px solid var(--border);
       font-size: 0.8rem;
@@ -506,7 +506,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-left: 3px solid var(--pc);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 0.6rem 0.9rem;
       display: grid;
       grid-template-columns: 72px 1fr;
@@ -552,7 +552,7 @@
     .tile {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 0.7rem 0.85rem;
       cursor: pointer;
       text-align: left;
@@ -608,7 +608,7 @@
     .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
     .chip {
       display: inline-flex; align-items: center;
-      font-size: 0.74rem; padding: 0.2rem 0.55rem; border-radius: 12px;
+      font-size: 0.74rem; padding: 0.2rem 0.55rem; border-radius: var(--radius);
       border: 1px solid var(--border); background: var(--bg-subtle);
       color: var(--text-secondary); line-height: 1.35;
     }

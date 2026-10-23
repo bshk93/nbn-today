@@ -28,30 +28,30 @@
     /* ── Header ────────────────────────────────────────────────── */
             .controls { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 
-    .add-event-btn { background: none; border: 1px solid var(--text-dim); color: var(--purple); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .add-event-btn { background: none; border: 1px solid var(--text-dim); color: var(--purple); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .add-event-btn:hover { border-color: var(--purple); background: #1e1b2e; }
-    .add-game-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .add-game-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .add-game-btn:hover { border-color: var(--link); background: var(--bg-page); }
 
     /* View toggle */
                 
     /* Month nav (shown only in month view) */
     .month-nav { display: flex; align-items: center; gap: 0.5rem; }
-    .month-btn { background: var(--border); border: 1px solid var(--text-dim); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
+    .month-btn { background: var(--border); border: 1px solid var(--text-dim); color: var(--text-secondary); border-radius: var(--radius-sm); padding: 0.3rem 0.65rem; cursor: pointer; font-size: 0.85rem; line-height: 1.4; }
     .month-btn:hover { background: var(--text-dim); }
     .month-label { font-size: 1rem; font-weight: 600; min-width: 140px; text-align: center; }
 
     /* ── Add event form ─────────────────────────────────────────── */
-    .add-event-form { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: #1e1b2e; border: 1px solid var(--purple-border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
+    .add-event-form { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: #1e1b2e; border: 1px solid var(--purple-border); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
     .add-event-form label { font-size: 0.78rem; color: var(--purple-light); font-weight: 600; white-space: nowrap; }
     .add-event-form input[type="date"], .add-event-form input[type="text"] {
-      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm);
       padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none;
     }
     .add-event-form input[type="date"] { width: 140px; }
     .add-event-form input[type="text"] { flex: 1; min-width: 140px; }
     .add-event-form input:focus { border-color: #7c3aed; }
-    .add-event-form .form-save { background: #7c3aed; border: none; color: var(--text-on-accent); border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .add-event-form .form-save { background: #7c3aed; border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
     .add-event-form .form-save:hover { background: #6d28d9; }
     .add-event-form .form-save:disabled { opacity: 0.5; cursor: default; }
     .add-event-form .form-cancel { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
@@ -59,11 +59,11 @@
     .add-event-form .form-err { font-size: 0.75rem; color: var(--danger); width: 100%; }
 
     /* ── Add game(s) form ───────────────────────────────────────── */
-    .add-game-form { background: var(--bg-page); border: 1px solid var(--accent-dark); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.45rem; }
+    .add-game-form { background: var(--bg-page); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.45rem; }
     .game-rows { display: flex; flex-direction: column; gap: 0.35rem; }
     .game-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .game-row input[type="date"], .game-row select, .game-row input[type="text"] {
-      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px;
+      background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm);
       padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none;
     }
     .game-row input[type="date"] { width: 138px; }
@@ -74,9 +74,9 @@
     .game-row-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 0.1rem; transition: color 0.1s; }
     .game-row-del:hover { color: var(--danger); }
     .add-game-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .add-game-form .add-another { background: none; border: 1px dashed var(--accent-panel-bg); color: #4b6fa8; border-radius: 5px; padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
+    .add-game-form .add-another { background: none; border: 1px dashed var(--accent-panel-bg); color: #4b6fa8; border-radius: var(--radius-sm); padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
     .add-game-form .add-another:hover { border-color: var(--accent); color: var(--link); }
-    .add-game-form .form-save { background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: 5px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .add-game-form .form-save { background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
     .add-game-form .form-save:hover { background: #1e40af; }
     .add-game-form .form-save:disabled { opacity: 0.5; cursor: default; }
     .add-game-form .form-cancel { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
@@ -87,7 +87,7 @@
     /* Fixed columns, so the time and the stream control line up from
        row to row. Every row emits every cell, empty or not. The time is the
        last column, so it lines up with a played game's score above it. */
-    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: grid; grid-template-columns: minmax(0, 1fr) 11rem 4.6rem 1rem; align-items: center; column-gap: 0.6rem; }
+    .sched-schd-game { font-size: 0.82rem; color: var(--accent-light); padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); display: grid; grid-template-columns: minmax(0, 1fr) 11rem 4.6rem 1rem; align-items: center; column-gap: 0.6rem; }
     .sched-schd-ctl  { order: 2; }
     .sched-schd-time { order: 3; }
     .sched-schd-del  { order: 4; }
@@ -104,9 +104,9 @@
     .sched-schd-teams { color: inherit; text-decoration: none; }
     .sched-schd-teams:hover { text-decoration: underline; }
     .sched-schd-time { font-size: 0.7rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: 3px; padding: 0.1rem 0.35rem; }
+    .sched-schd-note { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.1rem 0.35rem; }
     .sched-schd-stream { font-size: 0.7rem; color: var(--gold); white-space: nowrap; }
-    .sched-schd-buy { background: none; border: 1px solid var(--border); color: var(--gold); border-radius: 4px; padding: 0.05rem 0.45rem; font-size: 0.7rem; cursor: pointer; white-space: nowrap; }
+    .sched-schd-buy { background: none; border: 1px solid var(--border); color: var(--gold); border-radius: var(--radius-sm); padding: 0.05rem 0.45rem; font-size: 0.7rem; cursor: pointer; white-space: nowrap; }
     .sched-schd-buy:hover { border-color: var(--gold); }
     .sched-schd-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
     .sched-schd-game:hover .sched-schd-del { opacity: 1; }
@@ -122,7 +122,7 @@
     /* ── Schedule view ──────────────────────────────────────────── */
     .schedule { display: flex; flex-direction: column; }
 
-    .load-more-btn { align-self: flex-start; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.8rem; margin-bottom: 1.25rem; }
+    .load-more-btn { align-self: flex-start; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.8rem; margin-bottom: 1.25rem; }
     .load-more-btn:hover { border-color: var(--text-muted); color: var(--text-muted); }
 
     .sched-month-hdr { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); padding: 1rem 0 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
@@ -137,19 +137,19 @@
     .sched-day-streamer { font-weight: 500; color: var(--gold); }
     .sched-events { display: flex; flex-direction: column; gap: 0.15rem; padding-left: 0.75rem; }
 
-    .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
+    .sched-game { font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 0.5rem; }
     .sched-game:hover { background: var(--bg-card); }
     .sched-game-vod { display: inline-flex; }
     .sched-game-score { margin-left: auto; margin-right: 1.6rem; }
     .sched-game-score { color: var(--text-muted); font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: 3px; white-space: nowrap; }
+    .sched-game-type { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--champion-border); background: var(--champion-bg); padding: 0.1rem 0.3rem; border-radius: var(--radius-sm); white-space: nowrap; }
 
-    .sched-vest { font-size: 0.82rem; color: var(--warning); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: baseline; gap: 0.5rem; }
+    .sched-vest { font-size: 0.82rem; color: var(--warning); cursor: pointer; padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); display: flex; align-items: baseline; gap: 0.5rem; }
     .sched-vest:hover { background: var(--bg-card); color: var(--gold); }
     .sched-vest-name { flex: 1; }
     .sched-vest-amt { font-size: 0.75rem; color: var(--champion-border); white-space: nowrap; }
 
-    .sched-custom { font-size: 0.82rem; color: var(--purple-light); padding: 0.18rem 0.5rem; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem; }
+    .sched-custom { font-size: 0.82rem; color: var(--purple-light); padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 0.5rem; }
     .sched-custom-label { flex: 1; }
     .sched-custom-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; padding: 0 0.2rem; line-height: 1; opacity: 0; transition: opacity 0.1s; }
     .sched-custom:hover { background: var(--bg-card); }
@@ -190,7 +190,7 @@
     .yt-pip       { display: block; font-size: 0.68rem; color: var(--danger-light); text-decoration: none; line-height: 1.3; }
     .yt-pip:hover { text-decoration: underline; }
 
-    .team-filter { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
+    .team-filter { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); border-radius: var(--radius-sm); padding: 0.3rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
     .team-filter:focus { outline: none; border-color: var(--accent); }
 
     .loading { color: var(--text-muted); font-size: 0.875rem; }

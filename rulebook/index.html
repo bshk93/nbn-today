@@ -63,7 +63,7 @@
       top: 1.5rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 1rem 0;
       font-size: 0.78rem;
       max-height: calc(100vh - 3rem);
@@ -134,7 +134,7 @@
 
     /* ── Cap thresholds table ────────────────────────────────────────── */
     .cap-table-wrap {
-      background: var(--bg-card); border: 1px solid var(--accent-dark); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm);
       overflow: hidden; margin-bottom: 1.25rem;
     }
     .cap-table-header {
@@ -164,7 +164,7 @@
 
     /* ── Callout boxes ───────────────────────────────────────────────── */
     .callout {
-      border-left: 3px solid; border-radius: 0 6px 6px 0;
+      border-left: 3px solid; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; font-size: 0.875rem;
     }
     .callout-note { border-color: var(--accent-dark); background: rgba(29,78,216,0.08); color: var(--accent-light); }
@@ -173,7 +173,7 @@
 
     /* ── Revision history ────────────────────────────────────────────── */
     .rev-type { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em;
-                text-transform: uppercase; padding: 0.08rem 0.4rem; border-radius: 4px;
+                text-transform: uppercase; padding: 0.08rem 0.4rem; border-radius: var(--radius-sm);
                 border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
     .rev-type.rev-open { border-color: var(--gold-dim); color: var(--gold); }
     .rev-table td { vertical-align: top; }

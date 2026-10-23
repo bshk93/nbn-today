@@ -59,7 +59,7 @@
     .player-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 0.75rem 1rem;
       text-decoration: none;
       color: var(--text-primary);
@@ -191,7 +191,7 @@
     .hero-tile {
       display: flex; flex-direction: column; gap: 0.3rem; flex: 1 1 10.5rem; min-width: 0;
       padding: var(--space-3) var(--space-4);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       color: inherit; text-decoration: none; transition: border-color 0.15s;
     }
     a.hero-tile:hover { border-color: var(--text-muted); text-decoration: none; }
@@ -221,7 +221,7 @@
     /* Compare / Edit Bio, quiet, top right of the header. */
     .player-actions { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
     .player-actions a, .player-actions button {
-      padding: 0.25rem 0.6rem; border-radius: 6px; background: transparent;
+      padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent;
       border: 1px solid var(--border); color: var(--text-muted);
       font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; text-decoration: none;
     }
@@ -251,7 +251,7 @@
       padding: 0.3rem 0.75rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -282,7 +282,7 @@
       padding: 0.3rem 0.75rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -298,7 +298,7 @@
       padding: 0.3rem 0.75rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -321,7 +321,7 @@
       padding: 0.5rem 0.75rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       color: var(--text-primary);
       font-size: 0.875rem;
       font-family: inherit;
@@ -372,7 +372,7 @@
 
     /* bio edit form */
     .bio-edit-form {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 0.9rem 1.1rem; margin-top: 0.5rem; margin-bottom: 0.75rem;
       display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem;
     }
@@ -383,13 +383,13 @@
       font-size: var(--text-sm); color: var(--text-secondary); font-weight: 500;
     }
     .bio-edit-form input {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
       padding: 0.32rem 0.55rem; outline: none;
     }
     .bio-edit-form input:focus { border-color: var(--accent); }
     .bio-edit-form select {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
       padding: 0.32rem 0.55rem; outline: none; cursor: pointer;
     }
@@ -397,30 +397,30 @@
     .salary-rows { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.25rem; }
     .salary-row { display: flex; flex-direction: column; gap: 0.2rem; }
     .salary-row-main { display: flex; gap: 0.4rem; align-items: center; }
-    .salary-row-main input { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+    .salary-row-main input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.85rem; font-family: inherit; padding: 0.32rem 0.55rem; outline: none; }
     .salary-row-main input:focus { border-color: var(--accent); }
     .salary-row-main .season-input { width: 5.5rem; flex: 0 0 auto; }
     .salary-row-main .amount-input { flex: 1; }
     .salary-row-main .hold-select {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-muted); font-size: 0.8rem; font-family: inherit;
       padding: 0.32rem 0.4rem; outline: none; cursor: pointer; flex: 0 0 auto;
     }
     .salary-row-main .hold-select:focus { border-color: var(--accent); }
     /* Guarantee steps */
-    .gtd-steps { display: none; flex-direction: column; gap: 0.3rem; margin-left: 1rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.2); border-left: 2px solid var(--border); border-radius: 0 4px 4px 0; }
+    .gtd-steps { display: none; flex-direction: column; gap: 0.3rem; margin-left: 1rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.2); border-left: 2px solid var(--border); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
     .gtd-steps.visible { display: flex; }
     .gtd-steps-desc { font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-bottom: 0.15rem; }
     .gtd-step { display: flex; gap: 0.35rem; align-items: center; }
     .gtd-step-conn { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
-    .gtd-step input { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
+    .gtd-step input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
     .gtd-step input:focus { border-color: var(--accent); }
     .gtd-step .gtd-step-amount { width: 9rem; }
     .gtd-step .gtd-step-date { width: 9.5rem; }
     .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
     .gtd-step .gtd-step-remove:hover { color: var(--danger); }
-    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: 3px; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
     .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .bio-edit-form .full-col { grid-column: 1 / -1; }
     .field-hint { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.4; }
@@ -428,7 +428,7 @@
       grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; padding-top: 0.1rem;
     }
     .edit-btn {
-      padding: 0.28rem 0.7rem; border-radius: 6px; font-size: 0.78rem;
+      padding: 0.28rem 0.7rem; border-radius: var(--radius-sm); font-size: 0.78rem;
       font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
     }
     .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
@@ -438,7 +438,7 @@
     .edit-status { font-size: 0.75rem; color: var(--danger); }
     .btn-add-player {
       padding: 0.35rem 0.75rem; background: var(--accent-panel-bg); border: 1px solid var(--accent);
-      border-radius: 6px; color: var(--accent-light); font-size: 0.78rem; font-weight: 600;
+      border-radius: var(--radius-sm); color: var(--accent-light); font-size: 0.78rem; font-weight: 600;
       cursor: pointer; font-family: inherit; white-space: nowrap;
     }
     .btn-add-player:hover { background: #223f70; }
@@ -447,7 +447,7 @@
       display: flex; align-items: center; justify-content: center; z-index: 100;
     }
     .modal-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.5rem; width: min(540px, 92vw); max-height: 88vh; overflow-y: auto;
     }
     .modal-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
@@ -457,21 +457,21 @@
       text-transform: uppercase; letter-spacing: 0.05em;
     }
     .slug-field input {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
       padding: 0.32rem 0.55rem; outline: none;
     }
     .slug-field input:focus { border-color: var(--accent); }
     .slug-exists-warn {
       display: none; margin-top: 0.3rem; padding: 0.4rem 0.6rem;
-      background: var(--danger-alt-bg); border: 1px solid var(--danger-alt-border); border-radius: 6px;
+      background: var(--danger-alt-bg); border: 1px solid var(--danger-alt-border); border-radius: var(--radius-sm);
       color: var(--danger-light); font-size: 0.78rem; font-weight: 400;
       text-transform: none; letter-spacing: 0;
     }
     .slug-exists-warn a { color: var(--danger-light); text-decoration: underline; }
     .pos-picker { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
     .pos-pill {
-      padding: 0.18rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+      padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700;
       cursor: pointer; font-family: inherit; border: 1px solid var(--border);
       background: transparent; color: var(--text-muted);
     }
@@ -486,7 +486,7 @@
     .career-card {
       display: flex; flex-direction: column; gap: var(--space-3);
       padding: var(--space-3) var(--space-4);
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
     }
     .career-card .career-line-note { margin-top: 0; }
     .career-card .career-line { margin-top: 0; }
@@ -546,7 +546,7 @@
       padding: 0.3rem 0.7rem;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       font-size: 0.8rem;
       font-weight: 600;
@@ -559,7 +559,7 @@
     .po-badge {
       display: inline-block;
       padding: 0.1rem 0.32rem;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       font-size: 0.62rem;
       font-weight: 700;
       background: var(--accent-panel-bg);
@@ -1164,7 +1164,6 @@
     score.appendChild(num);
     score.appendChild(el('small', null, 'pts'));
     card.appendChild(score);
-    if (typeof nbnCountUp === 'function') nbnCountUp(num);
 
     // "Active" means on a roster today, as in Career Totals.
     const sub = el('div', 'tile-sub');
@@ -1379,7 +1378,7 @@
     fNotes.rows = 2;
     fNotes.placeholder = 'e.g. Matched RFA offer, no trade clause';
     fNotes.value = initial.notes || '';
-    fNotes.style.cssText = 'width:100%;resize:vertical;background:var(--bg-page);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);padding:0.35rem 0.5rem;font-size:0.85rem;font-family:inherit;outline:none;box-sizing:border-box';
+    fNotes.style.cssText = 'width:100%;resize:vertical;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.35rem 0.5rem;font-size:0.85rem;font-family:inherit;outline:none;box-sizing:border-box';
     fNotes.addEventListener('focus', () => fNotes.style.borderColor = 'var(--accent)');
     fNotes.addEventListener('blur',  () => fNotes.style.borderColor = 'var(--border)');
     notesLbl.appendChild(fNotes);
@@ -1411,7 +1410,7 @@
     twYearsWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Years' }));
     const twYears = document.createElement('input');
     twYears.type = 'number'; twYears.value = '2'; twYears.min = '1'; twYears.max = '10';
-    twYears.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
+    twYears.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
     twYearsWrap.appendChild(twYears);
     const twStartWrap = document.createElement('label');
     twStartWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:var(--text-muted)';
@@ -1419,7 +1418,7 @@
     const twStart = document.createElement('input');
     twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = currentSeasonStr();
     twStart.value = currentSeasonStr();
-    twStart.style.cssText = 'width:5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
+    twStart.style.cssText = 'width:5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
     twStartWrap.appendChild(twStart);
     twRow.appendChild(twYearsWrap); twRow.appendChild(twStartWrap);
     twowayDiv.appendChild(twHeader); twowayDiv.appendChild(twRow);
@@ -1559,7 +1558,7 @@
 
     const addSalBtn = document.createElement('button');
     addSalBtn.type = 'button'; addSalBtn.textContent = '+ Add season';
-    addSalBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
+    addSalBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
     addSalBtn.onmouseenter = () => { addSalBtn.style.color = 'var(--text-secondary)'; addSalBtn.style.borderColor = 'var(--text-muted)'; };
     addSalBtn.onmouseleave = () => { addSalBtn.style.color = 'var(--text-muted)'; addSalBtn.style.borderColor = 'var(--border)'; };
     addSalBtn.addEventListener('click', () => {
@@ -2307,7 +2306,6 @@
     const val = tile.querySelector('.tile-value');
     val.textContent = ovr;
     val.style.color = ovrHeatStyle(ovr).color;
-    if (typeof nbnCountUp === 'function') nbnCountUp(val);
 
     const sub = tile.querySelector('.tile-sub');
     if (hist.length >= 2) {

@@ -60,12 +60,12 @@
 
     /* Compare state */
     .cmp-header { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.5rem; align-items: center; margin-bottom: 2rem; }
-    .cmp-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .cmp-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: flex; align-items: center; gap: 1rem; }
     .cmp-card-b { flex-direction: row-reverse; text-align: right; }
     .cmp-photo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: var(--bg-page); flex-shrink: 0; }
     .cmp-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.2rem; }
     .cmp-meta { font-size: 0.8rem; color: var(--text-muted); }
-    .cmp-ovr { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 5px; font-size: 0.8rem; font-weight: 700; margin-top: 0.3rem; }
+    .cmp-ovr { display: inline-block; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 700; margin-top: 0.3rem; }
     .cmp-vs { font-size: 1.5rem; font-weight: 800; color: var(--border); text-align: center; }
     .change-link { font-size: 0.72rem; color: var(--text-muted); text-decoration: none; display: block; margin-top: 0.4rem; }
     .change-link:hover { color: var(--text-muted); }
@@ -103,8 +103,8 @@
     .attr-cat-title:first-of-type { margin-top: 0; }
     .attr-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.32rem; }
     .attr-label { width: 8rem; flex-shrink: 0; font-size: 0.78rem; color: var(--text-muted); }
-    .attr-track { flex: 1; height: 6px; border-radius: 3px; background: var(--bg-card); position: relative; overflow: hidden; }
-    .attr-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+    .attr-track { flex: 1; height: 6px; border-radius: var(--radius-sm); background: var(--bg-card); position: relative; overflow: hidden; }
+    .attr-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--radius-sm); }
     .attr-val { width: 1.8rem; text-align: right; font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums; }
     .attr-note { color: var(--text-muted); font-size: 0.85rem; }
     .attr-badge-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
@@ -416,7 +416,7 @@
     const h3 = document.createElement('h3'); h3.textContent = displayName(bio.name); col.appendChild(h3);
 
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;';
+    wrap.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;';
     const table = document.createElement('table');
     table.className = 'stat-table';
 

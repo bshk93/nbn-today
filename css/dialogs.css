@@ -26,7 +26,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 0.65rem 0.85rem;
   font-size: 0.82rem; line-height: 1.45;
   color: var(--text-primary);
@@ -57,7 +57,7 @@
 .dlg {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 1.4rem;
   width: 100%; max-width: 30rem;
   max-height: calc(100vh - 3rem); overflow-y: auto;
@@ -75,7 +75,7 @@
 .dlg-details {
   list-style: none; display: flex; flex-direction: column; gap: 0.4rem;
   background: var(--bg-subtle); border: 1px solid var(--border-subtle);
-  border-radius: 8px; padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-sm); padding: 0.7rem 0.8rem;
   font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary);
   max-height: 15rem; overflow-y: auto;
 }
@@ -85,14 +85,14 @@
 .dlg-confirm-text label { display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem; }
 .dlg-confirm-text input {
   width: 100%; padding: 0.5rem 0.65rem;
-  background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
   color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
 }
 .dlg-confirm-text input:focus { outline: none; border-color: var(--accent); }
 
 .dlg-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.2rem; }
 .dlg-actions button {
-  padding: 0.45rem 0.9rem; border-radius: 6px; font-family: inherit;
+  padding: 0.45rem 0.9rem; border-radius: var(--radius-sm); font-family: inherit;
   font-size: 0.83rem; font-weight: 600; cursor: pointer;
   border: 1px solid var(--border); background: var(--bg-page); color: var(--text-secondary);
 }

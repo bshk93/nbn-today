@@ -36,13 +36,13 @@
     }
     .auth-bar button {
       background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
-      border-radius: 6px; padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem;
+      border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem;
     }
     .auth-bar button:hover { background: var(--text-dim); }
 
     /* Cards */
     .card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.5rem; margin-bottom: 1.5rem;
     }
     .card h2 {
@@ -60,7 +60,7 @@
     }
     .form-field input, .form-field select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 6px; padding: 0.5rem 0.625rem; font-size: 0.875rem;
+      border-radius: var(--radius-sm); padding: 0.5rem 0.625rem; font-size: 0.875rem;
       font-family: inherit; width: 100%;
     }
     .form-field input:focus, .form-field select:focus {
@@ -82,7 +82,7 @@
     /* Upload zones */
     .uploads { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
     .upload-zone {
-      border: 2px dashed var(--border); border-radius: 10px; padding: 1.5rem;
+      border: 2px dashed var(--border); border-radius: var(--radius); padding: 1.5rem;
       text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s;
       position: relative;
     }
@@ -99,7 +99,7 @@
     .upload-filename { font-size: 0.82rem; color: var(--market-positive); margin-top: 0.35rem; font-weight: 500; }
 
     /* Preview image */
-    .preview-img { max-width: 100%; max-height: 200px; border-radius: 6px; margin-top: 0.75rem; display: none; }
+    .preview-img { max-width: 100%; max-height: 200px; border-radius: var(--radius-sm); margin-top: 0.75rem; display: none; }
 
     /* Actions */
     .form-actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
@@ -122,13 +122,13 @@
     .score-live-wrap { font-size: 0.8rem; color: var(--text-muted); }
     .score-live {
       font-size: 1.125rem; font-weight: 800; color: var(--accent);
-      background: rgba(59,130,246,0.12); border-radius: 6px;
+      background: rgba(59,130,246,0.12); border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
     .min-live-wrap { font-size: 0.8rem; color: var(--text-muted); }
     .min-live {
       font-size: 1.125rem; font-weight: 800; color: #10b981;
-      background: rgba(16,185,129,0.12); border-radius: 6px;
+      background: rgba(16,185,129,0.12); border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
 
@@ -177,11 +177,11 @@
       font-size: 0.8rem; font-family: inherit; text-align: center;
       width: 100%; min-width: 2rem; max-width: 3.5rem; padding: 0;
     }
-    .cell-input:focus { outline: 1px solid var(--accent); border-radius: 3px; background: var(--bg-page); }
+    .cell-input:focus { outline: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--bg-page); }
 
     select.player-select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 4px; padding: 0.2rem 0.3rem; font-size: 0.78rem;
+      border-radius: var(--radius-sm); padding: 0.2rem 0.3rem; font-size: 0.78rem;
       font-family: inherit; width: 100%; min-width: 150px;
     }
     select.player-select:focus { outline: none; border-color: var(--accent); }
@@ -205,7 +205,7 @@
     .queue-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
     .queue-badge {
       background: var(--accent-panel-bg); color: var(--link); font-size: 0.72rem; font-weight: 700;
-      border-radius: 10px; padding: 0.1rem 0.55rem;
+      border-radius: var(--radius); padding: 0.1rem 0.55rem;
     }
     .queue-empty { font-size: 0.82rem; color: var(--text-muted); }
     .queue-item {
@@ -220,7 +220,7 @@
       display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap;
     }
     .btn-queue {
-      background: #7c3aed; border: 1px solid #8b5cf6; color: #ddd6fe; border-radius: 8px;
+      background: #7c3aed; border: 1px solid #8b5cf6; color: #ddd6fe; border-radius: var(--radius-sm);
       padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
       font-family: inherit;
     }
@@ -229,14 +229,14 @@
 
     .btn-add-row {
       background: none; border: 1px dashed var(--border); color: var(--text-muted);
-      border-radius: 6px; padding: 0.3rem 0.875rem; font-size: 0.78rem;
+      border-radius: var(--radius-sm); padding: 0.3rem 0.875rem; font-size: 0.78rem;
       cursor: pointer; margin-top: 0.5rem; font-family: inherit;
     }
     .btn-add-row:hover { border-color: var(--accent); color: var(--accent); }
 
     .btn-remove-row {
       background: none; border: 1px solid var(--border); color: var(--text-muted);
-      border-radius: 4px; width: 1.5rem; height: 1.5rem; cursor: pointer;
+      border-radius: var(--radius-sm); width: 1.5rem; height: 1.5rem; cursor: pointer;
       font-size: 0.85rem; line-height: 1; font-family: inherit; padding: 0;
     }
     .btn-remove-row:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
@@ -249,24 +249,24 @@
     }
     .modal-backdrop.open { display: flex; }
     .modal {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.5rem; width: 360px; max-width: 90vw;
       display: flex; flex-direction: column; gap: 0.875rem;
     }
     .modal h3 { font-size: 1rem; font-weight: 600; }
     .modal input {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.875rem;
       font-family: var(--font-mono); width: 100%;
     }
     .modal input:focus { outline: none; border-color: var(--accent); }
     .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
     .btn-modal-save {
-      background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: 6px;
+      background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm);
       padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;
     }
     .btn-modal-cancel {
-      background: var(--border); border: none; color: var(--text-muted); border-radius: 6px;
+      background: var(--border); border: none; color: var(--text-muted); border-radius: var(--radius-sm);
       padding: 0.4rem 1rem; font-size: 0.85rem; cursor: pointer;
     }
 
@@ -433,7 +433,7 @@
     </div>
 
     <!-- Build status -->
-    <div id="build-banner" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:0.85rem;display:none;align-items:center;gap:0.75rem;">
+    <div id="build-banner" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;font-size:0.85rem;display:none;align-items:center;gap:0.75rem;">
       <span id="build-icon">⏳</span>
       <span id="build-msg">Rebuilding site stats…</span>
     </div>
@@ -1447,7 +1447,7 @@
           const btn = document.createElement("button");
           btn.title = "Remove from queue";
           btn.textContent = "×";
-          btn.style.cssText = "background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;width:1.5rem;height:1.5rem;cursor:pointer;font-size:0.85rem;flex-shrink:0;line-height:1;";
+          btn.style.cssText = "background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:var(--radius-sm);width:1.5rem;height:1.5rem;cursor:pointer;font-size:0.85rem;flex-shrink:0;line-height:1;";
           btn.onmouseenter = () => { btn.style.borderColor="var(--danger)"; btn.style.color="var(--danger)"; btn.style.background="rgba(239,68,68,0.08)"; };
           btn.onmouseleave = () => { btn.style.borderColor="var(--border)"; btn.style.color="var(--text-muted)"; btn.style.background="none"; };
           btn.onclick = () => removeGame(m.id, row);

@@ -28,7 +28,7 @@
     .seasons { display: flex; flex-direction: column; gap: 1.25rem; }
 
     .season-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.25rem 1.5rem;
     }
     .season-card h2 {
@@ -44,7 +44,7 @@
       font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary);
     }
     .field input {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
       padding: 0.35rem 0.5rem; outline: none; width: 100%;
     }
@@ -59,7 +59,7 @@
     .status.err { color: var(--danger); }
 
     .ly-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
     }
     .ly-card h2 {
@@ -81,7 +81,7 @@
     }
     .ly-row .ly-note { color: var(--text-muted); font-size: 0.75rem; }
     .ly-row input[type="date"] {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.82rem; font-family: inherit;
       padding: 0.3rem 0.45rem; outline: none;
     }

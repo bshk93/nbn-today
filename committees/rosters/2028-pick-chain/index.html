@@ -32,7 +32,7 @@
         header .subtitle { color: var(--text-secondary); max-width: 68ch; font-size: 1rem; line-height: 1.6; }
     header .subtitle b { color: var(--text-primary); }
     .status-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-    .status-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; padding: 0.3rem 0.65rem; border-radius: 5px; font-weight: 600; }
+    .status-chip { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; padding: 0.3rem 0.65rem; border-radius: var(--radius-sm); font-weight: 600; }
     .status-chip.ok { background: var(--success-bg); color: var(--success-light); }
     .status-chip.gap { background: var(--danger-bg); color: var(--danger-light); }
 
@@ -51,7 +51,7 @@
     .t-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin-bottom: 0.5rem; }
     .t-date { font-size: 0.82rem; color: var(--text-muted); }
     .t-title { font-weight: 700; font-size: 1rem; color: var(--text-primary); }
-    .t-tag { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 700; }
+    .t-tag { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); font-weight: 700; }
     .t-item .t-tag { background: var(--success-bg); color: var(--success-light); }
     .t-item.gap .t-tag { background: var(--danger-bg); color: var(--danger-light); }
     .t-quote { background: var(--bg-card); border-left: 3px solid var(--border); padding: 0.65rem 0.9rem; font-size: 0.88rem; color: var(--text-secondary); margin: 0.55rem 0; }
@@ -64,32 +64,32 @@
     .map-scroll { overflow-x: auto; }
     .branches { display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 1rem; align-items: start; }
     @media (max-width: 720px) { .branches { grid-template-columns: 1fr; } }
-    .branch { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.65rem; }
+    .branch { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; display: flex; flex-direction: column; gap: 0.65rem; }
     .branch-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
-    .node { border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.6rem 0.7rem; background: var(--bg-subtle); }
+    .node { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.6rem 0.7rem; background: var(--bg-subtle); }
     .node-title { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.4rem; }
     .node-inputs { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.45rem; color: var(--text-primary); }
     .node-inputs .vs { font-weight: 400; font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; }
-    .chip { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
+    .chip { font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm); background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
     .node-outputs { display: flex; flex-direction: column; gap: 0.28rem; font-size: 0.82rem; }
     .node-outputs .out { display: flex; gap: 0.4rem; align-items: baseline; }
     .node-outputs .arrow { color: var(--text-dim); }
     .node-outputs .dest.better { color: var(--success-light); font-weight: 700; }
     .node-outputs .dest.worse { color: var(--text-muted); }
     .feeds { font-style: italic; color: var(--text-muted); font-size: 0.8rem; }
-    .outright { border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.6rem 0.7rem; background: var(--bg-subtle); font-size: 0.88rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+    .outright { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.6rem 0.7rem; background: var(--bg-subtle); font-size: 0.88rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 
-    .pool { margin-top: 1.3rem; border: 1px solid var(--gold-border); border-radius: 8px; padding: 1rem 1.15rem; background: var(--gold-bg); }
+    .pool { margin-top: 1.3rem; border: 1px solid var(--gold-border); border-radius: var(--radius-sm); padding: 1rem 1.15rem; background: var(--gold-bg); }
     .pool-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gold-dim); font-weight: 700; margin-bottom: 0.65rem; }
     .pool-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.65rem; }
-    .pool-slot { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem 0.7rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pool-slot { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; font-size: 0.85rem; color: var(--text-secondary); }
     .pool-slot .slot-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.3rem; }
     .pool-slot.missing { border: 2px dashed var(--danger-border-strong); background: var(--danger-bg); }
     .pool-slot.missing .slot-label { color: var(--danger-light); }
     .pool-outcome { margin-top: 0.75rem; font-size: 0.88rem; color: var(--text-muted); }
 
     /* callout */
-    .callout { border: 1px solid var(--danger-border); background: var(--danger-bg); border-radius: 8px; padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 0.65rem; }
+    .callout { border: 1px solid var(--danger-border); background: var(--danger-bg); border-radius: var(--radius-sm); padding: 1.2rem 1.3rem; display: flex; flex-direction: column; gap: 0.65rem; }
     .callout .callout-title { text-transform: uppercase; letter-spacing: 0.07em; font-size: 0.78rem; font-weight: 700; color: var(--danger-light); }
     .callout p { margin: 0; color: var(--text-secondary); }
     .callout ul { margin: 0.3rem 0 0; padding-left: 1.2rem; color: var(--text-secondary); }

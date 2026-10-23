@@ -40,7 +40,7 @@
 
     .table-wrap {
       background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 12px; overflow-x: auto;
+      border-radius: var(--radius); overflow-x: auto;
     }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
@@ -70,7 +70,7 @@
     /* Podium display for major awards */
     .podium { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
     .podium-slot {
-      flex: 1; border: 1px solid var(--border); border-radius: 8px;
+      flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 0.75rem; min-width: 0;
     }
     .podium-slot.rank-1 { border-color: #92400e; background: #18160a; }
@@ -109,7 +109,7 @@
     .ballot-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .ballot-chip {
       font-size: 0.72rem; font-weight: 600;
-      letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: 4px;
+      letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: var(--radius-sm);
       cursor: default;
     }
     .ballot-chip.in      { background: var(--accent-panel-bg); color: var(--accent-light); }
@@ -119,7 +119,7 @@
     /* Floating tooltip for partial ballots */
     #ballot-tooltip {
       position: fixed; z-index: 100; pointer-events: none;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.45rem 0.65rem;
       font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
       white-space: pre; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
@@ -134,7 +134,7 @@
       border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
     }
     .btt-team { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .btt-state { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: 3px; flex-shrink: 0; }
+    .btt-state { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); flex-shrink: 0; }
     .btt-state-in      { background: var(--accent-panel-bg); color: var(--accent-light); }
     .btt-state-partial { background: var(--gold-bg); color: var(--warning); border: 1px solid var(--gold-chip-border); }
     .btt-state-out     { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border); }

@@ -33,7 +33,7 @@
     .badge {
       display: inline-block; font-size: 0.65rem; font-weight: 700;
       letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
     }
     .badge-submitted { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
     .badge-voting    { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
@@ -52,7 +52,7 @@
     /* Header actions */
     .header-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
     button {
-      font-family: inherit; cursor: pointer; border-radius: 6px;
+      font-family: inherit; cursor: pointer; border-radius: var(--radius-sm);
       font-size: 0.8rem; font-weight: 500; padding: 0.35rem 0.85rem;
       border: 1px solid transparent;
     }
@@ -75,10 +75,10 @@
       border-left: 3px solid var(--border); padding-left: 1rem; color: var(--text-muted); margin: 0.75rem 0;
     }
     .md-body code {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 3px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.1rem 0.35rem; font-size: 0.85em; font-family: var(--font-mono); color: var(--text-primary);
     }
-    .md-body pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; margin-bottom: 0.9rem; }
+    .md-body pre { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; overflow-x: auto; margin-bottom: 0.9rem; }
     .md-body pre code { background: none; border: none; padding: 0; }
     .md-body a { color: var(--link); }
     .md-body hr { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
@@ -93,7 +93,7 @@
 
     /* BOD panel */
     .bod-panel {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1rem 1.25rem; margin-bottom: 1.5rem;
     }
     .bod-panel .section-title { margin-bottom: 0.75rem; }
@@ -102,13 +102,13 @@
 
     /* Vote section */
     .vote-panel {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1rem 1.25rem; margin-bottom: 1.5rem;
     }
     .vote-panel .section-title { margin-bottom: 0.5rem; }
     .vote-buttons { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
     .vote-btn {
-      padding: 0.5rem 1.5rem; font-size: 0.875rem; font-weight: 600; border-radius: 6px;
+      padding: 0.5rem 1.5rem; font-size: 0.875rem; font-weight: 600; border-radius: var(--radius-sm);
       border: 2px solid transparent; cursor: pointer; font-family: inherit;
       transition: background 0.1s, border-color 0.1s;
     }
@@ -133,7 +133,7 @@
     .result-abstain .result-num { color: var(--text-muted); }
     .my-vote-chip {
       display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.55rem;
-      border-radius: 4px; margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;
+      border-radius: var(--radius-sm); margin-top: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;
     }
     .mv-yes     { background: var(--success-dark-bg); color: var(--success); }
     .mv-no      { background: var(--danger-bg); color: var(--danger); }
@@ -164,7 +164,7 @@
     .add-comment { margin-top: 1.25rem; }
     .add-comment textarea {
       width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.875rem;
+      border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; font-size: 0.875rem;
       font-family: inherit; resize: vertical; min-height: 90px;
     }
     .add-comment textarea:focus { outline: none; border-color: var(--accent); }
@@ -335,7 +335,7 @@ function render(p) {
     const editLink = document.createElement('a');
     editLink.href = `/proposals/new/?id=${p.id}`;
     editLink.className = 'btn-ghost';
-    editLink.style.cssText = 'display:inline-block;padding:0.35rem 0.85rem;border-radius:6px;border:1px solid var(--border);font-size:0.8rem;font-weight:500;color:var(--text-muted);';
+    editLink.style.cssText = 'display:inline-block;padding:0.35rem 0.85rem;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:0.8rem;font-weight:500;color:var(--text-muted);';
     editLink.textContent = 'Edit';
     actionsEl.appendChild(editLink);
   }

@@ -31,16 +31,16 @@
     }
     @media (max-width: 700px) { .attr-categories-grid { grid-template-columns: 1fr; } }
     .edit-btn {
-      padding: 0.28rem 0.7rem; border-radius: 6px; font-size: 0.78rem;
+      padding: 0.28rem 0.7rem; border-radius: var(--radius-sm); font-size: 0.78rem;
       font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
     }
     .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
     .edit-btn-primary:hover { background: #223f70; }
     .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
     .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-    .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
+    .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
     .ovr-edit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-    .ovr-edit-row input { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+    .ovr-edit-row input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-primary); font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
     .ovr-edit-row input:focus { border-color: var(--accent); }
     .ovr-edit-row input[type=number] { width: 4.5rem; }
@@ -292,7 +292,7 @@
         label.style.cssText = 'width:9rem;flex-shrink:0;font-size:0.85rem;color:var(--text-secondary);';
 
         const bar = document.createElement('div');
-        bar.style.cssText = 'flex:1;height:6px;border-radius:3px;background:var(--border);position:relative;overflow:hidden;';
+        bar.style.cssText = 'flex:1;height:6px;border-radius:var(--radius-sm);background:var(--border);position:relative;overflow:hidden;';
         const fill = document.createElement('div');
         const heat = ovrHeatStyle(val);
         fill.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:${Math.max(0, Math.min(100, val))}%;background:${heat.color};`;
@@ -556,7 +556,7 @@
       const loggedIn = canEditBios();
       const hasChange = current.length > 1;
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const inputCss = 'background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.8rem;padding:0.2rem 0.35rem;font-family:inherit;outline:none;';
+      const inputCss = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.8rem;padding:0.2rem 0.35rem;font-family:inherit;outline:none;';
 
       if (current.length) {
         if (current.length >= 2) wrap.appendChild(buildOvrChart(current));

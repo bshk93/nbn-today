@@ -28,9 +28,9 @@
     
             .subtitle { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
 
-    .algo-box { background: var(--bg-subtle); border: 1px solid #2d2d54; border-radius: 8px;
+    .algo-box { background: var(--bg-subtle); border: 1px solid #2d2d54; border-radius: var(--radius-sm);
                 padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #a5b4fc; }
-    .algo-box code { background: var(--bg-page); border-radius: 4px; padding: 0.1rem 0.35rem;
+    .algo-box code { background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.1rem 0.35rem;
                      font-size: 0.8rem; color: var(--purple-light); }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -56,7 +56,7 @@
 
     /* delta pill */
     .delta { display: inline-block; font-size: 0.72rem; font-weight: 700;
-             border-radius: 4px; padding: 0.1rem 0.4rem; }
+             border-radius: var(--radius-sm); padding: 0.1rem 0.4rem; }
     .delta.pos { background: var(--market-positive-bg); color: var(--market-positive); }
     .delta.neg { background: var(--danger-bg); color: var(--danger); }
     .delta.neu { background: var(--bg-card); color: var(--text-muted); }
@@ -65,7 +65,7 @@
     .chart-row { display: none; }
     .chart-row.visible { display: table-row; }
     .chart-row td { padding: 0 0.75rem 1rem; }
-    .chart-wrap { background: var(--bg-page); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; }
+    .chart-wrap { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; }
     .chart-wrap canvas { max-height: 220px; }
     .chart-legend { display: flex; gap: 1.25rem; margin-bottom: 0.5rem; font-size: 0.75rem; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block;

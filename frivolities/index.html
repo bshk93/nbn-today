@@ -37,7 +37,7 @@
     .team-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 0.875rem 0.875rem 0.625rem;
       display: flex;
       flex-direction: column;
@@ -57,14 +57,14 @@
     .league-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 1rem 0.875rem 0.75rem;
     }
 
     .attr-table-wrap {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       overflow-x: auto;
     }
 
@@ -150,7 +150,7 @@
       position: fixed;
       background: var(--bg-card);
       border: 1px solid var(--text-dim);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 0.35rem 0.6rem;
       font-size: 0.8rem;
       color: var(--text-primary);
@@ -171,7 +171,7 @@
     .earn-stat {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 0.75rem 0.9rem;
     }
     .earn-stat .es-label {
@@ -248,7 +248,7 @@
       align-items: flex-end;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 0.9rem 1rem;
       margin-bottom: 1rem;
     }
@@ -263,7 +263,7 @@
     .plot-field select, .plot-field input {
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-primary);
       font-family: inherit;
       font-size: 0.82rem;
@@ -274,7 +274,7 @@
     .plot-swap {
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       color: var(--text-secondary);
       cursor: pointer;
       font-family: inherit;
@@ -286,7 +286,7 @@
     .plot-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 0.75rem;
     }
     .plot-card .plot-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -303,7 +303,7 @@
       padding: 0.55rem 0.7rem;
       background: var(--bg-page);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       font-size: 0.82rem;
       color: var(--text-secondary);
     }
@@ -339,7 +339,7 @@
     .quad-search input { width: 14rem; }
     .quad-suggest {
       position: absolute; top: 100%; left: 0; z-index: 20; min-width: 16rem; margin-top: 4px;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); overflow: hidden;
     }
     .quad-suggest button {
@@ -371,7 +371,7 @@
     .quad-gallery .plot-empty { grid-column: 1 / -1; }
     .quad-card {
       position: relative; padding: 0.75rem 2rem 0.75rem 0.9rem; cursor: pointer;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
     }
     .quad-card:hover, .quad-card.active { border-color: var(--link); }
     .quad-card-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
@@ -399,7 +399,7 @@
     /* Methodology disclosure */
     #tab-retros details.method {
       margin-top: 1rem; background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: 10px; padding: 0.75rem 1rem;
+      border-radius: var(--radius); padding: 0.75rem 1rem;
     }
     #tab-retros details.method summary {
       cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);
@@ -410,14 +410,14 @@
     #tab-retros details.method .body ul { margin: 0.5rem 0 0 1.1rem; }
     #tab-retros details.method .body li { margin-bottom: 0.3rem; }
     #tab-retros details.method code {
-      background: var(--bg-subtle); padding: 0.1rem 0.3rem; border-radius: 4px;
+      background: var(--bg-subtle); padding: 0.1rem 0.3rem; border-radius: var(--radius-sm);
       font-size: 0.95em;
     }
 
     /* Summary tiles */
     #tab-retros .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin: 1.5rem 0; }
     #tab-retros .tile {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 0.9rem 1rem;
     }
     #tab-retros .tile .label {
@@ -434,7 +434,7 @@
     }
     #tab-retros .controls select, #tab-retros .controls input {
       background: var(--bg-card); color: var(--text-primary);
-      border: 1px solid var(--border); border-radius: 8px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.45rem 0.6rem; font-size: 0.82rem; font-family: inherit;
     }
     #tab-retros .controls input { min-width: 200px; flex: 1 1 200px; }
@@ -443,7 +443,7 @@
 
     /* Trade cards */
     #tab-retros .trade {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       margin-bottom: 0.7rem; overflow: hidden;
     }
     #tab-retros .trade-head {
@@ -483,7 +483,7 @@
     #tab-retros .sides-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
     #tab-retros .side-panel {
       background: var(--bg-subtle); border: 1px solid var(--border-subtle);
-      border-radius: 10px; padding: 0.8rem;
+      border-radius: var(--radius); padding: 0.8rem;
     }
     #tab-retros .side-panel.win { border-color: var(--success); }
     #tab-retros .side-panel h4 {
