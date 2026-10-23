@@ -56,6 +56,8 @@
 
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable.sorted { color: var(--text-primary); }
+    tfoot td { font-weight: 600; border-top: 1px solid var(--border); }
+    .ui-table td.sticky, .ui-table th.sticky { position: sticky; left: 0; background: var(--bg-card); z-index: 1; }
     th.group { text-align: center; font-size: var(--text-xs); color: var(--text-muted); border-bottom: 1px solid var(--border); }
     @media (max-width: 560px) {
       .hide-sm { display: none; }
@@ -93,6 +95,7 @@
 
   <div class="ui-tabs" role="tablist">
     <button class="ui-tab active" data-tab="balances">Balances</button>
+    <button class="ui-tab" data-tab="breakdown">Breakdown</button>
     <button class="ui-tab" data-tab="history">History</button>
   </div>
 
@@ -135,7 +138,7 @@ const when = ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', da
 function syncUrl(mode = 'replace') {
   const p = new URLSearchParams();
   if (member) p.set('m', member);
-  const url = location.pathname + (p.toString() ? '?' + p : '') + (tab === 'history' ? '#history' : '');
+  const url = location.pathname + (p.toString() ? '?' + p : '') + (tab === 'balances' ? '' : '#' + tab);
   if (url === location.pathname + location.search + location.hash) return;
   history[mode === 'push' ? 'pushState' : 'replaceState'](null, '', url);
 }
@@ -149,14 +152,17 @@ function setTab(t, mode = 'push') {
 
 window.addEventListener('popstate', () => {
   member = new URLSearchParams(location.search).get('m') || '';
-  setTab(member || location.hash === '#history' ? 'history' : 'balances', 'none');
+  setTab(member || location.hash === '#history' ? 'history' : location.hash === '#breakdown' ? 'breakdown' : 'balances', 'none');
 });
 
 function renderTotals() {
   const k = summary.by_kind;
   const tile = (lbl, val, sub) =>
     `<div class="total-tile"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
-  const streams = -((k.stream_purchase || 0) + (k.stream_refund || 0));
+  // Per source, not per kind: an adjustment that undid a bad donation is
+  // counted against Donations (routers/nbyen.py CORRECTS).
+  const src = Object.fromEntries((summary.sources || []).map(s => [s.key, s.total]));
+  const streams = -(src.streams ?? ((k.stream_purchase || 0) + (k.stream_refund || 0)));
   const held = GAMES.reduce((t, g) => t + (summary[g.key + '_total'] || 0), 0);
   // A game's net is everything it moved plus what's still held in it, so an
   // open position isn't read as a loss. Same sum as each member's P&L.
@@ -165,8 +171,8 @@ function renderTotals() {
     tile('In wallets', fmt(summary.total)) +
     (held ? tile('Held', fmt(held), GAMES.filter(g => summary[g.key + '_total'])
       .map(g => `${g.label.toLowerCase()} ${fmt(summary[g.key + '_total'])}`).join(' · ')) : '') +
-    tile('From donations', fmt(k.donation || 0), 'NB¥100 per $1') +
-    tile('From Twitch subs', fmt(k.twitch_sub || 0)) +
+    tile('From donations', fmt(src.donations ?? k.donation ?? 0), 'NB¥100 per $1') +
+    tile('From Twitch subs', fmt(src.twitch ?? k.twitch_sub ?? 0)) +
     tile('Spent on streams', fmt(streams), `${Math.round(streams / 1000)} bought`) +
     tile('Bettors, net', signed(net('bets')), 'open bets at their stake') +
     tile('Futures traders, net', signed(net('futures')), 'open shares at current prices') +
@@ -175,6 +181,7 @@ function renderTotals() {
 
 function render() {
   if (tab === 'balances') renderBalances();
+  else if (tab === 'breakdown') renderBreakdown();
   else renderHistory();
 }
 
@@ -215,6 +222,45 @@ function renderBalances() {
   });
 }
 
+// One column per source that has ever moved anything, from summary.sources.
+// A member's sources sum to their net worth, so the row reads as "where every
+// NB¥ you have came from". Blank means never touched; 0 means broke even.
+let bdSort = 'net_worth';
+function renderBreakdown() {
+  const cols = summary.sources.filter(s => s.members);
+  const val = r => bdSort === 'net_worth' ? r.net_worth
+    : bdSort === 'name' ? 0 : (r.sources[bdSort] ?? -Infinity);
+  const rows = summary.balances.filter(r => r.member)
+    .sort((a, b) => bdSort === 'name' ? a.name.localeCompare(b.name) : val(b) - val(a) || a.name.localeCompare(b.name));
+  const cell = (v, cls = '') => v == null ? `<td class="num dim">—</td>`
+    : `<td class="num ${cls} ${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${signed(v)}</td>`;
+  const th = (key, label, title) => `<th class="num sortable ${bdSort === key ? 'sorted' : ''}" data-sort="${key}"${title ? ` title="${esc(title)}"` : ''}>${label}</th>`;
+  const kindTip = s => s.kinds.map(k => KIND_LABEL[k] || k).join(', ');
+  const total = rows.reduce((t, r) => t + r.net_worth, 0);
+  const content = document.getElementById('content');
+  content.innerHTML = `<div class="ui-table-wrap"><table class="ui-table">
+    <thead><tr><th class="sticky sortable ${bdSort === 'name' ? 'sorted' : ''}" data-sort="name">Member</th>
+      ${cols.map(s => th(s.key, esc(s.label), kindTip(s))).join('')}
+      ${th('net_worth', 'Net worth')}</tr></thead>
+    <tbody>${rows.map(r => `<tr class="${me && r.name === me ? 'me' : ''}">
+      <td class="sticky"><a class="member-link" data-m="${esc(r.name)}">${esc(r.name)}</a></td>
+      ${cols.map(s => cell(r.sources[s.key])).join('')}
+      <td class="num bal">${fmt(r.net_worth)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td class="sticky">Everyone</td>
+      ${cols.map(s => `<td class="num" title="${s.members} member${s.members === 1 ? '' : 's'}">${signed(s.total)}</td>`).join('')}
+      <td class="num bal">${fmt(total)}</td></tr></tfoot>
+  </table></div>
+  <p class="note">Where every NB¥ came from and went. Each row adds up to that member's net worth.
+    Bets, futures and stocks are profit or loss, counting what is still held at today's value.
+    A dash means they never touched it. Click a heading to sort.</p>`;
+  content.querySelectorAll('.member-link').forEach(a => a.onclick = () => {
+    member = a.dataset.m; setTab('history');
+  });
+  content.querySelectorAll('th[data-sort]').forEach(h => h.onclick = () => {
+    bdSort = h.dataset.sort; renderBreakdown();
+  });
+}
+
 async function renderHistory() {
   const content = document.getElementById('content');
   const names = summary.balances.filter(r => r.member).map(r => r.name).sort((a, b) => a.localeCompare(b));
@@ -238,12 +284,12 @@ async function renderHistory() {
     const data = await res.json();
     const row = summary.balances.find(r => r.name === member) || {};
     const held = GAMES.filter(g => row[g.key]).map(g => `${fmt(row[g.key])} in ${g.label.toLowerCase()}`);
-    const pnl = GAMES.filter(g => row.pnl?.[g.key] != null)
-      .map(g => `${g.label} <span class="${row.pnl[g.key] > 0 ? 'pos' : row.pnl[g.key] < 0 ? 'neg' : ''}">${signed(row.pnl[g.key])}</span>`);
+    const pnl = (summary.sources || []).filter(s => row.sources?.[s.key] != null)
+      .map(s => `${esc(s.label)} <span class="${row.sources[s.key] > 0 ? 'pos' : row.sources[s.key] < 0 ? 'neg' : ''}">${signed(row.sources[s.key])}</span>`);
     const head = member
       ? `<p class="who">${esc(member)}<span class="bal">${fmt(row.net_worth || 0)}</span>${held.length
           ? `<span class="dim"> = ${fmt(row.balance || 0)} wallet + ${held.join(' + ')}</span>` : ''}</p>`
-        + (pnl.length ? `<p class="note">P&amp;L: ${pnl.join(' · ')}</p>` : '')
+        + (pnl.length ? `<p class="note">${pnl.join(' · ')}</p>` : '')
       : '';
     if (!data.entries.length) { hist.innerHTML = head + '<div class="ui-empty">Nothing yet.</div>'; return; }
     const more = data.total > data.entries.length
@@ -287,7 +333,7 @@ async function init() {
     return;
   }
   renderTotals();
-  setTab(member || location.hash === '#history' ? 'history' : 'balances', 'replace');
+  setTab(member || location.hash === '#history' ? 'history' : location.hash === '#breakdown' ? 'breakdown' : 'balances', 'replace');
 }
 // Admin only: give or take NB¥ from a member. Goes through the wallet, so it
 // lands in the history below as an "Adjustment".
