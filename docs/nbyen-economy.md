@@ -441,7 +441,10 @@ to be an exchange. Everything below follows from that one choice.
 Thirty team tickers plus eight index tickers (conferences and divisions). Every
 price started at 100 in 20-21 and moves after each game by
 `× (1 + diff_diff / MOVE_DIVISOR)`, where `diff_diff` is the margin plus the
-opponent's average margin so far that season (doubled in the playoffs). An index
+opponent's average margin so far that season. A playoff game counts the margin
+alone, doubled (decided 2026-10-23): the opponent credit cancels across a regular
+season, but in the playoffs every team is a good one, so both sides of every game
+gained and the conference indexes rose 5-29% every postseason. An index
 moves by the average of its teams' factors that day. Returns are a percentage, so
 how far a price has drifted from 100 doesn't matter. Until the 2026-10 rebuild a
 **sentiment** overlay sat on top, moved by member trades; it is gone (below).
@@ -486,10 +489,11 @@ At 20 traders fully deployed that is 200,000 NB¥ of capital at risk. The first
 version of this section assumed a season's moves ran −40% to +50%. Replayed
 against 20-21 to 25-26 at the old `/1000`, they ran about −70% to +250% (+505%
 once), and simply buying the five hottest teams after 20 games returned **+93% a
-season** — about 185,000 NB¥/year, four times the budget. At `/3000` the same
-strategy returns **+24%**, about **48,000 NB¥/year**, 5.5% of the total mint (§ 5):
-a proportionate price for a fun feature, and small enough that being wrong about
-it by half does not matter. (`/5000` would be +13%, if it needs to come down.)
+season** — about 185,000 NB¥/year, four times the budget. At `/3000`, with
+playoff games counted by margin alone, the same strategy returns **+12% to +23%,
+about +18%** — roughly **36,000 NB¥/year**, 4% of the total mint (§ 5): a
+proportionate price for a fun feature, and small enough that being wrong about it
+by half does not matter. A season's best team gains about +37% to +57%.
 
 The caps are also a sanity check against history: the ORL position that was being
 used to pump the price was 18,533 NB¥ in one ticker. **A 2,500 per-ticker cap
