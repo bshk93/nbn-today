@@ -323,6 +323,14 @@
     .pos-list .pos-row b { color: var(--text-primary); font-weight: 600; }
     .pos-list .pos-row.done { color: var(--text-muted); }
     .pos-list .pos-why { color: var(--text-muted); }
+    .pos-illegal {
+      display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 700; color: var(--danger-light);
+      background: var(--danger-bg); border: 1px solid var(--danger-light); cursor: help;
+    }
+    .note-box.open { border-color: var(--gold, #c9a227); }
+    .note-box .note-text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary); font-size: 0.85rem; margin: 0.2rem 0; }
+    .note-box .note-clear { align-self: flex-start; margin-top: 0.4rem; }
     /* The coaching cards flow into columns, so a row's label and value sit
        a card's width apart instead of the whole page's. */
     .cd-cs .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
@@ -480,6 +488,7 @@
     let nextId     = null;  // first unplayed game in the current view, set by render()
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
     let positionChecks = {};    // team abbr -> {items, ...}, from GET /api/position-checks
+    let coachingNotes = {};     // team abbr -> {text, updated_at, cleared_at, ...}, from GET /api/coaching-notes
     let streamingDays = {};  // "YYYY-MM-DD" -> {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
     // League "today" (Eastern), from /league-time.js.
     const today = nbnToday();
@@ -513,6 +522,14 @@
       } catch (e) {
         positionChecks = {};
       }
+      try {
+        const token = storedToken();
+        coachingNotes = await fetch('/api/coaching-notes', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).then(r => r.ok ? r.json() : {});
+      } catch (e) {
+        coachingNotes = {};
+      }
       renderCoachingDashboard();
       renderMine();
     }
@@ -537,6 +554,8 @@
     // positions, then its coaching settings and rotation.
     async function renderSettingsView(detail, team) {
       detail.innerHTML = '';
+      const note = noteCard(team, detail);
+      if (note) detail.appendChild(note);
       const pos = positionsCard(team);
       if (pos) detail.appendChild(pos);
       const cs = div('');
@@ -554,10 +573,80 @@
     function entryWork(team) {
       const rec = coachingSettings[team];
       const parts = [];
+      if (noteOpen(team)) parts.push('note');
       if (rec && rec.pending) parts.push('coaching');
-      const n = positionsDue(team).length;
-      if (n) parts.push(`${n} player${n === 1 ? '' : 's'}`);
+      const due = positionsDue(team);
+      const n = due.length;
+      const odd = due.filter(i => i.legal === false).length;
+      if (n) parts.push(`${n} player${n === 1 ? '' : 's'}` + (odd ? ` (⚠ ${odd} to OK)` : ''));
       return parts;
+    }
+
+    // ── Notes ───────────────────────────────────────────────────────
+    //
+    // A team's free-text note to the streamer. Open until a streamer marks
+    // it clear; the team saving it again reopens it.
+
+    const teamNote = team => (coachingNotes[team] && coachingNotes[team].text) ? coachingNotes[team] : null;
+    const noteOpen = team => { const n = teamNote(team); return !!n && !n.cleared_at; };
+
+    function noteCard(team, detail) {
+      const n = teamNote(team);
+      if (!n) return null;
+      const box = div('pos-list note-box' + (n.cleared_at ? '' : ' open'));
+      box.appendChild(div('pos-head', `Note from ${team}`));
+      box.appendChild(div('note-text', n.text));
+      const meta = div('pos-why', n.cleared_at
+        ? `Marked clear by ${n.cleared_by || 'a streamer'}, ${new Date(n.cleared_at).toLocaleString()}`
+        : `Saved ${new Date(n.updated_at).toLocaleString()} by ${n.updated_by || 'unknown'}`);
+      box.appendChild(meta);
+      if (!n.cleared_at) {
+        const b = document.createElement('button');
+        b.className = 'cd-btn note-clear';
+        b.textContent = 'Mark clear';
+        b.onclick = async () => {
+          if (await clearNote(team, b)) {
+            renderCoachingDashboard();
+            renderMine();
+            renderSettingsView(detail, team);
+          }
+        };
+        box.appendChild(b);
+      }
+      return box;
+    }
+
+    // True once cleared. A note the team rewrote since this page loaded
+    // stays open, and the page reloads so the streamer sees the new text.
+    async function clearNote(team, btn) {
+      const n = teamNote(team);
+      if (!n) return false;
+      if (btn) btn.disabled = true;
+      const token = storedToken();
+      try {
+        const r = await fetch(`/api/coaching-notes/${team}/clear`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ expected_updated_at: n.updated_at }),
+        });
+        if (r.status === 409) {
+          alert(`${team} changed its note since the dashboard loaded. Refreshing the list.`);
+          await loadCoachingDashboard();
+          return false;
+        }
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Note not cleared: ${err.detail || r.status}`);
+          if (btn) btn.disabled = false;
+          return false;
+        }
+        coachingNotes[team] = await r.json();
+        return true;
+      } catch (e) {
+        alert('Network error');
+        if (btn) btn.disabled = false;
+        return false;
+      }
     }
 
     function coachingRowMeta(team) {
@@ -587,6 +676,14 @@
       if (i.changed) why = i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`;
       else if (i.locked) why = i.due ? '📌 check every game' : '📌 checked today';
       if (why) row.appendChild(span('pos-why', `(${why})`));
+      // A secondary more than one step from the primary. Teams may ask for
+      // one, since there are exceptions, but setting it is the streamer's OK.
+      if (i.legal === false) {
+        const flag = span('pos-illegal', '⚠ Not legal under § 2.3');
+        flag.title = `A ${primary}'s secondary should be one step away. There are exceptions: `
+          + 'set it only if you OK it. Marking it entered is your OK.';
+        row.appendChild(flag);
+      }
       if (i.jersey_changed) {
         row.appendChild(document.createTextNode(i.jersey ? ` · #${i.jersey} ` : ' · no number '));
         row.appendChild(span('pos-why', i.jersey_was ? `(was #${i.jersey_was})` : '(new)'));
@@ -646,7 +743,7 @@
         list.appendChild(detailRow);
       });
 
-      const pendingCount = teams.filter(team => coachingRowMeta(team).status === 'pending' || positionsDue(team).length).length;
+      const pendingCount = teams.filter(team => entryWork(team).length).length;
       const badge = document.getElementById('coaching-tab-badge');
       badge.textContent = pendingCount;
       badge.hidden = pendingCount === 0;
@@ -733,7 +830,7 @@
         detailRow.hidden = false;
         viewBtn.textContent = 'Hide';
       };
-      if (rec || positionItems(team).length) tdActions.appendChild(viewBtn);
+      if (rec || positionItems(team).length || teamNote(team)) tdActions.appendChild(viewBtn);
 
       if (work.length) {
         const enterBtn = document.createElement('button');
@@ -757,7 +854,17 @@
       const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
       const rec = coachingSettings[team];
       const due = positionsDue(team);
+      const odd = due.filter(i => i.legal === false);
+      if (odd.length && !confirm(`${odd.map(i => `${nbnPlayerName(i.name)} at ${i.secondary}`).join(', ')}: `
+        + 'not legal under § 2.3. Marking entered means you OK the exception. Continue?')) {
+        btn.disabled = false;
+        return;
+      }
       try {
+        if (noteOpen(team) && !(await clearNote(team, null))) {
+          btn.disabled = false;
+          return;
+        }
         if (rec && rec.pending) {
           const r = await fetch(`/api/coaching-settings/${team}/enter`, {
             method: 'POST', headers,
@@ -906,7 +1013,7 @@
             const acts = div('acts');
             const detail = div('mine-detail');
             detail.hidden = true;
-            if (rec || positionItems(team).length) {
+            if (rec || positionItems(team).length || teamNote(team)) {
               const view = document.createElement('button');
               view.className = 'cd-btn';
               view.textContent = 'View';
