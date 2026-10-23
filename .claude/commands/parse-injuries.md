@@ -6,8 +6,8 @@ run it alone only for an injury report on its own.
 
 ## What this is
 
-Each stream day the streamer uploads MyNBA's **Injury History → Entire League**
-screen from `/committees/stream` (the 🚑 button on a day). One report per date;
+Each stream day the stats committee uploads MyNBA's **Injury History → Entire League**
+screen from `/committees/stats` (the 🚑 row under a day's games). One report per date;
 a long list is two or three screenshots. You transcribe the rows, match each
 player to a slug, and commit. The API does the rest — diffs against the current
 list, writes the history, and posts only what changed to Discord, tagging each

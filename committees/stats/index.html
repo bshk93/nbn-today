@@ -96,6 +96,9 @@
     .game > .slot-away { grid-area: a; }
     .game > .slot-home { grid-area: h; }
     .game > .game-status { grid-area: s; }
+    /* The day's 2K injury screen: one box across both team columns. */
+    .game.injury-row { grid-template-areas: "m i i s"; }
+    .game.injury-row > .slot { grid-area: i; }
     .game-matchup { font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); padding-top: 0.3rem; }
     .game-matchup .time { display: block; font-weight: 400; font-size: 0.72rem; color: var(--text-dim); }
     .game-status { text-align: right; padding-top: 0.25rem; font-size: 0.78rem; }
@@ -171,6 +174,7 @@
 
     @media (max-width: 640px) {
       .game { grid-template-columns: 1fr 1fr; grid-template-areas: "m s" "a h"; }
+      .game.injury-row { grid-template-areas: "m s" "i i"; }
       .day-vod { margin-left: 0; width: 100%; }
     }
   </style>
@@ -202,8 +206,9 @@
       <div class="card-body" id="wl-help" hidden>
         <p>Click a team's box, then paste a screenshot (Ctrl+V / ⌘V). You can also drop a file
           on it or choose one. Add a second image to a side if the bench didn't fit. A game is
-          ready to parse once both sides are in. Screenshots stay here for 14 days after the
-          game is entered.</p>
+          ready to parse once both sides are in. The 🚑 row under each day takes the 2K injury
+          screen (Entire League), as many screenshots as the list needs. Screenshots stay here
+          for 14 days after they are entered.</p>
       </div>
       <div id="worklist"><div class="card-body">Loading…</div></div>
     </div>
@@ -263,12 +268,14 @@
   //   GET /api/schedule               public   — this season's 1,200 fixtures
   //   GET /api/boxscores/games        public   — one row per game already entered
   //   GET /api/boxscore/screenshots   public   — screenshots per game: pending, or kept 14 days after entry
+  //   GET /api/injuries/screenshots   public   — injury reports per date: pending, or kept 14 days after commit
   //   GET /api/streaming-days         public   — per-date "streamed" mark and VOD link
   //   GET /api/boxscore/queue         stats    — games flagged for manual entry
   //
   // Writes, for the stats role: POST /api/boxscore/upload/side (one image for
-  // one team), DELETE /api/boxscore/pending/{id}/images/{file}, and
-  // PUT /api/streaming-days/{date}/youtube.
+  // one team), DELETE /api/boxscore/pending/{id}/images/{file},
+  // POST /api/injuries/upload, DELETE /api/injuries/pending/{id}/images/{file},
+  // and PUT /api/streaming-days/{date}/youtube.
 
   let me = { name: null, roles: [] };
   const storedToken = () => localStorage.getItem('nbn_token');
@@ -394,6 +401,7 @@
     fixtures: [],          // schedule rows
     entered: new Map(),    // gameKey -> box score index row
     shots: new Map(),      // gameKey -> screenshot item (pending or kept)
+    injuries: new Map(),   // date -> that date's injury report (pending wins over committed)
     days: {},              // date -> {done, youtube_url, ...}
     scope: 'open',
     shown: DAY_PAGE,
@@ -420,8 +428,11 @@
     const set = new Set(W.fixtures.filter(f => f.date <= today).map(f => f.date));
     W.shots.forEach(it => set.add(it.date));
     W.entered.forEach(g => set.add(g.date));
+    W.injuries.forEach((it, d) => set.add(d));
     return [...set].sort().reverse();
   }
+
+  const injuryPending = date => W.injuries.get(date)?.status === 'pending';
 
   // The screenshots on file for one team in a game. An item's sides are its
   // own home/away, which need not match the schedule's, so this goes by team.
@@ -445,7 +456,8 @@
   function renderTiles() {
     const due = W.fixtures.filter(f => f.date <= today);
     const missing = due.filter(f => !W.entered.has(gameKey(f.date, f.home_team, f.away_team)));
-    const ready = [...W.shots.values()].filter(it => it.status === 'pending' && it.ready).length;
+    const ready = [...W.shots.values()].filter(it => it.status === 'pending' && it.ready).length
+      + [...W.injuries.keys()].filter(injuryPending).length;
     tiles([
       { n: W.entered.size, label: 'Box scores on file', sub: W.season ? `${W.season} season` : '' },
       { n: due.length, label: 'Games played to date', sub: `of ${W.fixtures.length} scheduled` },
@@ -453,7 +465,7 @@
         tone: missing.length === 0 ? 'good' : missing.length > 5 ? 'bad' : 'warn',
         sub: due.length ? `${Math.round(100 * (due.length - missing.length) / due.length)}% entered` : '' },
       { n: ready, label: 'Ready to parse', tone: ready ? 'warn' : '',
-        sub: 'both sides uploaded' },
+        sub: 'box scores and injury reports' },
     ]);
   }
 
@@ -463,7 +475,7 @@
     document.getElementById('wl-help').hidden = !hasStatsRole();
     let dates = allDates();
     if (W.scope === 'open') {
-      dates = dates.filter(d => gamesOn(d).some(g => gameState(g).key !== 'entered'));
+      dates = dates.filter(d => injuryPending(d) || gamesOn(d).some(g => gameState(g).key !== 'entered'));
     }
     if (!dates.length) {
       box.innerHTML = `<div class="card-body"><p class="clean">${W.scope === 'open'
@@ -504,6 +516,8 @@
 
     games.sort((a, b) => (a.time_et || '').localeCompare(b.time_et || '') || a.home_team.localeCompare(b.home_team))
       .forEach(g => el.appendChild(gameEl(g)));
+    // Kept reports last 14 days, so an empty box older than that is just noise.
+    if (W.injuries.has(date) || (date <= today && daysAgo(date) <= 14)) el.appendChild(injuryEl(date));
     return el;
   }
 
@@ -637,11 +651,19 @@
       return el;
     }
 
+    el.dataset.slot = `${gameKey(g.date, g.home_team, g.away_team)}|${team}`;
+    armSlot(el, `${team} box score`, shots.length > 0, files => uploadFiles(g, team, files, el));
+    return el;
+  }
+
+  // Makes a box an upload target: click to focus then paste, drop a file on
+  // it, or choose one. Shared by the box score sides and the injury row.
+  function armSlot(el, title, hasShots, onFiles) {
     el.classList.add('can-upload');
     el.tabIndex = 0;
-    el.title = `${team} box score`;
+    el.title = title;
     const hint = document.createElement('span');
-    hint.innerHTML = `<span class="hint-idle">${shots.length ? 'Add another' : 'Click, then paste'}</span>`
+    hint.innerHTML = `<span class="hint-idle">${hasShots ? 'Add another' : 'Click, then paste'}</span>`
       + '<span class="hint-armed">Paste now (Ctrl+V / ⌘V)</span> · ';
     const choose = document.createElement('button');
     choose.className = 'choose';
@@ -653,7 +675,7 @@
     input.multiple = true;
     input.hidden = true;
     choose.onclick = e => { e.stopPropagation(); input.click(); };
-    input.onchange = () => { uploadFiles(g, team, [...input.files], el); input.value = ''; };
+    input.onchange = () => { onFiles([...input.files]); input.value = ''; };
     hint.appendChild(choose);
     el.append(hint, input);
 
@@ -662,7 +684,7 @@
       const files = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
       if (!files.length) { toast('Nothing to paste — copy a screenshot first.', true); return; }
       e.preventDefault();
-      uploadFiles(g, team, files, el);
+      onFiles(files);
     });
     el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
     el.addEventListener('dragleave', () => el.classList.remove('dragover'));
@@ -670,26 +692,21 @@
       e.preventDefault();
       el.classList.remove('dragover');
       const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
-      if (files.length) uploadFiles(g, team, files, el);
+      if (files.length) onFiles(files);
     });
-    return el;
   }
 
   // Re-renders one day in place, so an upload halfway down the page doesn't
   // move it, and puts focus back on the box that was being worked.
-  function rerenderDay(date, focusTeam, focusKey) {
+  function rerenderDay(date, focusSlot) {
     const old = document.querySelector(`.day[data-date="${date}"]`);
     if (!old) { renderWorklist(); return; }
     const fresh = dayEl(date);
     old.replaceWith(fresh);
     renderTiles();
-    if (focusTeam) {
-      const games = [...fresh.querySelectorAll('.game')];
-      const list = gamesOn(date).sort((a, b) => (a.time_et || '').localeCompare(b.time_et || '') || a.home_team.localeCompare(b.home_team));
-      const idx = list.findIndex(g => gameKey(g.date, g.home_team, g.away_team) === focusKey);
-      const slot = idx >= 0 && [...games[idx].querySelectorAll('.slot')]
-        .find(s => s.querySelector('.team')?.textContent === focusTeam);
-      if (slot && slot.classList.contains('can-upload')) slot.focus();
+    if (focusSlot) {
+      const slot = [...fresh.querySelectorAll('.slot.can-upload')].find(s => s.dataset.slot === focusSlot);
+      if (slot) slot.focus();
     }
   }
 
@@ -717,7 +734,7 @@
         break;
       }
     }
-    rerenderDay(g.date, team, k);
+    rerenderDay(g.date, `${k}|${team}`);
     if (reward) toast(`Uploaded · +NB¥${reward} earned`);
   }
 
@@ -730,6 +747,103 @@
       if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
       if (data.item) W.shots.set(k, data.item); else W.shots.delete(k);
       rerenderDay(g.date);
+    } catch (e) { toast(e.message, true); }
+  }
+
+  // ── Injury report ─────────────────────────────────────────────────────────
+  //
+  // MyNBA's Injury History → Entire League screen, once a day. Every
+  // screenshot for a date joins that date's pending report (a long list is
+  // two or three); /parse-injuries turns it into /injuries and the
+  // #injury-report post. Uploading after a commit starts a fresh report.
+
+  function injuryEl(date) {
+    const row = document.createElement('div');
+    row.className = 'game injury-row';
+    const item = W.injuries.get(date);
+    const committed = item && item.status === 'committed';
+
+    const m = document.createElement('div');
+    m.className = 'game-matchup';
+    m.textContent = '🚑 Injuries';
+    row.appendChild(m);
+
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.dataset.slot = 'injury';
+    const shots = item ? item.images : [];
+    if (shots.length) el.classList.add('filled');
+    shots.forEach((sh, i) => {
+      if (committed) {
+        const a = document.createElement('a');
+        a.className = 'shot-link';
+        a.href = sh.url; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = shots.length > 1 ? `Screenshot ${i + 1} ↗` : 'Screenshot ↗';
+        el.appendChild(a);
+        return;
+      }
+      const t = document.createElement('span');
+      t.className = 'thumb';
+      t.innerHTML = `<a href="${esc(sh.url)}" target="_blank" rel="noopener" title="Uploaded by ${esc(sh.by || '?')}">`
+        + `<img src="${esc(sh.url)}" alt="Injury report" loading="lazy"></a>`;
+      if (hasStatsRole()) {
+        const rm = document.createElement('button');
+        rm.className = 'rm';
+        rm.title = 'Remove this screenshot';
+        rm.textContent = '×';
+        rm.onclick = e => { e.stopPropagation(); removeInjuryShot(date, item, sh.file); };
+        t.appendChild(rm);
+      }
+      el.appendChild(t);
+    });
+    if (hasStatsRole()) {
+      armSlot(el, 'Injury report', shots.length > 0 && !committed, files => uploadInjuryShots(date, files, el));
+    } else if (!shots.length) {
+      el.insertAdjacentHTML('beforeend', '<span>No injury report yet</span>');
+    }
+    row.appendChild(el);
+
+    const st = committed ? { label: 'Committed', tone: 'success' }
+      : item ? { label: 'Ready to parse', tone: 'accent' }
+      : { label: 'No report', tone: '' };
+    const s = document.createElement('div');
+    s.className = 'game-status';
+    s.innerHTML = `<span class="ui-badge${st.tone ? ' ui-badge--' + st.tone : ''}">${esc(st.label)}</span>`;
+    if (committed) s.innerHTML += '<span class="score"><a href="/injuries/">Injury list</a></span>';
+    row.appendChild(s);
+    return row;
+  }
+
+  async function uploadInjuryShots(date, files, slotEl) {
+    slotEl.classList.add('busy');
+    let n = 0;
+    for (const f of files) {
+      const fd = new FormData();
+      fd.append('image', f, f.name || 'injuries.png');
+      fd.append('date', date);
+      try {
+        const r = await fetch('/api/injuries/upload', { method: 'POST', headers: authHeaders(), body: fd });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+        W.injuries.set(date, data.item);
+        n++;
+      } catch (e) {
+        toast(`Injury report: ${e.message}`, true);
+        break;
+      }
+    }
+    rerenderDay(date, 'injury');
+    if (n) toast(`Injury report: ${n} screenshot${n === 1 ? '' : 's'} uploaded`);
+  }
+
+  async function removeInjuryShot(date, item, file) {
+    try {
+      const r = await fetch(`/api/injuries/pending/${item.id}/images/${encodeURIComponent(file)}`,
+        { method: 'DELETE', headers: authHeaders() });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+      if (data.item) W.injuries.set(date, data.item); else W.injuries.delete(date);
+      rerenderDay(date);
     } catch (e) { toast(e.message, true); }
   }
 
@@ -802,13 +916,18 @@
       W.season = schedule.season;
       W.fixtures = schedule.games || [];
       const season = encodeURIComponent(schedule.season);
-      const [games, shots, days] = await Promise.all([
+      const [games, shots, days, injuries] = await Promise.all([
         jget(`/api/boxscores/games?season=${season}`),
         jget(`/api/boxscore/screenshots?season=${season}`).catch(() => []),
         jget('/api/streaming-days').catch(() => ({})),
+        jget('/api/injuries/screenshots').catch(() => []),
       ]);
       games.forEach(g => W.entered.set(gameKey(g.date, g.home_team, g.away_team), g));
       shots.forEach(it => W.shots.set(gameKey(it.date, it.home_team, it.away_team), it));
+      // Pending wins over committed: it is the one that can still change.
+      injuries.forEach(it => {
+        if (!W.injuries.has(it.date) || it.status === 'pending') W.injuries.set(it.date, it);
+      });
       W.days = days || {};
       renderWorklist();
     } catch (e) {
