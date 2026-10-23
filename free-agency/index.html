@@ -325,7 +325,9 @@
       { key: 'pos',    label: 'POS',    sortField: 'pos',    cls: 'muted center', numeric: false, defaultDir:  1 },
       { key: 'ovr',    label: 'OVR',    sortField: 'ovr',    cls: 'ovr-cell',     numeric: true,  defaultDir: -1 },
       { key: 'age',    label: 'Age',    sortField: 'age',    cls: 'right',        numeric: true,  defaultDir:  1 },
+      { key: 'status', label: 'Status', sortField: 'status', cls: 'status-cell',  numeric: false, defaultDir:  1 },
       { key: 'salary', label: 'Salary', sortField: 'salary', cls: 'salary-cell',  numeric: true,  defaultDir: -1 },
+      { key: 'priorSalary', label: 'Prior Salary', sortField: 'priorSalary', cls: 'salary-cell', numeric: true, defaultDir: -1 },
       // The team he was last with — the one holding his rights or hold. Last, not
       // first: on a list of free agents the player leads, not a team he's leaving.
       { key: 'team',   label: 'Prior Team', sortField: 'team', cls: '',         numeric: false, defaultDir:  1 },
@@ -413,10 +415,14 @@
               td.style.background = `hsl(${Math.round(t * 120)},55%,18%)`;
               td.style.color      = `hsl(${Math.round(t * 120)},80%,72%)`;
             }
-          } else if (col.key === 'salary') {
-            td.textContent = row.salaryFmt;
+          } else if (col.key === 'status') {
+            td.textContent = row.status;
             const cls = CAP_HOLD_CSS[row.capType];
             if (cls) td.classList.add(cls);
+          } else if (col.key === 'salary' || col.key === 'priorSalary') {
+            const v = row[col.key];
+            td.textContent = v ? formatSalary(v) : '—';
+            if (!v) td.classList.add('muted');
           } else if (col.render) {
             col.render(row, td);
           } else {
@@ -1991,8 +1997,11 @@
             pos: (bio.pos || []).join('/') || '—',
             ovr: String(ovrJson[slug] || ''),
             age: calcAge(bio.dob),
+            // Renounced and unsigned carry no hold, so Salary is blank and the
+            // Status column says why.
+            status: CAP_HOLD_LABELS[entry.hold_type] || entry.hold_type || '—',
             salary: noCapHold ? 0 : entry.hold_amount,
-            salaryFmt: noCapHold ? CAP_HOLD_LABELS[entry.hold_type] : formatSalary(entry.hold_amount),
+            priorSalary: entry.prior_salary || 0,
             capType: entry.hold_type,
           };
 
