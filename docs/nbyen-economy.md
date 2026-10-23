@@ -172,7 +172,7 @@ already in the code on the new scale.
 | 6 | Bio fills, Perry | 1 per field; 10 / 5 / 2.5 | Nothing. |
 | 7 | Themes, avatar, name colour | 500, 500, 50 | Nothing. |
 | 8 | Trivia | — | **The server must track the streak.** Today the browser reports its own streak, so the endpoint pays whatever it's told. |
-| 9 | The market (`/invest`) | — | **Built 2026-10-23** (§ 3's rules, and a buy now refuses before taking the money). Off until `invest` is switched on in `wallet.KINDS` and `invest-market.json` is unlocked. |
+| 9 | The market (`/invest`) | — | **On since 2026-10-23**, under § 3's rules. Playoff games aren't in the schedule, so the pending-box-score lock can't see them: lock the market by hand for the postseason. |
 
 When the first of 2, 3, 5 or 6 comes back, add the shared monthly cap on free
 earning from the appendix (§ 1c) at the same time.
