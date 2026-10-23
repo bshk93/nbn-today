@@ -38,6 +38,11 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 - **Small team logos come from `logos/sm/logo-{abbr}.webp`** (96px, ~4KB each), not `logos/logo-{abbr}.png` (480px, up to 120KB). Use the full size only where a logo is drawn bigger than about 48px: the team band and the champions banner. `build/make_logo_thumbs.py` regenerates them.
 - **Icons** (favicon, apple-touch-icon, the manifest's) are in `icons/`, made from `logo.png` by `build/make_icons.py`. The `<link>` tags are written into every page's head by `build/og_tags.py`, so a new page gets them with its OG entry.
 
+## Keeping it that way
+
+- **The drift ratchet.** `build/check_design_drift.py` counts, per file, the literal font sizes, colours (outside `css/theme.css`), radii, gradients, shadows, emoji and bare `.page` containers, and the pre-commit hook fails if any count goes up against `build/design-drift-baseline.json`. A new file starts at zero. When a change lowers counts, `--update` locks them in; `--report` shows totals and the worst files.
+- **Screenshots.** `tests/frontend/screenshots.js` captures a fixed list of pages at 1440px and 390px in the dark, light and a team theme, named so two runs line up file for file: one against `nbn.today`, one against a branch served by `build/preview_live.py`. It also fails on any page wider than a phone.
+
 ## Sidebar (`css/sidebar.css`, built by `nav.js`)
 
 The site's left-hand nav, on every page that runs `nav.js`. **The links are `NAV_SECTIONS` in `nav.js`** — the same list Ctrl+K search reads (`SITE_PAGES` / `ROLE_PAGES` are derived from it), so a new page is one row there. It is the site's only page directory: the homepage's link tiles and its strip of 30 team logos were removed once every link was confirmed reachable from it (2026-10-22).

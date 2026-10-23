@@ -44,6 +44,9 @@ any other hook has to live here too rather than in `.git/hooks`.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
+- Run build/check_design_drift.py; abort if any file gained a literal font
+  size, colour, radius, gradient, shadow, emoji or bare .page container
+  against build/design-drift-baseline.json. A ratchet: counts only go down.
 - Regenerate skills/manifest.json from .claude/commands/*.md and stage it, so
   skills/index.html never needs a hand-maintained list of which commands exist.
 - If no changelog entry is pending, nothing user-facing shipped: skip the bump
@@ -155,6 +158,14 @@ if og_tags.exists():
     if result.returncode != 0:
         print('\nCommit aborted: link-preview tags are missing or stale.')
         print('Add the page to PAGES in build/og_tags.py, then run: python3 build/og_tags.py')
+        sys.exit(1)
+
+design_drift = Path('build/check_design_drift.py')
+if design_drift.exists():
+    result = subprocess.run(['python3', str(design_drift)])
+    if result.returncode != 0:
+        print('\nCommit aborted: a page added literal sizes, colours, radii, gradients, shadows or emoji.')
+        print('Use the tokens in css/theme.css and the ui- components (docs/design-system.md).')
         sys.exit(1)
 
 team_colors = Path('build/make_team_colors_css.py')
