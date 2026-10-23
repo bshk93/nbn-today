@@ -92,7 +92,8 @@ const short = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month
 const teamCell = t => t
   ? `<span class="team-cell" data-team="${esc(t)}"><a href="/teams/${esc(t)}/">${esc(t)}</a></span>`
   : '<span class="dim">—</span>';
-const playerLink = (slug, name) => `<a class="player-link" href="/players/?p=${encodeURIComponent(slug)}">${esc(name || slug)}</a>`;
+// To the player's own injury page, which links on to the profile.
+const playerLink = (slug, name) => `<a class="player-link" href="/players/injuries/?p=${encodeURIComponent(slug)}">${esc(name || slug)}</a>`;
 const statusBadge = s => `<span class="ui-badge ${/^out$/i.test(s || '') ? 'ui-badge--danger' : 'ui-badge--warning'}">${esc(s)}</span>`;
 const ovr = v => v.ovr == null ? '' : `${v.ovr}${v.ovr_delta ? ` <span class="neg">(${v.ovr_delta > 0 ? '+' : '−'}${Math.abs(v.ovr_delta)})</span>` : ''}`;
 

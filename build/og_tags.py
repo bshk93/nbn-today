@@ -107,6 +107,7 @@ PAGES = {
  '/perry/': (None, 'The daily NBN Perry game. One guess a day.'),
  '/pickem/': (None, 'Moved — Pick\'em is now a tab on the Betting page.'),
  '/players/': (None, 'Every player in NBN — career stats, contracts, ratings, awards and game logs.'),
+ '/players/injuries/': (None, 'One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.'),
  '/poeltl/': (None, 'The daily NBN Poeltl. Guess the player in eight tries.'),
  '/proposals/': (None, 'Rule proposals up for a vote in NBN.'),
  '/proposals/new/': (None, 'Put a rule change to the NBN league.'),

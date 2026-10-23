@@ -34,6 +34,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   /standings could mark a team that isn't mathematically safe.
 - Run tests/award-race.test.js; abort if the /awards/race formulas have
   stopped applying their eligibility rules (games floor, draft class, starts).
+- Run tests/injury-history.test.js; abort if a player's injuries no longer fold
+  into one row each, or games missed stops counting games without a box line.
 - Run build/test_achievement_inputs.js; abort if the NB¥ achievement awarder can
   no longer read the data it scores from. That job runs on a 10-minute timer with
   no output but its own journal, so when its inputs moved out of the repo it
@@ -127,6 +129,15 @@ if award_race_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the award race rules no longer hold (see FAIL lines above).')
         print('Fix AwardRace.ladder in award-race.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+injury_test = Path('tests/injury-history.test.js')
+if injury_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(injury_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the player injury history no longer holds (see FAIL lines above).')
+        print('Fix InjuryHistory in injury-history.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 ach_inputs = Path('build/test_achievement_inputs.js')
