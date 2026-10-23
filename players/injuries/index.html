@@ -50,28 +50,39 @@
     .tile-sub { font-size: 0.75rem; color: var(--text-muted); min-height: 1em; }
 
     /* Body map: the figure faces you, so his right is on your left. */
-    /* The figures large and centred, the list under them, so a short list
-       doesn't leave half the section empty. */
-    .body { display: grid; gap: var(--space-4); }
-    .body-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); width: 100%; max-width: 30rem; margin: 0 auto; }
-    @media (max-width: 600px) { .body-figs { gap: var(--space-3); } }
+    /* The figures on the left, the list beside them; stacked on a phone. */
+    .body { display: grid; grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+    .body-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    @media (max-width: 760px) {
+      .body { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+      .body-figs { max-width: 26rem; width: 100%; margin: 0 auto; gap: var(--space-3); }
+    }
     .body-figs figure { margin: 0; }
     .body-figs svg { width: 100%; height: auto; display: block; }
     .body-figs figcaption { text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
     .body .bm { fill: color-mix(in srgb, var(--text-muted) 32%, var(--bg-card)); stroke: var(--bg-page); stroke-width: 2; }
     .body .bm.hair { fill: color-mix(in srgb, var(--text-muted) 18%, var(--bg-card)); }
+    /* Severity, light to dark: one scale for the body, the list and the legend. */
+    .body { --sev1: color-mix(in srgb, var(--gold) 60%, #fff); --sev2: var(--warning);
+            --sev3: color-mix(in srgb, var(--warning) 40%, var(--danger)); --sev4: color-mix(in srgb, var(--danger) 82%, #000); }
+    .body .sev1 { fill: var(--sev1); background: var(--sev1); } .body .sev2 { fill: var(--sev2); background: var(--sev2); }
+    .body .sev3 { fill: var(--sev3); background: var(--sev3); } .body .sev4 { fill: var(--sev4); background: var(--sev4); }
+    .sev-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-secondary); }
+    .sev-legend i { display: inline-block; width: 0.75rem; height: 0.5rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; }
     .body .bm.hit { cursor: pointer; }
     .body .bm.hit:hover { stroke: var(--text-primary); }
     .body .bm.cur { animation: bm-pulse 1.6s ease-in-out infinite; }
     @keyframes bm-pulse { 50% { fill-opacity: 0.35; } }
     @media (prefers-reduced-motion: reduce) { .body .bm.cur { animation: none; } }
+    .body-figs.focus .bm.hit { fill-opacity: 0.2; animation: none; transition: fill-opacity 0.12s; }
+    .body-figs.focus .bm.hit.hl { fill-opacity: 1; stroke: var(--text-primary); stroke-width: 4; }
+    .parts li.hl { background: var(--bg-hover); }
     .parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; font-size: var(--text-sm); }
     .parts li { display: grid; grid-template-columns: 0.7rem 7.5rem 1.6rem minmax(0, 1fr); gap: var(--space-2); align-items: baseline;
                 padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
     .parts li.click { cursor: pointer; }
     .parts li.click:hover .part-name { text-decoration: underline; }
-    .parts .dot { width: 0.6rem; height: 0.6rem; border-radius: 2px; background: var(--warning); align-self: center; }
-    .parts .dot.out { background: var(--danger); }
+    .parts .dot { width: 0.6rem; height: 0.6rem; border-radius: 2px; align-self: center; }
     .parts .dot.none { background: transparent; border: 1px solid var(--border); }
     .parts .part-name { font-weight: 600; color: var(--text-primary); }
     .parts .part-n { font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; }
@@ -318,6 +329,8 @@
         region.set(k, r);
       });
     });
+    // A place takes the colour of the worst injury it has had.
+    const worst = list => Math.max(...list.map(x => IH.severity(x.s, today)));
     const lit = (view, part, side) => region.get(`${view}|${part}|${side}`) || region.get(`${view}|${part}|`);
     const outline = window.BodyOutline;
     const figure = view => {
@@ -325,25 +338,26 @@
         const r = part.slug === 'hair' ? null : lit(view, part.slug, side === 'common' ? '' : side);
         return ds.map(d => {
           if (!r) return `<path class="bm${part.slug === 'hair' ? ' hair' : ''}" d="${d}"/>`;
-          const out = r.list.some(x => IH.isOut(x.s.worst)), cur = r.list.some(x => !x.s.end);
+          const sev = worst(r.list), cur = r.list.some(x => !x.s.end);
           const newest = r.list.reduce((a, b) => (b.i > a.i ? b : a));
-          const tip = `${r.labels[0]}: ${r.list.map(x => `${x.s.injury} (${fmt(x.s.start || x.s.end)})`).join('; ')}`;
-          const op = Math.min(1, 0.7 + 0.15 * (r.list.length - 1));
-          return `<path class="bm hit${cur ? ' cur' : ''}" data-i="${newest.i}" d="${d}" style="fill:${out ? 'var(--danger)' : 'var(--warning)'};fill-opacity:${op}"><title>${esc(tip)}</title></path>`;
+          const tip = `${r.labels[0]}: ${r.list.map(x => `${x.s.injury} (${IH.SEVERITY[IH.severity(x.s, today)].toLowerCase()}, ${fmt(x.s.start || x.s.end)})`).join('; ')}`;
+          return `<path class="bm hit sev${sev}${cur ? ' cur' : ''}" data-i="${newest.i}" data-stints="${r.list.map(x => x.i).join(' ')}" d="${d}"><title>${esc(tip)}</title></path>`;
         });
       })).join('') : '';
       return `<figure><svg viewBox="${VIEWBOX[view]}" role="img" aria-label="${view === 'front' ? 'Front' : 'Back'} of the body">${paths}</svg>
         <figcaption>${view === 'front' ? 'Front' : 'Back'}</figcaption></figure>`;
     };
-    const svg = `<div class="body-figs">${figure('front')}${figure('back')}</div>`;
+    const legend = `<div class="sev-legend">${[1, 2, 3, 4].map(n => `<span><i class="sev${n}"></i>${IH.SEVERITY[n]}</span>`).join('')}
+      <span class="dim">by how long he was out</span></div>`;
+    const svg = `<div><div class="body-figs">${figure('front')}${figure('back')}</div>${legend}</div>`;
 
-    const row = (dot, name, n, what, i) => `<li${i != null ? ` class="click" data-i="${i}"` : ''}><span class="dot ${dot}"></span>
+    const row = (dot, name, n, what, i, list) => `<li${i != null ? ` class="click" data-i="${i}" data-stints="${list.map(x => x.i).join(' ')}"` : ''}><span class="dot ${dot}"></span>
       <span class="part-name">${name}</span><span class="part-n">${n}</span><span class="part-what">${what}</span></li>`;
-    const whatOf = list => list.slice().reverse().map(x => `${esc(x.s.injury)} <span class="dim">· ${x.s.start ? fmt(x.s.start).replace(/ \d+,/, '') : 'date unknown'}${x.s.end ? '' : ' · now'}</span>`).join('<br>');
+    const whatOf = list => list.slice().reverse().map(x => `${esc(x.s.injury)} <span class="dim">· ${IH.SEVERITY[IH.severity(x.s, today)]} · ${x.s.start ? fmt(x.s.start).replace(/ \d+,/, '') : 'date unknown'}${x.s.end ? '' : ' · now'}</span>`).join('<br>');
     const items = [...places.values()]
       .sort((a, b) => b.list.length - a.list.length || b.list.at(-1).i - a.list.at(-1).i)
-      .map(p => row(p.list.some(x => IH.isOut(x.s.worst)) ? 'out' : '', esc(p.label), p.list.length, whatOf(p.list), p.list.at(-1).i));
-    if (illness.length) items.push(row(illness.some(x => IH.isOut(x.s.worst)) ? 'out' : '', 'Illness', illness.length, whatOf(illness), illness.at(-1).i));
+      .map(p => row(`sev${worst(p.list)}`, esc(p.label), p.list.length, whatOf(p.list), p.list.at(-1).i, p.list));
+    if (illness.length) items.push(row(`sev${worst(illness)}`, 'Illness', illness.length, whatOf(illness), illness.at(-1).i, illness));
     if (unplaced) items.push(row('none', '<span class="dim">Not recorded</span>', unplaced,
       '<span class="dim">The report gave no injury, only Out or Hurt</span>'));
 
@@ -440,6 +454,25 @@
   }
 
   function wire() {
+    // Hovering an injury (a row of the list or the log, or a highlighted area)
+    // lights the places on the body it hurt and dims the rest, and marks its
+    // rows in the list.
+    const figs = content.querySelector('.body-figs');
+    const has = (el, ids) => (el.dataset.stints || '').split(' ').some(i => ids.includes(i));
+    const focus = ids => {
+      if (!figs) return;
+      figs.classList.toggle('focus', !!ids);
+      content.querySelectorAll('.bm.hit').forEach(p => p.classList.toggle('hl', !!ids && has(p, ids)));
+      content.querySelectorAll('.parts li.click').forEach(li => li.classList.toggle('hl', !!ids && has(li, ids)));
+    };
+    content.querySelectorAll('.parts li.click, .bm.hit').forEach(el => {
+      el.addEventListener('mouseenter', () => focus(el.dataset.stints.split(' ')));
+      el.addEventListener('mouseleave', () => focus(null));
+    });
+    content.querySelectorAll('tr.stint').forEach(tr => {
+      tr.addEventListener('mouseenter', () => focus([tr.dataset.i]));
+      tr.addEventListener('mouseleave', () => focus(null));
+    });
     content.querySelectorAll('tr.stint').forEach(row => {
       row.addEventListener('click', () => toggle(row));
       row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(row); } });

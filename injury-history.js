@@ -148,5 +148,25 @@
   // Length of one injury in days (to today while current), or null.
   const length = (s, today) => (s.start ? days(s.start, s.end || today) : null);
 
-  global.InjuryHistory = { fold, gamesMissed, summary, length, seasonOf, isOut, locate, PARTS };
+  // 2K's expected duration in days, at its low end: "Day-to-Day" 1,
+  // "2-4 Weeks" 14, "6-8 Months" 180, "Season" 180. null when it says nothing.
+  function expectedDays(duration) {
+    const t = (duration || '').toLowerCase();
+    if (/day.to.day/.test(t)) return 1;
+    if (/season|year/.test(t)) return 180;
+    const m = t.match(/(\d+)(?:\s*-\s*\d+)?\s*(day|week|month)/);
+    return m ? +m[1] * { day: 1, week: 7, month: 30 }[m[2]] : null;
+  }
+
+  // How bad an injury was, by its length: the days it lasted, or 2K's
+  // expected duration when that is longer (a fresh injury hasn't run its
+  // course). 1 Minor (under a week), 2 Moderate (1-3 weeks), 3 Serious
+  // (3-8 weeks), 4 Severe (8 weeks or more).
+  const SEVERITY = ['', 'Minor', 'Moderate', 'Serious', 'Severe'];
+  function severity(s, today) {
+    const d = Math.max(length(s, today) || 0, expectedDays(s.duration) || 0);
+    return d < 7 ? 1 : d < 21 ? 2 : d < 56 ? 3 : 4;
+  }
+
+  global.InjuryHistory = { fold, gamesMissed, summary, length, seasonOf, isOut, locate, PARTS, expectedDays, severity, SEVERITY };
 })(typeof window !== 'undefined' ? window : globalThis);

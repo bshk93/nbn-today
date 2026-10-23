@@ -22,7 +22,7 @@ const vm = require('vm');
 const g = { console };
 vm.createContext(g);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'injury-history.js'), 'utf8'), g);
-const { fold, gamesMissed, summary, length, seasonOf, locate } = g.InjuryHistory;
+const { fold, gamesMissed, summary, length, seasonOf, locate, expectedDays, severity } = g.InjuryHistory;
 
 let failed = 0;
 function eq(name, got, want) {
@@ -119,6 +119,18 @@ eq('season turns over on July 1', [seasonOf('2026-06-30'), seasonOf('2026-07-01'
   eq('a name suffix is no injury', at('Iii'), null);
   const s = fold([ev('2026-01-10', 'new', 'ORL', { ...hurt, injury: 'Ii' })])[0];
   eq('and fold drops it', s.injury, null);
+}
+
+{
+  eq('expected days', ['Day-to-Day', 'Day-To-Day', '1-2 Weeks', '4-6 Weeks', '6-8 Months', 'Season', '', null].map(expectedDays),
+     [1, 1, 7, 28, 180, 180, null, null]);
+  const st = (start, end, duration) => ({ start, end, duration });
+  eq('a day-to-day that cleared in 4 days is minor', severity(st('2026-01-10', '2026-01-14', 'Day-to-Day'), '2026-10-01'), 1);
+  eq('15 days is moderate', severity(st('2026-03-16', '2026-03-31', '1-2 Weeks'), '2026-10-01'), 2);
+  eq('a fresh 4-6 week injury is serious from day one', severity(st('2026-09-30', null, '4-6 Weeks'), '2026-10-01'), 3);
+  eq('a ruptured achilles is severe', severity(st('2025-11-01', '2026-06-18', '6-8 Months'), '2026-10-01'), 4);
+  eq('the actual length wins when longer', severity(st('2026-01-01', '2026-03-15', 'Day-to-Day'), '2026-10-01'), 4);
+  eq('no start, no duration: minor', severity(st(null, '2026-01-14', null), '2026-10-01'), 1);
 }
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
