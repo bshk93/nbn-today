@@ -62,6 +62,7 @@ const PAGES = [
   { path: '/owners/',                 selector: 'table tbody tr',  min: 20, what: 'a row per owner' },
   { path: '/players/',                selector: 'table tbody tr',  min: 500, what: 'the player index' },
   { path: '/players/?p=curry-stephen', selector: 'table tbody tr', min: 5,  what: 'a profile with season rows' },
+  { path: '/players/injuries/?p=wagner-franz', selector: 'tr.stint', min: 1, what: 'a player\'s injury log' },
   { path: '/teams/UTA/',              selector: 'table tbody tr',  min: 10, what: 'roster, picks and history tables' },
   // The Cap Health card is built from an API call and a rules module loaded
   // separately from team.js, so a page that renders its tables fine can still

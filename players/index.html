@@ -184,8 +184,8 @@
     .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
     .career-row + .career-row { border-top: none !important; }
 
-    /* Headline tiles (OVR, Hall of Fame): the same card, label, figure and
-       one line of context, so the two read as a pair rather than two
+    /* Headline tiles (OVR, Hall of Fame, Health): the same card, label,
+       figure and one line of context, so they read as a set rather than
        unrelated widgets. */
     .hero-tiles { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
     .hero-tile {
@@ -208,6 +208,14 @@
     .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
     .hof-top10 .tile-label, .hof-top10 .tile-sub b:first-child { color: var(--gold); }
     .hof-top10 .hof-bar i { background: var(--gold); }
+    /* Health: green when healthy, the injury badge's colour when not. */
+    .health-tile { max-width: 17rem; }
+    .health-tile .tile-value { color: var(--success); }
+    .health-tile.hurt { border-left: 3px solid var(--warning); }
+    .health-tile.hurt .tile-value { color: var(--warning); }
+    .health-tile.out { border-left: 3px solid var(--danger); }
+    .health-tile.out .tile-value { color: var(--danger); }
+    .health-tile .tile-sub .neg { color: var(--danger); }
 
     /* Compare / Edit Bio, quiet, top right of the header. */
     .player-actions { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
@@ -508,10 +516,6 @@
     .ins-when { white-space: nowrap; font-size: var(--text-sm); }
     .ins-active { color: var(--success) !important; font-weight: 600; }
     .ins-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
-    /* Injury History: Team and OVR drop on a phone, like the /injuries table. */
-    .inj-table td { white-space: nowrap; }
-    .inj-table td.inj-what { white-space: normal; }
-    @media (max-width: 600px) { .inj-table .inj-ovr, .inj-table .inj-team { display: none; } }
     .splits-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
     .splits-head .ui-select { width: auto; }
     .splits-opp { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
@@ -659,6 +663,7 @@
 <script src="/league-time.js"></script>
 <script src="/names.js"></script>
 <script src="/radar.js"></script>
+<script src="/injury-history.js"></script>
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
@@ -2713,86 +2718,70 @@
     container.appendChild(source);
   }
 
-  // One row per injury, built from GET /api/injuries/history's change log:
-  // `new` opens one, `changed` updates it, `healed` closes it. Hidden when the
-  // player has never been on a 2K injury report.
-  function renderInjuryHistory(container, playerSlug) {
-    const wrap = document.createElement('div');
-    container.appendChild(wrap);
+  // Health, the third hero tile: injured now, or healthy with the career
+  // line. Always shown, and always a link to /players/injuries, which has the
+  // full history. Appended at once so it keeps its place beside OVR and HOF;
+  // its text arrives with GET /api/injuries/history, and games missed after
+  // that, from the game log (InjuryHistory in /injury-history.js).
+  function renderHealthTile(container, playerSlug) {
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile health-tile';
+    tile.href = `/players/injuries/?p=${encodeURIComponent(playerSlug)}`;
+    tile.title = 'Injury history';
+    tile.innerHTML = '<div class="tile-label">Health</div><div class="tile-value">&nbsp;</div><div class="tile-sub">&nbsp;</div>';
+    container.appendChild(tile);
+    const IH = window.InjuryHistory;
+    if (!IH) return;
+    const val = tile.querySelector('.tile-value'), sub = tile.querySelector('.tile-sub');
+    const today = new Date().toLocaleDateString('en-CA');
+    const month = iso => new Date(iso + 'T12:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
 
-    fetch(`/api/injuries/history?slug=${encodeURIComponent(playerSlug)}`)
-      .then(r => r.ok ? r.json() : [])
-      .catch(() => [])
-      .then(events => {
-        if (!Array.isArray(events) || !events.length) { wrap.remove(); return; }
+    const draw = (stints, sum) => {
+      tile.classList.remove('hurt', 'out');
+      sub.textContent = '';
+      const c = sum.current;
+      if (c) {
+        tile.classList.add(IH.isOut(c.status) ? 'out' : 'hurt');
+        val.textContent = IH.isOut(c.status) ? 'Out' : 'Hurt';
+        const parts = [c.injury, c.duration].filter(Boolean);
+        sub.textContent = parts.join(' · ');
+        if (c.ovr_delta) {
+          const d = document.createElement('span');
+          d.className = 'neg';
+          d.textContent = `${c.ovr_delta > 0 ? '+' : '−'}${Math.abs(c.ovr_delta)} OVR`;
+          if (parts.length) sub.appendChild(document.createTextNode(' · '));
+          sub.appendChild(d);
+        }
+        return;
+      }
+      val.textContent = 'Healthy';
+      if (!stints.length) { sub.textContent = 'No injuries on record'; return; }
+      const b = document.createElement('b');
+      b.textContent = `${stints.length} injur${stints.length === 1 ? 'y' : 'ies'}`;
+      sub.appendChild(b);
+      if (sum.missed != null) sub.appendChild(document.createTextNode(` · ${sum.missed} game${sum.missed === 1 ? '' : 's'} missed`));
+      const last = sum.last.start || sum.last.end;
+      if (last) sub.appendChild(document.createTextNode(` · last ${month(last)}`));
+    };
 
-        const injuries = [];
-        let open = null;
-        // The API sends newest first; walk oldest first to pair up each stint.
-        [...events].reverse().forEach(e => {
-          const a = e.after || {}, b = e.before || {};
-          if (e.kind === 'new' || (e.kind === 'changed' && !open)) {
-            open = { start: e.date, team: e.team, status: a.status, worst: a.status, injury: a.injury,
-                     duration: a.duration, ovr: a.ovr, ovr_delta: a.ovr_delta, updates: 0, end: null };
-            injuries.push(open);
-          } else if (e.kind === 'changed') {
-            Object.assign(open, { status: a.status, injury: a.injury, duration: a.duration,
-                                  ovr: a.ovr, ovr_delta: a.ovr_delta, team: e.team || open.team });
-            if (/^out$/i.test(a.status || '')) open.worst = a.status;
-            open.updates++;
-          } else if (e.kind === 'healed') {
-            if (!open) {
-              open = { start: null, team: e.team, status: b.status, worst: b.status, injury: b.injury,
-                       duration: b.duration, ovr: b.ovr, ovr_delta: b.ovr_delta, updates: 0 };
-              injuries.push(open);
-            }
-            open.end = e.date;
-            open = null;
-          }
-        });
-        if (!injuries.length) { wrap.remove(); return; }
-
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        const fmt = iso => {
-          if (!iso) return '—';
-          const [y, m, d] = iso.split('-').map(Number);
-          return `${months[m - 1]} ${d}, ${y}`;
-        };
-        const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        const badge = s => `<span class="ui-badge ${/^out$/i.test(s || '') ? 'ui-badge--danger' : 'ui-badge--warning'}">${esc(s)}</span>`;
-
-        const h2 = document.createElement('h2');
-        h2.className = 'section-heading';
-        h2.textContent = 'Injury History';
-        wrap.appendChild(h2);
-
-        const scrollWrap = document.createElement('div');
-        scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
-        const rows = [...injuries].reverse().map(i => {
-          const status = i.worst && i.worst !== i.status ? `${badge(i.worst)} → ${badge(i.status)}` : badge(i.status);
-          const ovr = i.ovr != null ? `${esc(i.ovr)}${i.ovr_delta ? ` <span style="color:var(--danger)">(${esc(i.ovr_delta)})</span>` : ''}` : '—';
-          const cleared = i.end ? fmt(i.end) : '<span class="ui-badge ui-badge--accent">Current</span>';
-          const title = i.updates ? ` title="Updated ${i.updates} time${i.updates === 1 ? '' : 's'} on later reports"` : '';
-          return `<tr${title}>
-            <td>${fmt(i.start)}</td>
-            <td class="inj-team">${esc(i.team || '')}</td>
-            <td class="inj-what">${esc(i.injury)}</td>
-            <td>${status}</td>
-            <td>${esc(i.duration)}</td>
-            <td class="right inj-ovr">${ovr}</td>
-            <td>${cleared}</td></tr>`;
-        }).join('');
-        scrollWrap.innerHTML = `<table class="salary-table inj-table">
-          <thead><tr><th>Injured</th><th class="inj-team">Team</th><th>Injury</th><th>Status</th><th>Duration</th>
-            <th class="right inj-ovr">OVR</th><th>Cleared</th></tr></thead>
-          <tbody>${rows}</tbody></table>`;
-        wrap.appendChild(scrollWrap);
-
-        const source = document.createElement('div');
-        source.style.cssText = 'font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;';
-        source.innerHTML = `Source: 2K injury reports · duration and OVR as last reported · <a href="/injuries/#history">League injury history</a>`;
-        wrap.appendChild(source);
+    json(`/api/injuries/history?slug=${encodeURIComponent(playerSlug)}`).then(events => {
+      if (!Array.isArray(events)) { val.textContent = '—'; sub.textContent = 'Injury history'; return; }
+      const stints = IH.fold(events);
+      draw(stints, IH.summary(stints, today));
+      if (!stints.length) return;
+      const teams = [...new Set(stints.flatMap(s => s.teams.map(t => t.team)).filter(Boolean))];
+      Promise.all([
+        json(`/api/players/${encodeURIComponent(playerSlug)}/gamelog`),
+        ...teams.map(t => json(`/api/boxscores/games?team=${encodeURIComponent(t)}`)),
+      ]).then(([log, ...games]) => {
+        if (!Array.isArray(log) || games.some(g => !Array.isArray(g))) return;
+        const byTeam = Object.fromEntries(teams.map((t, i) => [t, games[i]]));
+        const played = new Set(log.map(g => g.date));
+        stints.forEach(s => Object.assign(s, IH.gamesMissed(s, byTeam, played, today)));
+        draw(stints, IH.summary(stints, today));
       });
+    });
   }
 
   function renderHistorySection(container, playerSlug) {
@@ -4080,10 +4069,10 @@
     const tiles = document.createElement('div');
     tiles.className = 'hero-tiles';
     renderOvrTile(tiles, bioSlug);
-    if (tiles.childNodes.length) content.appendChild(tiles);
+    renderHealthTile(tiles, bioSlug);
+    content.appendChild(tiles);
     renderContractTimeline(content, bio, bioSlug);
     renderSalaryTable(content, bio);
-    renderInjuryHistory(content, bioSlug);
     renderHistorySection(content, bioSlug);
     renderAttributes(content, bioSlug);
     renderTransactionHistory(content, bioSlug, [], {}, [], bio);
@@ -4622,13 +4611,13 @@
 
     // bio line
     renderBioLine(info, mergedRow);
-    // OVR and Hall of Fame as a pair of tiles, then the accolades
+    // OVR, Hall of Fame and Health as a row of tiles, then the accolades
     const tiles = document.createElement('div');
     tiles.className = 'hero-tiles';
     info.appendChild(tiles);
     renderOvrTile(tiles, slug);
     renderHofLine(tiles, rows[0].PLAYER, hofRows);
-    if (!tiles.childNodes.length) tiles.remove();
+    renderHealthTile(tiles, slug);
 
     let bioFormEl = null;
     editBioBtn.addEventListener('click', async () => {
@@ -4694,7 +4683,6 @@
     renderInsights(insightsEl, slug);
     renderContractTimeline(content, bio, slug);
     renderSalaryTable(content, bio);
-    renderInjuryHistory(content, slug);
     renderHistorySection(content, slug);
     renderAttributes(content, slug);
     renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows, bio);

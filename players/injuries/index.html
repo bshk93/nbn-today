@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Player Injuries - NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Player Injuries - NBN">
+  <meta property="og:description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
+  <meta property="og:url" content="https://nbn.today/players/injuries/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .inj-head { display: flex; align-items: center; gap: var(--space-4); }
+    .inj-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--bg-subtle); border: 1px solid var(--border); flex: none; }
+    .inj-head .ui-subtitle a { color: var(--link); }
+
+    .section { margin-top: var(--space-6); }
+    .section:first-of-type { margin-top: 0; }
+
+    /* Injured now: the one card that matters most, so it leads. */
+    .now { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); align-items: center;
+           border-left: 4px solid var(--warning); margin-bottom: var(--space-5); }
+    .now.out { border-left-color: var(--danger); }
+    .now-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .now-what { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); margin-top: 0.15rem; }
+    .now-facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-size: var(--text-sm); color: var(--text-secondary); }
+    .now-facts b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+    /* The career line, the same tile as the player page's hero. */
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--space-3); }
+    .tile { display: flex; flex-direction: column; gap: 0.3rem; padding: var(--space-3) var(--space-4);
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; }
+    .tile-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .tile-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .tile-value small { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-left: 0.2rem; }
+    .tile-sub { font-size: 0.75rem; color: var(--text-muted); min-height: 1em; }
+
+    /* Timeline: one lane per league year, July to June. */
+    .tl { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 0.35rem var(--space-3); align-items: center; }
+    .tl-season { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .tl-track { position: relative; height: 1.25rem; background: var(--bg-subtle); border-radius: 4px; }
+    .tl-month { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-subtle); }
+    .tl-bar { position: absolute; top: 3px; bottom: 3px; min-width: 5px; border-radius: 3px; background: var(--warning); cursor: pointer; border: 0; padding: 0; }
+    .tl-bar.out { background: var(--danger); }
+    .tl-bar.open { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(255,255,255,0.25) 4px 8px); }
+    .tl-bar:hover, .tl-bar:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+    .tl-today { position: absolute; top: -2px; bottom: -2px; border-left: 2px dashed var(--text-muted); }
+    .tl-axis { position: relative; height: 1rem; font-size: 0.65rem; color: var(--text-muted); }
+    .tl-axis span { position: absolute; transform: translateX(-50%); }
+    .tl-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .tl-legend i { display: inline-block; width: 0.8rem; height: 0.55rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; background: var(--warning); }
+    .tl-legend i.out { background: var(--danger); }
+
+    /* The log. */
+    .log td { white-space: nowrap; }
+    .log td.what { white-space: normal; min-width: 9rem; }
+    .log tr.stint { cursor: pointer; }
+    .log tr.stint:hover td { background: var(--bg-hover); }
+    .log tr.stint.flash td { background: var(--bg-hover); }
+    .log .caret { color: var(--text-muted); display: inline-block; transition: transform 0.15s; }
+    .log tr.stint[aria-expanded="true"] .caret { transform: rotate(90deg); }
+    .log tr.detail td { background: var(--bg-subtle); white-space: normal; padding-top: var(--space-2); padding-bottom: var(--space-3); }
+    .reports { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; font-size: var(--text-sm); }
+    .reports li { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; }
+    .reports .when { color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 6.5rem; }
+    .log .sm-only, .log .d-short { display: none; }
+    .neg { color: var(--danger); }
+    .dim { color: var(--text-muted); }
+    .source { font-size: 0.7rem; color: var(--text-muted); margin-top: var(--space-2); }
+    .source a { color: var(--link); }
+    @media (max-width: 600px) {
+      .log .sm-hide { display: none; }
+      .log .sm-only { display: block; margin-top: 0.25rem; }
+      .log .d-long { display: none; }
+      .log .d-short { display: inline; }
+      .log td.what { min-width: 0; }
+      .inj-photo { width: 48px; height: 48px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page ui-page">
+  <nav class="nav" id="nav"></nav>
+  <header class="ui-header">
+    <div class="inj-head">
+      <img class="inj-photo" id="photo" alt="" hidden>
+      <div>
+        <h1 class="ui-title" id="page-title">Injuries</h1>
+        <p class="ui-subtitle" id="page-sub"></p>
+      </div>
+    </div>
+    <div class="ui-header-actions"><a class="ui-btn ui-btn--ghost ui-btn--sm" id="back" href="/players/">← Profile</a></div>
+  </header>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script src="/names.js"></script>
+<script src="/injury-history.js"></script>
+<script>
+(function () {
+  const IH = window.InjuryHistory;
+  const slug = new URLSearchParams(location.search).get('p') || '';
+  const content = document.getElementById('content');
+  const profile = `/players/?p=${encodeURIComponent(slug)}`;
+  const today = new Date().toLocaleDateString('en-CA');
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  // A table date: in full, or 3/31/26 on a phone so the log fits.
+  const tdate = iso => iso ? `<span class="d-long">${fmt(iso)}</span><span class="d-short">${iso.slice(5, 7).replace(/^0/, '')}/${iso.slice(8).replace(/^0/, '')}/${iso.slice(2, 4)}</span>` : '—';
+  const badge = s => s ? `<span class="ui-badge ${IH.isOut(s) ? 'ui-badge--danger' : 'ui-badge--warning'}">${esc(s)}</span>` : '<span class="dim">—</span>';
+  const ovr = s => s.ovr == null && !s.ovr_delta ? '<span class="dim">—</span>'
+    : `${s.ovr != null ? esc(s.ovr) : ''}${s.ovr_delta ? ` <span class="neg">(${s.ovr_delta > 0 ? '+' : '−'}${Math.abs(s.ovr_delta)})</span>` : ''}`;
+  const what = s => s.injury ? esc(s.injury) : '<span class="dim">Not recorded</span>';
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+  function setCrumbs(name) {
+    const nav = document.getElementById('nav');
+    nav.innerHTML = `<a href="/">Home</a><span class="nav-crumb-sep">/</span><a href="/players/">Players</a>`
+      + `<span class="nav-crumb-sep">/</span><a href="${profile}">${esc(name)}</a>`
+      + `<span class="nav-crumb-sep">/</span><span class="nav-crumb-current">Injuries</span>`;
+    if (typeof _initNav === 'function') _initNav();
+  }
+
+  if (!slug) {
+    content.innerHTML = '<div class="ui-empty">No player named. Open this page from a player’s profile.</div>';
+    return;
+  }
+
+  Promise.all([
+    json('/api/players'),
+    json('/api/team-map'),
+    json(`/api/injuries/history?slug=${encodeURIComponent(slug)}`),
+  ]).then(([bios, teamMap, events]) => {
+    const bio = (bios || {})[slug];
+    const name = bio && bio.name ? nbnPlayerName(bio.name) : slug;
+    const team = (teamMap || {})[slug] || '';
+    document.title = `${name} Injuries - NBN`;
+    document.getElementById('page-title').textContent = name;
+    document.getElementById('back').href = profile;
+    document.getElementById('page-sub').innerHTML = `Injury history${team ? ` · <a href="/teams/${esc(team)}/">${esc(team)}</a>` : ''}`;
+    if (bio && bio.photo_url) {
+      const img = document.getElementById('photo');
+      img.src = bio.photo_url;
+      img.hidden = false;
+      img.onerror = () => { img.hidden = true; };
+    }
+    setCrumbs(name);
+
+    const stints = IH.fold(Array.isArray(events) ? events : []);
+    render(stints, null);
+    if (!stints.length) return;
+
+    // Games missed: every team the injuries touched, and his own game log.
+    const teams = [...new Set(stints.flatMap(s => s.teams.map(t => t.team)).filter(Boolean))];
+    Promise.all([
+      json(`/api/players/${encodeURIComponent(slug)}/gamelog`),
+      ...teams.map(t => json(`/api/boxscores/games?team=${encodeURIComponent(t)}`)),
+    ]).then(([log, ...games]) => {
+      if (!Array.isArray(log) || games.some(g => !Array.isArray(g))) return;
+      const byTeam = Object.fromEntries(teams.map((t, i) => [t, games[i]]));
+      const played = new Set(log.map(g => g.date));
+      stints.forEach(s => Object.assign(s, IH.gamesMissed(s, byTeam, played, today)));
+      render(stints, true);
+    });
+  });
+
+  // known: whether games missed have been counted (null while loading).
+  function render(stints, known) {
+    const open = new Set([...content.querySelectorAll('tr.stint[aria-expanded="true"]')].map(r => r.dataset.i));
+    const sum = IH.summary(stints, today);
+    const parts = [];
+    if (sum.current) parts.push(renderNow(sum.current, known));
+    parts.push(renderTiles(sum, stints, known));
+    if (stints.length) {
+      parts.push(renderTimeline(stints));
+      parts.push(renderLog(stints, known));
+    } else {
+      parts.push('<div class="section ui-empty">No injuries on record.</div>');
+    }
+    parts.push(`<div class="source">Source: 2K injury reports (older ones from #injury-report on Discord). Games missed are games his team played during the injury that he has no box score line for. <a href="/injuries/#history">League injury history</a></div>`);
+    content.innerHTML = parts.join('');
+    open.forEach(i => toggle(content.querySelector(`tr.stint[data-i="${i}"]`), true));
+    wire();
+  }
+
+  function renderNow(s, known) {
+    const n = IH.length(s, today);
+    const facts = [
+      s.duration ? `Expected <b>${esc(s.duration)}</b>` : '',
+      `Since <b>${fmt(s.start)}</b>${n != null ? ` (${plural(n, 'day')})` : ''}`,
+      s.ovr_delta ? `OVR <b class="neg">${s.ovr_delta > 0 ? '+' : '−'}${Math.abs(s.ovr_delta)}</b>${s.ovr != null ? ` to ${esc(s.ovr)}` : ''}` : '',
+      known && s.missed != null ? `<b>${s.missed}</b> missed${s.playedThrough ? `, <b>${s.playedThrough}</b> played through` : ''}` : '',
+    ].filter(Boolean);
+    return `<div class="ui-card now${IH.isOut(s.status) ? ' out' : ''}">
+      <div><div class="now-label">Injured now</div><div class="now-what">${badge(s.status)} ${what(s)}</div></div>
+      <div class="now-facts">${facts.map(f => `<span>${f}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  function renderTiles(sum, stints, known) {
+    const outs = stints.filter(s => IH.isOut(s.worst)).length;
+    const missed = known ? (sum.missed ?? '—') : '…';
+    const games = known && sum.missed != null
+      ? `${stints.reduce((n, s) => n + (s.playedThrough || 0), 0)} played through` : '';
+    const L = sum.longest;
+    const tile = (label, value, sub) => `<div class="tile"><div class="tile-label">${label}</div>
+      <div class="tile-value">${value}</div><div class="tile-sub">${sub || ''}</div></div>`;
+    return `<div class="tiles">
+      ${tile('Injuries', sum.count, sum.count ? `${outs} Out · ${sum.count - outs} Hurt` : '')}
+      ${tile('Games missed', missed, games)}
+      ${tile('Days injured', sum.days, sum.last ? `Last ${fmt(sum.last.start || sum.last.end)}` : '')}
+      ${tile('Longest', L ? `${L.days}<small>days</small>` : '—', L ? esc(L.stint.injury || L.stint.duration || '') : '')}
+    </div>`;
+  }
+
+  // One lane per league year (July 1 – June 30) that has an injury in it.
+  function renderTimeline(stints) {
+    const dated = stints.map((s, i) => ({ s, i })).filter(x => x.s.start);
+    if (!dated.length) return '';
+    const yearStart = season => `20${season.slice(0, 2)}-07-01`;
+    const pct = (season, date) => {
+      const a = Date.parse(yearStart(season)), b = Date.parse(`20${season.slice(3)}-07-01`);
+      return Math.max(0, Math.min(100, (Date.parse(date) - a) / (b - a) * 100));
+    };
+    const seasons = new Set(dated.map(x => IH.seasonOf(x.s.start)));
+    dated.forEach(x => { if (x.s.end) seasons.add(IH.seasonOf(x.s.end)); });
+    const months = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+    const lanes = [...seasons].sort().reverse().map(season => {
+      const ticks = months.map((m, k) => k ? `<span class="tl-month" style="left:${(k / 12 * 100).toFixed(2)}%"></span>` : '').join('');
+      const bars = dated.map(({ s, i }) => {
+        const end = s.end || today;
+        if (IH.seasonOf(s.start) > season || IH.seasonOf(end) < season) return '';
+        const from = IH.seasonOf(s.start) === season ? pct(season, s.start) : 0;
+        const to = IH.seasonOf(end) === season ? pct(season, end) : 100;
+        const label = `${s.injury || s.duration || s.status}: ${fmt(s.start)} – ${s.end ? fmt(s.end) : 'now'}`;
+        return `<button class="tl-bar${IH.isOut(s.worst) ? ' out' : ''}${s.end ? '' : ' open'}" data-i="${i}"
+          style="left:${from.toFixed(2)}%;width:${Math.max(0.6, to - from).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"></button>`;
+      }).join('');
+      const now = IH.seasonOf(today) === season ? `<span class="tl-today" style="left:${pct(season, today).toFixed(2)}%" title="Today"></span>` : '';
+      return `<div class="tl-season">${season}</div><div class="tl-track">${ticks}${bars}${now}</div>`;
+    }).join('');
+    const axis = months.map((m, k) => k % 2 ? '' : `<span style="left:${((k + 0.5) / 12 * 100).toFixed(2)}%">${m}</span>`).join('');
+    return `<div class="section">
+      <h2 class="ui-section-title">Timeline</h2>
+      <div class="tl">${lanes}<div></div><div class="tl-axis">${axis}</div></div>
+      <div class="tl-legend"><span><i class="out"></i>Out at some point</span><span><i></i>Hurt (could still play)</span><span>Striped: still injured</span></div>
+    </div>`;
+  }
+
+  function renderLog(stints, known) {
+    const loading = '<span class="dim">…</span>';
+    const rows = stints.map((s, i) => ({ s, i })).reverse().map(({ s, i }) => {
+      const status = s.worst && s.worst !== s.status ? `${badge(s.worst)} → ${badge(s.status)}` : badge(s.status);
+      const cleared = s.end
+        ? `${tdate(s.end)}${s.closed === 'season-end' ? ' <span class="dim d-long">(season end)</span>' : ''}`
+        : '<span class="ui-badge ui-badge--accent">Current</span>';
+      const n = IH.length(s, today);
+      const missed = !known ? loading : s.missed == null ? '<span class="dim">—</span>' : s.missed;
+      const through = !known ? loading : s.playedThrough == null ? '<span class="dim">—</span>' : s.playedThrough;
+      return `<tr class="stint" data-i="${i}" aria-expanded="false" tabindex="0">
+          <td><span class="caret">▸</span> ${tdate(s.start)}</td>
+          <td class="sm-hide">${esc(s.teams.map(t => t.team).join(' → '))}</td>
+          <td class="what">${what(s)}<div class="sm-only">${status}</div></td>
+          <td class="sm-hide">${status}</td>
+          <td class="sm-hide">${esc(s.duration || '—')}</td>
+          <td class="num sm-hide">${n != null ? n : '<span class="dim">—</span>'}</td>
+          <td class="num">${missed}</td>
+          <td class="num sm-hide">${through}</td>
+          <td class="num sm-hide">${ovr(s)}</td>
+          <td>${cleared}</td>
+        </tr>
+        <tr class="detail" data-for="${i}" hidden><td colspan="10">${renderReports(s)}</td></tr>`;
+    }).join('');
+    return `<div class="section">
+      <h2 class="ui-section-title">Injury log</h2>
+      <div class="ui-table-wrap"><table class="ui-table ui-table--dense log">
+        <thead><tr><th>Injured</th><th class="sm-hide">Team</th><th>Injury</th><th class="sm-hide">Status</th><th class="sm-hide">Duration</th>
+          <th class="num sm-hide">Days</th><th class="num">Missed</th><th class="num sm-hide">Played</th><th class="num sm-hide">OVR</th><th>Cleared</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </div>`;
+  }
+
+  function renderReports(s) {
+    const items = s.reports.map(r => `<li><span class="when">${fmt(r.date)}</span>
+      <span>${r.kind === 'new' ? 'Reported' : 'Updated'}</span> ${badge(r.status)}
+      <span>${what(r)}</span>${r.duration ? `<span class="dim">· ${esc(r.duration)}</span>` : ''}
+      ${r.ovr_delta ? `<span class="neg">OVR ${r.ovr_delta > 0 ? '+' : '−'}${Math.abs(r.ovr_delta)}</span>` : ''}</li>`);
+    if (!s.start) items.push(`<li><span class="when">—</span><span class="dim">The report before ${fmt(s.end)} isn’t on record; only his return is.</span></li>`);
+    if (s.end) items.push(`<li><span class="when">${fmt(s.end)}</span><span>Off the report</span>${s.closed === 'season-end' ? '<span class="dim">· closed at season end</span>' : ''}</li>`);
+    return `<ul class="reports">${items.join('')}</ul>`;
+  }
+
+  function toggle(row, force) {
+    if (!row) return;
+    const on = force ?? row.getAttribute('aria-expanded') !== 'true';
+    row.setAttribute('aria-expanded', String(on));
+    content.querySelector(`tr.detail[data-for="${row.dataset.i}"]`).hidden = !on;
+  }
+
+  function wire() {
+    content.querySelectorAll('tr.stint').forEach(row => {
+      row.addEventListener('click', () => toggle(row));
+      row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(row); } });
+    });
+    content.querySelectorAll('.tl-bar').forEach(bar => bar.addEventListener('click', () => {
+      const row = content.querySelector(`tr.stint[data-i="${bar.dataset.i}"]`);
+      toggle(row, true);
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('flash');
+      setTimeout(() => row.classList.remove('flash'), 1200);
+    }));
+  }
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/token-badge.js"></script>
+</body>
+</html>
