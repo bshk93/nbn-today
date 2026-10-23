@@ -276,9 +276,12 @@
 .ui-table--sticky-first td:first-child { position: sticky; left: 0; background: var(--bg-card); z-index: 1; }
 /* Every table header on the site, ui-table or not, in the display face at one
    size. ~40 pages still carry their own th rule, sized between 0.62 and
-   0.72rem for Inter; condensed type at those sizes is unreadable, so this
-   carries :root for weight over them. Case, colour and padding stay theirs. */
-:root th { font-family: var(--font-display); font-size: var(--text-base); letter-spacing: 0.04em; }
+   0.72rem for Inter; condensed type at those sizes is unreadable. Those rules
+   are mostly `.x th` or `.x thead th` and load after this file, so a single
+   :root only ties the first and loses on order; :root:root outweighs both.
+   Only id-scoped rules (#body-preview, #whatif-attr-impact) still win, and
+   they sit at a readable 0.78–0.8rem. Case, colour and padding stay theirs. */
+:root:root th { font-family: var(--font-display); font-size: var(--text-base); letter-spacing: 0.04em; }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 /*   .ui-btn (secondary), .ui-btn--primary, .ui-btn--danger, .ui-btn--ghost,
