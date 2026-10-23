@@ -1382,6 +1382,7 @@ const NAV_SECTIONS = [
     { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop' },
     { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette' },
     { title: 'Trivia', href: '/trivia', icon: 'question' },
+    { title: 'Tetris', href: '/tetris/', icon: 'blocks' },
   ] },
   { label: 'Media', icon: 'tv', items: [
     { title: 'News', href: '/news/', icon: 'newspaper' },

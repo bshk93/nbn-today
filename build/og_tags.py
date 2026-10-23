@@ -144,6 +144,7 @@ PAGES = {
  '/donations/': (None, "League funding tracker — who's donated, how much, and to what."),
  '/stream/': (None, 'Moved — the streamer dashboard is now at /committees/stream.'),
  '/suggestions/': (None, 'Suggest a change to NBN, and see what the league thinks of it.'),
+ '/tetris/': (None, 'Tetris, for the wait between games. Your best score is kept in your browser.'),
  '/teams/': (None, 'All 30 NBN franchises — rosters, salary cap, draft picks and franchise history.'),
  '/trade-retros/': (None, 'Moved — trade retrospectives are now a tab on /frivolities.'),
  '/trade-sim/': (None, 'Moved — the trade simulator now lives at /transaction-sim.'),
