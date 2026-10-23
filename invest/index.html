@@ -31,6 +31,7 @@
     .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
     .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 20px; padding: 0.2rem 0.65rem; white-space: nowrap; }
     .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
+    .lb-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; }
     .pending-tag { font-size: 0.68rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
     .market-badge.locked { background: var(--purple-bg); color: var(--danger); border: 1px solid var(--danger-border-strong); }
 
@@ -746,19 +747,19 @@ function renderPortfolio() {
   let html = `
     <div class="summary-row">
       <div class="summary-card">
-        <div class="label">Equity</div>
+        <div class="label">Holdings</div>
         <div class="val">${fmtNBY(equity)}</div>
       </div>
       <div class="summary-card">
-        <div class="label">Liquid ¥</div>
+        <div class="label">Wallet</div>
         <div class="val">${fmtNBY(liquid)}</div>
       </div>
       <div class="summary-card">
-        <div class="label">Net Worth</div>
+        <div class="label">Net Worth <a href="/nbyen/" style="font-size:0.7rem">all NB¥</a></div>
         <div class="val">${fmtNBY(netWorth)}</div>
       </div>
       <div class="summary-card">
-        <div class="label">Total P/L</div>
+        <div class="label">Wall Street P/L</div>
         <div class="val ${plClass}">${pl >= 0 ? '+' : ''}${fmtNBY(pl)}</div>
       </div>
       <div class="summary-card">
@@ -868,8 +869,10 @@ function renderPortfolio() {
 
 function renderLeaderboard() {
   const el = document.getElementById('leaderboard-content');
+  const link = `<p class="lb-note">P&amp;L is what Wall Street has paid you, less what you put in
+    (fees included), counting what you still hold. Net worth across all of NB¥ is on <a href="/nbyen/">NB¥ Balances</a>.</p>`;
   if (!allHoldings || !allHoldings.length) {
-    el.innerHTML = '<div class="empty-state">No data yet.</div>';
+    el.innerHTML = '<div class="empty-state">No trades yet.</div>' + link;
     return;
   }
 
@@ -877,26 +880,22 @@ function renderLeaderboard() {
     <thead><tr>
       <th class="rank-col">#</th>
       <th>Member</th>
-      <th class="right">Equity</th>
-      <th class="right">Liquid</th>
-      <th class="right">Net Worth</th>
+      <th class="right">Holdings</th>
       <th class="right">P/L</th>
     </tr></thead><tbody>`;
 
   allHoldings.forEach((row, i) => {
-    const plC = chgClass(row.pl);
+    const plC = chgClass(row.pnl);
     const isMe = row.member === me;
     html += `<tr ${isMe ? 'style="background:var(--bg-subtle)"' : ''}>
       <td class="rank-col">${i + 1}</td>
       <td>${row.member}${isMe ? ' <span style="color:var(--link);font-size:0.75rem">(you)</span>' : ''}</td>
-      <td class="right">${fmtNBY(row.equity)}</td>
-      <td class="right">${fmtNBY(row.liquid)}</td>
-      <td class="right" style="font-weight:700">${fmtNBY(row.net_worth)}</td>
-      <td class="right"><span class="${plC}">${row.pl >= 0 ? '+' : ''}${fmtNBY(row.pl)}</span></td>
+      <td class="right">${row.equity ? fmtNBY(row.equity) : '—'}</td>
+      <td class="right"><span class="${plC}">${row.pnl >= 0 ? '+' : ''}${fmtNBY(row.pnl)}</span></td>
     </tr>`;
   });
 
-  html += '</tbody></table></div>';
+  html += '</tbody></table></div>' + link;
   el.innerHTML = html;
 }
 

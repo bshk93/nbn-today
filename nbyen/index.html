@@ -54,6 +54,9 @@
     .adjust-status { font-size: var(--text-sm); color: var(--text-muted); width: 100%; }
     .adjust-status:empty { display: none; }
 
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable.sorted { color: var(--text-primary); }
+    th.group { text-align: center; font-size: var(--text-xs); color: var(--text-muted); border-bottom: 1px solid var(--border); }
     @media (max-width: 560px) {
       .hide-sm { display: none; }
     }
@@ -84,7 +87,7 @@
   </form>
 
   <p class="note">$10 = one stream = NB¥1,000. You earn it from donations,
-    Twitch subs and winning bets, and spend it on bets, futures and buying a stream.</p>
+    Twitch subs and winning bets, and spend it on bets, futures, Wall Street and buying a stream.</p>
 
   <div class="totals" id="totals"></div>
 
@@ -103,7 +106,7 @@ const KIND_LABEL = {
   market_buy: 'Futures buy', market_sell: 'Futures sale', market_payout: 'Futures payout', market_refund: 'Futures refund',
   stream_purchase: 'Stream bought', stream_refund: 'Stream refund',
   admin: 'Adjustment', tip: 'Tip', achievement: 'Achievement', boxscore: 'Box score', pickem: "Pick'em",
-  bio: 'Bio fill', poeltl: 'Poeltl', perry: 'Perry', trivia: 'Trivia', invest: 'Market',
+  bio: 'Bio fill', poeltl: 'Poeltl', perry: 'Perry', trivia: 'Trivia', invest: 'Wall Street',
   theme: 'Theme', cosmetic: 'Cosmetics', avatar: 'Avatar',
 };
 
@@ -112,6 +115,15 @@ let tab = 'balances';
 let member = new URLSearchParams(location.search).get('m') || '';
 let kind = '';
 let me = null;
+let sortKey = 'net_worth';
+
+// The games NB¥ is put into. Each one's holdings and P&L come from the API
+// (routers/nbyen.py), which is the one place net worth is defined.
+const GAMES = [
+  { key: 'stocks',  label: 'Stocks' },
+  { key: 'futures', label: 'Futures' },
+  { key: 'bets',    label: 'Bets' },
+];
 
 const fmt = n => 'NB¥' + Math.round(Math.abs(n)).toLocaleString('en-US');
 const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmt(n);
@@ -144,20 +156,21 @@ function renderTotals() {
   const k = summary.by_kind;
   const tile = (lbl, val, sub) =>
     `<div class="total-tile"><div class="lbl">${lbl}</div><div class="val">${val}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
-  const betNet = (k.wager || 0) + (k.payout || 0) + (k.bet_refund || 0);
   const streams = -((k.stream_purchase || 0) + (k.stream_refund || 0));
-  // Open futures shares count at today's price, so buying isn't read as losing.
-  const held = summary.futures_total || 0;
-  const futNet = (k.market_buy || 0) + (k.market_sell || 0) + (k.market_payout || 0) + (k.market_refund || 0) + held;
+  const held = GAMES.reduce((t, g) => t + (summary[g.key + '_total'] || 0), 0);
+  // A game's net is everything it moved plus what's still held in it, so an
+  // open position isn't read as a loss. Same sum as each member's P&L.
+  const net = g => summary.balances.reduce((t, r) => t + (r.pnl?.[g] || 0), 0);
   document.getElementById('totals').innerHTML =
     tile('In wallets', fmt(summary.total)) +
-    (held ? tile('Held in futures', fmt(held), 'open shares at current prices') : '') +
+    (held ? tile('Held', fmt(held), GAMES.filter(g => summary[g.key + '_total'])
+      .map(g => `${g.label.toLowerCase()} ${fmt(summary[g.key + '_total'])}`).join(' · ')) : '') +
     tile('From donations', fmt(k.donation || 0), 'NB¥100 per $1') +
     tile('From Twitch subs', fmt(k.twitch_sub || 0)) +
     tile('Spent on streams', fmt(streams), `${Math.round(streams / 1000)} bought`) +
-    tile('Bettors, net', signed(betNet), betNet < 0 ? 'the house is up' : betNet > 0 ? 'the odds paid out more than was staked' : '') +
-    tile('Futures traders, net', signed(futNet), held ? 'at current prices; nothing settled yet'
-      : futNet < 0 ? 'the market maker is up' : futNet > 0 ? 'the market maker paid out more than it took in' : '');
+    tile('Bettors, net', signed(net('bets')), 'open bets at their stake') +
+    tile('Futures traders, net', signed(net('futures')), 'open shares at current prices') +
+    tile('Wall Street traders, net', signed(net('stocks')), 'fees included');
 }
 
 function render() {
@@ -165,21 +178,40 @@ function render() {
   else renderHistory();
 }
 
+function pnlCell(v) {
+  return v == null ? '<td class="num dim hide-sm">—</td>'
+    : `<td class="num hide-sm ${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${signed(v)}</td>`;
+}
+
 function renderBalances() {
-  const rows = summary.balances.filter(r => r.member);
+  const val = r => sortKey === 'net_worth' ? r.net_worth : (r.pnl?.[sortKey] ?? -Infinity);
+  const rows = summary.balances.filter(r => r.member).sort((a, b) => val(b) - val(a) || a.name.localeCompare(b.name));
+  const heldOf = r => GAMES.reduce((t, g) => t + (r[g.key] || 0), 0);
+  const heldTip = r => GAMES.filter(g => r[g.key]).map(g => `${g.label}: ${fmt(r[g.key])}`).join(', ');
+  const th = (key, label) => `<th class="num hide-sm sortable ${sortKey === key ? 'sorted' : ''}" data-sort="${key}">${label}</th>`;
   const content = document.getElementById('content');
-  const fut = summary.futures_total > 0;
   content.innerHTML = `<div class="ui-table-wrap"><table class="ui-table">
-    <thead><tr><th class="num">#</th><th>Member</th>${fut ? '<th class="num">Wallet</th><th class="num">In futures</th>' : ''}
-      <th class="num">${fut ? 'Total' : 'Balance'}</th></tr></thead>
+    <thead>
+      <tr><th colspan="5"></th><th class="group hide-sm" colspan="3">P&amp;L</th></tr>
+      <tr><th class="num">#</th><th>Member</th><th class="num">Wallet</th><th class="num">Held</th>
+      <th class="num sortable ${sortKey === 'net_worth' ? 'sorted' : ''}" data-sort="net_worth">Net worth</th>
+      ${GAMES.map(g => th(g.key, g.label)).join('')}</tr></thead>
     <tbody>${rows.map((r, i) => `<tr class="${me && r.name === me ? 'me' : ''}">
       <td class="num dim">${i + 1}</td>
       <td><a class="member-link" data-m="${esc(r.name)}">${esc(r.name)}</a></td>
-      ${fut ? `<td class="num">${fmt(r.balance)}</td><td class="num ${r.futures ? '' : 'dim'}">${r.futures ? fmt(r.futures) : '—'}</td>` : ''}
-      <td class="num bal">${fmt(r.net_worth ?? r.balance)}</td></tr>`).join('')}</tbody>
-  </table></div>${fut ? '<p class="note">In futures is open shares at current prices. It changes with the odds until the market settles.</p>' : ''}`;
+      <td class="num">${fmt(r.balance)}</td>
+      <td class="num ${heldOf(r) ? '' : 'dim'}" title="${esc(heldTip(r))}">${heldOf(r) ? fmt(heldOf(r)) : '—'}</td>
+      <td class="num bal">${fmt(r.net_worth)}</td>
+      ${GAMES.map(g => pnlCell(r.pnl?.[g.key])).join('')}</tr>`).join('')}</tbody>
+  </table></div>
+  <p class="note">Net worth is your wallet plus what you hold: stocks and futures at current prices,
+    open bets at their stake. P&amp;L is what each one has paid you, less what you put in, counting
+    what you still hold. Click a heading to sort.</p>`;
   content.querySelectorAll('.member-link').forEach(a => a.onclick = () => {
     member = a.dataset.m; setTab('history');
+  });
+  content.querySelectorAll('th[data-sort]').forEach(h => h.onclick = () => {
+    sortKey = h.dataset.sort; renderBalances();
   });
 }
 
@@ -205,9 +237,13 @@ async function renderHistory() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const row = summary.balances.find(r => r.name === member) || {};
+    const held = GAMES.filter(g => row[g.key]).map(g => `${fmt(row[g.key])} in ${g.label.toLowerCase()}`);
+    const pnl = GAMES.filter(g => row.pnl?.[g.key] != null)
+      .map(g => `${g.label} <span class="${row.pnl[g.key] > 0 ? 'pos' : row.pnl[g.key] < 0 ? 'neg' : ''}">${signed(row.pnl[g.key])}</span>`);
     const head = member
-      ? `<p class="who">${esc(member)}<span class="bal">${fmt(row.balance || 0)}</span>${row.futures
-          ? `<span class="dim"> + ${fmt(row.futures)} in futures</span>` : ''}</p>`
+      ? `<p class="who">${esc(member)}<span class="bal">${fmt(row.net_worth || 0)}</span>${held.length
+          ? `<span class="dim"> = ${fmt(row.balance || 0)} wallet + ${held.join(' + ')}</span>` : ''}</p>`
+        + (pnl.length ? `<p class="note">P&amp;L: ${pnl.join(' · ')}</p>` : '')
       : '';
     if (!data.entries.length) { hist.innerHTML = head + '<div class="ui-empty">Nothing yet.</div>'; return; }
     const more = data.total > data.entries.length

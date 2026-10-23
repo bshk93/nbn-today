@@ -198,11 +198,17 @@ paying it. So switching them back on pays unlocks from then on, not a backlog.
   `GET /api/nbyen/ledger`, in `routers/nbyen.py`). It's public because nearly
   all of it already was — bets, donations and balances. What it adds is who
   subs on Twitch and at what tier.
-- **Futures shares count on `/nbyen`.** A buy takes NB¥ out of the wallet, and
-  nothing comes back until the market settles. So the summary adds each
-  member's open shares at current prices (`markets.open_holdings()`) as
-  `futures` and `net_worth`. Without that, someone holding thousands in shares
-  looked broke, and the futures tile counted open positions as losses.
+- **Net worth has one definition: `nbyen.net_worth_rows()`.** Wallet + stocks +
+  futures + open bets. Each game says what its members hold
+  (`invest.open_holdings()` and `markets.open_holdings()` at current prices,
+  `bets.open_stakes()` at the stake), because a buy or a wager takes NB¥ out of
+  the wallet long before anything comes back. Without that, someone holding
+  thousands looked broke. `/nbyen`, the `/invest` portfolio card and Discord
+  `/nbyen-leaders` all read it; until 2026-10-23 each counted a different subset.
+- **P&L per game comes from the ledger.** A game's P&L is the sum of its kinds'
+  ledger lines (`nbyen.GAMES`) plus what is still held in it. Fees and refunds
+  are in, and no trade log is replayed. The `/invest` leaderboard is Wall
+  Street's slice of the same sum.
 - **Tests can't reach the live wallet.** `tests/__init__.py` points it at a temp
   directory before any test runs. It exists because `test_donations` once wrote
   a test donation into the live balances.
