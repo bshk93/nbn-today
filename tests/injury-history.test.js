@@ -12,6 +12,8 @@
 //   - Games missed counts games without a box score line, never report dates;
 //     a game he played in is "played through".
 //   - A mid-injury trade counts each team's games from its own date.
+//   - An injury's text is placed on the body, with its side; a name suffix the
+//     Discord backfill read as an injury ("Iii") is no injury.
 
 const fs = require('fs');
 const path = require('path');
@@ -20,7 +22,7 @@ const vm = require('vm');
 const g = { console };
 vm.createContext(g);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'injury-history.js'), 'utf8'), g);
-const { fold, gamesMissed, summary, length, seasonOf } = g.InjuryHistory;
+const { fold, gamesMissed, summary, length, seasonOf, locate } = g.InjuryHistory;
 
 let failed = 0;
 function eq(name, got, want) {
@@ -101,6 +103,23 @@ const out  = { status: 'Out', injury: 'Sprained Ankle', duration: '1-2 Weeks', o
 }
 
 eq('season turns over on July 1', [seasonOf('2026-06-30'), seasonOf('2026-07-01')], ['25-26', '26-27']);
+
+{
+  const at = t => { const l = locate(t); return l && [l.part, l.side]; };
+  eq('knee, left', at('Hyperextended Left Knee'), ['knee', 'L']);
+  eq('achilles is the ankle', at('Ruptured Achilles'), ['ankle', null]);
+  eq('a finger is the hand', at('Sprained Right Finger'), ['hand', 'R']);
+  eq('left hand fracture', at('Left Hand Fracture'), ['hand', 'L']);
+  eq('an eye is the head, which has no side', at('Poked In The Eye'), ['head', null]);
+  eq('hamstring is the thigh, not the leg', at('Strained Left Hamstring'), ['thigh', 'L']);
+  eq('lower back', at('Lower Back Spasms'), ['back', null]);
+  eq('flu is an illness', at('Flu'), ['illness', null]);
+  eq('nowhere known', at('Bruised Ego'), null);
+  eq('nothing', at(null), null);
+  eq('a name suffix is no injury', at('Iii'), null);
+  const s = fold([ev('2026-01-10', 'new', 'ORL', { ...hurt, injury: 'Ii' })])[0];
+  eq('and fold drops it', s.injury, null);
+}
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }
 console.log('\nall passed');

@@ -49,6 +49,31 @@
     .tile-value small { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-left: 0.2rem; }
     .tile-sub { font-size: 0.75rem; color: var(--text-muted); min-height: 1em; }
 
+    /* Body map: the figure faces you, so his right is on your left. */
+    .body { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+    @media (max-width: 600px) { .body { grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--space-3); } }
+    .body svg { width: 100%; height: auto; display: block; }
+    .body .rg { fill: var(--bg-subtle); stroke: var(--border); stroke-width: 1.2; transition: fill-opacity 0.15s; }
+    .body .rg.hit { stroke: var(--bg-card); cursor: pointer; }
+    .body .rg.hit:hover { stroke: var(--text-primary); }
+    .body .rg.cur { stroke: var(--text-primary); stroke-width: 2; animation: rg-pulse 1.6s ease-in-out infinite; }
+    @keyframes rg-pulse { 50% { stroke-opacity: 0.25; } }
+    @media (prefers-reduced-motion: reduce) { .body .rg.cur { animation: none; } }
+    .body .side { font-size: 11px; font-weight: 600; fill: var(--text-muted); text-anchor: middle; }
+    .parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; font-size: var(--text-sm); }
+    .parts li { display: grid; grid-template-columns: 0.7rem 7.5rem 1.6rem minmax(0, 1fr); gap: var(--space-2); align-items: baseline;
+                padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .parts li.click { cursor: pointer; }
+    .parts li.click:hover .part-name { text-decoration: underline; }
+    .parts .dot { width: 0.6rem; height: 0.6rem; border-radius: 2px; background: var(--warning); align-self: center; }
+    .parts .dot.out { background: var(--danger); }
+    .parts .dot.none { background: transparent; border: 1px solid var(--border); }
+    .parts .part-name { font-weight: 600; color: var(--text-primary); }
+    .parts .part-n { font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; }
+    .parts .part-what { color: var(--text-secondary); }
+    @media (max-width: 600px) { .parts li { grid-template-columns: 0.7rem minmax(0, 1fr) 1.4rem; } .parts .part-what { grid-column: 2 / -1; } }
+    .body-note { font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-3); }
+
     /* Timeline: one lane per league year, July to June. */
     .tl { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 0.35rem var(--space-3); align-items: center; }
     .tl-season { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
@@ -189,6 +214,7 @@
     if (sum.current) parts.push(renderNow(sum.current, known));
     parts.push(renderTiles(sum, stints, known));
     if (stints.length) {
+      parts.push(renderBody(stints));
       parts.push(renderTimeline(stints));
       parts.push(renderLog(stints, known));
     } else {
@@ -227,6 +253,97 @@
       ${tile('Games missed', missed, games)}
       ${tile('Days injured', sum.days, sum.last ? `Last ${fmt(sum.last.start || sum.last.end)}` : '')}
       ${tile('Longest', L ? `${L.days}<small>days</small>` : '—', L ? esc(L.stint.injury || L.stint.duration || '') : '')}
+    </div>`;
+  }
+
+  // The figure, as you face him: his right side is on your left. Each shape is
+  // [region, svg]; a paired part's region is `part-L` / `part-R`. Back has no
+  // place on a front view, so it is the strip down the middle of the torso.
+  const FIGURE = [
+    ['head', '<ellipse cx="100" cy="36" rx="21" ry="25"/>'],
+    ['neck', '<rect x="91" y="59" width="18" height="15" rx="5"/>'],
+    ['shoulder-R', '<ellipse cx="63" cy="86" rx="15" ry="11"/>'],
+    ['shoulder-L', '<ellipse cx="137" cy="86" rx="15" ry="11"/>'],
+    ['chest', '<rect x="73" y="76" width="54" height="50" rx="12"/>'],
+    ['abdomen', '<rect x="76" y="128" width="48" height="36" rx="8"/>'],
+    ['back', '<rect x="95" y="82" width="10" height="80" rx="5"/>'],
+    ['arm-R', '<rect x="45" y="96" width="17" height="48" rx="8"/>'],
+    ['arm-L', '<rect x="138" y="96" width="17" height="48" rx="8"/>'],
+    ['elbow-R', '<circle cx="53" cy="151" r="9"/>'],
+    ['elbow-L', '<circle cx="147" cy="151" r="9"/>'],
+    ['forearm-R', '<rect x="44" y="160" width="16" height="40" rx="7"/>'],
+    ['forearm-L', '<rect x="140" y="160" width="16" height="40" rx="7"/>'],
+    ['wrist-R', '<rect x="44" y="202" width="15" height="9" rx="4"/>'],
+    ['wrist-L', '<rect x="141" y="202" width="15" height="9" rx="4"/>'],
+    ['hand-R', '<ellipse cx="51" cy="225" rx="10" ry="13"/>'],
+    ['hand-L', '<ellipse cx="149" cy="225" rx="10" ry="13"/>'],
+    ['hip-R', '<rect x="74" y="166" width="25" height="27" rx="9"/>'],
+    ['hip-L', '<rect x="101" y="166" width="25" height="27" rx="9"/>'],
+    ['thigh-R', '<rect x="75" y="195" width="23" height="66" rx="10"/>'],
+    ['thigh-L', '<rect x="102" y="195" width="23" height="66" rx="10"/>'],
+    ['knee-R', '<ellipse cx="86" cy="272" rx="12" ry="11"/>'],
+    ['knee-L', '<ellipse cx="114" cy="272" rx="12" ry="11"/>'],
+    ['leg-R', '<rect x="77" y="285" width="19" height="62" rx="9"/>'],
+    ['leg-L', '<rect x="104" y="285" width="19" height="62" rx="9"/>'],
+    ['ankle-R', '<rect x="78" y="349" width="17" height="11" rx="5"/>'],
+    ['ankle-L', '<rect x="105" y="349" width="17" height="11" rx="5"/>'],
+    ['foot-R', '<ellipse cx="83" cy="370" rx="15" ry="8"/>'],
+    ['foot-L', '<ellipse cx="117" cy="370" rx="15" ry="8"/>'],
+  ];
+
+  function renderBody(stints) {
+    // One entry per place he's been hurt. A paired part with no side given
+    // lights both sides, and says so.
+    const places = new Map();
+    let illness = [], unplaced = 0;
+    stints.forEach((s, i) => {
+      const at = IH.locate(s.injury);
+      if (!at) { unplaced++; return; }
+      if (at.part === 'illness') { illness.push({ s, i }); return; }
+      const key = at.pair && at.side ? `${at.part}-${at.side}` : at.part;
+      const label = at.pair ? (at.side ? `${at.side === 'L' ? 'Left' : 'Right'} ${at.label.toLowerCase()}` : `${at.label} (side not given)`) : at.label;
+      if (!places.has(key)) places.set(key, { key, label, part: at.part, pair: at.pair && !at.side, list: [] });
+      places.get(key).list.push({ s, i });
+    });
+    // Which places paint which shapes.
+    const region = new Map();
+    places.forEach(p => {
+      const keys = p.pair ? [`${p.part}-R`, `${p.part}-L`] : [p.key];
+      keys.forEach(k => {
+        const r = region.get(k) || { list: [], labels: [] };
+        r.list.push(...p.list);
+        r.labels.push(p.label);
+        region.set(k, r);
+      });
+    });
+    const tone = list => list.some(x => IH.isOut(x.s.worst)) ? 'var(--danger)' : 'var(--warning)';
+    const shapes = FIGURE.map(([k, svg]) => {
+      const r = region.get(k);
+      if (!r) return svg.replace('/>', ' class="rg"/>');
+      const op = Math.min(1, 0.72 + 0.14 * (r.list.length - 1));
+      const cur = r.list.some(x => !x.s.end);
+      const newest = r.list.reduce((a, b) => (b.i > a.i ? b : a));
+      const tip = `${r.labels[0]}: ${r.list.map(x => `${x.s.injury} (${fmt(x.s.start || x.s.end)})`).join('; ')}`;
+      return svg.replace('/>', ` class="rg hit${cur ? ' cur' : ''}" data-i="${newest.i}" style="fill:${tone(r.list)};fill-opacity:${op}"><title>${esc(tip)}</title></${svg.match(/^<(\w+)/)[1]}>`);
+    }).join('');
+    const svg = `<svg viewBox="20 6 160 390" role="img" aria-label="Where he has been injured">${shapes}
+      <text class="side" x="62" y="392">R</text><text class="side" x="138" y="392">L</text></svg>`;
+
+    const row = (dot, name, n, what, i) => `<li${i != null ? ` class="click" data-i="${i}"` : ''}><span class="dot ${dot}"></span>
+      <span class="part-name">${name}</span><span class="part-n">${n}</span><span class="part-what">${what}</span></li>`;
+    const whatOf = list => list.slice().reverse().map(x => `${esc(x.s.injury)} <span class="dim">· ${x.s.start ? fmt(x.s.start).replace(/ \d+,/, '') : 'date unknown'}${x.s.end ? '' : ' · now'}</span>`).join('<br>');
+    const items = [...places.values()]
+      .sort((a, b) => b.list.length - a.list.length || b.list.at(-1).i - a.list.at(-1).i)
+      .map(p => row(p.list.some(x => IH.isOut(x.s.worst)) ? 'out' : '', esc(p.label), p.list.length, whatOf(p.list), p.list.at(-1).i));
+    if (illness.length) items.push(row(illness.some(x => IH.isOut(x.s.worst)) ? 'out' : '', 'Illness', illness.length, whatOf(illness), illness.at(-1).i));
+    if (unplaced) items.push(row('none', '<span class="dim">Not recorded</span>', unplaced,
+      '<span class="dim">The report gave no injury, only Out or Hurt</span>'));
+
+    const placed = stints.length - unplaced;
+    const note = placed ? '' : `<div class="body-note">None of his injuries on record say where. Older reports were backfilled from Discord, which kept only Out or Hurt; new 2K reports name the injury, so this fills in from here.</div>`;
+    return `<div class="section">
+      <h2 class="ui-section-title">Where he’s been hurt</h2>
+      <div class="body"><div>${svg}</div><div><ul class="parts">${items.join('')}</ul>${note}</div></div>
     </div>`;
   }
 
@@ -319,7 +436,7 @@
       row.addEventListener('click', () => toggle(row));
       row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(row); } });
     });
-    content.querySelectorAll('.tl-bar').forEach(bar => bar.addEventListener('click', () => {
+    content.querySelectorAll('.tl-bar, .rg.hit, .parts li.click').forEach(bar => bar.addEventListener('click', () => {
       const row = content.querySelector(`tr.stint[data-i="${bar.dataset.i}"]`);
       toggle(row, true);
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });

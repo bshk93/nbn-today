@@ -17,6 +17,47 @@
   const days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / DAY);
   const isOut = s => /^out$/i.test(s || '');
 
+  // The #injury-report backfill read some name suffixes as the injury
+  // ("Iii" for Robert Williams III), so a bare suffix is no injury at all.
+  const injuryText = t => (t && !/^\s*(i{1,3}|iv|jr\.?|sr\.?)\s*$/i.test(t) ? t : null);
+
+  // Where on the body an injury is, read from 2K's own wording ("Hyperextended
+  // Left Knee"). First match wins, so the specific words come before the
+  // general ones (achilles before leg). An illness has no place on the body.
+  // `pair` parts have a left and a right; the rest are one region.
+  const PARTS = [
+    ['illness',  'Illness',   false, /\b(flu|ill|illness|sick|virus|viral|covid|cold|migraine|fatigue|dehydrat)/],
+    ['head',     'Head',      false, /\b(head|concussion|eyes?|face|facial|nose|nasal|jaw|mouth|tooth|teeth|ears?|orbital|lips?)\b/],
+    ['neck',     'Neck',      false, /\bneck/],
+    ['ankle',    'Ankle',     true,  /\b(ankle|achilles)/],
+    ['knee',     'Knee',      true,  /\b(knee|acl|mcl|lcl|pcl|menisc|patell)/],
+    ['foot',     'Foot',      true,  /\b(foot|feet|toe|heel|plantar|arch)/],
+    ['hand',     'Hand',      true,  /\b(hand|finger|thumb|knuckle|palm|pinky)/],
+    ['wrist',    'Wrist',     true,  /\bwrist/],
+    ['elbow',    'Elbow',     true,  /\belbow/],
+    ['forearm',  'Forearm',   true,  /\bforearm/],
+    ['shoulder', 'Shoulder',  true,  /\b(shoulder|rotator|clavicle|collarbone|labrum)/],
+    ['arm',      'Upper arm', true,  /\b(bicep|tricep|upper arm|humerus|arm)/],
+    ['chest',    'Chest',     false, /\b(chest|rib|pectoral|sternum)/],
+    ['back',     'Back',      false, /\b(back|spine|spinal|lumbar|disc|disk)/],
+    ['abdomen',  'Abdomen',   false, /\b(abdom|oblique|stomach|core|appendi)/],
+    ['hip',      'Hip',       true,  /\b(hip|groin|pelvi|glute|adductor|tailbone)/],
+    ['thigh',    'Thigh',     true,  /\b(thigh|quad|hamstring|femur)/],
+    ['leg',      'Lower leg', true,  /\b(shin|calf|fibula|tibia|leg)/],
+  ];
+
+  // {part, label, side: 'L' | 'R' | null, pair} for an injury's text, or null
+  // when there is none or it names nowhere we know.
+  function locate(text) {
+    const t = (injuryText(text) || '').toLowerCase();
+    if (!t) return null;
+    const hit = PARTS.find(([, , , re]) => re.test(t));
+    if (!hit) return null;
+    const [part, label, pair] = hit;
+    const side = !pair ? null : /\bleft\b/.test(t) ? 'L' : /\bright\b/.test(t) ? 'R' : null;
+    return { part, label, side, pair };
+  }
+
   // The July 1 league year, as /league-time.js has it.
   function seasonOf(date) {
     const [y, m] = date.split('-').map(Number);
@@ -32,11 +73,11 @@
   function fold(events) {
     const out = [];
     let open = null;
-    const report = (e, s) => ({ date: e.date, kind: e.kind, status: s.status, injury: s.injury,
+    const report = (e, s) => ({ date: e.date, kind: e.kind, status: s.status, injury: injuryText(s.injury),
                                 duration: s.duration, ovr: s.ovr, ovr_delta: s.ovr_delta });
     const stint = (e, s, start) => ({
       start, end: null, closed: null, team: e.team, teams: [{ from: start, team: e.team }],
-      status: s.status, worst: s.status, injury: s.injury, duration: s.duration,
+      status: s.status, worst: s.status, injury: injuryText(s.injury), duration: s.duration,
       ovr: s.ovr, ovr_delta: s.ovr_delta, reports: [],
     });
     [...(events || [])].reverse().forEach(e => {
@@ -46,7 +87,7 @@
         open.reports.push(report(e, a));
         out.push(open);
       } else if (e.kind === 'changed') {
-        Object.assign(open, { status: a.status, injury: a.injury || open.injury, duration: a.duration,
+        Object.assign(open, { status: a.status, injury: injuryText(a.injury) || open.injury, duration: a.duration,
                               ovr: a.ovr, ovr_delta: a.ovr_delta });
         if (e.team && e.team !== open.team) { open.team = e.team; open.teams.push({ from: e.date, team: e.team }); }
         if (isOut(a.status)) open.worst = a.status;
@@ -107,5 +148,5 @@
   // Length of one injury in days (to today while current), or null.
   const length = (s, today) => (s.start ? days(s.start, s.end || today) : null);
 
-  global.InjuryHistory = { fold, gamesMissed, summary, length, seasonOf, isOut };
+  global.InjuryHistory = { fold, gamesMissed, summary, length, seasonOf, isOut, locate, PARTS };
 })(typeof window !== 'undefined' ? window : globalThis);
