@@ -94,3 +94,19 @@ npx @puppeteer/browsers install chrome-headless-shell@stable
 
 Pages run **serially** — this box has under 1GB free and each tab is a real
 renderer process.
+
+## Screenshots
+
+`screenshots.js` is the visual counterpart: a fixed page list captured at
+1440×900 and 390×844, in the dark, light and BOS team themes, named
+`{viewport}-{theme}-{page}.png` so a run against the live site and a run
+against a branch line up file for file.
+
+```bash
+node screenshots.js --out /tmp/before                       # nbn.today
+python3 ../../build/preview_live.py &                       # this checkout, live data
+node screenshots.js --base http://127.0.0.1:8099 --out /tmp/after
+node screenshots.js --only team --themes dark --viewports phone
+```
+
+It exits 1 if any page is wider than a phone screen.
