@@ -691,6 +691,21 @@
       .tet-pad { display: flex; }
       .tet-help { display: none; }
     }
+    .tet-board-list { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+    .tet-lb-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-2); }
+    .tet-lb-note { font-size: var(--text-xs); color: var(--text-muted); text-align: right; }
+    .tet-lb { list-style: none; margin: 0; padding: 0; columns: 2 15rem; column-gap: var(--space-5); }
+    .tet-lb li {
+      display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; align-items: baseline; gap: var(--space-2);
+      padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm); font-variant-numeric: tabular-nums;
+      break-inside: avoid;
+    }
+    .tet-lb li.me { color: var(--accent); font-weight: 600; }
+    .tet-lb .tet-lb-rank { color: var(--text-muted); }
+    .tet-lb a { color: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tet-lb .tet-lb-score { font-weight: 700; }
+    .tet-lb .tet-lb-score small { color: var(--text-muted); font-weight: 400; margin-left: 0.35rem; }
+    .tet-lb-empty { color: var(--text-muted); font-size: var(--text-sm); }
     @media (max-width: 420px) {
       .tet-board { width: 180px; height: 360px; }
       .tet-wrap { gap: var(--space-3); }
@@ -949,6 +964,11 @@
           <button type="button" tabindex="-1" data-act="right" aria-label="Move right">▶</button>
           <button type="button" tabindex="-1" data-act="down" aria-label="Soft drop">▼</button>
           <button type="button" tabindex="-1" data-act="drop" aria-label="Hard drop">⤓</button>
+        </div>
+        <!-- Members' best games (GET /api/tetris/leaderboard). Hidden until it loads. -->
+        <div class="tet-board-list" id="tet-leaders" hidden>
+          <div class="tet-lb-head"><span class="tet-label">Leaderboard</span><span class="tet-lb-note" id="tet-lb-note"></span></div>
+          <ol class="tet-lb" id="tet-lb"></ol>
         </div>
       </div>
     </div>
@@ -2853,7 +2873,51 @@
       schedule(); render();
     }
 
-    function gameOver() { state = 'over'; schedule(); stats(); }
+    function gameOver() { state = 'over'; schedule(); stats(); submit(); }
+
+    // ── Leaderboard ──
+    // Public to read; a finished game is posted only for a signed-in member,
+    // and the server keeps each member's best. Visitors still play and keep a
+    // best in this browser.
+    const token = (() => { try { return localStorage.getItem('nbn_token'); } catch (e) { return null; } })();
+    const lbEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let me = null;
+
+    function drawBoard(rows, note) {
+      const list = $t('tet-lb');
+      list.innerHTML = rows.length
+        ? rows.map(r => `<li class="${r.member === me ? 'me' : ''}"><span class="tet-lb-rank">${r.rank}</span>`
+            + `<a href="/members/${encodeURIComponent(r.member)}">${lbEsc(r.member)}</a>`
+            + `<span class="tet-lb-score">${Number(r.score).toLocaleString()}<small>${r.lines} lines</small></span></li>`).join('')
+        : '<li class="tet-lb-empty">No scores yet. Be the first.</li>';
+      $t('tet-lb-note').textContent = note != null ? note
+        : token ? '' : 'Sign in to post your score';
+      $t('tet-leaders').hidden = false;
+    }
+
+    function loadBoard() {
+      fetch('/api/tetris/leaderboard').then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) drawBoard(d.leaderboard || []); }).catch(() => {});
+    }
+
+    function submit() {
+      if (!token || !score) return;
+      fetch('/api/tetris/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ score, lines }),
+      }).then(r => r.ok ? r.json() : null).then(d => {
+        if (!d) return;
+        drawBoard(d.leaderboard, d.new_best
+          ? (d.rank ? `New personal best — #${d.rank}` : 'New personal best')
+          : `Your best: ${Number(d.best.score).toLocaleString()}`);
+      }).catch(() => {});
+    }
+
+    if (token) fetch('/api/members/me', { headers: { Authorization: 'Bearer ' + token } })
+      .then(r => r.ok ? r.json() : null).then(d => { if (d && d.name) { me = d.name; loadBoard(); } }).catch(() => {});
+    loadBoard();
 
     startBtn.addEventListener('click', start);
     board.addEventListener('click', () => { if (state === 'pause') pause(false); else if (state !== 'play') start(); });
