@@ -184,12 +184,12 @@
     .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
     .career-row + .career-row { border-top: none !important; }
 
-    /* Headline tiles (OVR, Hall of Fame, Health): the same card, label,
+    /* Headline tiles (OVR, Hall of Fame, Contract, History, Health): the same card, label,
        figure and one line of context, so they read as a set rather than
        unrelated widgets. */
     .hero-tiles { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
     .hero-tile {
-      display: flex; flex-direction: column; gap: 0.3rem; min-width: 10.5rem;
+      display: flex; flex-direction: column; gap: 0.3rem; flex: 1 1 10.5rem; min-width: 0;
       padding: var(--space-3) var(--space-4);
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
       color: inherit; text-decoration: none; transition: border-color 0.15s;
@@ -208,8 +208,9 @@
     .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
     .hof-top10 .tile-label, .hof-top10 .tile-sub b:first-child { color: var(--gold); }
     .hof-top10 .hof-bar i { background: var(--gold); }
+    /* Contract: the shorthand is words, not a figure, so it runs smaller in the same line box. */
+    .tile-value--text { font-size: 1.3rem; line-height: 1.9rem; font-weight: 600; white-space: nowrap; }
     /* Health: green when healthy, the injury badge's colour when not. */
-    .health-tile { max-width: 17rem; }
     .health-tile .tile-value { color: var(--success); }
     .health-tile.hurt { border-left: 3px solid var(--warning); }
     .health-tile.hurt .tile-value { color: var(--warning); }
@@ -377,11 +378,6 @@
     }
     @media (max-width: 500px) { .bio-edit-form { grid-template-columns: 1fr; } }
 
-    /* 2K attribute categories */
-    .attr-categories-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem 2rem;
-    }
-    @media (max-width: 700px) { .attr-categories-grid { grid-template-columns: 1fr; } }
     .bio-edit-form label {
       display: flex; flex-direction: column; gap: 0.2rem;
       font-size: var(--text-sm); color: var(--text-secondary); font-weight: 500;
@@ -440,21 +436,6 @@
     .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
     .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .edit-status { font-size: 0.75rem; color: var(--danger); }
-    .salary-table { width: 100%; border-collapse: collapse; margin: 1rem 0 0.5rem; font-size: 0.85rem; }
-    .salary-table th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 0.7rem;
-      text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--border); }
-    .salary-table th.right, .salary-table td.right { text-align: right; }
-    .salary-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid var(--bg-card); color: var(--text-secondary); }
-    .salary-table tr.total-row td { border-top: 1px solid var(--border); border-bottom: none;
-      color: var(--text-primary); font-weight: 700; padding-top: 0.5rem; }
-    .salary-table td.hold-label { font-size: 0.7rem; color: var(--text-muted); padding-left: 0.5rem; }
-    .cap-ufa        td { background: hsl(45,  35%, 14%); }
-    .cap-rfa        td { background: hsl(25,  35%, 14%); }
-    .cap-player-opt td { background: hsl(120, 30%, 13%); }
-    .cap-team-opt   td { background: hsl(210, 35%, 14%); }
-    .cap-non-gtd    td { background: var(--bg-subtle); }
-    .dead-cap-row   td { background: hsl(0, 25%, 13%); color: var(--danger); }
-    .dead-cap-row td.hold-label { color: var(--danger); opacity: 0.7; }
     .btn-add-player {
       padding: 0.35rem 0.75rem; background: var(--accent-panel-bg); border: 1px solid var(--accent);
       border-radius: 6px; color: var(--accent-light); font-size: 0.78rem; font-weight: 600;
@@ -497,18 +478,40 @@
     .pos-pill.selected { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
     .pos-pill:hover:not(.selected) { border-color: var(--text-muted); color: var(--text-muted); }
 
-    /* The top of a player page: bio details on the left, the archetype radar
-       on the right, so the stat tables start above the fold. */
-    .player-hero {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto;
-      column-gap: var(--space-6); align-items: start; margin-bottom: var(--space-4);
+    /* The top of a player page: the bio line and the tiles across the full
+       width, then the career card and the archetype radar side by side, the
+       same height, so neither hangs beside empty space. */
+    .player-hero { margin-bottom: var(--space-5); }
+    .hero-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-3); align-items: stretch; }
+    .career-card {
+      display: flex; flex-direction: column; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
     }
-    .player-hero > .ui-radar { margin: 0; }
-    .player-hero > .ui-radar svg { width: 230px !important; }  /* radar.js sets 280px inline */
-    @media (max-width: 760px) {
-      .player-hero { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-4); }
+    .career-card .career-line-note { margin-top: 0; }
+    .career-card .career-line { margin-top: 0; }
+    .career-card .accolades { margin: auto 0 0; }
+    /* The radar card lies on its side here: the chart on the left, the
+       season picker and the similar seasons on the right. */
+    .hero-row > .ui-radar--card {
+      display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto 1fr;
+      column-gap: var(--space-4); align-items: start; padding: var(--space-3) var(--space-4);
     }
-    .player-hero .accolades { margin-bottom: 0.75rem; }
+    /* radar.js nests the chart (and the page's similar list) in wrappers;
+       let them through so both sit on the card's grid. */
+    .hero-row > .ui-radar--card > div:nth-child(2),
+    .hero-row > .ui-radar--card > div:nth-child(2) > div { display: contents; }
+    .hero-row > .ui-radar--card svg { grid-column: 1; grid-row: 1 / span 2; }
+    .hero-row > .ui-radar--card .ui-radar-head { grid-column: 2; grid-row: 1; }
+    .hero-row > .ui-radar--card .similar { grid-column: 2; grid-row: 2; margin-top: var(--space-3); }
+    .hero-row > .ui-radar svg { width: 210px !important; height: auto; }  /* radar.js sets 280px inline */
+    @media (max-width: 900px) {
+      .hero-row { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .hero-row > .ui-radar--card { display: flex; }
+      .hero-row > .ui-radar--card .similar { align-self: stretch; }
+    }
     /* Feats & Streaks, side by side on a wide screen. */
     .ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-4); align-items: start; }
     .ins-grid .ui-table-wrap { margin: 0; }
@@ -530,78 +533,6 @@
     .career-line { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-top: var(--space-2); }
     .career-fig-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
     .career-fig-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
-
-    .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
-
-    /* Contract timeline */
-    .ctl-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 0.75rem 0.5rem; margin-bottom: 0.5rem; position: relative; }
-    .ctl-svg { width: 100%; height: auto; display: block; overflow: visible; }
-    .ctl-seg { transition: filter 0.1s; }
-    .ctl-seg.ctl-hovered { filter: brightness(1.2); }
-    .ctl-hit { fill: transparent; cursor: pointer; outline: none; }
-    .ctl-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-top: 0.4rem; font-size: 0.7rem; color: var(--text-muted); }
-    .ctl-legend-item { display: flex; align-items: center; gap: 0.35rem; }
-    .ctl-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
-    .ctl-tooltip {
-      position: absolute; pointer-events: none; z-index: 5;
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: 6px;
-      padding: 0.4rem 0.6rem; font-size: 0.72rem; line-height: 1.45; color: var(--text-secondary);
-      box-shadow: 0 4px 12px var(--shadow-color); white-space: nowrap; display: none;
-    }
-    .ctl-tooltip .ctl-tt-season { color: var(--text-primary); font-weight: 700; }
-    .ctl-tooltip .ctl-tt-val { color: var(--text-primary); font-weight: 700; font-size: 0.85rem; }
-    .ctl-tooltip .ctl-tt-sub { color: var(--text-muted); }
-    .ovr-edit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-    .ovr-edit-row input { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
-      color: var(--text-primary); font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
-    .ovr-edit-row input:focus { border-color: var(--accent); }
-    .ovr-edit-row input[type=number] { width: 4.5rem; }
-    .txn-badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px;
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
-    .txn-badge-sign    { background: var(--market-positive-bg); color: var(--market-positive); }
-    .txn-badge-pick    { background: var(--accent-panel-bg); color: var(--accent-light); }
-    .txn-badge-option  { background: var(--danger-alt-bg); color: var(--danger-alt); }
-    .txn-badge-release { background: var(--danger-bg); color: var(--danger); }
-    .txn-badge-convert_twoway { background: #1c1917; color: #a8a29e; }
-    .txn-badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
-    .txn-badge-offer_sheet { background: #1e1b4b; color: #a5b4fc; }
-    .txn-badge-recap   { background: var(--gold-bg); color: var(--gold); }
-    .txn-badge-retired { background: var(--bg-card); color: var(--text-secondary); }
-    .txn-row-retired td { font-weight: 600; color: var(--text-primary); }
-    .txn-table-details { color: var(--text-muted); font-size: 0.8rem; white-space: normal; overflow-wrap: break-word; word-break: break-word; }
-    .txn-table-details a { color: var(--accent-light); text-decoration: none; }
-    .txn-table-details a:hover { text-decoration: underline; }
-    .txn-history-wrap { overflow-x: auto; }
-    .txn-history-table { table-layout: fixed; min-width: 480px; }
-    .txn-history-table td { vertical-align: top; }
-    .edit-history { margin-top: 0.75rem; }
-    .edit-history summary { cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; user-select: none; }
-    .edit-history summary:hover { color: var(--text-secondary); }
-    .edit-history .txn-history-wrap { margin-top: 0.5rem; }
-    .edit-history-table { min-width: 420px; }
-    .edit-added { color: var(--market-positive); }
-    .edit-removed { color: var(--danger); }
-    .txn-note-cell { text-align: center; vertical-align: middle !important; }
-    .txn-note-icon {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 20px; height: 20px; color: #38bdf8; cursor: pointer;
-      filter: drop-shadow(0 0 3px rgba(56,189,248,0.85));
-      transition: filter 0.15s;
-    }
-    .txn-note-icon:hover { filter: drop-shadow(0 0 6px rgba(56,189,248,1)); }
-    .tt-anchor { cursor: pointer; }
-    .tt-popup {
-      position: absolute; z-index: 500; max-width: 260px;
-      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-      padding: 0.35rem 0.6rem; border-radius: 5px; font-size: 0.75rem;
-      white-space: pre-line; line-height: 1.5; text-align: left;
-      pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
-    }
-    .txn-pagination { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0 0.25rem; font-size: 0.8rem; color: var(--text-muted); }
-    .txn-page-btn { padding: 0.28rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
-      color: var(--text-muted); font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, color 0.12s; }
-    .txn-page-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-secondary); }
-    .txn-page-btn:disabled { opacity: 0.35; cursor: default; }
 
     .gamelog-pagination {
       display: flex;
@@ -664,48 +595,14 @@
 <script src="/names.js"></script>
 <script src="/radar.js"></script>
 <script src="/injury-history.js"></script>
+<script src="/contract.js"></script>
+<script src="/players/subpage.js"></script>
 <script>
 (function () {
   const slug = new URLSearchParams(location.search).get('p');
-  // The strip links the player index's sibling pages; a profile isn't one.
-  if (slug) document.getElementById('players-tabs').style.display = 'none';
-
-  // Mobile-friendly tooltip: hover-to-show on pointer devices, tap-to-toggle on touch.
-  let _ttEl = null, _ttAnchor = null;
-  function _ttHide() { if (_ttEl) { _ttEl.remove(); _ttEl = null; _ttAnchor = null; } }
-  function _ttShow(anchor, text) {
-    _ttHide();
-    const tip = document.createElement('div');
-    tip.className = 'tt-popup';
-    tip.textContent = text;
-    document.body.appendChild(tip);
-    const r = anchor.getBoundingClientRect();
-    let left = r.left + r.width / 2 - tip.offsetWidth / 2;
-    left = Math.max(6, Math.min(left, window.innerWidth - tip.offsetWidth - 6));
-    let top = r.top - tip.offsetHeight - 8;
-    if (top < 4) top = r.bottom + 8;
-    tip.style.left = `${left + window.scrollX}px`;
-    tip.style.top = `${top + window.scrollY}px`;
-    _ttEl = tip;
-    _ttAnchor = anchor;
-  }
-  const _ttIsTouch = window.matchMedia('(hover: none)').matches;
-  document.addEventListener('click', e => { if (_ttEl && !e.target.closest('.tt-anchor')) _ttHide(); });
-  function attachTooltip(el, textOrFn) {
-    el.classList.add('tt-anchor');
-    const getText = () => (typeof textOrFn === 'function' ? textOrFn() : textOrFn);
-    if (_ttIsTouch) {
-      el.addEventListener('click', e => {
-        e.stopPropagation();
-        const text = getText();
-        if (!text) return;
-        if (_ttAnchor === el) _ttHide(); else _ttShow(el, text);
-      });
-    } else {
-      el.addEventListener('mouseenter', () => { const text = getText(); if (text) _ttShow(el, text); });
-      el.addEventListener('mouseleave', _ttHide);
-    }
-  }
+  // The strip links the player index's sibling pages; on a profile it
+  // becomes the player's own: Profile, 2K Ratings, Contract, History, Injuries.
+  if (slug) PlayerSubpage.renderTabs(document.getElementById('players-tabs'), slug, 'profile');
 
   let biosData = {};
   let teamMap = {};
@@ -928,7 +825,7 @@
   // the best scoring night. Regular season only, the same basis as the
   // Career Totals table further down. It fills the hero's left column, which
   // otherwise sits empty beside the taller archetype radar.
-  function renderCareerLine(container, rows) {
+  function renderCareerLine(container, rows, note = 'Career · regular season') {
     const played = rows.filter(r => +r.G > 0);
     if (!played.length) return;
     const sum = k => played.reduce((s, r) => s + (+r[k] || 0), 0);
@@ -949,7 +846,7 @@
     };
     const wrap = document.createElement('div');
     wrap.className = 'career-line';
-    wrap.setAttribute('aria-label', 'Career regular-season averages');
+    wrap.setAttribute('aria-label', `${note} averages`);
     figures.forEach(([label, value]) => {
       const f = document.createElement('div');
       f.className = 'career-fig';
@@ -957,8 +854,7 @@
       f.appendChild(el('career-fig-label', label));
       wrap.appendChild(f);
     });
-    const note = el('career-line-note', 'Career · regular season');
-    container.appendChild(note);
+    container.appendChild(el('career-line-note', note));
     container.appendChild(wrap);
   }
 
@@ -1856,866 +1752,67 @@
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   }
 
-  // ── Bio section ──────────────────────────────────────────────────────────────
+  // ── Sub-page tiles ───────────────────────────────────────────────────────────
+  // Contract and History, beside OVR (→ 2K Ratings) and Health (→ Injuries):
+  // each is the one-line answer and a link to the sub-page with the rest
+  // (players/subpage.js).
 
-  function formatSalary(v) {
-    if (!v && v !== 0) return '—';
-    const s = String(v).trim();
-    if (!s || s === '—') return '—';
-    const n = parseFloat(s.replace(/[$,\s]/g, ''));
-    if (isNaN(n)) return s;
-    return '$' + Math.round(n).toLocaleString('en-US');
-  }
-
-  function fmtGuaranteeDate(iso) {
-    if (!iso) return '';
-    const [y, m, d] = iso.split('-').map(Number);
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${months[m - 1]} ${d}, ${y}`;
-  }
-
-  const CAP_HOLD_LABELS = {
-    UFA:        'UFA Hold',
-    RFA:        'RFA Hold',
-    PLAYER_OPT: 'Player Option',
-    TEAM_OPT:   'Team Option',
-    NON_GTD:    'Non-Guaranteed',
-  };
-
-  const CAP_HOLD_CSS = {
-    UFA:        'cap-ufa',
-    RFA:        'cap-rfa',
-    PLAYER_OPT: 'cap-player-opt',
-    TEAM_OPT:   'cap-team-opt',
-    NON_GTD:    'cap-non-gtd',
-  };
-
-  function renderSalaryTable(container, bio) {
-    const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
-    const rawDeadCap = bio.dead_cap && typeof bio.dead_cap === 'object' ? bio.dead_cap : {};
-    // Backward compat: old dead players stored dead cap in salaries with no dead_cap field
-    const deadCapData = Object.keys(rawDeadCap).length
-      ? rawDeadCap
-      : (bio.type === 'dead' ? salaries : {});
-    const salaryData = (bio.type === 'dead' && !Object.keys(rawDeadCap).length) ? {} : salaries;
-
-    if (!Object.keys(salaryData).length && !Object.keys(deadCapData).length) return;
-
-    const capMap = bio.cap_holds || {};
-    const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
-    const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
-    const guarantee_schedule = bio.guarantee_schedule && typeof bio.guarantee_schedule === 'object' ? bio.guarantee_schedule : {};
-
-    // Merge all seasons, tagging each entry
-    const allEntries = [];
-    Object.keys(salaryData).sort().forEach(season => {
-      allEntries.push({ season, amount: salaryData[season], isDeadCap: false });
-    });
-    Object.keys(deadCapData).sort().forEach(season => {
-      allEntries.push({ season, amount: deadCapData[season], isDeadCap: true });
-    });
-    allEntries.sort((a, b) => a.season < b.season ? -1 : a.season > b.season ? 1 : a.isDeadCap ? 1 : -1);
-
-    if (!allEntries.length) return;
-
-    const table = document.createElement('table'); table.className = 'ui-table';
-    table.className = 'salary-table';
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    ['Season', 'Salary', ''].forEach((h, i) => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      if (i === 1) th.className = 'right';
-      hr.appendChild(th);
-    });
-
-    const tbody = table.createTBody();
-    let total = 0;
-
-    allEntries.forEach(({ season, amount, isDeadCap }) => {
-      const holdType = capMap[season];
-      const tr = tbody.insertRow();
-
-      if (isDeadCap) {
-        tr.className = 'dead-cap-row';
-      } else if (holdType && CAP_HOLD_CSS[holdType]) {
-        tr.className = CAP_HOLD_CSS[holdType];
-      }
-
-      const tdSeason = tr.insertCell(); tdSeason.textContent = season;
-      const tdAmt    = tr.insertCell(); tdAmt.className = 'right'; tdAmt.textContent = formatSalary(amount);
-      const tdLabel  = tr.insertCell(); tdLabel.className = 'hold-label';
-
-      if (isDeadCap) {
-        tdLabel.textContent = 'Dead cap';
-      } else if (holdType === 'NON_GTD') {
-        const schedule = guarantee_schedule[season];
-        let label = 'Non-Guaranteed';
-        if (schedule && schedule.length) {
-          // Multi-step schedule
-          const parts = schedule.map(step => {
-            const amt  = step.amount ? formatSalary(step.amount) : null;
-            const dt   = step.date   ? fmtGuaranteeDate(step.date) : null;
-            if (!amt && dt)  return `fully gtd ${dt}`;
-            if (!amt && !dt) return 'fully gtd';
-            if (!dt)         return `${amt} gtd`;
-            return `+${amt} on ${dt}`;
-          });
-          label = `Non-Gtd (${parts.join(' · ')})`;
-        } else {
-          // Legacy single-step display
-          const gtd = guaranteed[season];
-          const gDate = guarantee_dates[season];
-          if (gtd || gDate) {
-            const parts = [];
-            if (gtd) parts.push(`${formatSalary(gtd)} gtd`);
-            if (gDate) parts.push(`fully gtd ${fmtGuaranteeDate(gDate)}`);
-            label = `Non-Gtd (${parts.join(' · ')})`;
-          }
-        }
-        tdLabel.textContent = label;
-      } else if (holdType && CAP_HOLD_LABELS[holdType]) {
-        tdLabel.textContent = CAP_HOLD_LABELS[holdType];
-      }
-
-      if (isDeadCap || !holdType) {
-        const n = parseFloat(String(amount).replace(/[$,\s]/g, ''));
-        if (!isNaN(n)) total += n;
-      }
-    });
-
-    if (total > 0) {
-      const tr = tbody.insertRow();
-      tr.className = 'total-row';
-      const tdL = tr.insertCell(); tdL.textContent = 'Career Earnings';
-      const tdV = tr.insertCell(); tdV.className = 'right'; tdV.textContent = formatSalary(total);
-      tr.insertCell();
+  // The deal as the shorthand (/contract.js), this season's figure under it.
+  // Off contract, what he is and what he earned.
+  function renderContractTile(container, bio, playerSlug) {
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile';
+    tile.href = PlayerSubpage.href('contract', playerSlug);
+    tile.title = 'Contract and salary history';
+    tile.innerHTML = '<div class="tile-label">Contract</div><div class="tile-value tile-value--text"></div><div class="tile-sub"></div>';
+    const val = tile.querySelector('.tile-value'), sub = tile.querySelector('.tile-sub');
+    const season = currentSeasonStr();
+    const sals = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
+    const caps = parseCapHoldMap(bio.cap_holds);
+    const now = parseContractMoney(sals[season]);
+    if ((bio.type === 'player' || bio.type === 'two-way') && now && !isFaHold(caps[season])) {
+      val.textContent = summarizeContract(bio, season);
+      const b = document.createElement('b');
+      b.textContent = compactContractMoney(now);
+      sub.appendChild(b);
+      sub.appendChild(document.createTextNode(` in ${season}${bio.type === 'two-way' ? ' · Two-way' : ''}`));
+    } else if (bio.type === 'draft-rights') {
+      val.textContent = 'Draft rights';
+      sub.textContent = 'Unsigned';
+    } else {
+      val.textContent = bio.retired ? 'Retired' : 'Free agent';
+      const earned = Object.keys(sals).filter(k => /^\d{2}-\d{2}$/.test(k) && !caps[k])
+        .reduce((sum, k) => sum + parseContractMoney(sals[k]), 0);
+      const parts = [];
+      if (!bio.retired && isFaHold(caps[season])) parts.push(caps[season]);
+      parts.push(earned ? `${compactContractMoney(earned)} career earnings` : 'No contract on record');
+      sub.textContent = parts.join(' · ');
     }
-
-    container.appendChild(table);
+    container.appendChild(tile);
   }
 
-  // ── Contract Timeline ───────────────────────────────────────────────────
-  // A column chart over the same salaries/cap_holds/guarantees the Career
-  // Earnings table already shows in full — this is the "read the shape of
-  // the deal at a glance" view, not a new data source. Column height is the
-  // magnitude (a $2M year never looks like a $40M year); fill color is
-  // status (guaranteed / non-guaranteed / option / dead cap); contiguous
-  // seasons that are part of one signing render as one unbroken block, with
-  // a visible seam only where a new contract actually starts.
-  const CTL_COLORS = {
-    guaranteed: '#16a34a',
-    nonGuaranteed: '#b45309',
-    option: '#7c3aed',
-    deadCap: '#dc2626',
-  };
-  // Contract-creating transaction types — each stamps its own `contract`
-  // object with the season(s) it covers, so the *earliest* salary key in
-  // that contract is a hard seam. offer_sheet (the open offer) is skipped in
-  // favor of offer_sheet_decision, which fires once regardless of outcome
-  // and carries the contract that actually resulted.
-  const CTL_BOUNDARY_TYPES = new Set(['sign', 'pick', 'sign_pick', 'extension', 'convert_twoway', 'offer_sheet_decision']);
-
-  function ctlDollar(v) {
-    if (!v) return 0;
-    return parseFloat(String(v).replace(/[$,\s]/g, '')) || 0;
-  }
-
-  function ctlCompact(n) {
-    if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
-    return '$' + Math.round(n);
-  }
-
-  function renderContractTimeline(container, bio, playerSlug) {
-    const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
-    const rawDeadCap = bio.dead_cap && typeof bio.dead_cap === 'object' ? bio.dead_cap : {};
-    const deadCapData = Object.keys(rawDeadCap).length
-      ? rawDeadCap
-      : (bio.type === 'dead' ? salaries : {});
-    const salaryData = (bio.type === 'dead' && !Object.keys(rawDeadCap).length) ? {} : salaries;
-    const capMap = bio.cap_holds || {};
-
-    const seasons = Array.from(new Set([
-      ...Object.keys(salaryData), ...Object.keys(deadCapData), ...Object.keys(capMap),
-    ])).sort();
-    if (!seasons.length) return;
-
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = 'Contract Timeline';
-    container.appendChild(h2);
-
-    const wrap = document.createElement('div');
-    wrap.className = 'ctl-wrap';
-    wrap.innerHTML = '<div class="status">Loading…</div>';
-    container.appendChild(wrap);
-
+  // How many moves the ledger has for him, and the latest.
+  function renderHistoryTile(container, playerSlug) {
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile';
+    tile.href = PlayerSubpage.href('history', playerSlug);
+    tile.title = 'Transactions and season-by-season history';
+    tile.innerHTML = '<div class="tile-label">History</div><div class="tile-value">&nbsp;</div><div class="tile-sub">&nbsp;</div>';
+    container.appendChild(tile);
+    const val = tile.querySelector('.tile-value'), sub = tile.querySelector('.tile-sub');
+    const TYPE_LABEL = { sign: 'Signed', pick: 'Drafted', sign_pick: 'Signed', option: 'Option', release: 'Released',
+      trade: 'Traded', convert_twoway: 'Two-way conversion', offer_sheet: 'Offer sheet', offer_sheet_decision: 'Offer sheet',
+      extension: 'Extended', renounce: 'Renounced', stash: 'Stashed', qualifying_offer: 'Qualifying offer' };
     fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}&limit=500`)
-      .then(r => r.ok ? r.json() : { transactions: [] })
-      .catch(() => ({ transactions: [] }))
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
       .then(data => {
-        const txns = data.transactions || [];
-        const boundarySeasons = new Set();
-        txns.forEach(t => {
-          if (!CTL_BOUNDARY_TYPES.has(t.type)) return;
-          const c = (t.details || {}).contract;
-          const keys = c && c.salaries ? Object.keys(c.salaries).sort() : [];
-          if (keys.length) boundarySeasons.add(keys[0]);
-        });
-
-        const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
-        const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
-        const guarantee_schedule = bio.guarantee_schedule && typeof bio.guarantee_schedule === 'object' ? bio.guarantee_schedule : {};
-        const today = nbnToday();
-
-        // Mirrors deadCapFromSchedule (transactions/index.html): walk the
-        // vesting steps in order; a step with no amount means "everything
-        // left becomes guaranteed on this date". Evaluated against today, so
-        // a still-future step shows as the "next vest" date on the chart.
-        function vestState(season, total) {
-          const schedule = guarantee_schedule[season];
-          if (schedule && schedule.length) {
-            let cumulative = 0, fullyGtd = false, nextDate = null;
-            for (const step of schedule) {
-              const stepDate = step.date || '';
-              if (stepDate && today < stepDate) { if (!nextDate) nextDate = stepDate; continue; }
-              if (!step.amount) { fullyGtd = true; break; }
-              cumulative += ctlDollar(step.amount);
-            }
-            return { guaranteedNow: fullyGtd ? total : Math.min(cumulative, total), nextDate: fullyGtd ? null : nextDate };
-          }
-          const gtd = guaranteed[season], gDate = guarantee_dates[season];
-          if (gtd || gDate) {
-            const fullyGtd = gDate && today >= gDate;
-            return { guaranteedNow: fullyGtd ? total : Math.min(ctlDollar(gtd), total), nextDate: fullyGtd ? null : (gDate || null) };
-          }
-          // NON_GTD with no schedule and no legacy guarantee fields at all —
-          // nothing has actually vested (same reading renderSalaryTable gives:
-          // a bare "Non-Guaranteed" label, never a guaranteed dollar amount).
-          return { guaranteedNow: 0, nextDate: null };
-        }
-
-        const bars = seasons.map((season, i) => {
-          const holdType = capMap[season];
-          const hasSalary = Object.prototype.hasOwnProperty.call(salaryData, season);
-          const isDeadCap = Object.prototype.hasOwnProperty.call(deadCapData, season);
-          const seam = i > 0 && boundarySeasons.has(season);
-
-          if (!hasSalary && !isDeadCap) {
-            return { season, kind: 'hold', holdType, seam, total: 0 };
-          }
-          const total = ctlDollar(hasSalary ? salaryData[season] : deadCapData[season]);
-          if (isDeadCap) return { season, kind: 'deadCap', total, seam };
-          if (holdType === 'PLAYER_OPT' || holdType === 'TEAM_OPT') {
-            return { season, kind: 'option', holdType, total, seam };
-          }
-          if (holdType === 'NON_GTD') {
-            const { guaranteedNow, nextDate } = vestState(season, total);
-            return { season, kind: 'split', total, guaranteedNow: Math.max(0, Math.min(guaranteedNow, total)), nextDate, seam };
-          }
-          if (holdType === 'UFA' || holdType === 'RFA') {
-            // The dollar figure here (when present) is the cap-hold placeholder
-            // amount teams carry on the books for an unrenounced FA, not a signed
-            // salary — never render it as guaranteed money.
-            return { season, kind: 'hold', holdType, total, seam };
-          }
-          return { season, kind: 'guaranteed', total, seam };
-        });
-
-        wrap.innerHTML = '';
-        buildContractTimelineChart(bars, wrap);
+        const txns = (data && data.transactions) || [];
+        val.innerHTML = `${txns.length}<small>move${txns.length === 1 ? '' : 's'}</small>`;
+        if (!txns.length) { sub.textContent = 'Season by season'; return; }
+        const last = txns.reduce((a, b) => (b.date > a.date ? b : a));
+        const when = last.date ? new Date(last.date + 'T12:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' }) : '';
+        sub.textContent = `Latest: ${TYPE_LABEL[last.type] || last.type}${when ? ` · ${when}` : ''}`;
       });
-  }
-
-  function ctlRoundedTopPath(x, y, w, h, r) {
-    r = Math.max(0, Math.min(r, w / 2, h));
-    return `M${x},${y + h} L${x},${y + r} Q${x},${y} ${x + r},${y} `
-         + `L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h} Z`;
-  }
-
-  function buildContractTimelineChart(bars, wrapEl) {
-    const ns = 'http://www.w3.org/2000/svg';
-    const COL_W = 48, BAR_W = 34, GAP_SAME = 3, GAP_SEAM = 15, HOLD_PILL_H = 18;
-    const MAX_BAR_PX = 128;
-    const PAD = { top: 24, bottom: 22, left: 10, right: 10 };
-    const baselineY = PAD.top + MAX_BAR_PX;
-    const maxTotal = Math.max(1, ...bars.map(b => b.total));
-
-    const xs = [];
-    let x = PAD.left;
-    bars.forEach((b, i) => {
-      if (i > 0) x += b.seam ? GAP_SEAM : GAP_SAME;
-      xs.push(x);
-      x += COL_W;
-    });
-    const totalW = x + PAD.right; // x already sits one COL_W past the last column
-    const W = Math.max(totalW, PAD.left + COL_W + PAD.right);
-    const H = PAD.top + MAX_BAR_PX + PAD.bottom;
-
-    const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.setAttribute('class', 'ctl-svg');
-    svg.style.height = `${H}px`;
-
-    // Baseline
-    const base = document.createElementNS(ns, 'line');
-    base.setAttribute('x1', PAD.left - 4); base.setAttribute('x2', W - PAD.right + 4);
-    base.setAttribute('y1', baselineY); base.setAttribute('y2', baselineY);
-    base.setAttribute('stroke', 'var(--border)');
-    base.setAttribute('stroke-width', '1');
-    svg.appendChild(base);
-
-    const present = { guaranteed: false, nonGuaranteed: false, option: false, deadCap: false, hold: false };
-
-    bars.forEach((b, i) => {
-      const colX = xs[i];
-      const barX = colX + (COL_W - BAR_W) / 2;
-      const cx = colX + COL_W / 2;
-
-      // Seam divider — a coarser structural cue than the mark gap, marking
-      // where one signing ends and the next begins.
-      if (b.seam) {
-        const seamX = colX - (GAP_SEAM / 2);
-        const div = document.createElementNS(ns, 'line');
-        div.setAttribute('x1', seamX); div.setAttribute('x2', seamX);
-        div.setAttribute('y1', PAD.top - 8); div.setAttribute('y2', baselineY);
-        div.setAttribute('stroke', 'var(--border)');
-        div.setAttribute('stroke-width', '1');
-        div.setAttribute('stroke-dasharray', '2,2');
-        svg.appendChild(div);
-      }
-
-      const g = document.createElementNS(ns, 'g');
-      let stackTopY = baselineY;
-      let tooltipLines = [];
-      const segEls = [];
-
-      if (b.kind === 'hold') {
-        present.hold = true;
-        // A hold's dollar figure (when present) is the cap-hold placeholder
-        // amount, not a signed salary — still worth scaling by magnitude (a
-        // $70M UFA hold and a $2M one are very different), but always drawn
-        // outlined/unfilled so it never reads as guaranteed money.
-        const h = b.total > 0 ? Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)) : HOLD_PILL_H;
-        const y = baselineY - h;
-        const rect = document.createElementNS(ns, 'rect');
-        rect.setAttribute('x', barX); rect.setAttribute('y', y);
-        rect.setAttribute('width', BAR_W); rect.setAttribute('height', h);
-        rect.setAttribute('rx', 4);
-        rect.setAttribute('fill', 'none');
-        rect.setAttribute('stroke', 'var(--text-dim)');
-        rect.setAttribute('stroke-width', '1.5');
-        rect.setAttribute('stroke-dasharray', '3,2');
-        rect.setAttribute('class', 'ctl-seg');
-        g.appendChild(rect);
-        segEls.push(rect);
-        stackTopY = y;
-        const holdLabel = CAP_HOLD_LABELS[b.holdType] || b.holdType || 'Hold';
-        tooltipLines = b.total > 0 ? [ctlCompact(b.total) + ' cap hold', holdLabel] : [null, holdLabel];
-      } else {
-        const segments = [];
-        if (b.kind === 'split') {
-          present.guaranteed = present.guaranteed || b.guaranteedNow > 0;
-          present.nonGuaranteed = present.nonGuaranteed || (b.total - b.guaranteedNow) > 0;
-          segments.push({ h: Math.round((b.guaranteedNow / maxTotal) * MAX_BAR_PX), color: CTL_COLORS.guaranteed });
-          segments.push({ h: Math.round(((b.total - b.guaranteedNow) / maxTotal) * MAX_BAR_PX), color: CTL_COLORS.nonGuaranteed });
-        } else if (b.kind === 'option') {
-          present.option = true;
-          segments.push({ h: Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)), color: CTL_COLORS.option });
-        } else if (b.kind === 'deadCap') {
-          present.deadCap = true;
-          segments.push({ h: Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)), color: CTL_COLORS.deadCap });
-        } else {
-          present.guaranteed = true;
-          segments.push({ h: Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)), color: CTL_COLORS.guaranteed });
-        }
-
-        const visible = segments.filter(s => s.h > 0);
-        let yCursor = baselineY;
-        visible.forEach((seg, idx) => {
-          const isTop = idx === visible.length - 1;
-          const yTop = yCursor - seg.h;
-          if (isTop) {
-            const path = document.createElementNS(ns, 'path');
-            path.setAttribute('d', ctlRoundedTopPath(barX, yTop, BAR_W, seg.h, 4));
-            path.setAttribute('fill', seg.color);
-            path.setAttribute('class', 'ctl-seg');
-            g.appendChild(path);
-            segEls.push(path);
-          } else {
-            const rect = document.createElementNS(ns, 'rect');
-            rect.setAttribute('x', barX); rect.setAttribute('y', yTop);
-            rect.setAttribute('width', BAR_W); rect.setAttribute('height', seg.h);
-            rect.setAttribute('fill', seg.color);
-            rect.setAttribute('class', 'ctl-seg');
-            g.appendChild(rect);
-            segEls.push(rect);
-          }
-          yCursor = yTop - 2; // 2px surface gap between stacked segments
-        });
-        if (visible.length) stackTopY = yCursor + 2;
-
-        if (b.kind === 'split') {
-          tooltipLines = [
-            ctlCompact(b.total),
-            b.guaranteedNow >= b.total
-              ? 'Fully guaranteed'
-              : `${formatSalary(b.guaranteedNow)} guaranteed`
-                + (b.nextDate ? ` · vests ${fmtGuaranteeDate(b.nextDate)}` : '')
-                + ` · ${formatSalary(b.total - b.guaranteedNow)} at risk`,
-          ];
-        } else if (b.kind === 'option') {
-          tooltipLines = [ctlCompact(b.total), CAP_HOLD_LABELS[b.holdType] || b.holdType];
-        } else if (b.kind === 'deadCap') {
-          tooltipLines = [ctlCompact(b.total), 'Dead cap — no player on this money'];
-        } else {
-          tooltipLines = [ctlCompact(b.total), 'Guaranteed'];
-        }
-      }
-
-      // Value label at the tip. A hold with no dollar figure at all labels
-      // its hold type instead, since there's no magnitude to show.
-      const val = document.createElementNS(ns, 'text');
-      val.setAttribute('x', cx); val.setAttribute('y', stackTopY - 6);
-      val.setAttribute('text-anchor', 'middle');
-      val.setAttribute('font-weight', '600');
-      if (b.kind === 'hold' && b.total <= 0) {
-        val.setAttribute('font-size', '8');
-        val.setAttribute('fill', 'var(--text-dim)');
-        val.textContent = CAP_HOLD_LABELS[b.holdType] || b.holdType || '';
-      } else {
-        val.setAttribute('font-size', '9');
-        val.setAttribute('fill', 'var(--text-muted)');
-        val.textContent = ctlCompact(b.total);
-      }
-      g.appendChild(val);
-
-      // Season tick
-      const tick = document.createElementNS(ns, 'text');
-      tick.setAttribute('x', cx); tick.setAttribute('y', baselineY + 14);
-      tick.setAttribute('text-anchor', 'middle');
-      tick.setAttribute('font-size', '8');
-      tick.setAttribute('fill', 'var(--text-muted)');
-      tick.textContent = b.season;
-      g.appendChild(tick);
-
-      // Hit target — bigger than the visual mark, carries hover/focus tooltip.
-      const hit = document.createElementNS(ns, 'rect');
-      hit.setAttribute('x', colX); hit.setAttribute('y', PAD.top - 8);
-      hit.setAttribute('width', COL_W); hit.setAttribute('height', baselineY - PAD.top + 8 + 16);
-      hit.setAttribute('class', 'ctl-hit');
-      hit.setAttribute('tabindex', '0');
-      hit.setAttribute('role', 'img');
-      const ariaBits = [b.season, tooltipLines[0], tooltipLines[1]].filter(Boolean);
-      hit.setAttribute('aria-label', ariaBits.join(' — '));
-      g.appendChild(hit);
-      const enter = () => {
-        segEls.forEach(el => el.classList.add('ctl-hovered'));
-        showCtlTooltip(wrapEl, hit, b.season, tooltipLines);
-      };
-      const leave = () => {
-        segEls.forEach(el => el.classList.remove('ctl-hovered'));
-        hideCtlTooltip(wrapEl);
-      };
-      hit.addEventListener('pointerenter', enter);
-      hit.addEventListener('focus', enter);
-      hit.addEventListener('pointerleave', leave);
-      hit.addEventListener('blur', leave);
-
-      svg.appendChild(g);
-    });
-
-    wrapEl.appendChild(svg);
-
-    const legendDefs = [
-      ['guaranteed', 'Guaranteed', CTL_COLORS.guaranteed, false],
-      ['nonGuaranteed', 'Non-Guaranteed', CTL_COLORS.nonGuaranteed, false],
-      ['option', 'Option (Player/Team)', CTL_COLORS.option, false],
-      ['deadCap', 'Dead Cap', CTL_COLORS.deadCap, false],
-      ['hold', 'Free Agent Hold', null, true],
-    ];
-    const legend = document.createElement('div');
-    legend.className = 'ctl-legend';
-    legendDefs.forEach(([key, label, color, outline]) => {
-      if (!present[key]) return;
-      const item = document.createElement('div');
-      item.className = 'ctl-legend-item';
-      const sw = document.createElement('span');
-      sw.className = 'ctl-legend-swatch';
-      if (outline) {
-        sw.style.background = 'none';
-        sw.style.border = '1.5px dashed var(--text-dim)';
-      } else {
-        sw.style.background = color;
-      }
-      item.appendChild(sw);
-      const lbl = document.createElement('span');
-      lbl.textContent = label;
-      item.appendChild(lbl);
-      legend.appendChild(item);
-    });
-    wrapEl.appendChild(legend);
-
-    const tooltip = document.createElement('div');
-    tooltip.className = 'ctl-tooltip';
-    wrapEl.appendChild(tooltip);
-
-    return wrapEl;
-  }
-
-  function showCtlTooltip(wrapEl, hitEl, season, lines) {
-    const tooltip = wrapEl.querySelector('.ctl-tooltip');
-    if (!tooltip) return;
-    tooltip.innerHTML = '';
-    const seasonEl = document.createElement('div');
-    seasonEl.className = 'ctl-tt-season';
-    seasonEl.textContent = season;
-    tooltip.appendChild(seasonEl);
-    if (lines[0]) {
-      const valEl = document.createElement('div');
-      valEl.className = 'ctl-tt-val';
-      valEl.textContent = lines[0];
-      tooltip.appendChild(valEl);
-    }
-    if (lines[1]) {
-      const subEl = document.createElement('div');
-      subEl.className = 'ctl-tt-sub';
-      subEl.textContent = lines[1];
-      tooltip.appendChild(subEl);
-    }
-    tooltip.style.display = 'block';
-    const wrapRect = wrapEl.getBoundingClientRect();
-    const hitRect = hitEl.getBoundingClientRect();
-    const left = hitRect.left - wrapRect.left + hitRect.width / 2;
-    const top = hitRect.top - wrapRect.top;
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-    tooltip.style.transform = 'translate(-50%, calc(-100% - 6px))';
-  }
-
-  function hideCtlTooltip(wrapEl) {
-    const tooltip = wrapEl && wrapEl.querySelector('.ctl-tooltip');
-    if (tooltip) tooltip.style.display = 'none';
-  }
-
-  const ATTR_CATEGORIES = [
-    { label: 'Shooting', keys: ['three_point_shot', 'mid_range_shot', 'close_shot', 'free_throw', 'shot_iq', 'offensive_consistency'] },
-    { label: 'Finishing', keys: ['layup', 'driving_dunk', 'standing_dunk', 'post_hook', 'post_fade', 'post_control', 'draw_foul', 'hands'] },
-    { label: 'Athleticism', keys: ['speed', 'strength', 'agility', 'vertical', 'hustle', 'stamina', 'overall_durability'] },
-    { label: 'Playmaking', keys: ['ball_handle', 'speed_with_ball', 'pass_accuracy', 'pass_vision', 'pass_iq'] },
-    { label: 'Defense & Rebounding', keys: ['block', 'steal', 'pass_perception', 'interior_defense', 'perimeter_defense', 'defensive_consistency', 'help_defense_iq', 'defensive_rebound', 'offensive_rebound'] },
-    { label: 'Intangibles', keys: ['intangibles'] },
-  ];
-
-  const ATTR_LABELS = {
-    three_point_shot: '3PT Shot', mid_range_shot: 'Mid-Range Shot', close_shot: 'Close Shot',
-    free_throw: 'Free Throw', shot_iq: 'Shot IQ', offensive_consistency: 'Offensive Consistency',
-    layup: 'Layup', driving_dunk: 'Driving Dunk', standing_dunk: 'Standing Dunk',
-    post_hook: 'Post Hook', post_fade: 'Post Fade', post_control: 'Post Control',
-    draw_foul: 'Draw Foul', hands: 'Hands',
-    speed: 'Speed', strength: 'Strength', agility: 'Agility', vertical: 'Vertical',
-    hustle: 'Hustle', stamina: 'Stamina', overall_durability: 'Durability',
-    ball_handle: 'Ball Handle', speed_with_ball: 'Speed With Ball', pass_accuracy: 'Pass Accuracy',
-    pass_vision: 'Pass Vision', pass_iq: 'Pass IQ',
-    block: 'Block', steal: 'Steal', pass_perception: 'Pass Perception',
-    interior_defense: 'Interior Defense', perimeter_defense: 'Perimeter Defense',
-    defensive_consistency: 'Defensive Consistency', help_defense_iq: 'Help Defense IQ',
-    defensive_rebound: 'Defensive Rebound', offensive_rebound: 'Offensive Rebound',
-    intangibles: 'Intangibles',
-  };
-
-  // Abbreviated column headers for the history table (renderAttributeHistory)
-  // only -- renderAttributes' progress-bar labels keep the full ATTR_LABELS text.
-  const ATTR_ABBR = {
-    three_point_shot: '3PT', mid_range_shot: 'MID', close_shot: 'CS',
-    free_throw: 'FT', shot_iq: 'SIQ', offensive_consistency: 'OCON',
-    layup: 'LAY', driving_dunk: 'DDK', standing_dunk: 'SDK',
-    post_hook: 'PHK', post_fade: 'PFD', post_control: 'PCTL',
-    draw_foul: 'DF', hands: 'HND',
-    speed: 'SPD', strength: 'STR', agility: 'AGL', vertical: 'VERT',
-    hustle: 'HUS', stamina: 'STA', overall_durability: 'DUR',
-    ball_handle: 'BHD', speed_with_ball: 'SWB', pass_accuracy: 'PACC',
-    pass_vision: 'PVIS', pass_iq: 'PIQ',
-    block: 'BLK', steal: 'STL', pass_perception: 'PPER',
-    interior_defense: 'IDEF', perimeter_defense: 'PDEF',
-    defensive_consistency: 'DCON', help_defense_iq: 'HDIQ',
-    defensive_rebound: 'DREB', offensive_rebound: 'OREB',
-    intangibles: 'INT',
-  };
-
-  function renderAttributes(container, playerSlug) {
-    const data = currentAttributes(playerSlug);
-    if (!data || !data.attributes) return;
-
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = '2K Attributes';
-    container.appendChild(h2);
-
-    const outer = document.createElement('div');
-
-    const wrap = document.createElement('div');
-    wrap.className = 'attr-categories-grid';
-    outer.appendChild(wrap);
-
-    ATTR_CATEGORIES.forEach(cat => {
-      const present = cat.keys.filter(k => data.attributes[k] != null);
-      if (!present.length) return;
-
-      const catBlock = document.createElement('div');
-
-      const catTitle = document.createElement('div');
-      catTitle.textContent = cat.label;
-      catTitle.style.cssText = 'font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-secondary);padding-bottom:0.35rem;margin-bottom:0.5rem;border-bottom:1px solid var(--border);';
-      catBlock.appendChild(catTitle);
-
-      const grid = document.createElement('div');
-      grid.style.cssText = 'display:flex;flex-direction:column;gap:0.4rem;';
-
-      present.forEach(key => {
-        const val = data.attributes[key];
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
-
-        const label = document.createElement('span');
-        label.textContent = ATTR_LABELS[key] || key;
-        label.style.cssText = 'width:9rem;flex-shrink:0;font-size:0.85rem;color:var(--text-secondary);';
-
-        const bar = document.createElement('div');
-        bar.style.cssText = 'flex:1;height:6px;border-radius:3px;background:var(--border);position:relative;overflow:hidden;';
-        const fill = document.createElement('div');
-        const heat = ovrHeatStyle(val);
-        fill.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:${Math.max(0, Math.min(100, val))}%;background:${heat.color};`;
-        bar.appendChild(fill);
-
-        const valEl = document.createElement('span');
-        valEl.textContent = val;
-        valEl.style.cssText = `font-size:0.85rem;font-weight:600;width:1.8rem;text-align:right;color:${heat.color};`;
-
-        row.appendChild(label);
-        row.appendChild(bar);
-        row.appendChild(valEl);
-        grid.appendChild(row);
-      });
-
-      catBlock.appendChild(grid);
-      wrap.appendChild(catBlock);
-    });
-
-    if (data.badges && data.badges.length) {
-      const tierColors = (window.RatingsPopup && window.RatingsPopup.TIER_COLORS) || {};
-      const tierOrder = (window.RatingsPopup && window.RatingsPopup.TIER_ORDER) || [];
-      const sorted = data.badges.slice().sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
-
-      const badgeTitle = document.createElement('div');
-      badgeTitle.textContent = `Badges (${data.badges.length})`;
-      badgeTitle.style.cssText = 'font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-secondary);padding-bottom:0.35rem;margin:1rem 0 0.5rem;border-bottom:1px solid var(--border);';
-      outer.appendChild(badgeTitle);
-
-      const badgeList = document.createElement('div');
-      badgeList.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.4rem;';
-      sorted.forEach(b => {
-        const chip = document.createElement('span');
-        chip.title = `${b.tier} · ${b.category}`;
-        chip.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;background:var(--bg-card);border-radius:999px;padding:0.2rem 0.65rem 0.2rem 0.5rem;font-size:0.75rem;color:var(--text-secondary);';
-
-        const dot = document.createElement('span');
-        dot.style.cssText = `width:0.55rem;height:0.55rem;border-radius:50%;flex-shrink:0;background:${tierColors[b.tier] || 'var(--text-muted)'};`;
-        chip.appendChild(dot);
-        chip.appendChild(document.createTextNode(b.name));
-        badgeList.appendChild(chip);
-      });
-      outer.appendChild(badgeList);
-    }
-
-    if (data['2k_pos'] && data['2k_pos'].length) {
-      const posRow = document.createElement('div');
-      posRow.style.cssText = 'font-size:0.8rem;color:var(--text-muted);margin-top:0.75rem;';
-      posRow.textContent = `Position: ${data['2k_pos'].join(' / ')}`;
-      outer.appendChild(posRow);
-    }
-
-    if (data.attributes.potential) {
-      const potRow = document.createElement('div');
-      potRow.style.cssText = 'font-size:0.8rem;color:var(--text-muted);margin-top:0.75rem;';
-      potRow.textContent = `Potential: ${data.attributes.potential}`;
-      outer.appendChild(potRow);
-    }
-
-    const source = document.createElement('div');
-    source.style.cssText = 'font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;';
-    source.textContent = `Source: 2kratings.com (as of ${data.date})`;
-    outer.appendChild(source);
-
-    container.appendChild(outer);
-  }
-
-  function renderAttributeHistory(container, playerSlug) {
-    const history = allAttributes[playerSlug] || [];
-    if (!history.length) return;
-
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = '2K Attribute History';
-    container.appendChild(h2);
-
-    const cols = [
-      { key: '2k_ovr', label: 'OVR', full: 'Overall', top: true },
-      { key: '2k_pos', label: 'POS', full: 'Position', top: true },
-      { key: 'potential', label: 'POT', full: 'Potential' },
-      ...ATTR_CATEGORIES.flatMap(cat => cat.keys.map(k => ({ key: k, label: ATTR_ABBR[k] || k, full: ATTR_LABELS[k] || k }))),
-    ];
-
-    const scrollWrap = document.createElement('div');
-    scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
-
-    const table = document.createElement('table'); table.className = 'ui-table';
-    table.className = 'salary-table';
-    table.style.cssText = 'min-width:1500px;';
-
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    [{ label: 'Date' }, ...cols].forEach(c => {
-      const th = document.createElement('th');
-      th.textContent = c.label;
-      th.style.whiteSpace = 'nowrap';
-      if (c.full) th.title = c.full;
-      hr.appendChild(th);
-    });
-
-    const tbody = table.createTBody();
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    // Oldest first is how snapshots are stored; show newest first for reading convenience.
-    const newestFirst = [...history].reverse();
-    newestFirst.forEach((entry, idx) => {
-      const prev = idx < newestFirst.length - 1 ? newestFirst[idx + 1] : null;
-      const tr = tbody.insertRow();
-
-      const dateTd = tr.insertCell();
-      const [y, m, d] = entry.date.split('-').map(Number);
-      dateTd.textContent = `${months[m - 1]} ${d}, ${y}`;
-      dateTd.style.whiteSpace = 'nowrap';
-
-      cols.forEach(col => {
-        const td = tr.insertCell();
-        td.style.whiteSpace = 'nowrap';
-        td.style.textAlign = 'right';
-        const rawVal = col.top ? entry[col.key] : (entry.attributes || {})[col.key];
-        const val = Array.isArray(rawVal) ? rawVal.join(' / ') : rawVal;
-        td.textContent = val != null && val !== '' ? val : '—';
-
-        if (typeof val === 'number') {
-          Object.assign(td.style, ovrHeatStyle(val));
-          td.style.borderRadius = '4px';
-          td.style.padding = '0.1rem 0.35rem';
-        }
-
-        if (prev) {
-          const rawPrevVal = col.top ? prev[col.key] : (prev.attributes || {})[col.key];
-          const prevVal = Array.isArray(rawPrevVal) ? rawPrevVal.join(' / ') : rawPrevVal;
-          if (prevVal != null && val != null && prevVal !== val) {
-            if (typeof val === 'number' && typeof prevVal === 'number') {
-              td.style.color = val > prevVal ? 'var(--success)' : 'var(--danger)';
-            } else {
-              td.style.color = 'var(--gold-alt)';
-            }
-            td.style.fontWeight = '700';
-          }
-        }
-      });
-    });
-
-    scrollWrap.appendChild(table);
-    container.appendChild(scrollWrap);
-
-    const source = document.createElement('div');
-    source.style.cssText = 'font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;';
-    source.textContent = 'Source: 2kratings.com · colored cells changed since the previous snapshot';
-    container.appendChild(source);
-  }
-
-  function renderBadgeHistory(container, playerSlug) {
-    const history = allAttributes[playerSlug] || [];
-    if (!history.some(e => e.badges && e.badges.length)) return;
-
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = 'Badge History';
-    container.appendChild(h2);
-
-    // Union of every badge name ever held, grouped by category (last-seen
-    // category wins), sorted category then name -- same grouping intent as
-    // ATTR_CATEGORIES above, just derived from the data since badges don't
-    // have a fixed category list.
-    const badgeCategory = new Map();
-    history.forEach(entry => {
-      (entry.badges || []).forEach(b => badgeCategory.set(b.name, b.category));
-    });
-    const cols = [...badgeCategory.keys()].sort((a, b) => {
-      const catA = badgeCategory.get(a), catB = badgeCategory.get(b);
-      return catA !== catB ? (catA < catB ? -1 : 1) : (a < b ? -1 : 1);
-    });
-
-    const tierColors = (window.RatingsPopup && window.RatingsPopup.TIER_COLORS) || {};
-
-    const scrollWrap = document.createElement('div');
-    scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
-
-    const table = document.createElement('table'); table.className = 'ui-table';
-    table.className = 'salary-table';
-    table.style.cssText = `min-width:${Math.max(600, 90 + cols.length * 34)}px;`;
-
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    const dateTh = document.createElement('th');
-    dateTh.textContent = 'Date';
-    dateTh.style.whiteSpace = 'nowrap';
-    hr.appendChild(dateTh);
-    cols.forEach(name => {
-      const th = document.createElement('th');
-      th.textContent = name;
-      th.title = `${name} (${badgeCategory.get(name)})`;
-      th.style.whiteSpace = 'nowrap';
-      hr.appendChild(th);
-    });
-
-    const tbody = table.createTBody();
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const newestFirst = [...history].reverse();
-    newestFirst.forEach(entry => {
-      const tr = tbody.insertRow();
-      const dateTd = tr.insertCell();
-      const [y, m, d] = entry.date.split('-').map(Number);
-      dateTd.textContent = `${months[m - 1]} ${d}, ${y}`;
-      dateTd.style.whiteSpace = 'nowrap';
-
-      const tierByName = {};
-      (entry.badges || []).forEach(b => { tierByName[b.name] = b.tier; });
-
-      cols.forEach(name => {
-        const td = tr.insertCell();
-        td.style.textAlign = 'center';
-        const tier = tierByName[name];
-        const dot = document.createElement('span');
-        if (tier) {
-          dot.title = tier;
-          dot.style.cssText = `display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;background:${tierColors[tier] || 'var(--text-muted)'};`;
-        } else {
-          dot.style.cssText = 'display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;border:1px solid var(--border);';
-        }
-        td.appendChild(dot);
-      });
-    });
-
-    scrollWrap.appendChild(table);
-    container.appendChild(scrollWrap);
-
-    const source = document.createElement('div');
-    source.style.cssText = 'font-size:0.7rem;color:var(--text-muted);margin-top:0.4rem;';
-    source.textContent = 'Source: 2kratings.com · dot color = badge tier held on that date';
-    container.appendChild(source);
   }
 
   // Health, the third hero tile: injured now, or healthy with the career
@@ -2782,652 +1879,6 @@
         draw(stints, IH.summary(stints, today));
       });
     });
-  }
-
-  function renderHistorySection(container, playerSlug) {
-    const attrHistory = allAttributes[playerSlug];
-    if (attrHistory && attrHistory.length) {
-      renderAttributeHistory(container, playerSlug);
-      renderBadgeHistory(container, playerSlug);
-    } else {
-      renderOvrHistory(container, playerSlug);
-    }
-  }
-
-  function renderOvrHistory(container, playerSlug) {
-    const hasToken = canEditBios();
-    const entries = allOvrHistory[playerSlug] || [];
-    if (!entries.length && !hasToken) return;
-
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = 'OVR History';
-    container.appendChild(h2);
-
-    const wrap = document.createElement('div');
-    container.appendChild(wrap);
-
-    function rebuild() {
-      wrap.innerHTML = '';
-      const current = allOvrHistory[playerSlug] || [];
-      const loggedIn = canEditBios();
-      const hasChange = current.length > 1;
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const inputCss = 'background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:0.8rem;padding:0.2rem 0.35rem;font-family:inherit;outline:none;';
-
-      if (current.length) {
-        if (current.length >= 2) wrap.appendChild(buildOvrChart(current));
-
-        const table = document.createElement('table'); table.className = 'ui-table';
-        table.className = 'salary-table';
-        const thead = table.createTHead();
-        const hr = thead.insertRow();
-        ['Date', 'OVR', ...(hasChange ? ['Change'] : []), ...(loggedIn ? [''] : [])].forEach((h, i) => {
-          const th = document.createElement('th');
-          th.textContent = h;
-          if (i === 1) th.className = 'right';
-          hr.appendChild(th);
-        });
-        const tbody = table.createTBody();
-        current.forEach((entry, i) => {
-          const tr = tbody.insertRow();
-          const [y, m, d] = entry.date.split('-').map(Number);
-          const dateTd = tr.insertCell();
-          dateTd.textContent = `${months[m-1]} ${d}, ${y}`;
-          const ovrTd = tr.insertCell();
-          ovrTd.className = 'right';
-          ovrTd.textContent = entry.ovr;
-          Object.assign(ovrTd.style, ovrHeatStyle(entry.ovr));
-          ovrTd.style.borderRadius = '4px';
-          ovrTd.style.padding = '0.15rem 0.4rem';
-          if (hasChange) {
-            const changeTd = tr.insertCell();
-            changeTd.className = 'right';
-            if (i === 0) {
-              changeTd.textContent = '—';
-              changeTd.style.color = 'var(--text-muted)';
-            } else {
-              const delta = entry.ovr - current[i - 1].ovr;
-              changeTd.textContent = delta > 0 ? `+${delta}` : String(delta);
-              changeTd.style.color = delta > 0 ? 'var(--success)' : delta < 0 ? 'var(--danger)' : 'var(--text-muted)';
-            }
-          }
-          if (loggedIn) {
-            const actionTd = tr.insertCell();
-            actionTd.style.textAlign = 'right';
-            const editRowBtn = document.createElement('button');
-            editRowBtn.className = 'edit-btn edit-btn-secondary';
-            editRowBtn.textContent = 'Edit';
-            editRowBtn.style.cssText = 'font-size:0.7rem;padding:0.1rem 0.35rem;';
-            actionTd.appendChild(editRowBtn);
-
-            editRowBtn.addEventListener('click', () => {
-              if (tr.dataset.editing) { rebuild(); return; }
-              table.querySelectorAll('tr[data-editing]').forEach(r => { delete r.dataset.editing; });
-              tr.dataset.editing = '1';
-
-              dateTd.innerHTML = '';
-              const dateIn = document.createElement('input');
-              dateIn.type = 'date';
-              dateIn.value = entry.date;
-              dateIn.style.cssText = inputCss;
-              dateTd.appendChild(dateIn);
-
-              ovrTd.innerHTML = '';
-              ovrTd.className = '';
-              ovrTd.removeAttribute('style');
-              const ovrIn = document.createElement('input');
-              ovrIn.type = 'number';
-              ovrIn.min = '50'; ovrIn.max = '99';
-              ovrIn.value = entry.ovr;
-              ovrIn.style.cssText = inputCss + 'width:4.5rem;text-align:right;';
-              ovrTd.appendChild(ovrIn);
-
-              actionTd.innerHTML = '';
-              const saveRowBtn = document.createElement('button');
-              saveRowBtn.className = 'edit-btn edit-btn-primary';
-              saveRowBtn.textContent = 'Save';
-              saveRowBtn.style.cssText = 'font-size:0.7rem;padding:0.1rem 0.35rem;';
-              const cancelRowBtn = document.createElement('button');
-              cancelRowBtn.className = 'edit-btn edit-btn-secondary';
-              cancelRowBtn.textContent = 'Cancel';
-              cancelRowBtn.style.cssText = 'font-size:0.7rem;padding:0.1rem 0.35rem;';
-              const rowStatus = document.createElement('span');
-              rowStatus.style.cssText = 'font-size:0.7rem;color:var(--danger);margin-left:0.25rem;';
-              actionTd.appendChild(saveRowBtn);
-              actionTd.appendChild(cancelRowBtn);
-              actionTd.appendChild(rowStatus);
-
-              cancelRowBtn.addEventListener('click', () => rebuild());
-
-              saveRowBtn.addEventListener('click', async () => {
-                const token = await getToken();
-                if (!token) return;
-                const dateVal = dateIn.value.trim();
-                const ovrVal = parseInt(ovrIn.value, 10);
-                if (!dateVal) { rowStatus.textContent = 'Date required.'; return; }
-                if (isNaN(ovrVal) || ovrVal < 50 || ovrVal > 99) { rowStatus.textContent = 'OVR must be 50–99.'; return; }
-                saveRowBtn.disabled = true;
-                rowStatus.textContent = 'Saving…';
-                const updated = current.map((e, j) => j === i ? { date: dateVal, ovr: ovrVal } : e);
-                try {
-                  const resp = await fetch(`/api/ovr/${playerSlug}/history`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(updated),
-                  });
-                  if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
-                  if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
-                  allOvrHistory[playerSlug] = updated.slice().sort((a, b) => a.date < b.date ? -1 : 1);
-                  currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
-                  rebuild();
-                } catch (e) {
-                  rowStatus.textContent = e.message || 'Save failed.';
-                  saveRowBtn.disabled = false;
-                }
-              });
-            });
-          }
-        });
-        wrap.appendChild(table);
-      }
-
-      if (!loggedIn) return;
-
-      const formRow = document.createElement('div');
-      formRow.className = 'ovr-edit-row';
-      formRow.style.marginTop = '0.6rem';
-
-      const today = nbnToday();
-      const dateIn = document.createElement('input');
-      dateIn.type = 'date';
-      dateIn.value = today;
-
-      const ovrIn = document.createElement('input');
-      ovrIn.type = 'number';
-      ovrIn.min = '50'; ovrIn.max = '99';
-      ovrIn.placeholder = 'OVR';
-
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'edit-btn edit-btn-primary';
-      saveBtn.textContent = 'Add Entry';
-
-      const statusEl = document.createElement('span');
-      statusEl.style.cssText = 'font-size:0.75rem;color:var(--danger)';
-
-      saveBtn.addEventListener('click', async () => {
-        const token = await getToken();
-        if (!token) return;
-        const dateVal = dateIn.value.trim();
-        const ovrVal = parseInt(ovrIn.value, 10);
-        if (!dateVal) { statusEl.textContent = 'Date required.'; return; }
-        if (isNaN(ovrVal) || ovrVal < 50 || ovrVal > 99) { statusEl.textContent = 'OVR must be 50–99.'; return; }
-        saveBtn.disabled = true;
-        statusEl.textContent = 'Saving…';
-        try {
-          const resp = await fetch(`/api/ovr/${playerSlug}`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date: dateVal, ovr: ovrVal }),
-          });
-          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
-          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
-          if (!allOvrHistory[playerSlug]) allOvrHistory[playerSlug] = [];
-          allOvrHistory[playerSlug].push({ date: dateVal, ovr: ovrVal });
-          allOvrHistory[playerSlug].sort((a, b) => a.date < b.date ? -1 : 1);
-          currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
-          rebuild();
-        } catch (e) {
-          statusEl.textContent = e.message || 'Save failed.';
-          saveBtn.disabled = false;
-        }
-      });
-
-      formRow.appendChild(dateIn);
-      formRow.appendChild(ovrIn);
-      formRow.appendChild(saveBtn);
-      formRow.appendChild(statusEl);
-      wrap.appendChild(formRow);
-    }
-
-    rebuild();
-  }
-
-  function renderTransactionHistory(container, playerSlug, playerAwards = [], seasonLeaders = {}, seasonRows = [], bio = {}) {
-    let currentPicks = [];
-    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    function fmtDate(iso) {
-      if (!iso) return '—';
-      const [y, m, d] = iso.split('-').map(Number);
-      return `${MONTHS[m - 1]} ${d}, ${y}`;
-    }
-    function fmtSeason(season) {
-      const m = /^(\d{2})-(\d{2})$/.exec(season || '');
-      return m ? `20${m[1]}-${m[2]}` : (season || '—');
-    }
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-    function fmtEditTs(ts) {
-      if (!ts) return '—';
-      const datePart = fmtDate((ts.split('T')[0]) || '');
-      const d = new Date(ts);
-      if (isNaN(d)) return datePart;
-      const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      return `${datePart}, ${timePart}`;
-    }
-    function fmtEditFile(file) {
-      if (file === 'player-bios.json') return 'Bio';
-      const m = /^([a-z]{2,4})-(roster|deadcap|picks)\.csv$/.exec(file || '');
-      if (m) {
-        const label = { roster: 'Roster', deadcap: 'Dead Cap', picks: 'Picks' }[m[2]];
-        return `${label} (${m[1].toUpperCase()})`;
-      }
-      return file || '—';
-    }
-    function fmtEditField(key, slug) {
-      let s = (key || '').startsWith(slug) ? key.slice(slug.length) : (key || '');
-      s = s.replace(/^\.+/, '');
-      return s || '(row)';
-    }
-    function fmtEditChange(from, to) {
-      const has = v => v !== undefined && v !== null;
-      const fromStr = has(from) ? esc(String(from)) : '<span class="edit-added">(new)</span>';
-      const toStr = has(to) ? esc(String(to)) : '<span class="edit-removed">(removed)</span>';
-      return `${fromStr} &rarr; ${toStr}`;
-    }
-    function playerLink(slug) {
-      if (!slug) return '';
-      const bio = biosData[slug];
-      const name = bio ? displayName(bio.name) : slug;
-      return `<a href="/players/?p=${esc(slug)}">${esc(name)}</a>`;
-    }
-    function fmtContract(c) {
-      if (!c) return '';
-      const yrs = Object.keys(c.salaries || {}).length;
-      const total = Object.values(c.salaries || {}).reduce((s, v) => s + (parseInt(String(v).replace(/\D/g,''), 10) || 0), 0);
-      if (!yrs) return c.type === 'two-way' ? 'Two-Way' : '';
-      return `${yrs}yr / $${(total / 1e6).toFixed(1)}M`;
-    }
-    const METHOD = { bird_rights:'Bird Rights', ntmle:'NTMLE', tmle:'TMLE',
-      room_exception:'Room Exc.', bae:'BAE', sign_and_trade:'S&T' };
-    const TYPE_LABEL = { sign:'Signing', pick:'Draft Pick', option:'Option',
-      release:'Release', trade:'Trade', convert_twoway:'Two-Way Conv.', offer_sheet:'Offer Sheet' };
-
-    function detailsHtml(t) {
-      const d = t.details || {};
-      if (t.type === 'sign' || t.type === 'pick') {
-        let s = fmtContract(d.contract);
-        if (d.signing_method && d.signing_method !== 'cap_space')
-          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
-        if (t.type === 'pick' && d.pick) {
-          const p = d.pick;
-          const ps = `${p.year} R${p.round} ${p.orig}${p.pick_number ? ' #'+p.pick_number : ''}`;
-          s = esc(ps) + (s ? ' · ' + esc(s) : '');
-        } else { s = esc(s); }
-        return s;
-      }
-      if (t.type === 'option') {
-        const ol = d.option_type === 'PLAYER_OPT' ? 'Player Opt' : 'Team Opt';
-        return d.decision === 'accept'
-          ? esc(`${d.year || ''} ${ol} — accepted`)
-          : esc(`${d.year || ''} ${ol} — declined → ${d.cap_hold_type || 'UFA'} hold`);
-      }
-      if (t.type === 'offer_sheet') {
-        const [offeringTeam, retainingTeam] = d.teams || [];
-        const outcomeStr = d.outcome === 'matched'
-          ? `${retainingTeam || 'Retaining team'} matched`
-          : `Not matched — signs with ${offeringTeam || 'offering team'}`;
-        let s = fmtContract(d.contract);
-        if (d.signing_method && d.signing_method !== 'cap_space')
-          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
-        return esc(outcomeStr) + (s ? ' · ' + esc(s) : '');
-      }
-      if (t.type === 'convert_twoway') {
-        let s = fmtContract(d.contract);
-        if (d.signing_method && d.signing_method !== 'cap_space')
-          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
-        return esc(s);
-      }
-      if (t.type === 'release') {
-        const dc = d.dead_cap || {};
-        const entries = Object.entries(dc);
-        if (!entries.length) return 'No dead cap';
-        const total = entries.reduce((s, [,v]) => s + (parseInt(String(v).replace(/\D/g,''), 10) || 0), 0);
-        return esc(`Dead cap: $${(total / 1e6).toFixed(1)}M (${entries.map(([yr]) => yr).join(', ')})`);
-      }
-      if (t.type === 'trade') {
-        const transfers = d.transfers || [];
-        // Find the leg this player is in, to identify "their side" of the trade
-        const myLeg = transfers.find(tr =>
-          (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
-        const myTeam = myLeg ? myLeg.from_team : null;
-
-        const assetLabel = (a, toTeam) => {
-          if (a.type === 'player') return playerLink(a.slug);
-          if (a.type === 'pick') {
-            let s = `${a.year} R${a.round} ${a.orig}`;
-            const mods = [];
-            if (a.protection) mods.push(`top-${a.protection} prot.`);
-            if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
-            if (a.ladder_fallback && a.ladder_fallback.length) {
-              const fb = a.ladder_fallback.map(f => `${f.year} R${f.round} ${f.orig}`).join(' / ');
-              mods.push(`if protected → ${fb}`);
-            }
-            // Nothing set by this transaction itself (e.g. a plain retrade of a
-            // pick that already carries a contingent claim) — fall back to the
-            // pick's current conveyance state so an existing band/swap doesn't
-            // just disappear from the player's history.
-            if (!mods.length) {
-              const cur = currentPicks.find(p => p.year === a.year && p.round === a.round && p.orig === a.orig);
-              const leaf = cur?.leaves?.find(l => l.team === toTeam);
-              if (leaf) mods.push(leaf.description);
-              else if (cur?.protected != null) mods.push(`top-${cur.protected} prot.`);
-              else if (cur?.swap_owner) mods.push(`swap w/ ${cur.swap_owner}`);
-            }
-            if (mods.length) s += ` (${mods.join(', ')})`;
-            return esc(s);
-          }
-          return '';
-        };
-
-        // Group by "their team" gave / got, rather than raw leg text — same
-        // give/get convention used in the main transactions log.
-        const sent = [];
-        const received = [];
-        const otherLegStrs = [];
-        transfers.forEach(tr => {
-          if (tr.from_team === myTeam) {
-            (tr.assets || []).forEach(a => {
-              if (a.type === 'player' && a.slug === playerSlug) return; // this player themself
-              const label = assetLabel(a, tr.to_team);
-              if (label) sent.push(label);
-            });
-          } else if (tr.to_team === myTeam) {
-            (tr.assets || []).forEach(a => {
-              const label = assetLabel(a, tr.to_team);
-              if (label) received.push(label);
-            });
-          } else {
-            const assetStrs = (tr.assets || []).map(a => assetLabel(a, tr.to_team)).filter(Boolean);
-            otherLegStrs.push(esc(`${tr.from_team}→${tr.to_team}`) + (assetStrs.length ? ': ' + assetStrs.join(', ') : ''));
-          }
-        });
-
-        const parts = [];
-        if (sent.length) parts.push(`<span style="color:var(--danger-light)">Also sent: ${sent.join(', ')}</span>`);
-        if (received.length) parts.push(`<span style="color:var(--success-light)">Received: ${received.join(', ')}</span>`);
-        parts.push(...otherLegStrs);
-        return parts.join(' · ') || '—';
-      }
-      return '';
-    }
-
-    const LEADER_LABELS = { PTS: 'scoring', REB: 'rebounding', AST: 'assists', STL: 'steals', BLK: 'blocks', '3PM': '3-pointers made', GMSC: 'game score' };
-    const HIGH_FIELDS = [
-      { key: 'HIGH_P',   label: 'PTS', threshold: 40 },
-      { key: 'HIGH_R',   label: 'REB', threshold: 20 },
-      { key: 'HIGH_A',   label: 'AST', threshold: 15 },
-      { key: 'HIGH_S',   label: 'STL', threshold: 8 },
-      { key: 'HIGH_B',   label: 'BLK', threshold: 8 },
-      { key: 'HIGH_3PM', label: '3PM', threshold: 8 },
-    ];
-
-    // One recap row per season played: a baseline per-game stat line, plus
-    // awards, league-leader finishes, and notable/career-high games when
-    // applicable — not transactions, but part of the same story.
-    function buildSeasonRecaps() {
-      const asc = seasonRows
-        .filter(r => r.SEASON && r.SEASON !== 'NA' && r.LAST_DATE && r.LAST_DATE !== 'NA')
-        .sort((a, b) => parseFloat(a.SEASON) - parseFloat(b.SEASON));
-      const careerBest = {};
-      const recaps = [];
-      asc.forEach(row => {
-        const bullets = [];
-        const g = +row.G || 0;
-        if (g > 0) {
-          const ppg = (+row.PTS / g).toFixed(1);
-          const rpg = (+row.REB / g).toFixed(1);
-          const apg = (+row.AST / g).toFixed(1);
-          bullets.push(`${ppg} PPG, ${rpg} RPG, ${apg} APG (${g} GP)`);
-        }
-
-        const seasonAwards = playerAwards.filter(a => a.SEASON === row.SEASON || a.SEASON === row.SEASON + ' Playoffs');
-        const awardCounts = {};
-        seasonAwards.forEach(a => { awardCounts[a.AWARD] = (awardCounts[a.AWARD] || 0) + 1; });
-        Object.keys(awardCounts).forEach(award => bullets.push(award));
-
-        const leaders = seasonLeaders[row.SEASON] || {};
-        Object.entries(leaders).forEach(([stat, info]) => {
-          if (info.slug === playerSlug && LEADER_LABELS[stat]) bullets.push(`Led the league in ${LEADER_LABELS[stat]}`);
-        });
-
-        HIGH_FIELDS.forEach(({ key, label, threshold }) => {
-          const val = +row[key];
-          if (!val) return;
-          const hadPrior = Object.prototype.hasOwnProperty.call(careerBest, key);
-          const prevBest = careerBest[key] || 0;
-          if (hadPrior && val > prevBest) bullets.push(`New career high: ${val} ${label}`);
-          else if (val >= threshold) bullets.push(`${val}-${label} game`);
-          careerBest[key] = Math.max(prevBest, val);
-        });
-
-        recaps.push({ kind: 'recap', date: row.LAST_DATE, season: row.SEASON, team: row.TEAM, bullets });
-      });
-      return recaps;
-    }
-
-    // Final line in a retired player's history: name + headline career stats.
-    // Always the most recent entry, regardless of the last season/transaction date.
-    function buildRetirementEntry() {
-      if (!bio.retired) return null;
-      const name = bio.name ? displayName(bio.name) : playerSlug;
-      const totalG = seasonRows.reduce((s, r) => s + (+r.G || 0), 0);
-      const bullets = [];
-      if (totalG > 0) {
-        const sum = f => seasonRows.reduce((s, r) => s + (+r[f] || 0), 0);
-        const seasons = new Set(seasonRows.map(r => r.SEASON)).size;
-        bullets.push(`${seasons} season${seasons !== 1 ? 's' : ''}, ${totalG} games`);
-        bullets.push(`${(sum('PTS') / totalG).toFixed(1)} PPG, ${(sum('REB') / totalG).toFixed(1)} RPG, ${(sum('AST') / totalG).toFixed(1)} APG career`);
-      }
-      return { kind: 'retired', name, bullets };
-    }
-
-    function teamHtml(t) {
-      const d = t.details || {};
-      if (t.type === 'trade') {
-        const transfers = d.transfers || [];
-        const myLeg = transfers.find(tr =>
-          (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
-        if (!myLeg) return (d.teams || []).map(esc).join(' · ') || '—';
-        return `<a href="/teams/${esc(myLeg.from_team)}">${esc(myLeg.from_team)}</a> → <a href="/teams/${esc(myLeg.to_team)}">${esc(myLeg.to_team)}</a>`;
-      }
-      if (t.type === 'offer_sheet') {
-        const teams = d.teams || [];
-        return teams.length ? teams.map(tm => `<a href="/teams/${esc(tm)}">${esc(tm)}</a>`).join(' → ') : '—';
-      }
-      return d.team ? `<a href="/teams/${esc(d.team)}">${esc(d.team)}</a>` : '—';
-    }
-
-    Promise.all([
-      fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`).then(r => r.ok ? r.json() : { transactions: [] }),
-      fetch('/api/picks').then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`/api/edits?key=${encodeURIComponent(playerSlug)}&limit=500`).then(r => r.ok ? r.json() : { entries: [] }).catch(() => ({ entries: [] })),
-    ])
-      .then(([{ transactions }, picks, { entries: edits }]) => {
-        currentPicks = picks;
-        const entries = [
-          ...transactions.map(t => ({ kind: 'txn', date: t.date, t })),
-          ...buildSeasonRecaps(),
-        ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
-
-        const retirementEntry = buildRetirementEntry();
-        if (retirementEntry) entries.unshift(retirementEntry);
-
-        // Flatten to one row per diff line — an edit entry can touch several
-        // fields (or several players, on a roster/deadcap CSV write) at once,
-        // and only the lines actually naming this player belong here.
-        const editRows = [];
-        (edits || []).forEach(e => {
-          (e.diff || []).forEach(d => {
-            if ((d.key || '').includes(playerSlug)) {
-              editRows.push({ ts: e.ts, actor: e.actor, file: e.file, key: d.key, from: d.from, to: d.to });
-            }
-          });
-        });
-
-        if (!entries.length && !editRows.length) return;
-
-        const h2 = document.createElement('h2');
-        h2.className = 'section-heading';
-        h2.textContent = 'Player History';
-        container.appendChild(h2);
-
-        if (!entries.length) {
-          renderEditHistory();
-          return;
-        }
-
-        const table = document.createElement('table'); table.className = 'ui-table';
-        table.className = 'salary-table txn-history-table';
-        table.style.cssText = 'font-size:0.8rem';
-
-        // Fixed pixel widths for the nowrap columns so they always have enough
-        // room for their content; Details is left unset so it gets whatever
-        // space remains (and wraps within it) at any table width.
-        const colgroup = document.createElement('colgroup');
-        ['104px', '112px', '92px', null, '40px'].forEach(w => {
-          const col = document.createElement('col');
-          if (w) col.style.width = w;
-          colgroup.appendChild(col);
-        });
-        table.appendChild(colgroup);
-
-        const thead = table.createTHead();
-        const hr = thead.insertRow();
-        ['Date', 'Type', 'Team', 'Details', ''].forEach(h => {
-          const th = document.createElement('th');
-          th.textContent = h;
-          hr.appendChild(th);
-        });
-        const tbody = table.createTBody();
-        const tableWrap = document.createElement('div');
-        tableWrap.className = 'txn-history-wrap';
-        tableWrap.appendChild(table);
-        container.appendChild(tableWrap);
-
-        const pagination = document.createElement('div');
-        pagination.className = 'txn-pagination';
-        container.appendChild(pagination);
-
-        const PAGE_SIZE = 15;
-        let currentPage = 0;
-
-        function renderEntryRow(entry) {
-          const tr = tbody.insertRow();
-          if (entry.kind === 'retired') {
-            tr.className = 'txn-row-retired';
-            tr.innerHTML = `
-              <td style="white-space:nowrap;color:var(--text-muted)">—</td>
-              <td><span class="txn-badge txn-badge-retired">Retired</span></td>
-              <td style="white-space:nowrap" class="txn-table-details">—</td>
-              <td class="txn-table-details">${esc(entry.name)} retired${entry.bullets.length ? ' &middot; ' + entry.bullets.map(esc).join(' &middot; ') : ''}</td>
-              <td class="txn-note-cell"></td>
-            `;
-            return;
-          }
-          if (entry.kind === 'recap') {
-            tr.innerHTML = `
-              <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtSeason(entry.season))}</td>
-              <td><span class="txn-badge txn-badge-recap">Season Recap</span></td>
-              <td style="white-space:nowrap" class="txn-table-details">${entry.team ? `<a href="/teams/${esc(entry.team)}">${esc(entry.team)}</a>` : '—'}</td>
-              <td class="txn-table-details">${entry.bullets.map(esc).join(' &middot; ')}</td>
-              <td class="txn-note-cell"></td>
-            `;
-            return;
-          }
-          const t = entry.t;
-          const label = TYPE_LABEL[t.type] || t.type;
-          tr.innerHTML = `
-            <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtDate(t.date))}</td>
-            <td><span class="txn-badge txn-badge-${esc(t.type)}">${esc(label)}</span></td>
-            <td style="white-space:nowrap" class="txn-table-details">${teamHtml(t)}</td>
-            <td class="txn-table-details">${detailsHtml(t)}</td>
-            <td class="txn-note-cell"></td>
-          `;
-          const note = (t.description || '').trim();
-          if (note) {
-            const icon = document.createElement('span');
-            icon.className = 'txn-note-icon';
-            icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
-            attachTooltip(icon, note);
-            tr.querySelector('.txn-note-cell').appendChild(icon);
-          }
-        }
-
-        function renderPage() {
-          tbody.innerHTML = '';
-          const totalPages = Math.ceil(entries.length / PAGE_SIZE);
-          currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
-          const start = currentPage * PAGE_SIZE;
-          entries.slice(start, start + PAGE_SIZE).forEach(renderEntryRow);
-
-          if (totalPages <= 1) { pagination.style.display = 'none'; return; }
-          pagination.style.display = '';
-          const end = Math.min(start + PAGE_SIZE, entries.length);
-          pagination.innerHTML = `
-            <button class="txn-page-btn" id="ph-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>&larr; Prev</button>
-            <span>${start + 1}&ndash;${end} of ${entries.length}</span>
-            <button class="txn-page-btn" id="ph-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next &rarr;</button>
-          `;
-          pagination.querySelector('#ph-prev-btn').addEventListener('click', () => { currentPage--; renderPage(); });
-          pagination.querySelector('#ph-next-btn').addEventListener('click', () => { currentPage++; renderPage(); });
-        }
-
-        function renderEditHistory() {
-          if (!editRows.length) return;
-          const det = document.createElement('details');
-          det.className = 'edit-history';
-          const summary = document.createElement('summary');
-          summary.textContent = `Edit history (${editRows.length})`;
-          det.appendChild(summary);
-
-          const editTable = document.createElement('table'); editTable.className = 'ui-table';
-          editTable.className = 'salary-table edit-history-table';
-          editTable.style.cssText = 'font-size:0.75rem';
-          const ethead = editTable.createTHead();
-          const ehr = ethead.insertRow();
-          ['Date', 'Source', 'Field', 'Change', 'By'].forEach(h => {
-            const th = document.createElement('th');
-            th.textContent = h;
-            ehr.appendChild(th);
-          });
-          const etbody = editTable.createTBody();
-          editRows
-            .slice()
-            .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
-            .forEach(row => {
-              const tr = etbody.insertRow();
-              tr.innerHTML = `
-                <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtEditTs(row.ts))}</td>
-                <td style="white-space:nowrap" class="txn-table-details">${esc(fmtEditFile(row.file))}</td>
-                <td style="white-space:nowrap" class="txn-table-details">${esc(fmtEditField(row.key, playerSlug))}</td>
-                <td class="txn-table-details">${fmtEditChange(row.from, row.to)}</td>
-                <td style="white-space:nowrap;color:var(--text-muted)">${esc(row.actor || 'system')}</td>
-              `;
-            });
-
-          const wrap = document.createElement('div');
-          wrap.className = 'txn-history-wrap';
-          wrap.appendChild(editTable);
-          det.appendChild(wrap);
-          container.appendChild(det);
-        }
-
-        renderPage();
-        renderEditHistory();
-      })
-      .catch(() => {});
   }
 
   function renderBioLine(container, row) {
@@ -3670,90 +2121,6 @@
     };
   }
 
-  function buildOvrChart(entries) {
-    const W = 480, H = 72;
-    const PAD = { top: 16, right: 10, bottom: 18, left: 10 };
-    const iW = W - PAD.left - PAD.right;
-    const iH = H - PAD.top - PAD.bottom;
-
-    const ovrs = entries.map(e => e.ovr);
-    const lo = Math.max(50, Math.min(...ovrs) - 4);
-    const hi = Math.min(99, Math.max(...ovrs) + 4);
-
-    const xOf = i => PAD.left + (entries.length < 2 ? iW / 2 : (i / (entries.length - 1)) * iW);
-    const yOf = v => PAD.top + (1 - (v - lo) / (hi - lo)) * iH;
-
-    const latest = entries.at(-1).ovr;
-    const t = Math.min(1, Math.max(0, (latest - 60) / 40));
-    const hue = Math.round(t * 120);
-    const stroke = `hsl(${hue},70%,55%)`;
-    const fill   = `hsl(${hue},80%,65%)`;
-
-    const ns = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(ns, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.style.cssText = 'width:100%;height:72px;display:block;overflow:visible;';
-
-    // Area fill under line
-    if (entries.length >= 2) {
-      const areaPoints = entries.map((e, i) => `${xOf(i)},${yOf(e.ovr)}`).join(' ');
-      const lastX = xOf(entries.length - 1), firstX = xOf(0), baseY = PAD.top + iH;
-      const area = document.createElementNS(ns, 'polygon');
-      area.setAttribute('points', `${firstX},${baseY} ${areaPoints} ${lastX},${baseY}`);
-      area.setAttribute('fill', `hsl(${hue},55%,18%)`);
-      area.setAttribute('opacity', '0.6');
-      svg.appendChild(area);
-
-      // Line
-      const poly = document.createElementNS(ns, 'polyline');
-      poly.setAttribute('points', areaPoints);
-      poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', stroke);
-      poly.setAttribute('stroke-width', '2');
-      poly.setAttribute('stroke-linejoin', 'round');
-      poly.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(poly);
-    }
-
-    // Dots + endpoint labels
-    entries.forEach((e, i) => {
-      const cx = xOf(i), cy = yOf(e.ovr);
-      const isFirst = i === 0, isLast = i === entries.length - 1;
-      const r = isLast ? 4 : 2.5;
-
-      const dot = document.createElementNS(ns, 'circle');
-      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', r);
-      dot.setAttribute('fill', isLast ? fill : stroke);
-      svg.appendChild(dot);
-
-      if (isFirst || isLast) {
-        const label = document.createElementNS(ns, 'text');
-        label.setAttribute('x', cx);
-        label.setAttribute('y', cy - 6);
-        label.setAttribute('text-anchor', isFirst ? 'start' : 'end');
-        label.setAttribute('fill', fill);
-        label.setAttribute('font-size', '10');
-        label.setAttribute('font-weight', '600');
-        label.textContent = e.ovr;
-        svg.appendChild(label);
-
-        const dateLabel = document.createElementNS(ns, 'text');
-        dateLabel.setAttribute('x', cx);
-        dateLabel.setAttribute('y', H - 2);
-        dateLabel.setAttribute('text-anchor', isFirst ? 'start' : 'end');
-        dateLabel.setAttribute('fill', 'var(--text-muted)');
-        dateLabel.setAttribute('font-size', '8');
-        dateLabel.textContent = e.date.slice(0, 7);
-        svg.appendChild(dateLabel);
-      }
-    });
-
-    const wrap = document.createElement('div');
-    wrap.className = 'ovr-chart';
-    wrap.appendChild(svg);
-    return wrap;
-  }
-
   // Archetype radar. Drawing, ranking and nearest-match live in /radar.js,
   // shared with team pages; the axes and archetypes here are the player's own.
   function buildPlayerRadarChart(playerRows, allRows) {
@@ -3918,8 +2285,10 @@
     const ovr = currentOvr[playerSlug];
     if (ovr == null) return;
     const hist = (allOvrHistory[playerSlug] || []).filter(e => e && e.ovr != null);
-    const tile = document.createElement('div');
+    const tile = document.createElement('a');
     tile.className = 'hero-tile';
+    tile.href = PlayerSubpage.href('ratings', playerSlug);
+    tile.title = '2K ratings, badges and their history';
     tile.innerHTML = '<div class="tile-label">Overall</div><div class="tile-main"><div class="tile-value"></div></div><div class="tile-sub"></div>';
     const val = tile.querySelector('.tile-value');
     val.textContent = ovr;
@@ -4069,13 +2438,10 @@
     const tiles = document.createElement('div');
     tiles.className = 'hero-tiles';
     renderOvrTile(tiles, bioSlug);
+    renderContractTile(tiles, bio, bioSlug);
+    renderHistoryTile(tiles, bioSlug);
     renderHealthTile(tiles, bioSlug);
     content.appendChild(tiles);
-    renderContractTimeline(content, bio, bioSlug);
-    renderSalaryTable(content, bio);
-    renderHistorySection(content, bioSlug);
-    renderAttributes(content, bioSlug);
-    renderTransactionHistory(content, bioSlug, [], {}, [], bio);
 
     let bioFormEl = null;
     editBioBtn.addEventListener('click', async () => {
@@ -4611,12 +2977,15 @@
 
     // bio line
     renderBioLine(info, mergedRow);
-    // OVR, Hall of Fame and Health as a row of tiles, then the accolades
+    // OVR, Hall of Fame, Contract, History and Health as a row of tiles, then
+    // the accolades. All but HOF link to the sub-page with the detail.
     const tiles = document.createElement('div');
     tiles.className = 'hero-tiles';
     info.appendChild(tiles);
     renderOvrTile(tiles, slug);
     renderHofLine(tiles, rows[0].PLAYER, hofRows);
+    renderContractTile(tiles, bio, slug);
+    renderHistoryTile(tiles, slug);
     renderHealthTile(tiles, slug);
 
     let bioFormEl = null;
@@ -4642,13 +3011,19 @@
       editBioBtn.textContent = 'Close';
     });
 
-    // accolades
-    renderAccolades(info, slug, rows[0].RINGS, playerAwards, seasonLeaders);
-    renderCareerLine(info, rows);
-
-    // player type radar
+    // Under the tiles, two cards side by side: the career line with the
+    // accolades, and the archetype radar.
+    const heroRow = document.createElement('div');
+    heroRow.className = 'hero-row';
+    const careerCard = document.createElement('div');
+    careerCard.className = 'career-card';
+    heroRow.appendChild(careerCard);
+    hero.appendChild(heroRow);
+    renderCareerLine(careerCard, rows);
+    renderCareerLine(careerCard, allPoRows.filter(r => r.SLUG === slug), 'Career · playoffs');
+    renderAccolades(careerCard, slug, rows[0].RINGS, playerAwards, seasonLeaders);
     const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);
-    if (radarEl) hero.appendChild(radarEl);
+    if (radarEl) heroRow.appendChild(radarEl);
 
     // toggle
     const toggleBar = document.createElement('div');
@@ -4681,11 +3056,6 @@
     const insightsEl = document.createElement('div');
     content.appendChild(insightsEl);
     renderInsights(insightsEl, slug);
-    renderContractTimeline(content, bio, slug);
-    renderSalaryTable(content, bio);
-    renderHistorySection(content, slug);
-    renderAttributes(content, slug);
-    renderTransactionHistory(content, slug, playerAwards[slug] || [], seasonLeaders, rows, bio);
 
     let bySeasonMode = false;
     let showGameLog  = false;

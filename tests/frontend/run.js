@@ -63,6 +63,9 @@ const PAGES = [
   { path: '/players/',                selector: 'table tbody tr',  min: 500, what: 'the player index' },
   { path: '/players/?p=curry-stephen', selector: 'table tbody tr', min: 5,  what: 'a profile with season rows' },
   { path: '/players/injuries/?p=wagner-franz', selector: 'tr.stint', min: 1, what: 'a player\'s injury log' },
+  { path: '/players/ratings/?p=curry-stephen', selector: '.attr-categories-grid', min: 1, what: 'a player\'s 2K ratings' },
+  { path: '/players/contract/?p=curry-stephen', selector: '.salary-table tbody tr', min: 2, what: 'a player\'s salary by season' },
+  { path: '/players/history/?p=curry-stephen', selector: '.txn-history-table tbody tr', min: 3, what: 'a player\'s history' },
   { path: '/teams/UTA/',              selector: 'table tbody tr',  min: 10, what: 'roster, picks and history tables' },
   // The Cap Health card is built from an API call and a rules module loaded
   // separately from team.js, so a page that renders its tables fine can still

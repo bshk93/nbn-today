@@ -5,6 +5,7 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/players/subpage.css">
   <title>Player Injuries - NBN</title>
   <!-- NBN:og -->
   <meta name="description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
@@ -24,10 +25,6 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-    .inj-head { display: flex; align-items: center; gap: var(--space-4); }
-    .inj-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--bg-subtle); border: 1px solid var(--border); flex: none; }
-    .inj-head .ui-subtitle a { color: var(--link); }
-
     .section { margin-top: var(--space-6); }
     .section:first-of-type { margin-top: 0; }
 
@@ -128,7 +125,6 @@
       .log .d-long { display: none; }
       .log .d-short { display: inline; }
       .log td.what { min-width: 0; }
-      .inj-photo { width: 48px; height: 48px; }
     }
   </style>
 </head>
@@ -136,8 +132,8 @@
 <div class="page ui-page">
   <nav class="nav" id="nav"></nav>
   <header class="ui-header">
-    <div class="inj-head">
-      <img class="inj-photo" id="photo" alt="" hidden>
+    <div class="psub-head">
+      <img class="psub-photo" id="photo" alt="" hidden>
       <div>
         <h1 class="ui-title" id="page-title">Injuries</h1>
         <p class="ui-subtitle" id="page-sub"></p>
@@ -145,12 +141,14 @@
     </div>
     <div class="ui-header-actions"><a class="ui-btn ui-btn--ghost ui-btn--sm" id="back" href="/players/">← Profile</a></div>
   </header>
+  <nav id="player-tabs" style="display:none"></nav>
 
   <div id="content"><div class="ui-loading">Loading…</div></div>
 </div>
 
 <script src="/names.js"></script>
 <script src="/injury-history.js"></script>
+<script src="/players/subpage.js"></script>
 <script src="/vendor/body-highlighter-3.2.0.js"></script>
 <script>
 (function () {
@@ -203,6 +201,7 @@
       img.onerror = () => { img.hidden = true; };
     }
     setCrumbs(name);
+    PlayerSubpage.renderTabs(document.getElementById('player-tabs'), slug, 'injuries');
 
     const stints = IH.fold(Array.isArray(events) ? events : []);
     render(stints, null);
