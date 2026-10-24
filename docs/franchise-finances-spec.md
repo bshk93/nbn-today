@@ -207,8 +207,20 @@ Pinned as a test once built:
   (`_with_attendance` in `routers/boxscores.py`); the page shows it under the
   leaders. The same change keys a game by its two teams, so the 19 games
   without one clear away side no longer split into two half games.
-- **Not built yet**: the team page Finances tab, owners' value added,
-  headlines, sponsor names, a recap Business section.
+- **Owners** (v1.1): `data/franchise-owners.csv`, one row per owner per team
+  run. Each season's change in value goes to whoever owned the team on Jan 1
+  (or today, for a season not there yet), not to every owner whose tenure
+  touched it as the playoff stats do, since a summer takeover would otherwise
+  count twice. `VS_LEAGUE` is the change beyond the league average over the
+  same seasons, zero-sum across owners. Inheriting a champion reads as a money
+  pit (KVL, ATL), because the title leaves the revenue window on their watch.
+  Shown on `/finances` as Best stewards / Money pits.
+- **Jersey patches** (v1.1): `JERSEY_PATCH`, a seeded sponsor per team-season
+  from `SPONSORS`, renewed 60% of the time.
+- **Team page**: a Front Office section on the Franchise tab (value and rank,
+  crowds, profit, jersey patch, link to `/finances`), at the end of
+  `teams/team.js`.
+- **Not built yet**: headlines, a recap Business section.
 
 ## Open
 

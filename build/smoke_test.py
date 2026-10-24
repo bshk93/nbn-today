@@ -130,6 +130,11 @@ SCHEMA = {
          "PROFIT", "VALUE", "VALUE_CHANGE"],
         30, "finances/index.html",
     ),
+    "data/franchise-owners.csv": (
+        ["OWNER", "TEAM", "SEASONS", "FIRST", "LAST", "IN_PROGRESS", "TITLES",
+         "START_VALUE", "END_VALUE", "VS_LEAGUE"],
+        30, "finances/index.html (Owners)",
+    ),
     "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "h2h/index.html"),
     "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
     "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),
