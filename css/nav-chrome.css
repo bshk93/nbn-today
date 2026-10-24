@@ -26,6 +26,15 @@
 }
 .nav :is(.nav-actions, .nav-menu-btn) { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; text-transform: none; }
 .nav-kicker { color: var(--accent-light); }
+/* The site's mark, beside the menu button on a phone (nav.js _initNav): the
+   docked sidebar carries it at 900px and up, so it shows only below that. */
+.nav-brand { display: none; align-items: center; gap: 0.4rem; color: var(--text-primary); font-weight: 700; letter-spacing: 0.04em; text-decoration: none; }
+.nav a.nav-brand { color: var(--text-primary); }
+.nav-brand img { width: 1.6rem; height: 1.6rem; object-fit: contain; }
+@media (max-width: 899.98px) {
+  .nav-brand { display: inline-flex; }
+  .nav-brand + :not(.nav-actions) { padding-left: 0.75rem; border-left: 1px solid var(--border); }
+}
 /* flex-wrap: a long breadcrumb plus the action buttons (☰, search, inbox,
    Sign in) don't fit one phone-width row; the buttons drop to their own line
    and stay right-aligned rather than widening the page. */

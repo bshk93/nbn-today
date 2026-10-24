@@ -452,6 +452,17 @@ function _initNav() {
       : '<a href="/">← Home</a>';
   }
   if (_sidebarEnabled() && !nav.querySelector('.nav-menu-btn')) nav.prepend(_buildMenuButton());
+  // On a phone the sidebar (and its logo) is a closed drawer, which left the
+  // top of every page with no sign of what site this is. The mark sits
+  // beside the menu button there, and is hidden wherever the sidebar is docked.
+  if (_sidebarEnabled() && !nav.querySelector('.nav-brand')) {
+    const brand = document.createElement('a');
+    brand.className = 'nav-brand';
+    brand.href = '/';
+    brand.title = 'Nothing But Net';
+    brand.innerHTML = '<img src="/icons/logo-header.webp" alt="">NBN';
+    nav.querySelector('.nav-menu-btn').after(brand);
+  }
   if (!nav.querySelector('.nav-actions')) {
     const actions = document.createElement('div');
     actions.className = 'nav-actions';
