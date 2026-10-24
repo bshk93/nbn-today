@@ -9,7 +9,7 @@
 //   ROTY  Game Score per game, players in their first NBN season   6 of 6
 //         (20-21, the league's first, falls back to that draft class)
 //   MIP   Game Score per game, up on last season (20+ games then)  3 of 5
-//   6MOY  Game Score per game, started at most half his games —
+//   6MOY  Game Score per game, more games off the bench than started —
 //         starts are only recorded from 26-27, so this one has no history.
 //
 // Pure, so tests/award-race.test.js can pin it without a browser.
@@ -96,12 +96,14 @@
       const st = opts.starts;
       if (!st || !st.team_games_known) return [];
       // Only games whose starters are known count: his games, capped by how
-      // many of his teams' games have known starters. A sixth man started at
-      // most half of those. A player with no starts isn't in `players`.
+      // many of his teams' games have known starters. A sixth man came off the
+      // bench in more of those than he started, as in the NBA: half is a split
+      // role, and 1 start of 2 put starters at the top of the race. A player
+      // with no starts isn't in `players`.
       list = list.map(p => {
         const known = Math.min(p.G, p.teams.reduce((n, t) => n + (st.team_games_known[t] || 0), 0));
         return { ...p, gs: ((st.players || {})[p.slug] || {}).gs || 0, known };
-      }).filter(p => p.known > 0 && p.gs <= p.known / 2);
+      }).filter(p => p.known > 0 && p.gs < p.known / 2);
     }
     return list.map(p => ({ ...p, score: SCORE[key](p) }))
       .sort((a, b) => b.score - a.score);
