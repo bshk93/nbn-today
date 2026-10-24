@@ -120,6 +120,16 @@ SCHEMA = {
          "OPP", "gametype"],
         30, "teams/team.js (Franchise Records)",
     ),
+    # The Front Office Ledger (nbn-api stats_build/finances.py). DEAD_MONEY is
+    # read too but left out: it is blank until a cap snapshot carries dead_cap.
+    "data/franchise-finances.csv": (
+        ["TEAM", "SEASON", "MODEL", "IN_PROGRESS", "W", "L", "PLAYOFF_RESULT",
+         "STARS", "HOME_GAMES", "AVG_ATTENDANCE", "SELLOUTS", "GATE",
+         "PLAYOFF_HOME_GAMES", "PLAYOFF_GATE", "MERCH", "MEDIA", "NBNTV",
+         "TITLE_BONUS", "REVENUE", "PAYROLL", "LUXURY_TAX", "ARENA_OPS",
+         "PROFIT", "VALUE", "VALUE_CHANGE"],
+        30, "finances/index.html",
+    ),
     "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "h2h/index.html"),
     "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
     "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),

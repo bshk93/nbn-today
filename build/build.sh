@@ -66,6 +66,15 @@ else
   exit 2
 fi
 
+# The Front Office Ledger (docs/franchise-finances-spec.md): flavor, built from
+# the same raw files after either engine. Not part of stats_build's port, so it
+# runs on its own, and a failure here never fails the stats build.
+echo "--- running the Front Office Ledger ---"
+PY="$NBN_API_DIR/venv/bin/python3"
+[[ -x "$PY" ]] || PY=python3
+( cd "$NBN_API_DIR" && "$PY" -m stats_build.finances ) \
+  || echo "!!! Front Office Ledger failed; stats are unaffected"
+
 # Verify the build's output still satisfies what the pages read. The docroot is
 # a symlink to this tree, so anything broken here is already live — surface it
 # loudly rather than letting a renamed column ship silently.

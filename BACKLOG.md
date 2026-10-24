@@ -691,3 +691,9 @@ job.
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.
+- **Front Office Ledger (franchise finances)** — a fake, tongue-in-cheek P&L
+  per team (gate, merch, media, payroll, "luxury tax") and a valuation in NB¥,
+  reconstructed over all of NBN history from the box scores, brackets and
+  awards. Cosmetic only. Spec: `docs/franchise-finances-spec.md`. First slice:
+  the `/finances` valuation-over-time plot, box score attendance and the team
+  page Finances tab.

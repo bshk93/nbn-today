@@ -53,5 +53,13 @@ check("the served view is republished once, for both", after_engines.count("link
 check("the data contract is verified once, for both", after_engines.count("smoke_test.py") == 1)
 check("the smoke test's status is the build's exit status", 'exit "$SMOKE_STATUS"' in text)
 
+print("\nthe Front Office Ledger")
+ledger = after_engines.split("stats_build.finances")
+check("runs once, after either engine", len(ledger) == 2)
+check("before the served view is republished, so its CSVs are published",
+      "link-public.sh" not in ledger[0] and "link-public.sh" in ledger[1])
+check("a failure there never fails the stats build",
+      ledger[1].split("\n", 2)[1].strip().startswith("||"))
+
 print("\n" + ("FAILED: " + ", ".join(FAILS) if FAILS else "all checks passed"))
 sys.exit(1 if FAILS else 0)

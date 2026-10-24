@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Front Office Ledger - NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Front Office Ledger - NBN">
+  <meta property="og:description" content="Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.">
+  <meta property="og:url" content="https://nbn.today/finances/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .fo-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+    .fo-controls .ui-select { height: 2rem; font-size: var(--text-sm); }
+    .fo-note { font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-2) 0 var(--space-6); }
+
+    .fo-legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: var(--space-2); }
+    .fo-legend .key { display: inline-block; width: 14px; height: 0; border-top: 2px solid var(--accent); vertical-align: middle; margin-right: var(--space-1); }
+    .fo-legend .key--avg { border-top: 2px dashed var(--text-muted); }
+    .fo-legend .key--rest { border-top: 1px solid var(--text-dim); }
+    .fo-legend .dot { vertical-align: middle; margin-right: var(--space-1); }
+
+    .fo-chart { position: relative; }
+    .fo-chart svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
+    .fo-chart svg:focus { outline: none; }
+    .fo-chart svg:focus-visible { outline: 1px solid var(--border); outline-offset: 2px; }
+    .fo-tip { position: absolute; top: 0; pointer-events: none; background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: var(--space-2) var(--space-3); font-size: var(--text-xs); color: var(--text-secondary);
+      min-width: 13rem; max-width: 17rem; z-index: 2; }
+    .fo-tip[hidden] { display: none; }
+    .fo-tip b { color: var(--text-primary); font-weight: 600; }
+    .fo-tip .fo-tip-head { font-family: var(--font-display); text-transform: uppercase; font-size: var(--text-sm); color: var(--text-primary); margin-bottom: var(--space-1); }
+    .fo-tip .row { display: flex; justify-content: space-between; gap: var(--space-3); }
+    .fo-tip .why { margin-top: var(--space-1); color: var(--text-muted); }
+
+    .fo-up { color: var(--success); }
+    .fo-down { color: var(--danger); }
+    .fo-team { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-primary); font-weight: 600; }
+    .fo-team img { width: 18px; height: 18px; }
+    .fo-table tbody tr { cursor: pointer; }
+    .fo-table tbody tr[aria-selected="true"] td { background: var(--accent-panel-bg); }
+    .fo-ledger th:first-child, .fo-ledger td:first-child { text-align: left; white-space: nowrap; }
+    .fo-ledger tr.fo-total td { font-weight: 600; color: var(--text-primary); border-top: 1px solid var(--border); }
+    .fo-ledger td.fo-fire { color: var(--text-muted); font-style: italic; text-align: center; }
+    .fo-ledger .fo-sub td:first-child { padding-left: var(--space-5); color: var(--text-muted); }
+    .fo-ledger tr.fo-head td { font-family: var(--font-display); text-transform: uppercase; color: var(--text-muted); padding-top: var(--space-3); }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="page ui-page ui-page--wide">
+    <nav class="nav"></nav>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Front Office Ledger</h1>
+      </div>
+      <div class="ui-header-actions fo-controls">
+        <select class="ui-select" id="f-team" aria-label="Franchise"></select>
+      </div>
+    </header>
+
+    <div id="status">Opening the books…</div>
+    <div id="content" hidden>
+      <h2 class="ui-section-title">Franchise value</h2>
+      <div class="fo-legend" id="legend"></div>
+      <div class="fo-chart" id="chart">
+        <div class="fo-tip" id="tip" hidden></div>
+      </div>
+      <p class="fo-note" id="chart-note"></p>
+
+      <h2 class="ui-section-title" id="ledger-title">Team ledger</h2>
+      <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first fo-ledger" id="ledger"></table></div>
+      <p class="fo-note">Franchise figures, in NB¥ for flavor. Not spendable, not a balance, and not the
+        <a href="/invest">Wall Street</a> share price. Every number is made up from real results.</p>
+
+      <div class="ui-header">
+        <h2 class="ui-section-title">Most valuable franchises</h2>
+        <div class="ui-header-actions fo-controls">
+          <select class="ui-select" id="f-season" aria-label="Season"></select>
+        </div>
+      </div>
+      <div class="ui-table-wrap"><table class="ui-table fo-table" id="board"></table></div>
+      <p class="fo-note" id="model-note"></p>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    const START_VALUE = 3e9;
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const num = v => (v === '' || v == null || v === 'NA') ? null : Number(v);
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], field = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) {
+          if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+          else if (c === '"') q = false;
+          else field += c;
+        } else if (c === '"') q = true;
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+        else if (c !== '\r') field += c;
+      }
+      if (field || row.length) { row.push(field); rows.push(row); }
+      const head = rows.shift() || [];
+      return rows.filter(r => r.length > 1).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+    }
+
+    // NB¥4.33B, NB¥259M, -NB¥134M.
+    function money(v, digits) {
+      if (v == null) return '—';
+      const a = Math.abs(v), sign = v < 0 ? '-' : '';
+      if (a >= 1e9) return `${sign}NB¥${(a / 1e9).toFixed(digits ?? 2)}B`;
+      if (a >= 1e6) return `${sign}NB¥${(a / 1e6).toFixed(digits ?? 0)}M`;
+      if (a >= 1e3) return `${sign}NB¥${Math.round(a / 1e3)}K`;
+      return `${sign}NB¥${Math.round(a)}`;
+    }
+    const signed = v => v == null ? '—' : `<span class="${v >= 0 ? 'fo-up' : 'fo-down'}">${v >= 0 ? '+' : ''}${money(v)}</span>`;
+    const logo = t => `<img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="" loading="lazy">`;
+    const FINISH = { 'Champion': 'Won the title', 'Runner-Up': 'Lost the Finals', 'Conf Finals': 'Conf finals',
+      'Second Round': 'Second round', 'First Round': 'First round', 'Missed': 'Missed playoffs' };
+
+    let rows = [], seasons = [], teams = [], by = {}, avg = {}, model = '';
+    const state = { team: null, season: null };
+
+    function load(text) {
+      rows = parseCSV(text).map(r => {
+        const o = { ...r };
+        for (const k of Object.keys(r)) if (!['TEAM', 'SEASON', 'MODEL', 'IN_PROGRESS', 'PLAYOFF_RESULT'].includes(k)) o[k] = num(r[k]);
+        o.IN_PROGRESS = r.IN_PROGRESS === 'TRUE';
+        return o;
+      });
+      seasons = [...new Set(rows.map(r => r.SEASON))].sort();
+      teams = [...new Set(rows.map(r => r.TEAM))].sort();
+      by = Object.fromEntries(rows.map(r => [`${r.SEASON}|${r.TEAM}`, r]));
+      for (const s of seasons) {
+        const rs = rows.filter(r => r.SEASON === s);
+        avg[s] = {};
+        for (const k of ['VALUE', 'GATE', 'PLAYOFF_GATE', 'MERCH', 'TITLE_BONUS', 'AVG_ATTENDANCE', 'REVENUE'])
+          avg[s][k] = rs.reduce((a, r) => a + (r[k] || 0), 0) / rs.length;
+      }
+      model = rows[0]?.MODEL || '';
+    }
+
+    const row = (s, t) => by[`${s}|${t}`];
+    const inProgress = s => rows.some(r => r.SEASON === s && r.IN_PROGRESS);
+    const seasonLabel = s => inProgress(s) ? `${s}*` : s;
+
+    // What moved this team's season most against the league that year.
+    function driver(r) {
+      if (!r) return '';
+      const a = avg[r.SEASON];
+      const cand = [
+        ['Championship', (r.TITLE_BONUS || 0) - a.TITLE_BONUS, () => 'won the title'],
+        ['Playoff gate', (r.PLAYOFF_GATE || 0) - a.PLAYOFF_GATE, () => `${r.PLAYOFF_HOME_GAMES} home playoff games`],
+        ['Ticket sales', (r.GATE || 0) - a.GATE, () => r.HOME_GAMES ? `${r.AVG_ATTENDANCE.toLocaleString()} a night` : 'no home games yet'],
+        ['Merch', (r.MERCH || 0) - a.MERCH, () => r.STARS ? `${r.STARS} All-NBN` : 'nobody on an All-NBN team'],
+      ];
+      const best = cand.reduce((m, c) => Math.abs(c[1]) > Math.abs(m[1]) ? c : m);
+      return `${best[0]}: ${best[2]()} (${best[1] >= 0 ? '+' : ''}${money(best[1])} vs league)`;
+    }
+
+    // ── The chart ───────────────────────────────────────────────────────────
+    const NS = 'http://www.w3.org/2000/svg';
+    function svgEl(tag, attrs) {
+      const e = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+      return e;
+    }
+
+    let focusIdx = null;
+    function drawChart() {
+      const wrap = document.getElementById('chart');
+      const tip = document.getElementById('tip');
+      wrap.querySelectorAll('svg').forEach(e => e.remove());
+      const W = wrap.clientWidth;
+      if (!W) return;
+      const sel = state.team;
+      // Points: the 20-21 opening, then the end of every season.
+      const xs = ['Open', ...seasons];
+      const val = (t, i) => i === 0 ? START_VALUE : row(seasons[i - 1], t)?.VALUE;
+      const avgVal = i => i === 0 ? START_VALUE : avg[seasons[i - 1]].VALUE;
+      const all = teams.flatMap(t => xs.map((_, i) => val(t, i))).filter(v => v != null);
+      const lo = Math.floor(Math.min(...all) / 5e8) * 5e8, hi = Math.ceil(Math.max(...all) / 5e8) * 5e8;
+      const last = val(sel, xs.length - 1);
+      const endText = `${sel} ${money(last)}`;
+      // On a phone the end label would eat a third of the plot; the legend names the line there.
+      const narrow = W < 500;
+      const H = narrow ? 240 : 320, mt = 10, mb = 24, ml = 52, mr = narrow ? 12 : 18 + Math.ceil(endText.length * 6.5);
+      const pw = Math.max(60, W - ml - mr), ph = H - mt - mb;
+      const X = i => ml + i / (xs.length - 1) * pw;
+      const Y = v => mt + ph - (v - lo) / (hi - lo) * ph;
+
+      const svg = svgEl('svg', { height: H, viewBox: `0 0 ${W} ${H}`, tabindex: 0, role: 'img',
+        'aria-label': `Franchise value from the 20-21 opening to ${seasons[seasons.length - 1]}. ${sel} ends at ${money(last)}; the league average at ${money(avgVal(xs.length - 1))}. Arrow keys step through seasons.` });
+
+      const step = (hi - lo) / 5e8 > 8 ? 1e9 : 5e8;
+      for (let v = lo; v <= hi + 1; v += step) {
+        svg.appendChild(svgEl('line', { x1: ml, x2: ml + pw, y1: Y(v), y2: Y(v), stroke: 'var(--border)', 'stroke-width': 1 }));
+        const t = svgEl('text', { x: ml - 6, y: Y(v) + 3.5, 'text-anchor': 'end', 'font-size': 10, fill: 'var(--text-muted)' });
+        t.textContent = money(v, 1);
+        svg.appendChild(t);
+      }
+      xs.forEach((s, i) => {
+        if (narrow && (xs.length - 1 - i) % 2) return;
+        const t = svgEl('text', { x: X(i), y: H - 6, 'font-size': 10, fill: 'var(--text-muted)',
+          'text-anchor': i === 0 ? 'start' : i === xs.length - 1 ? 'end' : 'middle' });
+        t.textContent = i === 0 ? 'Open' : seasonLabel(s);
+        svg.appendChild(t);
+      });
+
+      const path = f => xs.map((_, i) => f(i)).map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+      for (const t of teams) {
+        if (t === sel) continue;
+        const d = path(i => val(t, i));
+        svg.appendChild(svgEl('path', { d, fill: 'none', stroke: 'var(--text-dim)', 'stroke-width': 1, opacity: 0.45 }));
+        const hit = svgEl('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 10, style: 'cursor:pointer' });
+        const tl = svgEl('title'); tl.textContent = `${t} — ${money(val(t, xs.length - 1))}`; hit.appendChild(tl);
+        hit.addEventListener('click', () => pickTeam(t));
+        svg.appendChild(hit);
+      }
+      svg.appendChild(svgEl('path', { d: path(avgVal), fill: 'none', stroke: 'var(--text-muted)', 'stroke-width': 1.5, 'stroke-dasharray': '5 4' }));
+
+      // The picked team on top. A season still in progress is dashed: it is a projection.
+      const done = xs.length - 1 - (inProgress(seasons[seasons.length - 1]) ? 1 : 0);
+      const pts = xs.map((_, i) => [X(i), Y(val(sel, i))]);
+      const seg = (a, b) => pts.slice(a, b + 1).map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('');
+      svg.appendChild(svgEl('path', { d: seg(0, done), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      if (done < xs.length - 1)
+        svg.appendChild(svgEl('path', { d: seg(done, xs.length - 1), fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2, 'stroke-dasharray': '4 3' }));
+      seasons.forEach((s, k) => {
+        if (row(s, sel)?.PLAYOFF_RESULT !== 'Champion') return;
+        const [x, y] = pts[k + 1];
+        svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 4.5, fill: 'var(--accent)', stroke: 'var(--bg-page)', 'stroke-width': 2 }));
+      });
+      const [ex, ey] = pts[pts.length - 1];
+      if (!narrow) {
+        const end = svgEl('text', { x: ex + 8, y: ey + 3.5, 'font-size': 11, fill: 'var(--text-primary)', 'font-weight': 600 });
+        end.textContent = endText;
+        svg.appendChild(end);
+      }
+
+      // Crosshair and tooltip: the nearest season to the pointer.
+      const cross = svgEl('line', { y1: mt, y2: mt + ph, stroke: 'var(--text-muted)', 'stroke-width': 1, visibility: 'hidden' });
+      const ring = svgEl('circle', { r: 4.5, fill: 'var(--bg-page)', stroke: 'var(--accent)', 'stroke-width': 2, visibility: 'hidden' });
+      svg.appendChild(cross); svg.appendChild(ring);
+
+      function show(i) {
+        focusIdx = i;
+        const x = X(i), v = val(sel, i);
+        cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible');
+        ring.setAttribute('cx', x); ring.setAttribute('cy', Y(v)); ring.setAttribute('visibility', 'visible');
+        if (i === 0) {
+          tip.innerHTML = `<div class="fo-tip-head">20-21 opening</div><div>Every franchise opens at <b>${money(START_VALUE)}</b>. Equal markets: from here on, only results move a number.</div>`;
+        } else {
+          const s = seasons[i - 1], r = row(s, sel);
+          const rank = rows.filter(o => o.SEASON === s).sort((a, b) => b.VALUE - a.VALUE).findIndex(o => o.TEAM === sel) + 1;
+          tip.innerHTML = `<div class="fo-tip-head">${esc(sel)} · ${esc(seasonLabel(s))}</div>
+            <div class="row"><span>Value</span><b>${money(r.VALUE)}</b></div>
+            <div class="row"><span>Change</span>${signed(r.VALUE_CHANGE)}</div>
+            <div class="row"><span>Rank</span><b>${rank} of ${teams.length}</b></div>
+            <div class="row"><span>League average</span><span>${money(avgVal(i))}</span></div>
+            <div class="row"><span>Finish</span><span>${esc(FINISH[r.PLAYOFF_RESULT] || 'In progress')}</span></div>
+            <div class="why">${esc(driver(r))}</div>`;
+        }
+        tip.hidden = false;
+        const tw = tip.offsetWidth;
+        tip.style.left = `${Math.min(W - tw, Math.max(0, x + (x + 16 + tw > W ? -tw - 16 : 16)))}px`;
+        tip.style.top = `${Math.max(0, Math.min(H - tip.offsetHeight, Y(v) - 40))}px`;
+      }
+      function hide() {
+        focusIdx = null;
+        cross.setAttribute('visibility', 'hidden'); ring.setAttribute('visibility', 'hidden');
+        tip.hidden = true;
+      }
+      const nearest = ev => {
+        const box = svg.getBoundingClientRect();
+        const px = (ev.clientX - box.left) * (W / box.width);
+        return Math.max(0, Math.min(xs.length - 1, Math.round((px - ml) / pw * (xs.length - 1))));
+      };
+      svg.addEventListener('pointermove', ev => show(nearest(ev)));
+      svg.addEventListener('pointerleave', hide);
+      svg.addEventListener('blur', hide);
+      svg.addEventListener('keydown', ev => {
+        if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+        ev.preventDefault();
+        const i = focusIdx == null ? xs.length - 1 : focusIdx + (ev.key === 'ArrowRight' ? 1 : -1);
+        show(Math.max(0, Math.min(xs.length - 1, i)));
+      });
+      wrap.insertBefore(svg, tip);
+    }
+
+    function drawLegend() {
+      const titles = seasons.filter(s => row(s, state.team)?.PLAYOFF_RESULT === 'Champion').length;
+      document.getElementById('legend').innerHTML =
+        `<span><span class="key"></span>${esc(state.team)}</span>`
+        + `<span><span class="key key--avg"></span>League average</span>`
+        + (titles ? `<span><svg class="dot" width="9" height="9" aria-hidden="true"><circle cx="4.5" cy="4.5" r="4" fill="var(--accent)"/></svg>Title season</span>` : '')
+        + `<span><span class="key key--rest"></span>The other ${teams.length - 1}. Click a line to pick it.</span>`;
+      const ip = inProgress(seasons[seasons.length - 1]);
+      document.getElementById('chart-note').textContent =
+        (ip ? `* ${seasons[seasons.length - 1]} is in progress: projected to a full season, with a league-average postseason. ` : '')
+        + 'Hover or use the arrow keys for a season.';
+    }
+
+    // ── The team's ledger: line items down, seasons across ──────────────────
+    function drawLedger() {
+      const t = state.team;
+      document.getElementById('ledger-title').textContent = `${t} ledger`;
+      const rs = seasons.map(s => row(s, t));
+      const cell = (f, cls) => rs.map(r => `<td class="num ${cls || ''}">${f(r)}</td>`).join('');
+      const line = (label, f, cls) => `<tr class="${cls || ''}"><td>${label}</td>${cell(f)}</tr>`;
+      const fire = (label, f, cls) => {
+        const known = rs.filter(r => r.PAYROLL != null).length;
+        const lost = rs.length - known;
+        const cells = (lost ? `<td class="fo-fire" colspan="${lost}">${label === 'Payroll' ? 'Records lost in the 2025 Front Office Fire' : ''}</td>` : '')
+          + rs.filter(r => r.PAYROLL != null).map(r => `<td class="num">${f(r)}</td>`).join('');
+        return `<tr class="${cls || ''}"><td>${label}</td>${cells}</tr>`;
+      };
+      document.getElementById('ledger').innerHTML = `
+        <thead><tr><th></th>${seasons.map(s => `<th class="num">${esc(seasonLabel(s))}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${line('Record', r => `${r.W}-${r.L}`)}
+          ${line('Finish', r => esc(r.IN_PROGRESS ? 'TBD' : (FINISH[r.PLAYOFF_RESULT] || '')))}
+          ${line('Average crowd', r => r.HOME_GAMES ? r.AVG_ATTENDANCE.toLocaleString() : '—')}
+          ${line('Sellouts', r => r.HOME_GAMES ? r.SELLOUTS : '—')}
+          <tr class="fo-head"><td colspan="${seasons.length + 1}">Revenue</td></tr>
+          ${line('Ticket sales', r => money(r.GATE))}
+          ${line('Playoff gate', r => r.PLAYOFF_GATE ? money(r.PLAYOFF_GATE) : '—')}
+          ${line('Jerseys and foam fingers', r => money(r.MERCH))}
+          ${line('TV money', r => money(r.MEDIA))}
+          ${line('NBNTV bonus', r => r.NBNTV ? money(r.NBNTV, 1) : '—')}
+          ${line('Championship bonus', r => r.TITLE_BONUS ? money(r.TITLE_BONUS) : '—')}
+          ${line('Total revenue', r => money(r.REVENUE), 'fo-total')}
+          <tr class="fo-head"><td colspan="${seasons.length + 1}">Expenses</td></tr>
+          ${fire('Payroll', r => money(r.PAYROLL))}
+          ${fire('Paid to not employ him', r => r.DEAD_MONEY ? money(r.DEAD_MONEY, 1) : '—', 'fo-sub')}
+          ${fire('Luxury tax (allegedly)', r => r.LUXURY_TAX ? money(r.LUXURY_TAX) : '—')}
+          ${fire('Hot dogs, mostly', r => money(r.ARENA_OPS))}
+          ${fire('Profit', r => signed(r.PROFIT), 'fo-total')}
+          <tr class="fo-head"><td colspan="${seasons.length + 1}">Franchise</td></tr>
+          ${line('Value', r => money(r.VALUE), 'fo-total')}
+          ${line('Change', r => signed(r.VALUE_CHANGE))}
+        </tbody>`;
+    }
+
+    function drawBoard() {
+      const s = state.season;
+      const rs = rows.filter(r => r.SEASON === s).sort((a, b) => b.VALUE - a.VALUE);
+      document.getElementById('board').innerHTML = `
+        <thead><tr><th class="num">#</th><th>Franchise</th><th class="num">Value</th><th class="num">Change</th>
+          <th class="num">Revenue</th><th class="num">Profit</th><th>Finish</th></tr></thead>
+        <tbody>${rs.map((r, i) => `
+          <tr data-team="${esc(r.TEAM)}" aria-selected="${r.TEAM === state.team}">
+            <td class="num muted">${i + 1}</td>
+            <td><span class="fo-team">${logo(r.TEAM)}${esc(r.TEAM)}</span></td>
+            <td class="num strong">${money(r.VALUE)}</td>
+            <td class="num">${signed(r.VALUE_CHANGE)}</td>
+            <td class="num">${money(r.REVENUE)}</td>
+            <td class="num">${r.PROFIT == null ? '<span class="muted">Lost in the fire</span>' : signed(r.PROFIT)}</td>
+            <td>${esc(r.IN_PROGRESS ? 'In progress' : (FINISH[r.PLAYOFF_RESULT] || ''))}</td>
+          </tr>`).join('')}</tbody>`;
+      document.querySelectorAll('#board tbody tr').forEach(tr =>
+        tr.addEventListener('click', () => pickTeam(tr.dataset.team)));
+      document.getElementById('model-note').textContent =
+        `Model ${model}. Equal markets: every franchise opened 20-21 at ${money(START_VALUE)}, and value is a league-wide multiple of three seasons' revenue plus a bump for recent titles. Payroll only counts toward profit, never value.`;
+    }
+
+    function drawAll() {
+      document.getElementById('f-team').value = state.team;
+      document.getElementById('f-season').value = state.season;
+      drawLegend(); drawChart(); drawLedger(); drawBoard();
+    }
+
+    // A team is an item on this page (pushState, so Back returns to it); the
+    // season is a filter (replaceState).
+    function url() {
+      const p = new URLSearchParams();
+      p.set('team', state.team);
+      if (state.season !== seasons[seasons.length - 1]) p.set('season', state.season);
+      return `${location.pathname}?${p}`;
+    }
+    function pickTeam(t) {
+      if (t === state.team) return;
+      state.team = t;
+      history.pushState(null, '', url());
+      drawAll();
+    }
+    function readUrl() {
+      const p = new URLSearchParams(location.search);
+      const latest = seasons[seasons.length - 1];
+      const t = (p.get('team') || '').toUpperCase();
+      state.season = seasons.includes(p.get('season')) ? p.get('season') : latest;
+      state.team = teams.includes(t) ? t
+        : rows.filter(r => r.SEASON === latest).sort((a, b) => b.VALUE - a.VALUE)[0].TEAM;
+    }
+
+    fetch('/data/franchise-finances.csv')
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(text => {
+        load(text);
+        if (!rows.length) throw new Error('empty');
+        document.getElementById('f-team').innerHTML = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+        document.getElementById('f-season').innerHTML = [...seasons].reverse().map(s => `<option value="${s}">${esc(seasonLabel(s))}</option>`).join('');
+        readUrl();
+        document.getElementById('status').hidden = true;
+        document.getElementById('content').hidden = false;
+        drawAll();
+        document.getElementById('f-team').addEventListener('change', e => pickTeam(e.target.value));
+        document.getElementById('f-season').addEventListener('change', e => {
+          state.season = e.target.value;
+          history.replaceState(null, '', url());
+          drawBoard();
+        });
+        window.addEventListener('popstate', () => { readUrl(); drawAll(); });
+        let w = 0;
+        new ResizeObserver(() => {
+          const now = document.getElementById('chart').clientWidth;
+          if (now !== w) { w = now; drawChart(); }
+        }).observe(document.getElementById('chart'));
+      })
+      .catch(() => { document.getElementById('status').textContent = 'The books are closed right now. Try again after the next build.'; });
+  })();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
