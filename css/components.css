@@ -524,7 +524,7 @@
      logo or headshot, no Share (the browser's own share does that), no
      prev/next arrows (they cost a fifth of the width and forced names onto
      two lines; the sidebar's Teams panel does the same job). */
-  :root[data-team] .team-header-nav, :root .ui-header[data-team] { min-height: 0; padding: var(--space-4); }
+  :root[data-team] .team-header-nav { min-height: 0; padding: var(--space-4); }
   :root[data-team] :is(.team-nav-btn, .team-header img, .team-share-btn),
   .ui-header[data-team] :is(.player-nav-btn, .player-share) { display: none; }
   :root[data-team] .team-header { display: block; }
@@ -543,6 +543,7 @@
    in players/index.html, mount in players/subpage.js); a free agent or a
    retired player has none and keeps the plain header. */
 :root .ui-header[data-team] {
+  align-items: center;
   min-height: var(--band-height);
   margin-bottom: var(--space-5);
   padding: var(--space-4) var(--space-5);
@@ -552,8 +553,12 @@
 }
 .ui-header[data-team] .ui-title { color: white; }
 .ui-header[data-team] :is(.ui-subtitle, .ui-subtitle a, .identity .pos, .identity a.team, .bio-sep) { color: rgba(255, 255, 255, 0.85); }
-.ui-header[data-team] .profile-photo { width: var(--band-image); height: var(--band-image); background: rgba(255, 255, 255, 0.92); }
-@media (max-width: 600px) { .ui-header[data-team] .profile-photo { display: none; } }
+.ui-header[data-team] :is(.profile-photo, .psub-photo) { width: var(--band-image); height: var(--band-image); border: 0; background: rgba(255, 255, 255, 0.92); }
+/* Phone: no picture and the band's own height (see the team band's note). */
+@media (max-width: 600px) {
+  :root .ui-header[data-team] { min-height: 0; padding: var(--space-4); }
+  .ui-header[data-team] :is(.profile-photo, .psub-photo) { display: none; }
+}
 .ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn) { color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.45); }
 .ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn):hover { color: white; border-color: white; }
 

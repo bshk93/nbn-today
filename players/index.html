@@ -240,12 +240,21 @@
     .identity { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
     .identity .pos { font-weight: 700; color: var(--text-secondary); letter-spacing: 0.02em; }
     .identity a.team { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-weight: 600; text-decoration: none; }
+    .player-actions .player-compare { font-size: var(--text-md); line-height: 1; padding: 0.2rem 0.5rem; }
+    .identity .team-abbr { display: none; }
     .identity a.team:hover { color: var(--text-primary); }
     @media (max-width: 600px) {
-      /* Too narrow for "PG / SG · Orlando Magic · 7 seasons" on one line, and
-         wrapping it stranded the dots on lines of their own: stack it. */
-      .identity { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
-      .identity .bio-sep { display: none; }
+      /* Compare (the only action left on a phone) sits in the header's
+         top-right corner instead of taking a row of its own. */
+      header.ui-header { position: relative; }
+      .player-actions { position: absolute; top: 0; right: 0; }
+      .ui-header[data-team] .player-actions { top: var(--space-3); right: var(--space-3); }
+      .header-text { padding-right: 2.5rem; }
+      /* One row on a phone: "PG / SG · ORL · 7 NBN seasons", the team as its
+         abbreviation so the line fits. */
+      .identity { flex-wrap: nowrap; white-space: nowrap; }
+      .identity .team-full { display: none; }
+      .identity .team-abbr { display: inline; }
     }
     .identity a.team img { width: 18px; height: 18px; object-fit: contain; }
     .identity .retired { font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; }
@@ -2392,7 +2401,11 @@
       img.alt = '';
       img.onerror = function() { this.remove(); };
       a.appendChild(img);
-      a.appendChild(document.createTextNode(TEAM_NAMES[team] || team));
+      // Full name where there's room; the abbreviation on a phone, so the
+      // line fits on one row there (CSS below).
+      const full = document.createElement('span'); full.className = 'team-full'; full.textContent = TEAM_NAMES[team] || team;
+      const short = document.createElement('span'); short.className = 'team-abbr'; short.textContent = team;
+      a.append(full, short);
       parts.push(a);
     }
     if (bio.retired) {
@@ -2422,8 +2435,12 @@
     actions.className = 'player-actions';
     const cmp = document.createElement('a');
     cmp.href = `/compare/?a=${playerSlug}`;
-    cmp.textContent = '⇆ Compare';
+    // Just the mark: it's a recognisable icon, and on a phone it has to fit
+    // in the banner's corner (CSS below). The label is for screen readers.
+    cmp.className = 'player-compare';
+    cmp.textContent = '⇆';
     cmp.title = 'Compare with another player';
+    cmp.setAttribute('aria-label', 'Compare with another player');
     actions.appendChild(cmp);
     const share = document.createElement('button');
     share.type = 'button';
@@ -2982,7 +2999,7 @@
     document.getElementById('page-title').textContent = playerName;
     const seasonCount = new Set(rows.map(r => r.SEASON)).size;
     const bio = biosData[slug] || {};
-    renderIdentity(bio, slug, `${seasonCount} season${seasonCount !== 1 ? 's' : ''} in NBN`);
+    renderIdentity(bio, slug, `${seasonCount} NBN season${seasonCount !== 1 ? 's' : ''}`);
     const mergedRow = {
       DOB:        bio.dob        || rows[0].DOB,
       COLLEGE:    bio.college    || rows[0].COLLEGE,

@@ -3679,7 +3679,7 @@ function renderHeaderFacts(seasonRows, members) {
     const l = rows.reduce((s, r) => s + (+r.L || 0), 0);
     facts.push(fact(`${w}–${l}`, 'all-time'));
     if (titles) facts.push(fact(titles, titles === 1 ? 'title' : 'titles'));
-    facts.push(fact(trips, `playoff trip${trips === 1 ? '' : 's'} in ${rows.length} season${rows.length === 1 ? '' : 's'}`));
+    facts.push(fact(trips, `NBN playoff trip${trips === 1 ? '' : 's'}`));
   }
   if (owners.length) {
     const o = document.createElement('span');
