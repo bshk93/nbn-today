@@ -58,6 +58,7 @@
     .fo-ledger td.fo-fire { color: var(--text-muted); font-style: italic; text-align: center; }
     .fo-ledger .fo-sub td:first-child { padding-left: var(--space-5); color: var(--text-muted); }
     .fo-ledger tr.fo-head td { font-family: var(--font-display); text-transform: uppercase; color: var(--text-muted); padding-top: var(--space-3); }
+    .fo-patch { font-size: var(--text-xs); color: var(--text-secondary); white-space: normal; display: inline-block; max-width: 9rem; text-align: right; }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); }
   </style>
 </head>
@@ -95,6 +96,18 @@
       </div>
       <div class="ui-table-wrap"><table class="ui-table fo-table" id="board"></table></div>
       <p class="fo-note" id="model-note"></p>
+
+      <div class="ui-header">
+        <h2 class="ui-section-title">Owners</h2>
+        <div class="ui-header-actions fo-controls">
+          <div class="ui-segmented" role="group" id="f-owners">
+            <button data-v="best" aria-pressed="true">Best stewards</button>
+            <button data-v="worst" aria-pressed="false">Money pits</button>
+          </div>
+        </div>
+      </div>
+      <div class="ui-table-wrap"><table class="ui-table" id="owners"></table></div>
+      <p class="fo-note">Each season goes to whoever owned the team on January 1. "Beat the league" is how much more (or less) the franchise gained than the league average did over the same seasons, so it adds up to zero across every owner and a long run isn't rewarded just for lasting. Inheriting a champion is a tough act to follow.</p>
     </div>
   </div>
 
@@ -143,7 +156,7 @@
     function load(text) {
       rows = parseCSV(text).map(r => {
         const o = { ...r };
-        for (const k of Object.keys(r)) if (!['TEAM', 'SEASON', 'MODEL', 'IN_PROGRESS', 'PLAYOFF_RESULT'].includes(k)) o[k] = num(r[k]);
+        for (const k of Object.keys(r)) if (!['TEAM', 'SEASON', 'MODEL', 'IN_PROGRESS', 'PLAYOFF_RESULT', 'JERSEY_PATCH'].includes(k)) o[k] = num(r[k]);
         o.IN_PROGRESS = r.IN_PROGRESS === 'TRUE';
         return o;
       });
@@ -339,6 +352,7 @@
         <tbody>
           ${line('Record', r => `${r.W}-${r.L}`)}
           ${line('Finish', r => esc(r.IN_PROGRESS ? 'TBD' : (FINISH[r.PLAYOFF_RESULT] || '')))}
+          ${line('Jersey patch', r => r.JERSEY_PATCH ? `<span class="fo-patch">${esc(r.JERSEY_PATCH)}</span>` : '—')}
           ${line('Average crowd', r => r.HOME_GAMES ? r.AVG_ATTENDANCE.toLocaleString() : '—')}
           ${line('Sellouts', r => r.HOME_GAMES ? r.SELLOUTS : '—')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Revenue</td></tr>
@@ -382,6 +396,43 @@
       document.getElementById('model-note').textContent =
         `Model ${model}. Equal markets: every franchise opened 20-21 at ${money(START_VALUE)}, and value is a league-wide multiple of three seasons' revenue plus a bump for recent titles. Payroll only counts toward profit, never value.`;
     }
+
+    // ── Owners: best stewards and money pits ───────────────────────────────
+    let owners = [], ownerView = 'best';
+    function drawOwners() {
+      const el = document.getElementById('owners');
+      if (!owners.length) { el.innerHTML = ''; return; }
+      const sorted = owners.slice().sort((a, b) => ownerView === 'best' ? b.VS_LEAGUE - a.VS_LEAGUE : a.VS_LEAGUE - b.VS_LEAGUE);
+      const span = o => o.FIRST === o.LAST ? o.FIRST : `${o.FIRST} to ${o.LAST}${o.IN_PROGRESS ? '*' : ''}`;
+      el.innerHTML = `
+        <thead><tr><th class="num">#</th><th>Owner</th><th>Franchise</th><th>Seasons</th><th class="num">Titles</th>
+          <th class="num">Bought in at</th><th class="num">Worth at the end</th><th class="num">Beat the league by</th></tr></thead>
+        <tbody>${sorted.slice(0, 10).map((o, i) => `
+          <tr>
+            <td class="num muted">${i + 1}</td>
+            <td class="strong">${esc(o.OWNER)}</td>
+            <td><span class="fo-team">${logo(o.TEAM)}${esc(o.TEAM)}</span></td>
+            <td>${esc(span(o))}</td>
+            <td class="num">${o.TITLES || ''}</td>
+            <td class="num">${money(o.START_VALUE)}</td>
+            <td class="num">${money(o.END_VALUE)}</td>
+            <td class="num">${signed(o.VS_LEAGUE)}</td>
+          </tr>`).join('')}</tbody>`;
+    }
+    document.querySelectorAll('#f-owners button').forEach(btn => btn.addEventListener('click', () => {
+      ownerView = btn.dataset.v;
+      document.querySelectorAll('#f-owners button').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+      drawOwners();
+    }));
+    fetch('/data/franchise-owners.csv')
+      .then(r => r.ok ? r.text() : '')
+      .then(text => {
+        owners = parseCSV(text).map(o => ({ ...o, SEASONS: num(o.SEASONS), TITLES: num(o.TITLES),
+          START_VALUE: num(o.START_VALUE), END_VALUE: num(o.END_VALUE), VS_LEAGUE: num(o.VS_LEAGUE),
+          IN_PROGRESS: o.IN_PROGRESS === 'TRUE' }));
+        drawOwners();
+      })
+      .catch(() => {});
 
     function drawAll() {
       document.getElementById('f-team').value = state.team;
