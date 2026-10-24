@@ -640,6 +640,19 @@
       padding: var(--space-3) 0 0;
       margin-bottom: var(--space-6);
     }
+    /* Beside the main column (900px and up), the widgets in the side column
+       sit on flat, square panels so they read as one set; the main column's
+       stories stay ruled. One column on a phone: everything is ruled. */
+    @media (min-width: 901px) {
+      :root .dash-side .dash-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-top: 2px solid var(--text-primary);
+        border-radius: var(--radius-sm);
+        padding: var(--space-3) var(--space-4) var(--space-4);
+        margin-bottom: var(--space-4);
+      }
+    }
     :root .dash-card-title {
       font-family: var(--font-display);
       font-size: var(--text-lg);
