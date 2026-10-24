@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>Wall Street 2 - NBN</title>
+  <!-- NBN:og -->
+  <meta name="description" content="A discounted-cash-flow price for every NBN franchise, built on the Front Office Ledger.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="Wall Street 2 - NBN">
+  <meta property="og:description" content="A discounted-cash-flow price for every NBN franchise, built on the Front Office Ledger.">
+  <meta property="og:url" content="https://nbn.today/invest/fair/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    .fv-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .fv-table td.team { display: flex; align-items: center; gap: 0.5rem; }
+    .fv-table .logo { width: 20px; height: 20px; object-fit: contain; }
+    .fv-table th[data-sort] { cursor: pointer; }
+    .fv-table th.sorted { color: var(--text-primary); }
+    .fv-table tbody tr.row { cursor: pointer; }
+    .fv-table tbody tr.open td { background: var(--bg-hover); }
+    .fv-table td.mono, .fv-years td.mono { font-family: var(--font-mono); }
+    .fv-detail td { white-space: normal; background: var(--bg-page); padding: var(--space-3) var(--space-4); }
+    .fv-years { width: 100%; border-collapse: collapse; font-size: var(--text-xs); margin-bottom: var(--space-3); }
+    .fv-years th, .fv-years td { padding: 0.3rem 0.5rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); }
+    .fv-years th:first-child, .fv-years td:first-child { text-align: left; }
+    .fv-years th { color: var(--text-muted); font-weight: 600; }
+    .fv-sum { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6; }
+    .fv-sum b { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
+    .fv-chart { position: relative; height: 220px; max-width: 720px; }
+    .up { color: var(--market-positive); }
+    .dn { color: var(--danger); }
+    .fv-how { margin-top: var(--space-6); }
+    .fv-how summary { cursor: pointer; color: var(--text-secondary); font-weight: 600; }
+    .fv-how .ui-prose { margin-top: var(--space-3); font-size: var(--text-sm); }
+    .fv-scroll { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="page ui-page ui-page--wide">
+    <header class="ui-header">
+      <h1 class="ui-title">Wall Street 2</h1>
+      <div class="ui-header-actions fv-chips" id="chips"></div>
+    </header>
+
+    <div id="daily-moves"></div>
+
+    <div class="ui-table-wrap">
+      <table class="ui-table ui-table--dense ui-table--sticky-first fv-table">
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"><tr><td class="ui-loading" colspan="12">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <details class="fv-how">
+      <summary>How the price is worked out</summary>
+      <div class="ui-prose" id="how"></div>
+    </details>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script src="/invest/daily-moves.js"></script>
+  <script>
+  // A shadow model: a discounted-cash-flow price per franchise, built on the
+  // Front Office Ledger (nbn-api/routers/fair_value.py). Nothing trades on it.
+  // Hidden on purpose (not in the nav) while it is watched over a season.
+  const API = '/api';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const yen = (v, unit = 'M') => v == null ? '—' : (v < 0 ? '−' : '') + '¥' + (Math.abs(v) / (unit === 'B' ? 1e9 : 1e6)).toFixed(unit === 'B' ? 2 : 0) + unit;
+  const signedYen = v => (v > 0 ? '+' : '') + yen(v);
+  const pct = (v, dp = 1) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(dp) + '%';
+  const arrow = v => v > 0 ? '▲' : v < 0 ? '▼' : '';
+  const cls = v => v > 0 ? 'up' : v < 0 ? 'dn' : '';
+  const prob = p => (p * 100).toFixed(p >= 0.1 ? 0 : 1) + '%';
+
+  let run = null, history = [], sortKey = 'price', sortDir = -1, openTeam = null, chart = null;
+
+  const COLS = [
+    { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
+    { key: 'team',   label: 'Team',       get: t => t.team },
+    { key: 'price',  label: 'Price',      get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
+    { key: 'day',    label: 'Day',        get: t => t.day, num: true,
+      fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
+    { key: 'vs',     label: 'vs league',  get: t => t.vs_league, num: true, fmt: t => pct(t.vs_league * 100) },
+    { key: 'book',   label: 'Ledger value', get: t => t.book_value, num: true, fmt: t => yen(t.book_value, 'B') },
+    { key: 'ratio',  label: 'Fair ÷ ledger', get: t => t.book_value ? t.value / t.book_value : null, num: true,
+      fmt: t => t.book_value ? (t.value / t.book_value).toFixed(2) + '×' : '—' },
+    { key: 'rec',    label: 'W-L',        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
+    { key: 'projw',  label: 'Proj W',     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
+    { key: 'title',  label: 'Title',      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
+    { key: 'ops',    label: 'PV profit',  get: t => t.pv_in - t.pv_out, num: true, fmt: t => signedYen(t.pv_in - t.pv_out) },
+    { key: 'sale',   label: 'PV sale',    get: t => t.pv_sale, num: true, fmt: t => yen(t.pv_sale, 'B') },
+  ];
+
+  function renderHead() {
+    document.getElementById('thead').innerHTML = COLS.map(c =>
+      `<th class="${c.num ? 'num' : ''} ${sortKey === c.key ? 'sorted' : ''}" ${c.sort === false ? '' : `data-sort="${c.key}"`}>${c.label}${sortKey === c.key ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('');
+  }
+
+  function sorted() {
+    const col = COLS.find(c => c.key === sortKey);
+    return [...run.teams].sort((a, b) => {
+      const x = col.get(a), y = col.get(b);
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return (x < y ? -1 : x > y ? 1 : 0) * sortDir;
+    });
+  }
+
+  function renderBody() {
+    const rows = sorted();
+    document.getElementById('tbody').innerHTML = rows.map((t, i) => {
+      const cells = COLS.map(c => {
+        if (c.key === 'team') return `<td class="team"><img class="logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'"><a href="/teams/${t.team}/" onclick="event.stopPropagation()"><b>${t.team}</b></a></td>`;
+        const v = c.fmt ? c.fmt(t) : c.get(t, i);
+        return `<td class="${c.num ? 'num mono' : ''}">${v}</td>`;
+      }).join('');
+      const open = openTeam === t.team;
+      return `<tr class="row ${open ? 'open' : ''}" data-team="${t.team}">${cells}</tr>` +
+        (open ? `<tr class="fv-detail"><td colspan="${COLS.length}">${detail(t)}</td></tr>` : '');
+    }).join('');
+    if (openTeam) drawChart(openTeam);
+  }
+
+  function detail(t) {
+    const yrs = t.years;
+    const head = ['Season', 'Strength', 'Proj W', 'Playoffs', '2nd rd', 'Title', 'Stars',
+                  'Gate', 'Playoff gate', 'Merch', 'Revenue', 'Payroll', 'Tax', 'Profit', 'PV in', 'PV out'];
+    const body = yrs.map((y, k) => `<tr>
+        <td>${y.season}${k === 0 ? ` <span class="muted">(${Math.round(t.season_left * 100)}% left)</span>` : ''}</td>
+        <td class="mono">${y.strength ?? '—'}</td>
+        <td class="mono">${y.proj_w.toFixed(1)}</td>
+        <td class="mono">${prob(y.playoffs)}</td>
+        <td class="mono">${prob(y.second_round)}</td>
+        <td class="mono">${prob(y.title)}</td>
+        <td class="mono">${y.stars}</td>
+        <td class="mono">${yen(y.gate)}</td>
+        <td class="mono">${yen(y.playoff_gate)}</td>
+        <td class="mono">${yen(y.merch)}</td>
+        <td class="mono">${yen(y.revenue)}</td>
+        <td class="mono">${yen(y.payroll)}${y.players != null ? ` <span class="muted">(${y.players})</span>` : ''}</td>
+        <td class="mono">${yen(y.tax)}</td>
+        <td class="mono ${cls(y.profit)}">${signedYen(y.profit)}</td>
+        <td class="mono">${yen(y.pv_in)}</td>
+        <td class="mono">${yen(y.pv_out)}</td>
+      </tr>`).join('');
+    const last = yrs[yrs.length - 1].season;
+    return `<div class="fv-sum">
+        Value <b>${yen(t.value, 'B')}</b> = PV of profit <b>${signedYen(t.pv_in - t.pv_out)}</b>
+        + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
+        (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
+        ${t.book_value ? `The ledger has it at ${yen(t.book_value, 'B')}.` : ''}
+      </div>
+      <div class="fv-scroll"><table class="fv-years"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>
+      <div class="muted" style="font-size:var(--text-xs);margin-bottom:var(--space-3)">
+        Strength is the minutes-weighted OVR of the top eight. Later seasons count only who is under contract or re-signed, aged a year per season; payroll shows how many players that is.
+        This season's PV counts only what is left of it.
+      </div>
+      ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price by day, with the league average"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
+  }
+
+  function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+
+  function drawChart(team) {
+    const el = document.getElementById('fv-canvas');
+    if (!el || typeof Chart === 'undefined') return;
+    if (chart) chart.destroy();
+    const days = history.filter(d => d.teams[team]);
+    const mean = d => Object.values(d.teams).reduce((s, x) => s + x.price, 0) / Object.keys(d.teams).length;
+    chart = new Chart(el, {
+      type: 'line',
+      data: {
+        labels: days.map(d => d.date),
+        datasets: [
+          { label: team, data: days.map(d => d.teams[team].price), borderColor: cssVar('--accent'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
+          { label: 'League average', data: days.map(mean), borderColor: cssVar('--text-muted'), borderWidth: 2, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: cssVar('--text-secondary'), boxWidth: 14 } },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ¥${c.parsed.y.toFixed(2)}` } },
+        },
+        scales: {
+          x: { ticks: { color: cssVar('--text-muted'), maxTicksLimit: 8 }, grid: { display: false } },
+          y: { ticks: { color: cssVar('--text-muted'), callback: v => '¥' + v }, grid: { color: cssVar('--border-subtle') } },
+        },
+      },
+    });
+  }
+
+  // Day-over-day moves from the history, with what drove each: the PV of
+  // revenue, of costs, or of the sale, whichever moved most.
+  function dailyFromHistory() {
+    const days = [], teams = {};
+    for (let i = 1; i < history.length; i++) {
+      const a = history[i - 1], b = history[i];
+      days.push(b.date);
+      for (const [t, x] of Object.entries(b.teams)) {
+        const p = a.teams[t];
+        if (!p) continue;
+        teams[t] ||= {};
+        const drivers = [
+          ['revenue', x.pv_in - p.pv_in],
+          ['costs', -(x.pv_out - p.pv_out)],
+          ['sale', x.pv_sale - p.pv_sale],
+        ].sort((m, n) => Math.abs(n[1]) - Math.abs(m[1]));
+        const [name, d] = drivers[0];
+        const dw = x.proj_w - p.proj_w;
+        let note = `${name} ${signedYen(d)}`;
+        if (Math.abs(dw) >= 0.1) note += ` · proj W ${dw > 0 ? '+' : ''}${dw.toFixed(1)}`;
+        if (x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
+        teams[t][b.date] = { pct: (x.price / p.price - 1) * 100, note };
+      }
+    }
+    return { days, teams };
+  }
+
+  function renderHow() {
+    const L = run.league;
+    document.getElementById('how').innerHTML = `
+      <p>Each franchise is priced as what its owner gets out of it: <b>profit</b> for the rest of this season and the next two, plus what the team would <b>sell for</b> at the end of the third. Both are discounted at ${(L.discount_rate * 100).toFixed(0)}% a season. The price is that value divided by ${(L.shares / 1e6).toFixed(0)}M shares.</p>
+      <p><b>Revenue</b> uses the Front Office Ledger's own formulas (gate, playoff gate, merch, media, title bonus) on projected inputs: wins and playoff odds from the playoff odds simulator, and stars from the league's top 15 OVRs. This season's projection always gives the current roster at least half the weight, so a trade moves the price even late in the season.</p>
+      <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
+      <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
+      <p>As the season goes by, every price drifts up a little from discounting alone, so “vs league” is the cleaner comparison. A day's move is labelled with the piece that moved most: revenue, costs or sale.</p>
+      <p class="muted">Model ${esc(run.model)}, computed ${esc(new Date(run.computed_at).toLocaleString())}.</p>`;
+  }
+
+  function renderChips() {
+    document.getElementById('chips').innerHTML = `
+      <span class="ui-chip ui-chip--warning">Shadow model · not tradable</span>
+      <span class="ui-chip">As of ${esc(run.date)}</span>
+      <a class="ui-chip" href="/invest/">Wall Street</a>`;
+  }
+
+  document.getElementById('thead').addEventListener('click', e => {
+    const th = e.target.closest('[data-sort]');
+    if (!th) return;
+    const k = th.dataset.sort;
+    sortDir = sortKey === k ? -sortDir : (k === 'team' ? 1 : -1);
+    sortKey = k;
+    renderHead();
+    renderBody();
+  });
+  document.getElementById('tbody').addEventListener('click', e => {
+    const tr = e.target.closest('tr.row');
+    if (!tr) return;
+    openTeam = openTeam === tr.dataset.team ? null : tr.dataset.team;
+    renderBody();
+  });
+
+  async function init() {
+    try {
+      const [r, h] = await Promise.all([
+        fetch(`${API}/fair-value`).then(x => x.ok ? x.json() : null),
+        fetch(`${API}/fair-value/history`).then(x => x.ok ? x.json() : { days: [] }),
+      ]);
+      if (!r) {
+        document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="${COLS.length}">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
+        return;
+      }
+      run = r;
+      history = h.days || [];
+      for (const t of run.teams) t.day = r.prev[t.team] ? (t.price / r.prev[t.team] - 1) * 100 : null;
+      renderChips();
+      renderHead();
+      renderBody();
+      renderHow();
+      const d = dailyFromHistory();
+      DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, ...d });
+    } catch (e) {
+      document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="${COLS.length}">Couldn't load the fair value.</td></tr>`;
+    }
+  }
+  init();
+  </script>
+</body>
+</html>
