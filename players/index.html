@@ -2150,14 +2150,10 @@
 
   // ── OVR tile ────────────────────────────────────────────────
 
-  function ovrHeatStyle(n) {
-    const t = Math.min(1, Math.max(0, (n - 60) / 40));
-    const hue = Math.round(t * 120);
-    return {
-      background: `hsl(${hue},55%,18%)`,
-      color:      `hsl(${hue},80%,72%)`,
-      border:     `1px solid hsl(${hue},55%,30%)`,
-    };
+  // An OVR on the heat scale (components.css .ui-heat): 60 and below is the
+  // bottom, 100 the top.
+  function ovrHeat(n) {
+    return Math.min(1, Math.max(0, (n - 60) / 40)).toFixed(3);
   }
 
   // Archetype radar. Drawing, ranking and nearest-match live in /radar.js,
@@ -2331,7 +2327,8 @@
     tile.innerHTML = '<div class="tile-label">Overall</div><div class="tile-main"><div class="tile-value"></div></div><div class="tile-sub"></div>';
     const val = tile.querySelector('.tile-value');
     val.textContent = ovr;
-    val.style.color = ovrHeatStyle(ovr).color;
+    val.classList.add('ui-heat-ink');
+    val.style.setProperty('--heat', ovrHeat(ovr));
 
     const sub = tile.querySelector('.tile-sub');
     if (hist.length >= 2) {
@@ -2369,7 +2366,8 @@
     const [lx, ly] = pts.at(-1);
     const dot = document.createElementNS(ns, 'circle');
     dot.setAttribute('cx', lx); dot.setAttribute('cy', ly); dot.setAttribute('r', '2.5');
-    dot.setAttribute('fill', ovrHeatStyle(vals.at(-1)).color);
+    dot.classList.add('ui-heat-fill');
+    dot.style.setProperty('--heat', ovrHeat(vals.at(-1)));
     svg.appendChild(dot);
     const t = document.createElementNS(ns, 'title');
     t.textContent = `OVR ${vals[0]} → ${vals.at(-1)} over ${entries.length} updates`;
@@ -2896,9 +2894,8 @@
         if (val instanceof Node) td.appendChild(val);
         else td.textContent = val == null ? '—' : val;
         if (col.field === 'OVR' && p.OVR != null) {
-          Object.assign(td.style, ovrHeatStyle(p.OVR));
-          td.style.borderRadius = '4px';
-          td.style.padding = '0.15rem 0.4rem';
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', ovrHeat(p.OVR));
           td.style.fontWeight = '700';
           td.style.textAlign = 'center';
           // Ratings breakdown on hover/tap. Only wired up when we actually hold

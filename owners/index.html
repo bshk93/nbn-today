@@ -106,27 +106,6 @@
 
     .achievement:hover::after { opacity: 1; }
 
-    /* Leader cards over the table: the same shape as the stats pages'. */
-    .ow-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
-    .ow-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s; }
-    .ow-card:hover { border-color: var(--text-dim); }
-    .ow-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .ow-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
-    .ow-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-    .ow-card-note { font-size: var(--text-xs); color: var(--text-muted); }
-    .ow-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
-    .ow-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
-    .ow-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
-    .ow-card-head + .ow-row .ow-row-name { color: var(--text-primary); font-weight: 600; }
-    .ow-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
-    .ow-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
-    .ow-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
-    .ow-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
-    @media (max-width: 480px) {
-      .ow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-      .ow-card { padding: var(--space-2) var(--space-3) var(--space-1); }
-      .ow-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
-    }
 
     #status {
       text-align: center;
@@ -146,7 +125,7 @@
       </div>
     </header>
 
-    <div class="ow-grid" id="grid"></div>
+    <div class="ui-leaders" id="grid"></div>
     <div class="ui-table-wrap" id="table-wrap">
       <div id="status">Loading…</div>
     </div>
@@ -348,9 +327,8 @@
             if (!isNaN(n)) {
               const { min, max } = colRanges[col.key];
               const t = max === min ? 0.5 : (n - min) / (max - min);
-              const hue = Math.round(t * 120);
-              td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-              td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+              td.classList.add('ui-heat');
+              td.style.setProperty('--heat', t.toFixed(3));
             }
           }
         });
@@ -382,23 +360,22 @@
           .filter(r => parseFloat(r[card.field]) > 0 && (!card.ok || card.ok(r)))
           .sort((a, b) => parseFloat(b[card.field]) - parseFloat(a[card.field]))
           .slice(0, 5);
-        const top = list.length ? parseFloat(list[0][card.field]) : 0;
         const el = document.createElement('button');
-        el.className = 'ow-card';
+        el.className = 'ui-leader';
         el.setAttribute('aria-pressed', card.field === sortField);
-        el.innerHTML = `<div class="ow-card-head"><span class="ow-card-name">${card.name}</span>`
-          + `<span class="ow-card-note">${card.note || ''}</span></div>`
+        el.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${card.name}</span>`
+          + `<span class="ui-leader-note">${card.note || ''}</span></div>`
           + (list.length ? list.map((r, i) => {
               const v = parseFloat(r[card.field]);
               const shown = card.show ? card.show(r) : card.fmt ? card.fmt(r[card.field]) : r[card.field];
               // Ties share a rank.
               const rank = list.findIndex(o => parseFloat(o[card.field]) === v) + 1;
-              return `<div class="ow-row"><span class="ow-row-rank">${rank}</span>`
+              return `<div class="ui-leader-row"><span class="ui-rank">${rank}</span>`
                 + `<span class="ow-row-name"></span>`
-                + `<span class="ow-row-val">${shown}</span>`
-                + `<span></span><span class="ow-row-bar"><span style="width:${top > 0 ? (v / top * 100).toFixed(1) : 0}%"></span></span></div>`;
+                + `<span>${shown}</span>`
+                + '</div>';
             }).join('')
-            : '<div class="ow-card-empty">Nobody yet.</div>');
+            : '<div class="ui-leader-empty">Nobody yet.</div>');
         // Owner names are member-chosen text: set them as text, not markup.
         el.querySelectorAll('.ow-row-name').forEach((n, i) => { n.textContent = list[i].owner; });
         el.addEventListener('click', () => {

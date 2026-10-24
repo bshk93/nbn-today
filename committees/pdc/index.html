@@ -56,14 +56,6 @@
     }
     textarea { resize: vertical; min-height: 5rem; }
 
-    .chip { display: inline-block; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-            padding: 0.12rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
-    .chip-role { border-color: var(--muted-border); color: var(--accent-light); }
-    .chip-ok { border-color: var(--success); color: var(--success); }
-    .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
-    .chip-warn { border-color: var(--gold-border); color: var(--gold); }
-    .chip-head { border-color: var(--accent); color: var(--accent-light); }
-    .chip-live { border-color: var(--accent); color: var(--accent-light); }
 
     /* ── gate ─────────────────────────────────────────────────────────────── */
     .gate { max-width: 520px; margin: 4rem auto; text-align: center; }
@@ -501,7 +493,7 @@
     box.appendChild(who);
     (ME.roles || []).filter(r => ROLE_EXPLAIN[r])
       .forEach(r => {
-        const chip = el('span', 'chip ' + (HEAD_ROLES.has(r) ? 'chip-head' : 'chip-role'), r);
+        const chip = el('span', 'ui-chip ui-chip--sm ' + (HEAD_ROLES.has(r) ? 'ui-chip--accent' : ''), r);
         chip.title = ROLE_EXPLAIN[r];
         box.appendChild(chip);
       });
@@ -682,9 +674,9 @@
   }
 
   function poextStatusChip(status) {
-    const map = { draft: 'chip', submitted: 'chip chip-live', returned: 'chip chip-warn',
-                  voided: 'chip chip-bad', agreed: 'chip chip-ok', rejected: 'chip chip-bad' };
-    return el('span', map[status] || 'chip', status);
+    const map = { draft: 'ui-chip ui-chip--sm', submitted: 'ui-chip ui-chip--sm ui-chip--accent', returned: 'ui-chip ui-chip--sm ui-chip--warning',
+                  voided: 'ui-chip ui-chip--sm ui-chip--danger', agreed: 'ui-chip ui-chip--sm ui-chip--success', rejected: 'ui-chip ui-chip--sm ui-chip--danger' };
+    return el('span', map[status] || 'ui-chip ui-chip--sm', status);
   }
 
   function poextRenderList() {
@@ -773,7 +765,7 @@
     const head = el('div', 'section');
     const h = el('div', 'prow-name', nameOf(slug) + (p ? ` · #${p.number} · ${p.team}` : ''));
     head.appendChild(h);
-    const stageChip = el('span', 'chip chip-head', st.stage.replace('_', ' '));
+    const stageChip = el('span', 'ui-chip ui-chip--sm ui-chip--accent', st.stage.replace('_', ' '));
     head.appendChild(stageChip);
     if (st.exhausted) head.appendChild(el('div', 'banner bad', `§ 6.3: three proposals rejected — no further extension opportunities arise for ${nameOf(slug)} unless the PO-EXT head unlocks it.`));
     // § 6.3's limit is an expiring veteran's only, counted per negotiation.
@@ -1180,7 +1172,7 @@
     // render differently.
     const modeBlock = el('div', 'bb-block');
     modeBlock.appendChild(el('span', 'bb-label', 'Mode'));
-    modeBlock.appendChild(el('span', 'chip chip-live', STATE.mode === 'ffa' ? 'FFA' : STATE.mode[0].toUpperCase() + STATE.mode.slice(1)));
+    modeBlock.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--accent', STATE.mode === 'ffa' ? 'FFA' : STATE.mode[0].toUpperCase() + STATE.mode.slice(1)));
     modeBlock.appendChild(el('span', 'bb-val', modeCopy(STATE.mode)));
     bar.appendChild(modeBlock);
 
@@ -1189,7 +1181,7 @@
     if (STATE.mode === 'ffa') {
       const winBlock = el('div', 'bb-block');
       winBlock.appendChild(el('span', 'bb-label', 'FFA window'));
-      const c = el('span', 'chip', ffaHours() + 'h');
+      const c = el('span', 'ui-chip ui-chip--sm', ffaHours() + 'h');
       c.title = 'Applies to clocks started from now on. A clock already running keeps '
               + 'the deadline it was stamped with.';
       winBlock.appendChild(c);
@@ -1204,7 +1196,7 @@
       if (rnd.closes_at && !rnd.closed_at) {
         // Advisory only: nothing acts on it (§ 4.1, D11). Labelled as such so
         // nobody plans around a deadline the software will not enforce.
-        const c = el('span', 'chip', 'label only · ' + when(rnd.closes_at));
+        const c = el('span', 'ui-chip ui-chip--sm', 'label only · ' + when(rnd.closes_at));
         c.title = 'Rounds carry no enforced clock — the head closes players by hand.';
         roundBlock.appendChild(c);
       }
@@ -1365,9 +1357,9 @@
         const nm = el('span', null, c.name);
         nm.style.flex = '1';
         row.appendChild(nm);
-        row.appendChild(el('span', 'chip', c.pool.hold_type));
-        row.appendChild(el('span', 'chip', c.pool.class_year));
-        if (alreadyAdded.has(c.slug)) row.appendChild(el('span', 'chip chip-live', (STATE.players[c.slug] || {}).status || 'added'));
+        row.appendChild(el('span', 'ui-chip ui-chip--sm', c.pool.hold_type));
+        row.appendChild(el('span', 'ui-chip ui-chip--sm', c.pool.class_year));
+        if (alreadyAdded.has(c.slug)) row.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--accent', (STATE.players[c.slug] || {}).status || 'added'));
         const b = el('button', 'btn-ghost', 'Open');
         b.addEventListener('click', async () => {
           b.disabled = true;
@@ -1487,8 +1479,8 @@
       // this is the one spot compact enough that it read as plain text before,
       // indistinguishable from a scan.
       const holdType = (POOL[slug] || {}).hold_type;
-      meta.appendChild(holdType === 'RFA' ? el('span', 'chip chip-warn', 'RFA')
-        : holdType === 'UFA' ? el('span', 'chip', 'UFA')
+      meta.appendChild(holdType === 'RFA' ? el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'RFA')
+        : holdType === 'UFA' ? el('span', 'ui-chip ui-chip--sm', 'UFA')
         : el('span', null, holdType || '—'));
       meta.appendChild(el('span', null, '·'));
       // `offer_count` comes back null when the viewer's own team is bidding on
@@ -1510,28 +1502,28 @@
       row.appendChild(body);
 
       const tags = el('div', 'prow-tags');
-      if (p.needs_result) tags.appendChild(el('span', 'chip chip-warn', 'needs a result'));
-      else if (p.needs_void) tags.appendChild(el('span', 'chip chip-warn', 'left the pool · void bids'));
-      else if (p.stage === 'left_pool') tags.appendChild(el('span', 'chip', 'left the pool'));
-      else if (p.finalized) tags.appendChild(el('span', 'chip chip-ok', 'locked'));
-      else if (p.stage === 'awaiting_agent') tags.appendChild(el('span', 'chip chip-warn', 'needs an agent'));
+      if (p.needs_result) tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'needs a result'));
+      else if (p.needs_void) tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'left the pool · void bids'));
+      else if (p.stage === 'left_pool') tags.appendChild(el('span', 'ui-chip ui-chip--sm', 'left the pool'));
+      else if (p.finalized) tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--success', 'locked'));
+      else if (p.stage === 'awaiting_agent') tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'needs an agent'));
       else if (p.stage === 'with_agent') {
-        tags.appendChild(el('span', 'chip chip-live',
+        tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--accent',
           p.claimed_by === ME.name ? 'yours' : 'with ' + p.claimed_by));
-      } else if (p.stage === 'with_committee') tags.appendChild(el('span', 'chip chip-warn', 'ready'));
-      else tags.appendChild(el('span', 'chip' + (p.status === 'open' ? ' chip-live' : ''), p.status || '—'));
+      } else if (p.stage === 'with_committee') tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'ready'));
+      else tags.appendChild(el('span', 'ui-chip ui-chip--sm' + (p.status === 'open' ? ' ui-chip--accent' : ''), p.status || '—'));
       // Blocked entries stay on the queue, greyed with the reason on hover —
       // "why can't I take this one?" is a rules question, and hiding the row
       // answers it with silence (the § 8.1 disabled-with-reason convention).
       if (p.claim_refusal && p.stage === 'awaiting_agent') {
-        const c = el('span', 'chip chip-bad', 'blocked');
+        const c = el('span', 'ui-chip ui-chip--sm ui-chip--danger', 'blocked');
         c.title = p.claim_refusal;
         tags.appendChild(c);
       }
       if (p.mine && !p.balloted && !p.finalized && p.stage === 'with_committee') {
-        tags.appendChild(el('span', 'chip chip-warn', 'ballot'));
+        tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'ballot'));
       }
-      if (p.mine && p.balloted) tags.appendChild(el('span', 'chip chip-ok', 'voted'));
+      if (p.mine && p.balloted) tags.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--success', 'voted'));
       row.appendChild(tags);
 
       row.addEventListener('click', () => { location.hash = '#/p/' + slug; });
@@ -1643,7 +1635,7 @@
     const sub = el('div', 'detail-sub');
     const bits = [(bio.pos || []).join('/'), age(bio.dob) ? age(bio.dob) + ' yrs' : ''];
     sub.appendChild(el('span', null, bits.filter(Boolean).join(' · ')));
-    sub.appendChild(el('span', 'chip', 'not a current free agent'));
+    sub.appendChild(el('span', 'ui-chip ui-chip--sm', 'not a current free agent'));
     head.appendChild(sub);
     box.appendChild(head);
 
@@ -1703,7 +1695,7 @@
         wrap.appendChild(dl);
       }
     } else {
-      wrap.appendChild(el('span', 'chip chip-warn', 'not finalized'));
+      wrap.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'not finalized'));
     }
     return wrap;
   }
@@ -1713,9 +1705,9 @@
     const head = el('div', 'offer-head');
     head.appendChild(el('span', 'offer-team', o.team));
     head.appendChild(el('span', 'offer-num', '#' + o.number));
-    head.appendChild(el('span', o.status === 'voided' ? 'chip chip-bad'
-      : o.status === 'returned' ? 'chip chip-warn' : 'chip', o.status));
-    if (o.version > 1) head.appendChild(el('span', 'chip', 'v' + o.version));
+    head.appendChild(el('span', o.status === 'voided' ? 'ui-chip ui-chip--sm ui-chip--danger'
+      : o.status === 'returned' ? 'ui-chip ui-chip--sm ui-chip--warning' : 'ui-chip ui-chip--sm', o.status));
+    if (o.version > 1) head.appendChild(el('span', 'ui-chip ui-chip--sm', 'v' + o.version));
     card.appendChild(head);
     // No season passed: this is the contract as signed (or as offered), not a
     // roster reading from some later point — the only sense "history" means here.
@@ -1772,25 +1764,25 @@
     const bits = [(bio.pos || []).join('/'), age(bio.dob) ? age(bio.dob) + ' yrs' : '', OVR[slug] ? OVR[slug] + ' OVR' : ''];
     sub.appendChild(el('span', null, bits.filter(Boolean).join(' · ')));
     if (pool.hold_type) {
-      sub.appendChild(el('span', 'chip' + (pool.hold_type === 'RFA' ? ' chip-warn' : ''),
+      sub.appendChild(el('span', 'ui-chip ui-chip--sm' + (pool.hold_type === 'RFA' ? ' ui-chip--warning' : ''),
         pool.hold_type + ' ' + (pool.class_year || '')));
     }
     if (pool.rfa) {
       // § 3.1: an extended QO's amount is on record; an undecided one is the
       // formula's figure for an offer not yet made.
-      sub.appendChild(el('span', 'chip chip-warn', 'QO ' + qoAmountLabel(pool.qo_amount, pool.qo_status !== 'extended')));
+      sub.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'QO ' + qoAmountLabel(pool.qo_amount, pool.qo_status !== 'extended')));
     }
     const st = (review && review.state) || entry;
-    if (st.status) sub.appendChild(el('span', 'chip' + (st.status === 'open' ? ' chip-live' : ''), st.status));
+    if (st.status) sub.appendChild(el('span', 'ui-chip ui-chip--sm' + (st.status === 'open' ? ' ui-chip--accent' : ''), st.status));
     const dl = (st.ffa || {}).deadline;
     if (dl) {
-      sub.appendChild(el('span', 'chip ' + (st.ffa_expired ? 'chip-warn' : 'chip-live'),
+      sub.appendChild(el('span', 'ui-chip ui-chip--sm ' + (st.ffa_expired ? 'ui-chip--warning' : 'ui-chip--accent'),
         st.ffa_expired ? 'FFA window closed ' + when(dl) : 'FFA window closes ' + when(dl)));
     }
     if ((st.subcommittee || []).length) {
       sub.appendChild(el('span', null, 'Sub-committee: ' + st.subcommittee.join(', ')));
     } else {
-      sub.appendChild(el('span', 'chip chip-warn', 'no sub-committee assigned'));
+      sub.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', 'no sub-committee assigned'));
     }
     head.appendChild(sub);
     return head;
@@ -2152,7 +2144,7 @@
     }
 
     const expired = !!st.ffa_expired;
-    wrap.appendChild(el('span', expired ? 'chip chip-warn' : 'chip chip-live',
+    wrap.appendChild(el('span', expired ? 'ui-chip ui-chip--sm ui-chip--warning' : 'ui-chip ui-chip--sm ui-chip--accent',
       expired ? 'closed' : 'running'));
     wrap.appendChild(el('span', 'bb-val',
       (expired ? 'Closed ' : 'Closes ') + when(ffa.deadline)
@@ -2244,8 +2236,8 @@
       const nm = el('span', null, m.name);
       nm.style.flex = '1';
       row.appendChild(nm);
-      if (m.team) row.appendChild(el('span', 'chip', m.team));
-      if (m.conflict) row.appendChild(el('span', 'chip chip-warn', m.conflict + ' has an offer in'));
+      if (m.team) row.appendChild(el('span', 'ui-chip ui-chip--sm', m.team));
+      if (m.conflict) row.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', m.conflict + ' has an offer in'));
       list.appendChild(row);
     });
     if (!(review.assignable || []).length) list.appendChild(el('div', 'empty', 'No members hold the fac role yet.'));
@@ -2296,7 +2288,7 @@
       const head = el('div');
       head.appendChild(el('span', 'offer-team', o.team));
       head.appendChild(el('span', 'offer-num', ' #' + o.number));
-      head.appendChild(el('span', 'chip chip-bad', 'voided'));
+      head.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--danger', 'voided'));
       row.appendChild(head);
       row.appendChild(el('div', null, shorthand(o.offer.contract, SEASON)));
       row.appendChild(el('div', null, '“' + (v.reason || '—') + '”'));
@@ -2323,9 +2315,9 @@
     const head = el('div', 'offer-head');
     head.appendChild(el('span', 'offer-team', o.team));
     head.appendChild(el('span', 'offer-num', '#' + o.number));
-    head.appendChild(el('span', 'chip' + (o.status === 'returned' ? ' chip-warn' : ' chip-live'),
+    head.appendChild(el('span', 'ui-chip ui-chip--sm' + (o.status === 'returned' ? ' ui-chip--warning' : ' ui-chip--accent'),
       o.status === 'returned' ? 'returned' : 'submitted'));
-    if (o.version > 1) head.appendChild(el('span', 'chip', 'v' + o.version));
+    if (o.version > 1) head.appendChild(el('span', 'ui-chip ui-chip--sm', 'v' + o.version));
     card.appendChild(head);
 
     // Cap position after the signing — every figure straight off the fact sheet
@@ -2494,7 +2486,7 @@
       return box;
     }
     const failing = (now.checks || []).filter(c => !c.passed);
-    const chip = el('span', 'chip ' + (now.legal === false ? 'chip-bad' : 'chip-ok'),
+    const chip = el('span', 'ui-chip ui-chip--sm ' + (now.legal === false ? 'ui-chip--danger' : 'ui-chip--success'),
       now.legal === false ? 'illegal' : 'legal now');
     chip.title = 'Frozen at submit: ' + (then.legal ? 'legal' : 'not recorded') + '. Revalidated on this page load.';
     box.appendChild(chip);
@@ -2773,8 +2765,8 @@
       const card = el('div', 'ballot');
       const nm = el('div', 'ballot-name');
       nm.appendChild(document.createTextNode(who));
-      if (who === ME.name) nm.appendChild(el('span', 'chip', 'you'));
-      if (b.conflict) nm.appendChild(el('span', 'chip chip-warn', b.conflict));
+      if (who === ME.name) nm.appendChild(el('span', 'ui-chip ui-chip--sm', 'you'));
+      if (b.conflict) nm.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning', b.conflict));
       card.appendChild(nm);
       card.appendChild(el('div', 'bar-lbl', 'updated ' + ago(b.updated_at)));
       Object.entries(b.balls || {}).sort((x, y) => y[1] - x[1])
@@ -2827,7 +2819,7 @@
     const box = el('div', 'ballot mine');
     const head = el('div', 'ballot-name');
     head.appendChild(document.createTextNode(mine ? 'Your ballot' : 'Cast your ballot'));
-    if (mine) head.appendChild(el('span', 'chip', 'updated ' + ago(mine.updated_at)));
+    if (mine) head.appendChild(el('span', 'ui-chip ui-chip--sm', 'updated ' + ago(mine.updated_at)));
     box.appendChild(head);
 
     // A member who balloted before a revision is *told*, never silently voided

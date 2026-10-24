@@ -30,29 +30,12 @@
     .gh-section { margin-top: var(--space-2); }
 
     /* A top-5 card per category / feat. */
-    .gh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
-    .gh-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s; }
-    .gh-card:hover { border-color: var(--text-dim); }
-    .gh-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .gh-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
-    .gh-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-    .gh-card-abbr { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); white-space: nowrap; }
-    .gh-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
-    .gh-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
-    .gh-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
-    .gh-card-head + .gh-row .gh-row-name { color: var(--text-primary); font-weight: 600; }
-    .gh-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
-    .gh-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
-    .gh-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
-    .gh-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
 
     /* The full board. */
     .gh-table th[data-cat] { cursor: pointer; }
     .gh-table th[data-cat]:hover { color: var(--text-secondary); }
     .gh-table th.gh-primary { color: var(--accent-light); }
-    .gh-table td.gh-primary { color: var(--text-primary); font-weight: 600;
-      background: linear-gradient(to left, color-mix(in srgb, var(--accent) 16%, transparent) var(--bar, 0%), transparent var(--bar, 0%)); }
-    .gh-table tbody tr:hover td.gh-primary { background-color: var(--bg-hover); }
+    .gh-table td.gh-primary { color: var(--text-primary); font-weight: 700; }
     .gh-player a { color: var(--text-primary); font-weight: 600; }
     .gh-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
     .gh-sub a { color: inherit; }
@@ -63,11 +46,6 @@
     .gh-more[hidden] { display: none; }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 
-    @media (max-width: 480px) {
-      .gh-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-      .gh-card { padding: var(--space-2) var(--space-3) var(--space-1); }
-      .gh-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
-    }
   </style>
 </head>
 <body>
@@ -97,9 +75,9 @@
     </div>
     <p class="gh-note" id="note"></p>
     <h2 class="ui-section-title gh-section">Single-game records</h2>
-    <div class="gh-grid" id="grid-games"><div id="status">Loading…</div></div>
+    <div class="ui-leaders" id="grid-games"><div id="status">Loading…</div></div>
     <h2 class="ui-section-title gh-section">Most games with…</h2>
-    <div class="gh-grid" id="grid-feats"></div>
+    <div class="ui-leaders" id="grid-feats"></div>
     <h2 class="ui-section-title" id="board-title"></h2>
     <div class="ui-table-wrap" id="table-wrap"></div>
     <button class="ui-btn ui-btn--sm gh-more" id="more" hidden></button>
@@ -166,18 +144,16 @@
     // ── Cards ──────────────────────────────────────────────────────────────
     function card(def, rows, valueOf, titleOf) {
       const el = document.createElement('button');
-      el.className = 'gh-card';
+      el.className = 'ui-leader';
       el.setAttribute('aria-pressed', def.key === state.stat);
-      const top = rows.length ? valueOf(rows[0]) : 0;
-      el.innerHTML = `<div class="gh-card-head"><span class="gh-card-name">${esc(def.name)}</span>`
-        + `<span class="gh-card-abbr">${esc(def.abbr || '')}${def.floor ? ' · ' + esc(def.floor) : ''}</span></div>`
-        + (rows.length ? rows.map(r => `<div class="gh-row" title="${esc(titleOf(r))}">`
-            + `<span class="gh-row-rank">${r.rank}</span>`
-            + `<span class="gh-row-name">${esc(nbnPlayerName(r.player))}</span>`
-            + `<span class="gh-row-val">${esc(fmt(def.key, valueOf(r)))}</span>`
-            + `<span></span><span class="gh-row-bar"><span style="width:${top > 0 ? (valueOf(r) / top * 100).toFixed(1) : 0}%"></span></span>`
+      el.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${esc(def.name)}</span>`
+        + `<span class="ui-leader-note">${esc(def.abbr || '')}${def.floor ? ' · ' + esc(def.floor) : ''}</span></div>`
+        + (rows.length ? rows.map(r => `<div class="ui-leader-row" title="${esc(titleOf(r))}">`
+            + `<span class="ui-rank">${r.rank}</span>`
+            + `<span>${esc(nbnPlayerName(r.player))}</span>`
+            + `<span>${esc(fmt(def.key, valueOf(r)))}</span>`
             + `</div>`).join('')
-          : '<div class="gh-card-empty">No games in this slice.</div>');
+          : '<div class="ui-leader-empty">No games in this slice.</div>');
       el.addEventListener('click', () => {
         select(def.key);
         $('board-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -219,15 +195,13 @@
         more.hidden = true;
         return;
       }
-      const lead = b.rows[0].value || 0;
-      const bar = v => (lead > 0 ? Math.max(0, v / lead * 100).toFixed(1) : 0);
       let head, body;
       if (b.kind === 'feat') {
         head = `<tr><th class="right">#</th><th>Player</th><th class="right gh-primary">${esc(def.name)}</th>`
           + '<th class="right">Games</th><th class="right">How often</th></tr>';
         body = b.rows.map(r => `<tr><td class="right muted">${r.rank}</td>`
           + `<td class="gh-player"><a href="${playerLink(r)}">${esc(nbnPlayerName(r.player))}</a></td>`
-          + `<td class="right gh-primary" style="--bar:${bar(r.value)}%">${r.value.toLocaleString('en-US')}</td>`
+          + `<td class="right gh-primary">${r.value.toLocaleString('en-US')}</td>`
           + `<td class="right">${r.games.toLocaleString('en-US')}</td>`
           + `<td class="right muted">${r.games ? `1 in ${(r.games / r.value).toFixed(1)}` : '—'}</td></tr>`).join('');
       } else {
@@ -249,7 +223,7 @@
             + cols.map(c => {
                 const text = c.value ? fmt(b.key, r.value) : c.text ? c.text(r.line) : fmt(c.key, r.line[c.key]);
                 return c.key === b.key
-                  ? `<td class="right gh-primary" style="--bar:${bar(r.value)}%">${esc(text)}</td>`
+                  ? `<td class="right gh-primary">${esc(text)}</td>`
                   : `<td class="right">${esc(text)}</td>`;
               }).join('')
             + '</tr>';

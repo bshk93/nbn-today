@@ -60,35 +60,11 @@
       min-width: 1.25rem; height: 1.25rem; padding: 0 0.3rem;
       margin-left: 0.35rem; cursor: default; vertical-align: middle;
     }
-    .team-badge {
-      display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
-      text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm);
-      background: var(--success-bg); color: var(--success-light);
-    }
     .team-badge a { color: inherit; }
     .pos-text { font-size: 0.85rem; color: var(--text-secondary); }
     .ach-count { font-size: 0.85rem; color: var(--text-muted); text-decoration: none; font-variant-numeric: tabular-nums; }
     .ach-count:hover { color: var(--text-secondary); }
     .role-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .rbadge {
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
-    }
-    .rb-admin   { background: var(--danger-bg); color: var(--danger-light); }
-    .rb-bod     { background: #3d2200; color: #fcd34d; }
-    .rb-rosters { background: var(--accent-panel-bg); color: var(--accent-light); }
-    .rb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
-    .rb-stats   { background: #0d2a33; color: #5eead4; }
-    .rb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
-    .rb-fac       { background: #500724; color: #f9a8d4; }
-    .rb-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
-    .rb-agent      { background: #431407; color: #fdba74; }
-    .rb-poext      { background: #1e1b4b; color: #a5b4fc; }
-    .rb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
-    .rb-trc        { background: #082f49; color: #7dd3fc; }
-    .rb-trc-head   { background: #082f49; color: #7dd3fc; border: 1px solid #0ea5e9; }
-    .rb-streamer   { background: var(--purple-light-bg); color: var(--purple-light); }
-    .rb-team    { background: var(--success-bg); color: var(--success-light); }
 
     .action-cell { display: flex; gap: 0.35rem; align-items: center; white-space: nowrap; }
             .btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); }
@@ -594,27 +570,18 @@ function lastTenure(tenures) {
   return [...tenures].sort((a, b) => b.start.localeCompare(a.start))[0];
 }
 
-function roleClass(r) {
-  if (r === 'admin')   return 'rb-admin';
-  if (r === 'bod')     return 'rb-bod';
-  if (r === 'rosters') return 'rb-rosters';
-  if (r === 'curator') return 'rb-curator';
-  if (r === 'stats')   return 'rb-stats';
-  if (r === 'bookie')  return 'rb-bookie';
-  if (r === 'fac_head')   return 'rb-fac-head';
-  if (r === 'fac')        return 'rb-fac';
-  if (r === 'agent')      return 'rb-agent';
-  if (r === 'poext_head') return 'rb-poext-head';
-  if (r === 'poext')      return 'rb-poext';
-  if (r === 'trc_head')   return 'rb-trc-head';
-  if (r === 'trc')        return 'rb-trc';
-  if (r === 'streamer')   return 'rb-streamer';
-  return 'rb-team';
+// One chip for every role: a team's role carries its team colour on the
+// edge, the heads of things are accented, the rest are plain.
+const TEAM_ROLES = new Set('atl bkn bos cha chi cle dal den det gsw hou ind lac lal mem mia mil min nop nyk okc orl phi phx por sac sas tor uta was'.split(' '));
+function roleChipClass(r) {
+  if (TEAM_ROLES.has(r)) return 'ui-chip ui-chip--sm ui-chip--team';
+  if (r === 'admin' || r.endsWith('_head')) return 'ui-chip ui-chip--sm ui-chip--accent';
+  return 'ui-chip ui-chip--sm';
 }
 
 function roleBadgesHtml(roles) {
   if (!roles.length) return '<span style="color:var(--text-dim)">—</span>';
-  return roles.map(r => `<span class="rbadge ${roleClass(r)}">${r}</span>`).join('');
+  return roles.map(r => `<span class="${roleChipClass(r)}"${TEAM_ROLES.has(r) ? ` data-team="${r.toUpperCase()}"` : ''}>${r}</span>`).join('');
 }
 
 function populateSel(id, opts, blank) {
@@ -750,9 +717,9 @@ function renderTable() {
     // Team
     const tdTeam = tr.insertCell();
     if (cur) {
-      tdTeam.innerHTML = `<span class="team-badge"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
+      tdTeam.innerHTML = `<span class="team-badge ui-chip ui-chip--team" data-team="${cur.team}"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
     } else if (last) {
-      tdTeam.innerHTML = `<span class="team-badge" style="opacity:0.6"><a href="/teams/${last.team.toLowerCase()}/">${last.team}</a></span>`;
+      tdTeam.innerHTML = `<span class="team-badge ui-chip ui-chip--team" data-team="${last.team}" style="opacity:0.6"><a href="/teams/${last.team.toLowerCase()}/">${last.team}</a></span>`;
     } else {
       tdTeam.innerHTML = '<span style="color:var(--text-dim)">—</span>';
     }
@@ -1142,7 +1109,7 @@ function renderTenureTable() {
   sorted.forEach(({ _i, team, position, start, end }) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="team-badge">${team}</span></td>
+      <td><span class="team-badge ui-chip ui-chip--team" data-team="${team}">${team}</span></td>
       <td style="color:var(--text-secondary)">${displayPos(position)}</td>
       <td style="color:var(--text-muted);font-size:0.8rem">${fmtDate(start)}</td>
       <td>${end ? `<span style="color:var(--text-muted);font-size:0.8rem">${fmtDate(end)}</span>` : '<span class="ongoing-text" style="font-size:0.8rem">Ongoing</span>'}</td>

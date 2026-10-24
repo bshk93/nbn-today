@@ -133,12 +133,6 @@
       color: var(--text-primary);
       margin-bottom: 0.6rem;
     }
-    .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow-x: auto;
-    }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
     thead th {
       padding: 0.55rem 0.75rem;
@@ -736,7 +730,7 @@
 
     <!-- Player pool (Pool tab) -->
     <div class="section" id="pool-section" style="display:none">
-      <div class="table-wrap">
+      <div class="ui-table-wrap table-wrap">
         <table>
           <thead>
             <tr>
@@ -1640,11 +1634,9 @@
         return `<span class="cap-hold-tag ${cls}">${label}</span>`;
       }
 
-      function ovrStyle(n) {
-        if (!n) return '';
-        const t = Math.min(1, Math.max(0, (n - 60) / (99 - 60)));
-        const hue = Math.round(t * 120);
-        return `background:hsl(${hue},55%,18%);color:hsl(${hue},80%,72%);border-radius:var(--radius-sm);padding:0.1rem 0.35rem;`;
+      // An OVR on the heat scale (components.css .ui-heat).
+      function ovrHeat(n) {
+        return Math.min(1, Math.max(0, (n - 60) / (99 - 60))).toFixed(3);
       }
 
       // 6-col grid: PG/SG each span 2 cols centered (cols 2-3, 4-5); SF/C/PF span 2 cols each (cols 1-2, 3-4, 5-6)
@@ -1654,7 +1646,7 @@
           ? players.map(r => {
               const ovr = r.ovr || '—';
               const ovrSpan = r.ovr
-                ? `<span style="${ovrStyle(r.ovr)}">${ovr}</span>`
+                ? `<span class="ui-ovr ui-heat" style="--heat:${ovrHeat(r.ovr)}">${ovr}</span>`
                 : `<span class="depth-player-ovr">—</span>`;
               return `<div class="depth-player-row">
               <span class="depth-player-name">${r.name}${holdBadge(r)}</span>

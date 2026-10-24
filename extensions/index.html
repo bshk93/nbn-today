@@ -47,12 +47,6 @@
     .prow-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
     .empty { padding: 1.25rem 0.9rem; color: var(--text-dim); font-size: 0.82rem; text-align: center; }
 
-    .chip { display: inline-block; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-            padding: 0.12rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); }
-    .chip-live { border-color: var(--accent); color: var(--accent-light); }
-    .chip-warn { border-color: var(--gold-border); color: var(--gold); }
-    .chip-ok { border-color: var(--success); color: var(--success); }
-    .chip-bad { border-color: var(--danger-border-strong); color: var(--danger); }
 
     button { font-family: inherit; cursor: pointer; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; padding: 0.35rem 0.75rem; border: 1px solid transparent; }
                         button:disabled { opacity: 0.45; cursor: default; }
@@ -220,8 +214,8 @@ function renderEligible() {
   });
 }
 
-const STATUS_CHIP = { draft: 'chip', submitted: 'chip chip-live', returned: 'chip chip-warn',
-                      voided: 'chip chip-bad', agreed: 'chip chip-ok', rejected: 'chip chip-bad' };
+const STATUS_CHIP = { draft: 'ui-chip ui-chip--sm', submitted: 'ui-chip ui-chip--sm ui-chip--accent', returned: 'ui-chip ui-chip--sm ui-chip--warning',
+                      voided: 'ui-chip ui-chip--sm ui-chip--danger', agreed: 'ui-chip ui-chip--sm ui-chip--success', rejected: 'ui-chip ui-chip--sm ui-chip--danger' };
 
 function renderProposals() {
   const box = document.getElementById('proposals-list');
@@ -232,7 +226,7 @@ function renderProposals() {
     const body = el('div');
     body.appendChild(el('div', 'prow-name', `#${p.number} · ${displayName((BIOS[p.player] || {}).name || p.player)}`));
     const meta = el('div', 'prow-meta');
-    meta.appendChild(el('span', STATUS_CHIP[p.status] || 'chip', p.status));
+    meta.appendChild(el('span', STATUS_CHIP[p.status] || 'ui-chip ui-chip--sm', p.status));
     meta.appendChild(document.createTextNode('  ' + (p.kind || '').replace('_', ' ')));
     body.appendChild(meta);
     row.appendChild(body);
