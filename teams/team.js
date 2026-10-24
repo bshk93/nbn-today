@@ -257,7 +257,7 @@ const coachingConfigReady = new Promise(resolve => {
   .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
   .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   /* On the team-colour band (components.css § Team pages): light on colour. */
-  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
+  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
   :root[data-team] .team-share-btn:hover { color: #fff; border-color: #fff; }
   .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
   .team-header {
@@ -965,13 +965,13 @@ const coachingConfigReady = new Promise(resolve => {
   .attr-badges { display: inline-flex; align-items: center; gap: 0.2rem; flex: none; }
   .attr-badge {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 0 0.28rem; height: 14px; border-radius: var(--radius-sm); flex: none;
-    font-size: 0.56rem; font-weight: 700; letter-spacing: 0.02em;
-    font-variant-numeric: tabular-nums; cursor: help;
-    color: var(--text-muted); background: rgba(107,114,128,0.08);
-    box-shadow: 0 0 0 1px rgba(107,114,128,0.16);
+    padding: 0 0.3rem; height: 16px; border-radius: var(--radius-sm); flex: none;
+    font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; font-variant-numeric: tabular-nums; cursor: help;
+    color: var(--text-muted); background: var(--bg-subtle);
+    border: 1px solid var(--border);
   }
-  .attr-badge-elite { box-shadow: 0 0 0 1px rgba(156,163,175,0.55); }
+  .attr-badge-elite { color: var(--text-secondary); border-color: var(--text-dim); }
   .attr-legend .cap-legend-item { cursor: default; }
   .attr-legend-note { color: var(--text-dim); font-style: italic; margin-left: auto; }
   .attr-badge-legend { cursor: default; }
@@ -3662,18 +3662,32 @@ function renderHeaderFacts(seasonRows, members) {
   (members || []).forEach(m => (m.tenures || []).forEach(t => {
     if (t.team === abbr && t.end == null && t.position === 'owner') owners.push(m.name);
   }));
-  if (owners.length) facts.push(`Owner: ${owners.join(' & ')}`);
+  // Each fact is a figure and its label, the figure in the scoreboard face.
+  const fact = (fig, label) => {
+    const f = document.createElement('span');
+    f.className = 'thf';
+    const b = document.createElement('b');
+    b.textContent = fig;
+    f.append(b, ' ' + label);
+    return f;
+  };
   const rows = (seasonRows || []).filter(r => r.SEASON);
   if (rows.length) {
     const titles = rows.filter(r => r.PLAYOFF_RESULT === 'Champion').length;
     const trips = rows.filter(r => r.PLAYOFF_RESULT && r.PLAYOFF_RESULT !== 'Missed').length;
     const w = rows.reduce((s, r) => s + (+r.W || 0), 0);
     const l = rows.reduce((s, r) => s + (+r.L || 0), 0);
-    if (titles) facts.push(`🏆 ${titles} title${titles === 1 ? '' : 's'}`);
-    facts.push(`${w}–${l} all-time`);
-    facts.push(`${trips} playoff trip${trips === 1 ? '' : 's'} in ${rows.length} season${rows.length === 1 ? '' : 's'}`);
+    facts.push(fact(`${w}–${l}`, 'all-time'));
+    if (titles) facts.push(fact(titles, titles === 1 ? 'title' : 'titles'));
+    facts.push(fact(trips, `playoff trip${trips === 1 ? '' : 's'} in ${rows.length} season${rows.length === 1 ? '' : 's'}`));
   }
-  el.textContent = facts.join('  ·  ');
+  if (owners.length) {
+    const o = document.createElement('span');
+    o.className = 'thf-owner';
+    o.textContent = `Owner ${owners.join(' & ')}`;
+    facts.push(o);
+  }
+  el.replaceChildren(...facts);
 }
 
 function buildPersonnelSection(members, allGames) {
