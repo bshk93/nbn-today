@@ -452,6 +452,33 @@ function _initNav() {
       : '<a href="/">← Home</a>';
   }
   if (_sidebarEnabled() && !nav.querySelector('.nav-menu-btn')) nav.prepend(_buildMenuButton());
+  // On a phone the sidebar (and its logo) is a closed drawer, which left the
+  // top of every page with no sign of what site this is. The mark sits
+  // beside the menu button there, and is hidden wherever the sidebar is docked.
+  // Not in a toolbar that borrows .nav and brings its own title (draft/pick's).
+  if (_sidebarEnabled() && !nav.querySelector('.nav-brand, h1, h2')) {
+    const brand = document.createElement('a');
+    brand.className = 'nav-brand';
+    brand.href = '/';
+    brand.title = 'Nothing But Net';
+    brand.innerHTML = '<img src="/icons/logo-header.webp" alt="">NBN';
+    nav.querySelector('.nav-menu-btn').after(brand);
+  }
+  // Everything that isn't chrome (the section name, a back link, a
+  // breadcrumb) goes in one .nav-trail, so on a phone it can drop to its own
+  // line under the menu/logo/Sign in row instead of crowding it. A toolbar
+  // that only borrows .nav (draft/pick's, which carries its own h1) is left
+  // as it is. Pages that rewrite .nav call _initNav again, which re-wraps.
+  if (!nav.querySelector(':scope > .nav-trail, h1, h2')) {
+    const chrome = n => n.nodeType === 1 && n.matches('.nav-menu-btn, .nav-brand, .nav-actions');
+    const parts = [...nav.childNodes].filter(n => !chrome(n) && !(n.nodeType === 3 && !n.textContent.trim()));
+    if (parts.length) {
+      const trail = document.createElement('span');
+      trail.className = 'nav-trail';
+      parts[0].before(trail);
+      trail.append(...parts);
+    }
+  }
   if (!nav.querySelector('.nav-actions')) {
     const actions = document.createElement('div');
     actions.className = 'nav-actions';

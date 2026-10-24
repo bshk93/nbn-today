@@ -26,6 +26,19 @@
 }
 .nav :is(.nav-actions, .nav-menu-btn) { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; text-transform: none; }
 .nav-kicker { color: var(--accent-light); }
+/* The site's mark, beside the menu button on a phone (nav.js _initNav): the
+   docked sidebar carries it at 900px and up, so it shows only below that. */
+.nav-brand { display: none; align-items: center; gap: 0.4rem; color: var(--text-primary); font-weight: 700; letter-spacing: 0.04em; text-decoration: none; }
+.nav a.nav-brand { color: var(--text-primary); }
+.nav-brand img { width: 1.6rem; height: 1.6rem; object-fit: contain; }
+.nav-trail { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; min-width: 0; }
+/* On a phone the top row is chrome only (menu, mark, Sign in), and the
+   trail drops to its own line above the title, as it sits on desktop. */
+@media (max-width: 899.98px) {
+  .nav-brand { display: inline-flex; }
+  .nav-actions { order: 2; }
+  .nav-trail { order: 3; flex-basis: 100%; gap: 0.5rem; }
+}
 /* flex-wrap: a long breadcrumb plus the action buttons (☰, search, inbox,
    Sign in) don't fit one phone-width row; the buttons drop to their own line
    and stay right-aligned rather than widening the page. */

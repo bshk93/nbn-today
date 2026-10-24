@@ -30,7 +30,7 @@
     .pv-final {
       display: block; margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4);
       border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card);
-      color: var(--text-primary); font-weight: 600;
+      color: var(--text-primary); font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
     }
     .pv-final:hover { border-color: var(--link); text-decoration: none; }
 
@@ -38,11 +38,14 @@
     .pv-full { grid-column: 1 / -1; }
     @media (max-width: 640px) { .pv-grid { grid-template-columns: 1fr; } }
 
-    .pv-card-title { font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-3); }
+    .pv-card-title { font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-3); }
+    /* Each side's card carries its team's two colours along the top. */
+    .pv-team { position: relative; border-top: 3px solid var(--team-primary, var(--border)); }
+    .pv-team::before { content: ''; position: absolute; inset: 0 0 auto; border-top: 3px solid var(--team-accent, transparent); }
     .pv-team-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
     .pv-team-head img { width: 28px; height: 28px; object-fit: contain; }
-    .pv-team-head a { font-weight: 700; color: var(--text-primary); }
-    .pv-team-head .pv-rec { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-secondary); font-weight: 600; }
+    .pv-team-head a { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-primary); }
+    .pv-team-head .pv-rec { margin-left: auto; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
     .pv-line { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-2); }
     .pv-muted { color: var(--text-muted); }
 
@@ -172,7 +175,7 @@
         longDate(DATE),
         slot && slot.time_et ? `${slot.time_et} ET` : '',
         slot && slot.arena,
-        slot && slot.streamer ? `📺 ${slot.streamer}` : '',
+        slot && slot.streamer ? `Streamed by ${slot.streamer}` : '',
       ].filter(Boolean).join(' · ');
 
       // Their games this season before this one, newest first.
@@ -205,7 +208,7 @@
         const w = reg.filter(g => won(g, t)).length;
         const ls = lastSeason(t);
         const form = before(t).slice(0, 5);
-        html += '<section class="ui-card">'
+        html += `<section class="ui-card pv-team" data-team="${esc(t)}">`
           + `<div class="pv-team-head"><img src="${logo(t)}" alt="">`
           + `<a href="/teams/${esc(t)}/">${esc(teamName(t))}</a>`
           + (reg.length ? `<span class="pv-rec">${w}–${reg.length - w}</span>` : '') + '</div>'
