@@ -81,6 +81,8 @@ All amounts in NB¥. Starting constants, to be tuned against the sanity checks.
 | Home stars | +0.05 per All-NBN player on the home team that season, max 2 |
 | Visiting stars | +0.02 per All-NBN player on the visitors, max 2 |
 | Bandwagon | last season's finish: title +0.10, Finals loss +0.07, conf finals +0.04, second round +0.02. Fades: full the next season, half the one after, a quarter the third |
+| Rivalry | +0.03 per playoff series the two teams played in the last three seasons, max 2 |
+| Champ in town | +0.04 when the visitors are last season's champion |
 | Noise | ±0.04, seeded on the game |
 
 A season's gate is the sum over its actual home games, so a team that hosted
@@ -200,9 +202,13 @@ Pinned as a test once built:
   under `derived/`. `python3 -m stats_build.finances --dry-run` prints the
   valuations and spread.
 - **Page**: `finances/index.html`, in the Front Office nav section.
-- **Not built yet**: attendance on box scores (the CSV is ready; one join in
-  the box score page), the team page Finances tab, owners' value added,
-  headlines.
+- **Box scores**: `GET /api/boxscores` attaches each game's `attendance`
+  (count, sellout, arena) from the attendance CSV, cached on its mtime
+  (`_with_attendance` in `routers/boxscores.py`); the page shows it under the
+  leaders. The same change keys a game by its two teams, so the 19 games
+  without one clear away side no longer split into two half games.
+- **Not built yet**: the team page Finances tab, owners' value added,
+  headlines, sponsor names, a recap Business section.
 
 ## Open
 
