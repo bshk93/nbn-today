@@ -311,6 +311,9 @@
   cursor: pointer; white-space: nowrap; text-decoration: none;
   transition: background-color 0.12s, border-color 0.12s, color 0.12s;
 }
+/* `display` above beats the browser's own [hidden] rule, so without this a
+   button a page hides until it applies (an admin control, a Reset) shows anyway. */
+:is(.ui-btn, .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-success, .btn-cancel, .btn-save, .btn-sm)[hidden] { display: none; }
 .ui-btn:hover, .btn:hover, .btn-primary:hover, .btn-secondary:hover, .btn-ghost:hover, .btn-danger:hover, .btn-success:hover, .btn-cancel:hover, .btn-save:hover, .btn-sm:hover { background: var(--bg-hover); border-color: var(--text-dim); text-decoration: none; }
 :is(.ui-btn, .btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger, .btn-success, .btn-cancel, .btn-save, .btn-sm):is(:disabled, [aria-disabled="true"]) { opacity: 0.5; cursor: default; }
 .ui-btn--primary, .btn-primary, .btn-save { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }

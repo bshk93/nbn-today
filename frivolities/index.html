@@ -1310,7 +1310,8 @@
           for (const k of TOTAL_COLS) tot[k] = +r[k];
           const salary = parseSalary(bios[r.SLUG]?.salaries?.[season]);
           const vals = valsFromTotals(tot, ageAtSeason(r.DOB, season), salary);
-          return { name: r.PLAYER, slug: r.SLUG, season, team: r.TEAM, G, isPlayoffs, dob: r.DOB, tot, vals };
+          const pos = bios[r.SLUG]?.pos || [];
+          return { name: r.PLAYER, slug: r.SLUG, season, team: r.TEAM, G, isPlayoffs, dob: r.DOB, pos, tot, vals };
         }).filter(Boolean);
       }
 
@@ -1395,6 +1396,10 @@
               <select id="pf-team"><option value="">All</option>${opts(teams, '')}</select>
             </div>
             <div class="plot-field">
+              <label for="pf-pos">Position</label>
+              <select id="pf-pos"><option value="">All</option>${opts(['PG', 'SG', 'SF', 'PF', 'C'], '')}</select>
+            </div>
+            <div class="plot-field">
               <label for="pf-ming">Min games</label>
               <input id="pf-ming" type="number" min="0" step="1" value="0">
             </div>
@@ -1407,7 +1412,7 @@
         `;
 
         const $ = id => document.getElementById(id);
-        const controls = ['pf-x', 'pf-y', 'pf-dataset', 'pf-season', 'pf-team', 'pf-ming'];
+        const controls = ['pf-x', 'pf-y', 'pf-dataset', 'pf-season', 'pf-team', 'pf-pos', 'pf-ming'];
 
         const chartEl = $('pf-chart');
         const readoutEl = $('pf-readout');
@@ -1470,6 +1475,7 @@
           const dataset = $('pf-dataset').value;
           const season = $('pf-season').value;
           const team = $('pf-team').value;
+          const pos = $('pf-pos').value;
           const minG = parseInt($('pf-ming').value, 10) || 0;
           const xV = AXIS_VARS[xKey], yV = AXIS_VARS[yKey];
 
@@ -1478,6 +1484,8 @@
             if (dataset === 'po' && !r.isPlayoffs) return false;
             if (season && r.season !== season) return false;
             if (team && r.team !== team) return false;
+            // Eligible positions from the bio, so a PF/C counts under both.
+            if (pos && !r.pos.includes(pos)) return false;
             if (r.G < minG) return false;
             return true;
           });

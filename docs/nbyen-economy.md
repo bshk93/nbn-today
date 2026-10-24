@@ -209,6 +209,15 @@ paying it. So switching them back on pays unlocks from then on, not a backlog.
   ledger lines (`nbyen.GAMES`) plus what is still held in it. Fees and refunds
   are in, and no trade log is replayed. The `/invest` leaderboard is Wall
   Street's slice of the same sum.
+- **Every NB¥ has a source, and a member's sources sum to their net worth.**
+  `nbyen.SOURCES` puts every ledger kind in exactly one bucket (starting grant,
+  donations, Twitch, the three games, Pick'em, box scores, rewards, tips,
+  streams, shop, adjustments). The games count what is still held, as above.
+  This is `/nbyen`'s Breakdown tab, and `test_nbyen` fails if a new kind is
+  added to `wallet.KINDS` without a bucket. An adjustment that undoes another
+  kind's mistake is counted against that kind (`nbyen.CORRECTS`, keyed by the
+  adjustment's `ref`), so KVL's Donations column reads the $100 actually donated rather
+  than the three test credits and their reversal.
 - **Tests can't reach the live wallet.** `tests/__init__.py` points it at a temp
   directory before any test runs. It exists because `test_donations` once wrote
   a test donation into the live balances.

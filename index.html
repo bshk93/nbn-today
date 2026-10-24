@@ -2481,13 +2481,15 @@
 
       // Open FFA windows the league is bidding into. Public — § 9.2 already
       // announces these deadlines, so this is a reminder, not a leak.
+      // Always a note: bidding is optional, so an open window never "needs
+      // you". (It was a caution under 24h, which a 24h window always is.)
       jget('/api/fa/board').then(board => {
         const open = Object.entries((board && board.players) || [])
           .filter(([, p]) => p.ffa_deadline && Date.parse(p.ffa_deadline) > Date.now())
           .sort((a, b) => Date.parse(a[1].ffa_deadline) - Date.parse(b[1].ffa_deadline));
         if (!open.length) return;
         const hrs = Math.max(0, Math.round((Date.parse(open[0][1].ffa_deadline) - Date.now()) / 3.6e6));
-        add(hrs <= 24 ? 'caution' : 'note',
+        add('note',
           `${open.length} FFA open · ${hrs}h left`, '/free-agency/',
           `${plural(open.length, 'free agent')} accepting offers; the next window closes in ${plural(hrs, 'hour')}`);
       }).catch(() => {}).then(done);
