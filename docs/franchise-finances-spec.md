@@ -1,7 +1,9 @@
 # Front Office Ledger — franchise finances spec
 
-**Status:** draft, not built (2026-10-24). Backlog: "Front Office Ledger" under
-§ 4 Nice to have.
+**Status:** v1 built 2026-10-24. Model: `nbn-api/stats_build/finances.py`
+(pinned by `nbn-api/tests/test_finances.py`); page: `finances/index.html`.
+This file is the design record; where it and the code disagree, the code's
+constants are current.
 
 A fake, tongue-in-cheek P&L for every franchise: ticket sales, merch, media,
 payroll, a "luxury tax" bill, and a franchise valuation reconstructed over all
@@ -22,11 +24,14 @@ and to give NBN Today and Discord something to roast.
   The scale is only there to make the numbers easy to think about. These are
   display figures: the page says "Franchise figures. Not spendable." and they
   never appear next to a member's real balance.
-- **Milestones barely count.** Only an all-time top-10 pass (already detected
-  by `milestones.js`) gives a one-game merch bump. Round-number totals are too
-  common to matter.
-- **Star power is All-Star count**, from `players/player_awards.csv`, because it
-  covers every season. OVR only exists from 2025-09.
+- **Milestones barely count.** Only an all-time top-10 pass would give a merch
+  bump; round-number totals are too common to matter. Not in v1 (the detection
+  lives in `milestones.js`, which Python can't call).
+- **Star power is All-NBN selections** (1st/2nd/3rd team, 15 a season). The
+  plan was All-Star count, but `awards-history.json` has no All-Star list for
+  25-26, and All-NBN is named for every season. OVR only exists from 2025-09.
+  A season with none named yet borrows the latest list, counted for whoever
+  those players play for now.
 - **Stream bonus stays**, though it only exists from 26-27 (see below).
 
 ## Principles
@@ -71,10 +76,10 @@ All amounts in NB¥. Starting constants, to be tuned against the sanity checks.
 
 | Term | Value |
 |---|---|
-| Base | 0.60 |
+| Base | 0.70 (tuned up from 0.60, which gave 1-3% sellouts) |
 | Form | up to +0.25, linear in the home team's win % over its previous 10 games (season-to-date before game 10; the season opener uses last season's final win %) |
-| Home stars | +0.05 per All-Star on the home team that season, max 2 |
-| Visiting stars | +0.02 per All-Star on the visitors, max 2 |
+| Home stars | +0.05 per All-NBN player on the home team that season, max 2 |
+| Visiting stars | +0.02 per All-NBN player on the visitors, max 2 |
 | Bandwagon | last season's finish: title +0.10, Finals loss +0.07, conf finals +0.04, second round +0.02. Fades: full the next season, half the one after, a quarter the third |
 | Noise | ±0.04, seeded on the game |
 
@@ -91,8 +96,8 @@ the page should say so.
 
 ### 3. Merch
 
-Flat base ¥40M, plus: ¥8M per All-Star, ¥15M for an MVP, ¥6M for a ROTY,
-¥30M for a title. ¥2M per all-time top-10 pass (the only milestone that counts).
+Flat base ¥40M, plus: ¥10M per All-NBN player, ¥15M for an MVP, ¥6M for a
+ROTY, ¥30M for a title.
 
 ### 4. Media
 
@@ -112,14 +117,20 @@ One-time ¥100M in the title season.
 
 | Line | Source | Label |
 |---|---|---|
-| Payroll | mean daily `salary` in `cap-history.jsonl` over the season | "Payroll" |
+| Payroll | mean of `payroll` over the season's in-season days in `cap-history.jsonl` | "Payroll" |
 | "Luxury tax" | a fake bill off `apron_position`: none / over the tax / first apron / second apron, rising steeply | "Luxury tax (allegedly)" |
 | Dead money | the team's deadcap for that season | "Paid to not employ him" |
 | Arena ops | ¥0.8M per home game | "Hot dogs, mostly" |
 
-Check whether `cap-history.jsonl`'s `salary` already includes dead money
-before adding the dead money line, so it isn't counted twice. If it does, show
-dead money as a breakdown of payroll rather than a separate expense.
+**Payroll is money, not cap.** `salary` and `salary_ex_holds` are cap
+figures and carry placeholders nobody is paid: UFA/RFA holds, draft-rights
+holds, § 3.15 offer-sheet holds and the § 2.1a Empty Roster Charge. Cap history
+rows carry a separate `payroll` (from 2026-10-24; `_payroll` in
+`routers/cap_history.py`): rostered contracts, skipping UFA/RFA-tagged seasons
+and draft rights, plus dead cap. Older rows fall back to `salary_ex_holds -
+empty_roster_charge`, which matched `payroll` for all 30 teams on the day it
+was added. Never read `salary`. Dead money is part of payroll and shown as a
+breakdown line, not a second expense.
 
 Seasons before payroll data show expenses as **"Records lost in the 2025 Front
 Office Fire."** Profit is blank for those seasons, not zero.
@@ -138,6 +149,13 @@ Office Fire."** Profit is blank for those seasons, not zero.
   - `brand = 1 + 0.04 × titles in the last 6 seasons`.
 - Revenue here **excludes the NBNTV bonus**, so the 26-27 data step can't move
   valuations. It still shows in that season's P&L.
+- **A season in progress** is projected: its regular-season gate to 41 home
+  games, and for valuation only, every team gets the league-average postseason
+  of the last finished season (gate, title bonus and title merch). Without that
+  the calendar read as a league-wide crash every October.
+- A title counts in the trailing revenue for three seasons, so a champion's
+  value drops when that season leaves the window (CLE, 26-27). That is the
+  model working, not a bug.
 
 ## Outputs
 
@@ -173,19 +191,18 @@ Pinned as a test once built:
 - Fill-rate distribution looks real: some sellouts every season, few games at
   the 0.45 floor.
 
-## Where it would live
+## Where it lives
 
-- **Season figures**: a new step in `nbn-api/stats_build/` writing
-  `data/franchise-finances.csv` — one row per team per season, each line item,
-  profit (blank before 26-27), valuation, and the model version. Built from
-  files the pipeline already reads, plus `cap-history.jsonl` and the schedule.
-  Needs a `smoke_test.py` schema entry; `link-public.sh` publishes it.
-- **Per-game attendance**: `data/franchise-attendance.csv` from the same step
-  (one row per game), or computed in `GET /api/boxscores` from the same
-  function. Prefer the CSV, so the box score and the season gate can never
-  disagree.
-- **Page**: `finances/index.html`, plus an OG entry in `build/og_tags.py` and a
-  `NAV_SECTIONS` row in `nav.js`. The team tab goes in `teams/team.js`.
+- **Model**: `nbn-api/stats_build/finances.py`, run by `build/build.sh` as its
+  own non-fatal step after either engine (not inside `pipeline.build`, which the
+  port harness diffs against R). Writes `data/franchise-finances.csv` (one row
+  per team per season) and `data/franchise-attendance.csv` (one row per game),
+  under `derived/`. `python3 -m stats_build.finances --dry-run` prints the
+  valuations and spread.
+- **Page**: `finances/index.html`, in the Front Office nav section.
+- **Not built yet**: attendance on box scores (the CSV is ready; one join in
+  the box score page), the team page Finances tab, owners' value added,
+  headlines.
 
 ## Open
 
