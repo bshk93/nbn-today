@@ -5795,8 +5795,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   // lands, in whichever view is up, so an edit in progress isn't re-rendered.
   let injuries = {};
   fetch('/api/injuries').then(r => r.ok ? r.json() : null).then(v => {
-    if (!v || !v.players) return;
-    injuries = v.players;
+    if (!v || !Array.isArray(v.players)) return;
+    injuries = Object.fromEntries(v.players.map(p => [p.slug, p]));
     wrapEl.querySelectorAll('.ts-name[data-slug]').forEach(td => addInjuryBadge(td, td.dataset.slug));
   }).catch(() => {});
   function addInjuryBadge(td, slug) {
