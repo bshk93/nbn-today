@@ -5705,41 +5705,64 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
   attachBtn(picks);
 }
 
-function primaryPosFromAttrs(attrSnap) {
-  const pos = attrSnap && attrSnap['2k_pos'];
-  return (Array.isArray(pos) && pos.length) ? pos[0] : '—';
-}
-
+// Positions, mirroring "Positions" in nbn-api routers/players.py. A
+// player's primary is 2K's as it was when frozen (bio.position), and stays
+// put through 2K re-ratings until he changes teams. Without a frozen record
+// yet, 2K's today stands in.
 const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
+function frozenPos(bio) {
+  const rec = bio && bio.position;
+  return rec && POSITION_ORDER.includes(rec.primary) ? rec : null;
+}
+function twoKPos(attrSnap) {
+  const pos = attrSnap && attrSnap['2k_pos'];
+  return Array.isArray(pos) ? pos.filter(p => POSITION_ORDER.includes(p)) : [];
+}
+function primaryPos(bio, attrSnap) {
+  const rec = frozenPos(bio);
+  if (rec) return rec.primary;
+  return twoKPos(attrSnap)[0] || '—';
+}
 function secondaryPosOptions(primary) {
   const i = POSITION_ORDER.indexOf(primary);
   if (i < 0) return [];
   return [POSITION_ORDER[i - 1], POSITION_ORDER[i + 1]].filter(Boolean);
 }
-// § 2.3's one step. A team may still pick a secondary outside it: there are
-// exceptions, so it is saved, flagged, and the streamer OKs it by setting it
-// in 2K. Mirrors secondary_is_legal in nbn-api routers/players.py.
-function secondaryIsLegal(primary, sec) {
-  return !sec || sec === 'none' || secondaryPosOptions(primary).includes(sec);
+// § 2.3's pool: one step from the primary, or any position 2K has ever
+// listed for him (`2k_pos_seen`, from /api/attributes/current). Mirrors
+// secondary_pool.
+function secondaryPool(bio, attrSnap) {
+  const primary = primaryPos(bio, attrSnap);
+  if (!POSITION_ORDER.includes(primary)) return [];
+  const ok = new Set(secondaryPosOptions(primary));
+  ((attrSnap && attrSnap['2k_pos_seen']) || twoKPos(attrSnap)).forEach(p => ok.add(p));
+  const rec = frozenPos(bio);
+  if (rec && POSITION_ORDER.includes(rec.secondary)) ok.add(rec.secondary);
+  ok.delete(primary);
+  return POSITION_ORDER.filter(p => ok.has(p));
+}
+// A team may still pick a secondary outside the pool: there are exceptions,
+// so it is saved, flagged, and the streamer OKs it by setting it in 2K.
+function secondaryIsLegal(bio, attrSnap, sec) {
+  return !sec || sec === 'none' || secondaryPool(bio, attrSnap).includes(sec);
 }
 
-// 2K's own secondary position, second in the scrape's 2k_pos, but only when
-// it is one step from the primary (§ 2.3). One that isn't is not allowed, and
-// the player has no secondary until his team gives him one.
-function twoKSecondaryFromAttrs(attrSnap) {
-  const pos = attrSnap && attrSnap['2k_pos'];
-  if (!Array.isArray(pos) || pos.length < 2) return null;
-  return secondaryPosOptions(pos[0]).includes(pos[1]) ? pos[1] : null;
+// The secondary while the team hasn't chosen: the one frozen with his
+// primary, or 2K's today if nothing is frozen. Mirrors default_secondary.
+function defaultSecondary(bio, attrSnap) {
+  const rec = frozenPos(bio);
+  if (rec) return POSITION_ORDER.includes(rec.secondary) && rec.secondary !== rec.primary ? rec.secondary : null;
+  const pos = twoKPos(attrSnap);
+  return pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
 }
 
 // The secondary a player actually has. bio.secondary_pos null: the team
-// hasn't chosen, so 2K's stands (if § 2.3 allows it). 'none': the team
-// removed it. A position: the team's pick. Mirrors effective_secondary in
-// nbn-api routers/players.py.
+// hasn't chosen, so the default stands. 'none': the team removed it. A
+// position: the team's pick. Mirrors effective_secondary.
 function effectiveSecondary(bio, attrSnap) {
   const sec = bio && bio.secondary_pos;
   if (sec === 'none') return null;
-  return sec || twoKSecondaryFromAttrs(attrSnap);
+  return sec || defaultSecondary(bio, attrSnap);
 }
 
 // Roster Settings — jersey #, secondary position (both from player-bios.json,
@@ -5881,13 +5904,13 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   // Mirrors starter_positions / counted_secondary in nbn-api
   // routers/coaching_settings.py.
   function startPositions(slug) {
-    const primary = primaryPosFromAttrs(attributesData[slug]);
+    const primary = primaryPos(biosData[slug], attributesData[slug]);
     const i = POSITION_ORDER.indexOf(primary);
     if (i < 0) return null;
     const ok = new Set([POSITION_ORDER[i - 1], primary, POSITION_ORDER[i + 1]].filter(Boolean));
     const secondary = effectiveSecondary(biosData[slug], attributesData[slug]);
     const exc = posException(slug);
-    if (secondary && (secondaryIsLegal(primary, secondary) || (exc && exc.approved && exc.secondary === secondary))) {
+    if (secondary && (secondaryIsLegal(biosData[slug], attributesData[slug], secondary) || (exc && exc.approved && exc.secondary === secondary))) {
       ok.add(secondary);
     }
     return POSITION_ORDER.filter(p => ok.has(p));
@@ -6027,7 +6050,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
       nameCell(tr, row, bio);
 
-      const primary = primaryPosFromAttrs(attributesData[row.SLUG]);
+      const primary = primaryPos(bio, attributesData[row.SLUG]);
       const posTd = tr.insertCell();
       posTd.className = 'ts-pos';
       posTd.textContent = primary;
@@ -6036,15 +6059,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         const sec = document.createElement('span');
         sec.className = 'ts-pos2';
         sec.textContent = ` / ${secondary}`;
-        if (!bio.secondary_pos) sec.title = "2K's secondary position";
+        if (!bio.secondary_pos) sec.title = "2K's secondary position when his positions were set";
         posTd.appendChild(sec);
-        if (!secondaryIsLegal(primary, secondary)) {
+        if (!secondaryIsLegal(bio, attributesData[row.SLUG], secondary)) {
           const exc = posException(row.SLUG);
           const ok = exc && exc.approved && exc.secondary === secondary;
           sec.classList.add('ts-pos2-illegal');
           sec.textContent += ' ⚠';
-          sec.title = ok ? `Outside § 2.3 (one step from ${primary}). A streamer OK'd it.`
-            : `Outside § 2.3 (one step from ${primary}). It counts once a streamer OKs it.`;
+          sec.title = ok ? `Outside § 2.3 (one step from ${primary}, or a position 2K has listed). A streamer OK'd it.`
+            : `Outside § 2.3 (one step from ${primary}, or a position 2K has listed). It counts once a streamer OKs it.`;
           if (ok) sec.classList.add('ok');
         }
       }
@@ -6204,20 +6227,20 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
     function refreshSecNote() {
       const lines = fields.map(f => {
-        const sec = f.secSel.value || twoKSecondaryFromAttrs(attributesData[f.slug]);
-        if (secondaryIsLegal(f.primary, sec)) return null;
+        const sec = f.secSel.value || defaultSecondary(biosData[f.slug], attributesData[f.slug]);
+        if (secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec)) return null;
         const name = displayNameFromBio((biosData[f.slug] || {}).name || '') || f.slug;
         const exc = posException(f.slug);
         const ok = exc && exc.approved && exc.secondary === sec;
         return `${name} at ${sec}${ok ? " (OK'd)" : ''}`;
       }).filter(Boolean);
       fields.forEach(f => {
-        const sec = f.secSel.value || twoKSecondaryFromAttrs(attributesData[f.slug]);
-        f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(f.primary, sec));
+        const sec = f.secSel.value || defaultSecondary(biosData[f.slug], attributesData[f.slug]);
+        f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec));
       });
       secNote.hidden = !lines.length;
       secNote.textContent = lines.length
-        ? `⚠ Outside § 2.3, which allows one step from the primary: ${lines.join(', ')}. `
+        ? `⚠ Outside § 2.3, which allows one step from the primary or a position 2K has listed: ${lines.join(', ')}. `
           + 'The streamer has to OK an exception before it counts, including for starting.'
         : '';
     }
@@ -6266,8 +6289,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         OVR: currentOvr ? currentOvr[row.SLUG] : '',
         _posList: startPositions(row.SLUG) || (biosData[row.SLUG] || {}).pos || [],
         // startPositions is in PG→C order, not primary first.
-        _primary: POSITION_ORDER.includes(primaryPosFromAttrs(attributesData[row.SLUG]))
-          ? primaryPosFromAttrs(attributesData[row.SLUG]) : undefined,
+        _primary: POSITION_ORDER.includes(primaryPos(biosData[row.SLUG], attributesData[row.SLUG]))
+          ? primaryPos(biosData[row.SLUG], attributesData[row.SLUG]) : undefined,
       }));
       const five = computeStartingFive(players);
       const startedSlugs = new Set(five.filter(Boolean).map(p => p.slug));
@@ -6352,9 +6375,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       if (CS && i === startLine) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
       const bio = biosData[row.SLUG] || {};
       const jersey = bio.jersey_number ?? '';
-      // A pick that matches 2K's, or 'none' when 2K has none, is the same as
-      // leaving it to 2K, and shows as that.
-      const twoKSecRow = twoKSecondaryFromAttrs(attributesData[row.SLUG]);
+      // A pick that matches the default, or 'none' when there is none, is the
+      // same as leaving it, and shows as that.
+      const twoKSecRow = defaultSecondary(bio, attributesData[row.SLUG]);
       const secondaryPos = (bio.secondary_pos === twoKSecRow || (bio.secondary_pos === 'none' && !twoKSecRow))
         ? '' : (bio.secondary_pos || '');
 
@@ -6396,13 +6419,13 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       posTd.className = 'ts-pos';
       const posWrap = document.createElement('span');
       posWrap.className = 'ts-pos-edit';
-      posWrap.appendChild(document.createTextNode(primaryPosFromAttrs(attributesData[row.SLUG])));
-      // Rulebook § 2.3: the secondary is one step either side of the 2K
-      // primary (a PG only SG, a C only PF). Any other position can still be
-      // picked, marked ⚠: it is an exception the streamer has to OK.
-      // Blank keeps 2K's own secondary; 'none' removes it.
-      const rowPrimary = primaryPosFromAttrs(attributesData[row.SLUG]);
-      const eligiblePos = secondaryPosOptions(rowPrimary);
+      const rowPrimary = primaryPos(bio, attributesData[row.SLUG]);
+      posWrap.appendChild(document.createTextNode(rowPrimary));
+      // Rulebook § 2.3: the secondary is one step either side of the primary,
+      // or any position 2K has listed for him. Any other position can still
+      // be picked, marked ⚠: it is an exception the streamer has to OK.
+      // Blank keeps the default secondary; 'none' removes it.
+      const eligiblePos = secondaryPool(bio, attributesData[row.SLUG]);
       const otherPos = POSITION_ORDER.includes(rowPrimary)
         ? POSITION_ORDER.filter(p => p !== rowPrimary && !eligiblePos.includes(p)) : [];
       const twoKSec = twoKSecRow;
