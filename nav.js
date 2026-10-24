@@ -441,8 +441,15 @@ document.addEventListener('keydown', function (e) {
 function _initNav() {
   const nav = document.querySelector('.nav');
   if (!nav) return;
+  // A page that brings no back link of its own gets the name of its sidebar
+  // section as the line above its title ("SEASON"); the sidebar is how you
+  // move around, so a bare "← Home" said nothing. A page outside the nav
+  // keeps "← Home".
   if (!nav.children.length && !nav.textContent.trim() && !nav.hasAttribute('data-no-home')) {
-    nav.innerHTML = '<a href="/">← Home</a>';
+    const section = _activeSectionLabel();
+    nav.innerHTML = section
+      ? `<span class="nav-kicker">${section}</span>`
+      : '<a href="/">← Home</a>';
   }
   if (_sidebarEnabled() && !nav.querySelector('.nav-menu-btn')) nav.prepend(_buildMenuButton());
   if (!nav.querySelector('.nav-actions')) {
@@ -532,6 +539,13 @@ function _activeNavHref() {
     }
   }
   return best && best.href;
+}
+
+// The NAV_SECTIONS label of the section this page sits in, or null.
+function _activeSectionLabel() {
+  const href = _activeNavHref();
+  const s = href && NAV_SECTIONS.find(sec => sec.items.some(p => p.href === href));
+  return s ? s.label : null;
 }
 
 function _openGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }

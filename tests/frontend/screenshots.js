@@ -111,6 +111,11 @@ function findChrome() {
         } catch (e) {
           console.log(`  ${name}: ${e.message.split('\n')[0]}`);
         }
+        // Pages draw "Loading…" placeholders until their data is in; give
+        // them up to 10s more to clear, so a slow fetch isn't captured as
+        // a design change.
+        await page.waitForFunction(() => !/Loading(…|\.\.\.)/.test(document.body.innerText), { timeout: 10000 })
+          .catch(() => console.log(`  ${name}: still loading after 10s`));
         await new Promise(r => setTimeout(r, 1200));
         for (const t of themes) {
           await page.evaluate(id => document.documentElement.setAttribute('data-theme', id), THEMES[t] || t);

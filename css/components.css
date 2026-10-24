@@ -22,8 +22,19 @@
 
 /* ── Containers ─────────────────────────────────────────────────────────── */
 /* Separate from the older .page class, which 85 pages define their own way. */
-.ui-page  { max-width: var(--page-width); margin-inline: auto; }
-.ui-page--wide { max-width: var(--page-width-wide); margin-inline: auto; }
+.ui-page  { max-width: var(--page-width); }
+.ui-page--wide { max-width: var(--page-width-wide); }
+/* One left edge for every page. Pages used to centre their own width, so the
+   title sat at a different x on a 960px page than on a 1240px one and jumped
+   sideways between pages. Now every container starts where a centred wide
+   column would, whatever its own width: the same edge on every page, with a
+   narrow page's spare room on the right. Wider-than-wide pages (h2h) start
+   there too. :root:root outweighs the `.page { margin: 0 auto }` most pages
+   still carry in their own <style>, which loads after this file. */
+:root:root :is(.page, .page-wrap, .ui-page) {
+  margin-left: max(0px, calc((100% - var(--page-width-wide)) / 2));
+  margin-right: auto;
+}
 
 /* ── Page header ────────────────────────────────────────────────────────── */
 /*   <header class="ui-header">

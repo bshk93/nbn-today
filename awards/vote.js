@@ -20,9 +20,6 @@
 
     .page { max-width: 1060px; margin: 0 auto; }
 
-    .nav { margin-bottom: 1.75rem; font-size: 0.875rem; color: var(--text-muted); }
-    .nav a { color: var(--text-muted); }
-    .nav a:hover { color: var(--text-primary); }
 
     header { margin-bottom: 1.75rem; }
     header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
@@ -136,13 +133,13 @@
   `; document.head.appendChild(_s); }
 
   document.body.innerHTML = `
-    <div class="page">
+    <div class="page ui-page">
       <nav class="nav">
         <a href="/awards/">← Awards</a> ·
         <a href="/awards/${SEASON}/results/">View Results</a>
       </nav>
       <header>
-        <h1 id="page-title">${SEASON} Ballot</h1>
+        <h1 id="page-title" class="ui-title">${SEASON} Ballot</h1>
         <p id="page-sub">Loading…</p>
       </header>
       <div id="ballot-container">

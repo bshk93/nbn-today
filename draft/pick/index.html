@@ -35,6 +35,10 @@
       gap: 1rem;
       background: var(--bg-page);
     }
+    /* A toolbar, not the line above a title: keep the body face that the
+       shared .nav rule (display caps) would otherwise give it. It carries
+       .nav only so nav.js adds the menu button and Sign in. */
+    .page-header.nav { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; text-transform: none; margin-bottom: 0; }
     .page-header a { color: var(--text-muted); font-size: 0.8rem; text-decoration: none; }
     .page-header a:hover { color: var(--text-primary); }
     .page-header h1 { font-size: 0.95rem; font-weight: 700; margin: 0; color: var(--text-primary); flex: 1; }

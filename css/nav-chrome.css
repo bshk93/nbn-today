@@ -15,7 +15,17 @@
 @import url("/css/sidebar.css");
 
 /* Nav */
-.nav { margin-bottom: 1.75rem; font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.nav { margin-bottom: var(--space-4); font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+/* The line above the title, in the display face: the section a page sits in
+   ("SEASON", from NAV_SECTIONS — _initNav), or the page's own back link or
+   breadcrumb ("← TEAMS", "HOME / PLAYERS / STEPHEN CURRY"). Same type on
+   every page. The menu button and Sign in keep the body face. */
+.nav {
+  font-family: var(--font-display); font-size: var(--text-base); font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.nav :is(.nav-actions, .nav-menu-btn) { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; text-transform: none; }
+.nav-kicker { color: var(--accent-light); }
 /* flex-wrap: a long breadcrumb plus the action buttons (☰, search, inbox,
    Sign in) don't fit one phone-width row; the buttons drop to their own line
    and stay right-aligned rather than widening the page. */
