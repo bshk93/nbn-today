@@ -338,6 +338,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
   .ts-name { font-weight: 600; }
   .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
+  .ts-name .ts-injury { margin-left: 0.4rem; font-weight: 600; white-space: nowrap; }
   .ts-2w-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--gold); }
   .ts-illegal-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--danger-light); }
   .ts-table tbody tr.ts-illegal td { background: var(--danger-bg); }
@@ -5788,6 +5789,26 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   // slug -> {secondary, approved} for a secondary outside § 2.3's one step.
   const posException = slug => (posChecks.exceptions || {})[slug] || null;
   const posWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.changed);
+
+  // Who is on the current injury report (GET /api/injuries), so a coach
+  // setting minutes sees it in the table. Drawn into the name cells when it
+  // lands, in whichever view is up, so an edit in progress isn't re-rendered.
+  let injuries = {};
+  fetch('/api/injuries').then(r => r.ok ? r.json() : null).then(v => {
+    if (!v || !v.players) return;
+    injuries = v.players;
+    wrapEl.querySelectorAll('.ts-name[data-slug]').forEach(td => addInjuryBadge(td, td.dataset.slug));
+  }).catch(() => {});
+  function addInjuryBadge(td, slug) {
+    const inj = injuries[slug];
+    if (!inj || td.querySelector('.ts-injury')) return;
+    const tag = document.createElement('span');
+    tag.className = `ui-badge ts-injury ${/^out$/i.test(inj.status || '') ? 'ui-badge--danger' : 'ui-badge--warning'}`;
+    tag.textContent = inj.duration ? `${inj.status} · ${inj.duration}` : (inj.status || 'Injured');
+    const ovrNote = inj.ovr ? ` Playing at ${inj.ovr} OVR${inj.ovr_delta ? ` (${inj.ovr_delta > 0 ? '+' : ''}${inj.ovr_delta})` : ''}.` : '';
+    attachTooltip(tag, `${inj.injury || 'Injured'}, ${inj.duration || 'duration unknown'}.${ovrNote}`);
+    td.appendChild(tag);
+  }
   const jerseyWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.jersey_changed);
 
   // A slot is which row a player is in, not a field they pick — table order
@@ -5943,6 +5964,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       td.appendChild(inline);
     }
     if (bio.type === 'two-way') td.appendChild(twoWayGamesBadge(row.SLUG, '2W · '));
+    td.dataset.slug = row.SLUG;
+    addInjuryBadge(td, row.SLUG);
     const ovrTd = tr.insertCell();
     ovrTd.className = 'ts-ovr';
     ovrTd.textContent = ovr || '—';
