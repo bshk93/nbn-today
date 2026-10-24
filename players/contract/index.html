@@ -25,11 +25,8 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-    .cap-ufa        td { background: hsl(45,  35%, 14%); }
-    .cap-rfa        td { background: hsl(25,  35%, 14%); }
-    .cap-player-opt td { background: hsl(120, 30%, 13%); }
-    .cap-team-opt   td { background: hsl(210, 35%, 14%); }
     .cap-non-gtd    td { background: var(--bg-subtle); }
+    :is(.cap-ufa, .cap-rfa, .cap-player-opt, .cap-team-opt) td { background: color-mix(in srgb, var(--cap-c) 10%, transparent); }
     .dead-cap-row   td { background: hsl(0, 25%, 13%); color: var(--danger); }
     .dead-cap-row td.hold-label { color: var(--danger); opacity: 0.7; }
 

@@ -28,22 +28,6 @@
     .ss-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
     .ss-note { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5); }
 
-    /* Leader cards: the same shape as Career Leaders' and Single-Game Highs'. */
-    .ss-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
-    .ss-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s; }
-    .ss-card:hover { border-color: var(--text-dim); }
-    .ss-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .ss-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
-    .ss-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-    .ss-card-abbr { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); }
-    .ss-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
-    .ss-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
-    .ss-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
-    .ss-card-head + .ss-row .ss-row-name { color: var(--text-primary); font-weight: 600; }
-    .ss-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
-    .ss-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
-    .ss-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
-    .ss-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
 
     /* The table. */
     .ss-board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
@@ -65,9 +49,6 @@
 
     @media (max-width: 480px) {
       .ss-board-head .ui-input { width: 100%; }
-      .ss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-      .ss-card { padding: var(--space-2) var(--space-3) var(--space-1); }
-      .ss-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
     }
   </style>
 </head>
@@ -100,7 +81,7 @@
       </div>
     </div>
     <p class="ss-note" id="note"></p>
-    <div class="ss-grid" id="grid"><div id="status">Loading…</div></div>
+    <div class="ui-leaders" id="grid"><div id="status">Loading…</div></div>
     <div class="ss-board-head">
       <h2 class="ui-section-title" id="board-title"></h2>
       <input class="ui-input" id="f-search" type="search" placeholder="Find a player" aria-label="Find a player">
@@ -446,25 +427,17 @@
       grid.innerHTML = '';
       CARDS().forEach(card => {
         const list = leaders(rows, card).slice(0, 5);
-        const top = list.length ? list[0][card.key] : 0;
-        const bottom = list.length ? list[list.length - 1][card.key] : 0;
-        // Bars run from zero, except for lower-is-better cards, which have no
-        // natural zero: the best gets a full bar and fifth place the shortest.
-        const width = v => card.asc
-          ? (top ? Math.max(8, 100 - (v - top) / Math.max(bottom - top, 1e-9) * 60) : 0)
-          : (top > 0 ? Math.max(0, v / top * 100) : 0);
         const el = document.createElement('button');
-        el.className = 'ss-card';
+        el.className = 'ui-leader';
         el.setAttribute('aria-pressed', card.key === state.sort);
-        el.innerHTML = `<div class="ss-card-head"><span class="ss-card-name">${esc(card.name)}</span>`
-          + `<span class="ss-card-abbr">${esc(card.abbr)}</span></div>`
-          + (list.length ? list.map((r, i) => `<div class="ss-row">`
-              + `<span class="ss-row-rank">${i + 1}</span>`
-              + `<span class="ss-row-name">${esc(rowLabel(r))}</span>`
-              + `<span class="ss-row-val">${esc(cellText(card.key, r))}</span>`
-              + `<span></span><span class="ss-row-bar"><span style="width:${width(r[card.key]).toFixed(1)}%"></span></span>`
+        el.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${esc(card.name)}</span>`
+          + `<span class="ui-leader-note">${esc(card.abbr)}</span></div>`
+          + (list.length ? list.map((r, i) => `<div class="ui-leader-row">`
+              + `<span class="ui-rank">${i + 1}</span>`
+              + `<span>${esc(rowLabel(r))}</span>`
+              + `<span>${esc(cellText(card.key, r))}</span>`
               + `</div>`).join('')
-            : '<div class="ss-card-empty">Nobody qualifies.</div>');
+            : '<div class="ui-leader-empty">Nobody qualifies.</div>');
         el.addEventListener('click', () => {
           state.sort = card.key; state.dir = card.asc ? 1 : -1; state.shown = PAGE;
           render();

@@ -38,10 +38,6 @@
       color: var(--text-muted); margin-bottom: 0.5rem;
     }
 
-    .table-wrap {
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow-x: auto;
-    }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
 
@@ -314,7 +310,7 @@
     section.appendChild(buildPodium(data));
 
     const wrap = document.createElement('div');
-    wrap.className = 'table-wrap';
+    wrap.className = 'ui-table-wrap table-wrap';
     if (data.length === 0) {
       const msg = document.createElement('div');
       msg.className = 'no-data';
@@ -337,7 +333,7 @@
     section.appendChild(h2);
 
     const wrap = document.createElement('div');
-    wrap.className = 'table-wrap';
+    wrap.className = 'ui-table-wrap table-wrap';
     if (data.length === 0) {
       const msg = document.createElement('div');
       msg.className = 'no-data';

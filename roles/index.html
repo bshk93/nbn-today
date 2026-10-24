@@ -157,30 +157,6 @@
       gap: 0.35rem;
     }
 
-    .token-role-badge {
-      font-size: 0.68rem;
-      font-weight: 600;
-      padding: 0.15rem 0.5rem;
-      border-radius: var(--radius-sm);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .trb-admin   { background: var(--danger-bg); color: var(--danger-light); }
-    .trb-bod     { background: #3d2200; color: #fcd34d; }
-    .trb-rosters { background: var(--accent-panel-bg); color: var(--accent-light); }
-    .trb-curator { background: var(--purple-light-bg); color: var(--purple-light); }
-    .trb-stats   { background: #0d2a33; color: #5eead4; }
-    .trb-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
-    .trb-streamer { background: var(--purple-light-bg); color: var(--purple-light); }
-    .trb-fac        { background: #500724; color: #f9a8d4; }
-    .trb-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
-    .trb-agent      { background: #431407; color: #fdba74; }
-    .trb-poext      { background: #1e1b4b; color: #a5b4fc; }
-    .trb-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
-    .trb-trc        { background: #082f49; color: #7dd3fc; }
-    .trb-trc-head   { background: #082f49; color: #7dd3fc; border: 1px solid #0ea5e9; }
-    .trb-team    { background: var(--success-bg); color: var(--success-light); }
 
     .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
 
@@ -543,22 +519,13 @@
 </div>
 
 <script>
-function roleBadgeClass(role) {
-  if (role === 'admin')   return 'trb-admin';
-  if (role === 'bod')     return 'trb-bod';
-  if (role === 'rosters') return 'trb-rosters';
-  if (role === 'curator') return 'trb-curator';
-  if (role === 'stats')   return 'trb-stats';
-  if (role === 'bookie')  return 'trb-bookie';
-  if (role === 'streamer') return 'trb-streamer';
-  if (role === 'fac_head')   return 'trb-fac-head';
-  if (role === 'fac')        return 'trb-fac';
-  if (role === 'agent')      return 'trb-agent';
-  if (role === 'poext_head') return 'trb-poext-head';
-  if (role === 'poext')      return 'trb-poext';
-  if (role === 'trc_head')   return 'trb-trc-head';
-  if (role === 'trc')        return 'trb-trc';
-  return 'trb-team';
+// One chip for every role: a team's role carries its team colour on the
+// edge, the heads of things are accented, the rest are plain.
+const TEAM_ROLES = new Set('atl bkn bos cha chi cle dal den det gsw hou ind lac lal mem mia mil min nop nyk okc orl phi phx por sac sas tor uta was'.split(' '));
+function roleChipClass(r) {
+  if (TEAM_ROLES.has(r)) return 'ui-chip ui-chip--sm ui-chip--team';
+  if (r === 'admin' || r.endsWith('_head')) return 'ui-chip ui-chip--sm ui-chip--accent';
+  return 'ui-chip ui-chip--sm';
 }
 
 function renderMembers(members) {
@@ -579,7 +546,8 @@ function renderMembers(members) {
     wrap.className = 'token-roles';
     (m.roles || []).forEach(r => {
       const span = document.createElement('span');
-      span.className = `token-role-badge ${roleBadgeClass(r)}`;
+      span.className = roleChipClass(r);
+      if (TEAM_ROLES.has(r)) span.dataset.team = r.toUpperCase();
       span.textContent = r;
       wrap.appendChild(span);
     });
