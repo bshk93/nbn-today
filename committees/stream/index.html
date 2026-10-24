@@ -658,8 +658,10 @@
 
     // ── Positions ───────────────────────────────────────────────────
     //
-    // Secondary positions and jersey numbers a team set that aren't in 2K
-    // yet, plus players the team pinned to be checked before every game (2K resets positions when
+    // Positions and jersey numbers that aren't in 2K yet: a secondary the
+    // team set, or a primary 2K moved (ours is frozen until he changes teams,
+    // so a 2K re-rating can leave the game showing a different one), plus
+    // players the team pinned to be checked before every game (2K resets positions when
     // ratings update). The API works out what's due; this only draws it.
 
     const positionItems = team => (positionChecks[team] || {}).items || [];
@@ -670,17 +672,19 @@
       const b = document.createElement('b');
       b.textContent = nbnPlayerName(i.name);
       row.appendChild(b);
-      const primary = i.primary || 'no 2K position yet';
+      const primary = i.primary || 'no position yet';
       row.appendChild(document.createTextNode(i.secondary ? ` ${primary} / ${i.secondary} ` : ` ${primary}, no secondary `));
-      let why;
-      if (i.changed) why = i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`;
-      else if (i.locked) why = i.due ? '📌 check every game' : '📌 checked today';
+      const whys = [];
+      if (i.primary_changed) whys.push(`primary: 2K has ${i.primary_was}`);
+      if (i.changed) whys.push(i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`);
+      let why = whys.join('; ');
+      if (!why && i.locked) why = i.due ? '📌 check every game' : '📌 checked today';
       if (why) row.appendChild(span('pos-why', `(${why})`));
       // A secondary more than one step from the primary. Teams may ask for
       // one, since there are exceptions, but setting it is the streamer's OK.
       if (i.legal === false) {
         const flag = span('pos-illegal', '⚠ Not legal under § 2.3');
-        flag.title = `A ${primary}'s secondary should be one step away. There are exceptions: `
+        flag.title = `A ${primary}'s secondary should be one step away, or a position 2K has listed for him. There are exceptions: `
           + 'set it only if you OK it. Marking it entered is your OK.';
         row.appendChild(flag);
       }
@@ -886,13 +890,14 @@
           coachingSettings[team] = await r.json();
         }
         if (due.length) {
-          const seen = {}, jerseys = {};
+          const seen = {}, jerseys = {}, primaries = {};
           due.forEach(i => {
             seen[i.slug] = i.secondary;
+            if (i.primary) primaries[i.slug] = i.primary;
             if (i.jersey_changed) jerseys[i.slug] = i.jersey;
           });
           const r = await fetch(`/api/position-checks/${team}/confirm`, {
-            method: 'POST', headers, body: JSON.stringify({ seen, jerseys }),
+            method: 'POST', headers, body: JSON.stringify({ seen, jerseys, primaries }),
           });
           if (!r.ok) {
             const err = await r.json().catch(() => ({}));

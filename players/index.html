@@ -1329,13 +1329,21 @@
 
     const fName    = field('Name (Last, First)', 'name',       'text');
 
-    // Position multi-select pills
+    // Position multi-select pills. Only before his positions are frozen
+    // from 2K (bio.position): after that `pos` is derived from them, and the
+    // API ignores it on a bio edit.
     const posLbl = document.createElement('label');
     posLbl.textContent = 'Positions';
     const posPicker = document.createElement('div');
     posPicker.className = 'pos-picker';
     const selectedPos = new Set(Array.isArray(initial.pos) ? initial.pos : []);
-    ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
+    const posFrozen = !!(initial.position && initial.position.primary);
+    if (posFrozen) {
+      const rec = initial.position;
+      posPicker.textContent = `${rec.primary}${initial.pos && initial.pos[1] ? ' / ' + initial.pos[1] : ''}`
+        + ` (frozen from 2K on ${rec.set}; it changes only when he changes teams. The secondary is set in Roster Settings)`;
+    }
+    if (!posFrozen) ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'pos-pill' + (selectedPos.has(p) ? ' selected' : '');
@@ -1649,7 +1657,7 @@
         // normalize both here so a typed "Wallace,Keaton" can't land as-is and
         // read differently from every other bio on the page.
         name:        fName.value.trim().toUpperCase().replace(/\s*,\s*/, ', '),
-        pos:         [...selectedPos],
+        ...(posFrozen ? {} : { pos: [...selectedPos] }),
         dob:         fDob.value.trim(),
         college:     fCollege.value.trim(),
         country:     fCountry.value.trim(),
@@ -3006,7 +3014,7 @@
       const token = await getToken(); if (!token) return;
       const cur = biosData[slug] || {};
       bioFormEl = renderBioForm(
-        { name: cur.name || '', pos: cur.pos || [], dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },
+        { name: cur.name || '', pos: cur.pos || [], position: cur.position || null, dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },
         async (token, payload) => {
           const resp = await fetch(`/api/players/${slug}`, {
             method: 'PUT',

@@ -51,10 +51,12 @@ Positions:
   dropped and duplicates are removed (clean_positions). If nothing valid is
   left, the previous snapshot's positions are kept. A wrong value that *looks*
   valid ("SF / PF" typed for an SG) can't be told apart from a real update, so
-  every position change is printed, and a change of PRIMARY position is
-  checked against the player's secondary_pos: rulebook § 2.3 lets a secondary
-  sit only one step from the primary, so a new primary can quietly make a
-  team's existing choice illegal. Those are alerted.
+  every position change is printed. A new 2K primary does not change the
+  player's NBN primary, which is frozen until he changes teams (nbn-api
+  routers/players.py, "Positions"); when the two now differ it is printed,
+  and the streamer dashboard asks for ours to be set in 2K. Nothing is
+  alerted: every position 2K has listed stays in the secondary pool, so a
+  re-rating can't make a team's choice illegal.
 
 Storage format:
   player-attributes.json is keyed by NBN slug -> a LIST of snapshots
@@ -94,8 +96,7 @@ Alerting (--apply only):
     - a rostered player is newly unmatched (the team page will show no
       primary position for him). "Newly" is against the previous run's list,
       kept in SYNC_STATE_FILE, so a player 2kratings has no page for is
-      alerted once, not every day;
-    - a primary-position change breaks a player's secondary_pos.
+      alerted once, not every day.
   Exit status is 1 when the sync itself failed, so systemd records it.
 """
 import argparse
@@ -365,13 +366,6 @@ def match_player(slug, bio, last_snap, by_page, by_name):
     return None, None
 
 
-def secondary_still_legal(primary, secondary):
-    """Rulebook § 2.3, as _check_secondary_pos in nbn-api enforces it."""
-    if not secondary or primary not in POSITION_ORDER or secondary not in POSITION_ORDER:
-        return True
-    return abs(POSITION_ORDER.index(primary) - POSITION_ORDER.index(secondary)) == 1
-
-
 def post_alert(lines):
     if not lines:
         return
@@ -579,16 +573,13 @@ def main():
                     print(f"  BADGES LOST {slug}: {sorted(lost)}")
                 if retiered:
                     print(f"  BADGES RETIERED {slug}: {retiered}")
-        # Primary position decides which secondary positions are legal.
+        # Our primary is frozen, so a new 2K primary only means the streamer
+        # has one more thing to set in 2K.
         old_primary = (last.get("2k_pos") or [None])[0] if last else None
         new_primary = (entry["2k_pos"] or [None])[0]
-        if new_primary and old_primary != new_primary:
-            secondary = bios.get(slug, {}).get("secondary_pos")
-            if not secondary_still_legal(new_primary, secondary):
-                name = bios.get(slug, {}).get("name", slug)
-                alerts.append(f"{name} ({entry['team'] or 'FA'}): 2K primary is now {new_primary} "
-                              f"(was {old_primary or 'none'}), so his secondary position {secondary} is no "
-                              "longer legal under § 2.3. Check the change is real, then have the team reset it.")
+        ours = (bios.get(slug, {}).get("position") or {}).get("primary")
+        if new_primary and old_primary != new_primary and ours and ours != new_primary:
+            print(f"  2K PRIMARY {slug}: 2K now {new_primary}, NBN primary stays {ours}")
         history.append(entry)
         merged[slug] = history
         appended += 1
