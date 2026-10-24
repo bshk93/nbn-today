@@ -81,6 +81,7 @@ PAGES = {
  '/extensions/': (None, 'Contract extensions across NBN — who is eligible, who has signed and on what terms.'),
  '/free-agency/': (None, 'NBN free agency: the pool, open bidding windows and where your team’s offers stand.'),
  '/frivolities/': (None, 'Odd corners of the NBN data — charts, career earnings, and every trade regraded.'),
+ '/finances/': (None, 'Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.'),
  '/h2h/': (None, 'All-time head-to-head records between every NBN team and every owner.'),
  '/hof/': (None, 'NBN Hall of Fame scores, rings and career totals for the league’s best players.'),
  '/injuries/': (None, 'Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.'),

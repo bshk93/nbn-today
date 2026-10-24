@@ -1382,6 +1382,7 @@ const NAV_SECTIONS = [
     { title: 'Transactions', href: '/transactions', icon: 'doc-lines' },
     { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
     { title: 'Cap Summary', href: '/cap-summary/', icon: 'money' },
+    { title: 'Front Office Ledger', href: '/finances/', icon: 'line-chart', keywords: ['finances', 'franchise value', 'attendance', 'profit', 'revenue'] },
   ] },
   { label: 'History', icon: 'trophy', items: [
     { title: 'Season Summary', href: '/season-summary', icon: 'scroll' },
