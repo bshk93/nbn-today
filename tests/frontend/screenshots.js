@@ -23,6 +23,7 @@
 //   --only teams           just pages whose name or path matches
 //   --themes dark,light    themes to capture (default: dark,light,team-bos)
 //   --viewports phone      desk and/or phone (default: both)
+//   --all                  every page in build/og_tags.py instead of the list below
 //
 // Themes are applied by setting <html data-theme> after load, which skips the
 // unlock check theme-boot.js does — a screenshot needs no NB¥.
@@ -43,7 +44,7 @@ const PAGES = [
   ['highs',       '/stats/highs/'],
   ['boxscores',   '/boxscores/'],
   ['calendar',    '/calendar/'],
-  ['preview',     '/preview/?away=NYK&home=BOS'],
+  ['preview',     '/preview/?away=NYK&home=BOS&date=2026-10-23'],
   ['news',        '/news/'],
   ['hof',         '/hof/'],
   ['draft',       '/draft/'],
@@ -90,7 +91,14 @@ function findChrome() {
   const only = arg('only', null);
   const themes = arg('themes', 'dark,light,team-bos').split(',');
   const viewports = arg('viewports', 'desk,phone').split(',');
-  const pages = PAGES.filter(([name, p]) => !only || name.includes(only) || p.includes(only));
+  // --all: every page build/og_tags.py knows (~140), not just the fixed list.
+  // For a sweep before a PR that changes shared CSS, where the fixed list
+  // has missed pages that carry their own markup.
+  const list = process.argv.includes('--all')
+    ? [...fs.readFileSync(path.join(__dirname, '../../build/og_tags.py'), 'utf8').matchAll(/^ '(\/[^']*)':/gm)]
+        .map(m => [m[1].replace(/^\/|\/$|\.html$/g, '').replace(/\//g, '_') || 'home', m[1]])
+    : PAGES;
+  const pages = list.filter(([name, p]) => !only || name.includes(only) || p.includes(only));
   fs.mkdirSync(out, { recursive: true });
 
   const browser = await puppeteer.launch({
