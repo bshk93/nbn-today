@@ -5,6 +5,10 @@
      data-sidebar="open" | "rail"  — docked, at >= 900px. theme-boot.js sets it
                                      in <head>, so the body's margin is
                                      reserved before the sidebar is drawn.
+     .sb-peek                      — a rail expanded over the page while the
+                                     mouse is on it (hover screens only). It
+                                     draws as open but keeps the rail's margin,
+                                     so the page doesn't move.
      .sb-drawer-open               — below 900px the sidebar is an overlay
                                      drawer, hidden until the menu button opens it.
      data-no-sidebar               — a page that opts out (no data-sidebar). */
@@ -284,28 +288,37 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   html[data-sidebar="rail"] body { margin-left: var(--sb-rail-w); }
 
   /* Rail: icons only — the header icons; labels go. */
-  html[data-sidebar="rail"] .sidebar { width: var(--sb-rail-w); }
-  html[data-sidebar="rail"] .sidebar .sb-label { display: none; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sidebar { width: var(--sb-rail-w); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sidebar .sb-label { display: none; }
   /* Rail: the logo sits over the expand button, both centred. */
-  html[data-sidebar="rail"] .sb-head { flex-direction: column; gap: 0.35rem; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-head .sb-collapse { margin-left: 0; }
-  html[data-sidebar="rail"] .sb-search { justify-content: center; margin-inline: 0.5rem; padding-inline: 0; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-head { flex-direction: column; gap: 0.35rem; padding-inline: 0; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-head .sb-collapse { margin-left: 0; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-search { justify-content: center; margin-inline: 0.5rem; padding-inline: 0; }
   /* Rail: each section is its header icon (click opens the sidebar on it), with
      its rows' total on the corner; the rows themselves are hidden. */
-  html[data-sidebar="rail"] .sb-items { display: none; }
-  html[data-sidebar="rail"] .sb-group-hdr { position: relative; justify-content: center; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-group-chev { display: none; }
-  html[data-sidebar="rail"] .sb-group-hdr .ni { width: 1.35rem; height: 1.35rem; }
-  html[data-sidebar="rail"] .sb-group.holds-active > .sb-group-hdr,
-  html[data-sidebar="rail"] .sb-teams-btn.holds-active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
-  html[data-sidebar="rail"] .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
-  html[data-sidebar="rail"] .sb-group .sb-group-live:not([hidden]) { display: block; position: absolute; top: 0.2rem; left: 0.45rem; }
-  html[data-sidebar="rail"] .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
-  html[data-sidebar="rail"] .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-items { display: none; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group-hdr { position: relative; justify-content: center; padding-inline: 0; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group-chev { display: none; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group-hdr .ni { width: 1.35rem; height: 1.35rem; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group.holds-active > .sb-group-hdr,
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-teams-btn.holds-active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group .sb-group-live:not([hidden]) { display: block; position: absolute; top: 0.2rem; left: 0.45rem; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
   /* The account block shrinks to its avatar and its menu opens to the right. */
-  html[data-sidebar="rail"] .sb-foot { padding-inline: 0.35rem; }
-  html[data-sidebar="rail"] .sb-acct-btn { justify-content: center; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-foot { padding-inline: 0.35rem; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-acct-btn { justify-content: center; padding-inline: 0; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
+
+  /* Peek: the rail expanded over the page (nav.js _initSidebarPeek), lifted
+     off it by a shadow. With a mouse the keep-open button shows only then —
+     hovering is how you reach it; a touch screen keeps it in the rail. */
+  .sidebar { transition: width 0.15s ease, box-shadow 0.15s ease; }
+  html.sb-peek .sidebar { box-shadow: var(--shadow-overlay); }
+}
+@media (min-width: 900px) and (hover: hover) {
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-collapse { display: none; }
 }
 
 /* ── Drawer ─────────────────────────────────────────────────────────────── */
