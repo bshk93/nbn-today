@@ -185,7 +185,6 @@
   <div class="mkt-summary" id="market-summary">
     <div class="mkt-summary-loading">Loading market summary…</div>
   </div>
-  <div id="daily-moves"></div>
 
   <div class="tabs ui-tabs" role="tablist">
     <button class="tab-btn ui-tab active" onclick="switchTab('market', this)">Market</button>
@@ -292,7 +291,6 @@
 </div>
 
 <script src="/nav.js"></script>
-<script src="/invest/daily-moves.js"></script>
 <script>
 const API = '/api';
 const TOKEN_KEY = 'nbn_token';
@@ -323,7 +321,7 @@ let myBalance   = 0;
 
 // Market summary state
 const priceHistoriesCache = {};
-let moverWindow   = 20;
+let moverWindow   = 1;
 let moversLoading = false;
 
 // Per-team Chart.js instances for market table expansions
@@ -416,27 +414,6 @@ async function init() {
   }
 
   await loadAll();
-  loadDailyMoves();
-}
-
-// What every team moved on each game day (invest/daily-moves.js). Price only
-// changes on a game, so each move carries that game's result.
-async function loadDailyMoves() {
-  const el = document.getElementById('daily-moves');
-  try {
-    const d = await fetch(`${API}/invest/daily`).then(r => r.json());
-    const teams = {};
-    for (const [t, byDay] of Object.entries(d.teams || {})) {
-      teams[t] = {};
-      for (const [day, m] of Object.entries(byDay)) {
-        const res = m.diff > 0 ? `W by ${m.diff}` : m.diff < 0 ? `L by ${-m.diff}` : 'tie';
-        teams[t][day] = { pct: m.pct, note: `${res} v ${m.opp}${m.playoff ? ' (playoffs)' : ''}` };
-      }
-    }
-    DailyMoves.mount(el, { title: `Daily moves · ${d.season || ''}`, days: d.days || [], teams });
-  } catch {
-    el.innerHTML = '';
-  }
 }
 
 async function loadAll() {
@@ -1112,10 +1089,18 @@ function computeMovers(win) {
     const endPrice   = slice[slice.length - 1].price;
     const abs        = endPrice - startPrice;
     const pct        = startPrice > 0 ? abs / startPrice * 100 : 0;
-    return { team: t.team, pct, abs, price: endPrice, games: slice.length - 1 };
+    const last       = slice[slice.length - 1];
+    return { team: t.team, pct, abs, price: endPrice, games: slice.length - 1, last };
   });
   const sorted  = [...results].sort((a, b) => b.pct - a.pct);
   return { risers: sorted.slice(0, 5), fallers: sorted.slice(-5).reverse() };
+}
+
+// The result behind a one-game move: "W by 18 v NYK".
+function gameNote(g) {
+  if (g.diff == null || !g.opp) return '';
+  const res = g.diff > 0 ? `W by ${g.diff}` : g.diff < 0 ? `L by ${-g.diff}` : 'tie';
+  return `${res} v ${g.opp}`;
 }
 
 function renderMarketSummary() {
@@ -1141,10 +1126,11 @@ function renderMarketSummary() {
       <span class="team-abbr">${item.team}</span>
       <span class="mover-pct ${cls}">${sign}${item.pct.toFixed(1)}%</span>
       <span class="mover-abs">${absFmt}</span>
+      ${moverWindow === 1 && item.last ? `<span class="mover-abs">${gameNote(item.last)}</span>` : ''}
     </div>`;
   };
 
-  const activeWins = [10, 20, 82].map(w =>
+  const activeWins = [1, 10, 20, 82].map(w =>
     `<button class="win-btn${moverWindow===w?' active':''}" onclick="setMoverWindow(${w})">${w}G</button>`
   ).join('');
 
