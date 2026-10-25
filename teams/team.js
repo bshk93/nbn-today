@@ -5789,6 +5789,13 @@ function effectiveSecondary(bio, attrSnap) {
   return sec || defaultSecondary(bio, attrSnap);
 }
 
+// The Coaching tab's two sections, Roster Settings and the Coaching Profile,
+// save to the same coaching-settings record (minutes and values). Each used
+// to reload the page on save, which threw away whatever was unsaved in the
+// other one. Both read the record from here, and a save that lands while the
+// other section is mid-edit updates it in place instead of reloading.
+const coachingTab = { record: undefined, editing: { roster: false, profile: false } };
+
 // Roster Settings — jersey #, secondary position (both from player-bios.json,
 // via /api/players/{slug}/team-settings) merged with Player Minutes (from the
 // coaching-settings record, via /api/coaching-settings/{team}), one row per
@@ -5799,7 +5806,7 @@ function effectiveSecondary(bio, attrSnap) {
 // flips that lookup direction — a row's position is its slot — while
 // leaving the stored shape untouched, since
 // that shape is also what the streamer dashboard on /stream reads.
-function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coachingRecord, currentOvr) {
+function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, currentOvr) {
   const wrapEl = document.getElementById(wrapId);
   const actionsEl = document.getElementById('team-settings-actions');
   const hintEl = document.getElementById('team-settings-hint');
@@ -6039,8 +6046,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   function renderReadView() {
-    editing = false;
-    const minutes = (coachingRecord && coachingRecord.minutes) || {};
+    editing = coachingTab.editing.roster = false;
+    const minutes = (coachingTab.record && coachingTab.record.minutes) || {};
     if (hintEl) hintEl.hidden = true;
     const table = document.createElement('table');
     table.className = 'ts-table';
@@ -6139,8 +6146,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
   }
 
   function renderEditView() {
-    editing = true;
-    const startMinutes = (coachingRecord && coachingRecord.minutes) || {};
+    editing = coachingTab.editing.roster = true;
+    const startMinutes = (coachingTab.record && coachingTab.record.minutes) || {};
     let minutesDirty = false;
     if (hintEl) hintEl.hidden = false;
 
@@ -6598,13 +6605,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         // Profile section, untouched here). PUT replaces both fields
         // together, so this always resends the team's current `values` as
         // loaded — saving a jersey number alone must not wipe them.
+        let coachingReq = null;
         if (minutesDirty && CS) {
-          const values = (coachingRecord && coachingRecord.values) || CS.emptyValues();
-          requests.push(fetch(`/api/coaching-settings/${abbr}`, {
+          const values = (coachingTab.record && coachingTab.record.values) || CS.emptyValues();
+          coachingReq = fetch(`/api/coaching-settings/${abbr}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ values, minutes: minutesFromDom() }),
-          }));
+          });
+          requests.push(coachingReq);
         }
         // The pins go after the positions, so a refused position leaves the
         // pins unsaved too.
@@ -6628,6 +6637,21 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
           }
           saveBtn.disabled = false;
           cancelBtn.disabled = false;
+          return;
+        }
+
+        // A reload would drop the Coaching Profile's unsaved edits, so while
+        // it is open, apply what was saved here and redraw this section only.
+        if (coachingTab.editing.profile) {
+          if (coachingReq) coachingTab.record = await (await coachingReq).json();
+          changed.forEach(({ slug, jerseyInput, secSel }) => {
+            const bio = biosData[slug] || (biosData[slug] = {});
+            const val = jerseyInput.value.trim();
+            bio.jersey_number = val === '' ? null : val;
+            bio.secondary_pos = secSel.value === '' ? null : secSel.value;
+          });
+          if (pinsDirty) posChecks = await results[results.length - 1].json();
+          renderReadView();
           return;
         }
 
@@ -6769,7 +6793,7 @@ function setupStreamerNote() {
 // above (read/edit toggle, withToken-gated Edit button, same 403 handling),
 // but every field renders off window.CoachingSettings' config rather than
 // being hand-written, since that vocabulary is expected to change yearly.
-function setupCoachingSettingsTab(wrapId, biosData, record) {
+function setupCoachingSettingsTab(wrapId, biosData) {
   const wrapEl = document.getElementById(wrapId);
   const CS = window.CoachingSettings;
   if (!CS) {
@@ -6781,6 +6805,8 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
   const resolveName = slug => displayNameFromBio((biosData[slug] || {}).name || '') || slug;
 
   function renderReadView() {
+    coachingTab.editing.profile = false;
+    const record = coachingTab.record;
     // Minutes render merged into the roster table in the Roster Settings
     // section above (setupTeamSettingsTab) — skip the standalone card here
     // so a player's minutes aren't shown twice on the same team page.
@@ -6844,6 +6870,8 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
   }
 
   function renderEditView() {
+    coachingTab.editing.profile = true;
+    const record = coachingTab.record;
     const values = record && record.values ? JSON.parse(JSON.stringify(record.values)) : CS.emptyValues();
     const minutes = record && record.minutes ? JSON.parse(JSON.stringify(record.minutes)) : CS.emptyMinutes();
     // A field added to the schema after this record was saved starts empty.
@@ -6982,7 +7010,9 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
         const resp = await fetch(`/api/coaching-settings/${abbr}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ values, minutes }),
+          // Minutes are edited in Roster Settings, which may have saved
+          // since this form opened, so send the record's current ones.
+          body: JSON.stringify({ values, minutes: (coachingTab.record && coachingTab.record.minutes) || minutes }),
         });
         if (!resp.ok) {
           if (resp.status === 401) {
@@ -6994,6 +7024,13 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
           }
           saveBtn.disabled = false;
           cancelBtn.disabled = false;
+          return;
+        }
+        // A reload would drop Roster Settings' unsaved lineup, so while it
+        // is open, keep the saved record and redraw this section only.
+        if (coachingTab.editing.roster) {
+          coachingTab.record = await resp.json();
+          renderReadView();
           return;
         }
         statusEl.textContent = 'Saved!';
@@ -8705,8 +8742,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       liveRosterRows = rows;
       return renderRoster(rows);
     }, rosterCellConfig(rosterHeaders, biosData));
-    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, coachingRecord, currentOvr);
-    setupCoachingSettingsTab('coaching-settings-wrap', biosData, coachingRecord);
+    coachingTab.record = coachingRecord;
+    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, currentOvr);
+    setupCoachingSettingsTab('coaching-settings-wrap', biosData);
     if (canViewCoachingSettings(abbr)) setupStreamerNote();
 
     setupDeadCapEditable(
