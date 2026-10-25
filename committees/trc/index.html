@@ -52,22 +52,22 @@
     .req-gist b { color: var(--text-secondary); font-weight: 600; }
 
     .badge {
-      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: var(--radius-sm);
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
     }
     .badge.awaiting_consent { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); }
-    .badge.balloting { background: rgba(201,162,39,0.15); color: var(--gold,#c9a227); }
-    .badge.ready_to_finalize { background: rgba(34,197,94,0.15); color: var(--success,#22c55e); }
-    .badge.finalized { background: rgba(34,197,94,0.15); color: var(--success,#22c55e); }
-    .badge.rejected, .badge.withdrawn { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
-    .badge.stale { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
+    .badge.balloting { background: rgba(201,162,39,0.15); color: var(--gold,var(--gold)); }
+    .badge.ready_to_finalize { background: rgba(34,197,94,0.15); color: var(--success,var(--success-light)); }
+    .badge.finalized { background: rgba(34,197,94,0.15); color: var(--success,var(--success-light)); }
+    .badge.rejected, .badge.withdrawn { background: rgba(239,68,68,0.12); color: var(--danger,var(--danger-light)); }
+    .badge.stale { background: rgba(239,68,68,0.12); color: var(--danger,var(--danger-light)); }
 
     .req-body { padding: 0.2rem 0.9rem 1rem; border-top: 1px solid var(--border-subtle); }
     .req-body h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 1.1rem 0 0.45rem; }
 
     /* Where the request is: consent → votes → finalize. */
     .steps { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; font-size: 0.75rem; }
-    .step { padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+    .step { padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-dim); }
     .step.done { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
     .step.now { color: var(--text-primary); border-color: var(--accent); }
 
@@ -115,7 +115,7 @@
     .issue.pass { color: var(--text-muted); }
     .tp .issues { margin-top: 0.55rem; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
-    .chip { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted); }
+    .chip { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); }
 
     details.all-checks { margin-top: 0.8rem; font-size: 0.8rem; }
     details.all-checks summary { cursor: pointer; color: var(--text-muted); }
@@ -134,7 +134,7 @@
       font-size: 0.8rem; font-weight: 600; cursor: pointer;
     }
     .req-actions button.primary { background: var(--accent-dark); color: var(--text-on-accent); border-color: transparent; }
-    .req-actions button.danger { color: var(--danger,#ef4444); }
+    .req-actions button.danger { color: var(--danger,var(--danger-light)); }
     .req-actions button:disabled { opacity: 0.5; cursor: default; }
 
     .ballot-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
@@ -155,7 +155,7 @@
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--text-primary); z-index: 9999;
     }
-    .toast.bad { border-color: var(--danger,#ef4444); color: var(--danger,#ef4444); }
+    .toast.bad { border-color: var(--danger,color-mix(in srgb, var(--danger) 40%, transparent)); color: var(--danger,var(--danger-light)); }
 
     details.help { margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--text-muted); }
     details.help summary { cursor: pointer; color: var(--text-secondary); }

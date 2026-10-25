@@ -156,7 +156,7 @@
       display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
     }
     .grade-bar {
-      width: 100%; min-height: 2px; border-radius: 2px 2px 0 0;
+      width: 100%; min-height: 2px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
       background: var(--gc); opacity: 0.45; transition: opacity 0.1s;
     }
     .grade-tick:hover .grade-bar { opacity: 0.85; }
@@ -342,7 +342,7 @@
     // Members grade picks of the most recent completed draft A–F. Results for a
     // pick are revealed only after the member has graded that pick themselves.
     const GRADES = ['A', 'B', 'C', 'D', 'F'];
-    const GRADE_COLORS = { A: 'var(--success)', B: '#a3e635', C: 'var(--gold)', D: 'var(--danger-alt)', F: 'var(--danger)' };
+    const GRADE_COLORS = { A: 'var(--success)', B: 'var(--cat-lime)', C: 'var(--gold)', D: 'var(--danger-alt)', F: 'var(--danger)' };
     let GRADEABLE_YEAR = null;
     let gradeData = {};   // slug -> { my, count, avg, dist }
 

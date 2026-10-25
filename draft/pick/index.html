@@ -57,7 +57,7 @@
     .status-text { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
     .status-sub  { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
     .countdown   { font-size: 1.1rem; font-weight: 700; color: var(--gold-alt); font-variant-numeric: tabular-nums; }
-    .live-badge  { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--danger-border); color: var(--danger-light); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.4rem; }
+    .live-badge  { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--danger-border); color: var(--danger-light); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.4rem; }
     .live-dot    { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
@@ -103,7 +103,7 @@
       margin-bottom: 0.4rem;
       font-size: 0.82rem;
     }
-    .pick-slot.on-clock { border-color: var(--accent); background: #0d1f3c; }
+    .pick-slot.on-clock { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .pick-slot.submitted { opacity: 0.6; }
     .pick-slot-info { flex: 1; min-width: 0; }
     .pick-slot-num  { font-weight: 700; color: var(--text-primary); }

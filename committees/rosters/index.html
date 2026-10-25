@@ -98,7 +98,7 @@
       flex: 0 0 auto;
       width: 0.55rem;
       height: 0.55rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       margin-top: 0.35rem;
     }
 
@@ -118,7 +118,7 @@
       align-items: center;
       gap: 0.4rem;
       padding: 0.3rem 0.7rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       font-size: 0.78rem;
       font-weight: 500;
       background: rgba(255,255,255,0.04);
@@ -129,7 +129,7 @@
     .summary-pill .dot {
       width: 0.5rem;
       height: 0.5rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
     }
 
     /* ── Team cards ───────────────────────────────────────────────── */
@@ -162,7 +162,7 @@
       font-size: 0.8rem;
       color: var(--warning);
       background: rgba(245,158,11,0.12);
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       padding: 0.15rem 0.65rem;
     }
 
@@ -182,7 +182,7 @@
       font-size: 0.72rem;
       font-weight: 500;
       padding: 0.15rem 0.55rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       color: var(--text-secondary);
@@ -192,7 +192,7 @@
     .breakdown-chip .dot {
       width: 0.42rem;
       height: 0.42rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       flex: 0 0 auto;
     }
 
@@ -251,7 +251,7 @@
     .cat-badge .dot {
       width: 0.5rem;
       height: 0.5rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       flex: 0 0 auto;
     }
 
@@ -360,7 +360,7 @@
     .pick-group-head .dot {
       width: 0.55rem;
       height: 0.55rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       flex: none;
     }
 
@@ -377,7 +377,7 @@
       color: var(--text-muted);
       background: rgba(255,255,255,0.05);
       border: 1px solid var(--border);
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       padding: 0.1rem 0.5rem;
     }
 
@@ -924,11 +924,11 @@
         desc: "No overlap and no logged trade explains it, or the site's own ledger disagrees with its own transaction log.",
       },
       committee_lag: {
-        label: "Sheet is behind", color: "#38bdf8",
+        label: "Sheet is behind", color: "var(--cat-sky)",
         desc: "The site disagrees with the sheet, but a logged trade explains exactly why — the sheet just hasn't caught up. Worth sending to the committee.",
       },
       same_owner_diff_representation: {
-        label: "Already reconciled", color: "#2dd4bf",
+        label: "Already reconciled", color: "var(--cat-teal)",
         desc: "Sheet lists a compound/conditional owner; site names one practical team but its notes describe the same split. No action needed.",
       },
       richness_gap: {
@@ -1100,15 +1100,15 @@
     // ── Data Quality tab ─────────────────────────────────────────────
 
     const COMPLETENESS_FIELD_META = {
-      draft_year: { label: "Draft Year", color: "#38bdf8" },
+      draft_year: { label: "Draft Year", color: "var(--cat-sky)" },
       pos:        { label: "Position",   color: "var(--danger)" },
       ovr:        { label: "OVR",        color: "var(--gold-alt)" },
-      height:     { label: "Height",     color: "#a78bfa" },
-      weight:     { label: "Weight",     color: "#a78bfa" },
-      wingspan:   { label: "Wingspan",   color: "#a78bfa" },
-      dob:        { label: "DOB",        color: "#e879f9" },
-      college:    { label: "College",    color: "#94a3b8" },
-      country:    { label: "Country",    color: "#94a3b8" },
+      height:     { label: "Height",     color: "var(--cat-violet)" },
+      weight:     { label: "Weight",     color: "var(--cat-violet)" },
+      wingspan:   { label: "Wingspan",   color: "var(--cat-violet)" },
+      dob:        { label: "DOB",        color: "var(--cat-pink)" },
+      college:    { label: "College",    color: "var(--cat-slate)" },
+      country:    { label: "Country",    color: "var(--cat-slate)" },
     };
     const COMPLETENESS_FIELD_ORDER = ["draft_year", "pos", "ovr", "height", "weight", "wingspan", "dob", "college", "country"];
 

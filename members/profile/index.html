@@ -41,7 +41,7 @@
       padding: 0.5rem 1rem; margin: 1.5rem 0 1.75rem;
     }
     .balance-label { color: var(--text-muted); font-size: 0.8rem; }
-    .balance-amount { font-weight: 700; font-size: 1.05rem; color: #fde68a; }
+    .balance-amount { font-weight: 700; font-size: 1.05rem; color: var(--gold); }
 
     .section { margin-bottom: 2rem; }
     .section-title {
@@ -196,7 +196,7 @@
     .tip-item:last-child { border-bottom: none; }
     .tip-item-header { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
     .tip-from { font-weight: 600; font-size: 0.875rem; }
-    .tip-amt { font-size: 0.85rem; color: #fde68a; font-weight: 600; }
+    .tip-amt { font-size: 0.85rem; color: var(--gold); font-weight: 600; }
     .tip-time { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
     .tip-message {
       font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.4rem;
@@ -598,7 +598,7 @@ async function init() {
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
 
-    const COSM_PALETTE = ['var(--warning)','var(--danger)','#a855f7','var(--link)','var(--market-positive)','#f472b6','var(--danger-alt)','#2dd4bf'];
+    const COSM_PALETTE = ['var(--warning)','var(--danger)','var(--cat-violet)','var(--link)','var(--market-positive)','var(--cat-pink)','var(--danger-alt)','var(--cat-teal)'];
     let selectedColor = accentColor || '';
 
     function buildSwatches() {

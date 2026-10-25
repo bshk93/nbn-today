@@ -69,9 +69,9 @@
       flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 0.75rem; min-width: 0;
     }
-    .podium-slot.rank-1 { border-color: #92400e; background: #18160a; }
+    .podium-slot.rank-1 { border-color: color-mix(in srgb, var(--warning) 40%, transparent); background: var(--bg-page); }
     .podium-slot.rank-2 { border-color: var(--text-dim); background: var(--bg-page); }
-    .podium-slot.rank-3 { border-color: var(--gold-chip-border); background: #17130e; }
+    .podium-slot.rank-3 { border-color: var(--gold-chip-border); background: var(--bg-card); }
     .podium-slot.empty  { border-style: dashed; border-color: var(--border-subtle); background: transparent; }
     .podium-rank {
       font-size: 0.6rem; font-weight: 700;
@@ -88,11 +88,11 @@
     .podium-pts { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; }
 
     /* Tier row coloring for team award tables */
-    tbody tr.tier-gold   td { background: #18160a; }
+    tbody tr.tier-gold   td { background: var(--bg-page); }
     tbody tr.tier-gold   td.player-name { color: var(--warning); }
     tbody tr.tier-silver td { background: var(--bg-page); }
     tbody tr.tier-silver td.player-name { color: var(--text-muted); }
-    tbody tr.tier-bronze td { background: #17130e; }
+    tbody tr.tier-bronze td { background: var(--bg-card); }
     tbody tr.tier-bronze td.player-name { color: var(--gold-dim); }
 
     /* Ballot tracker */
@@ -118,7 +118,7 @@
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.45rem 0.65rem;
       font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
-      white-space: pre; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      white-space: pre; box-shadow: var(--shadow-overlay);
       opacity: 0; transition: opacity 0.1s;
     }
     #ballot-tooltip.visible { opacity: 1; }

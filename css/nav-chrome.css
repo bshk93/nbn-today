@@ -90,13 +90,13 @@
   display: none; position: absolute; top: -0.4rem; right: -0.4rem;
   background: var(--gold-chip-border); color: var(--bg-page);
   font-size: 0.6rem; font-weight: 700; line-height: 1; letter-spacing: 0;
-  border-radius: 999px; padding: 0.15rem 0.32rem; min-width: 0.9rem;
+  border-radius: var(--radius-sm); padding: 0.15rem 0.32rem; min-width: 0.9rem;
 }
 .inbox-badge.show { display: block; }
 
 /* Search overlay */
 .search-overlay { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 9999; }
-.search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: min(620px, 90vw); overflow: hidden; box-shadow: 0 24px 64px var(--shadow-color-strong); }
+.search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: min(620px, 90vw); overflow: hidden; box-shadow: var(--shadow-overlay); }
 .search-input { width: 100%; padding: 0.9rem 1.25rem; font-size: 1rem; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-primary); outline: none; font-family: inherit; }
 .search-results { max-height: 55vh; overflow-y: auto; }
 .search-result { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; text-decoration: none; color: var(--text-primary); border-bottom: 1px solid var(--bg-page); }
@@ -111,7 +111,7 @@
 .theme-menu {
   position: absolute; top: calc(100% + 0.4rem); right: 0;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px var(--shadow-color-strong);
+  box-shadow: var(--shadow-overlay);
   min-width: 220px; padding: 0.3rem; z-index: 10000;
   display: none;
 }

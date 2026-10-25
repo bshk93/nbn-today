@@ -60,17 +60,17 @@
     }
 
     .badge-admin   { background: var(--danger-bg); color: var(--danger-light); }
-    .badge-bod     { background: #3d2200; color: #fcd34d; }
+    .badge-bod     { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--gold); }
     .badge-rosters { background: var(--accent-panel-bg); color: var(--accent-light); }
     .badge-curator { background: var(--purple-light-bg); color: var(--purple-light); }
-    .badge-stats   { background: #0d2a33; color: #5eead4; }
-    .badge-bookie  { background: #1a1a0a; color: #fde68a; border: 1px solid var(--gold-border); }
+    .badge-stats   { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
+    .badge-bookie  { background: var(--bg-card); color: var(--gold); border: 1px solid var(--gold-border); }
     .badge-streamer { background: var(--purple-light-bg); color: var(--purple-light); }
-    .badge-fac        { background: #500724; color: #f9a8d4; }
-    .badge-fac-head   { background: #500724; color: #f9a8d4; border: 1px solid #ec4899; }
-    .badge-agent      { background: #431407; color: #fdba74; }
-    .badge-poext      { background: #1e1b4b; color: #a5b4fc; }
-    .badge-poext-head { background: #1e1b4b; color: #a5b4fc; border: 1px solid #818cf8; }
+    .badge-fac        { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--accent-light); }
+    .badge-fac-head   { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--accent-light); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
+    .badge-agent      { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--warning); }
+    .badge-poext      { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
+    .badge-poext-head { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
     .badge-team    { background: var(--success-bg); color: var(--success-light); }
 
     .role-card h2 {
@@ -181,7 +181,7 @@
       white-space: nowrap;
     }
     .copy-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-    .copy-btn.copied { border-color: #16a34a; color: var(--success-light); }
+    .copy-btn.copied { border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light); }
 
     /* ── Token admin actions ── */
     .create-bar {
@@ -261,7 +261,7 @@
 
     .token-result-box {
       background: var(--bg-page);
-      border: 1px solid #2d6a30;
+      border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
       border-radius: var(--radius-sm);
       padding: 0.65rem 0.75rem;
       display: flex;
@@ -278,7 +278,7 @@
     }
     .btn-copy-result {
       background: none;
-      border: 1px solid #2d6a30;
+      border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
       color: var(--success-light);
       border-radius: var(--radius-sm);
       padding: 0.15rem 0.5rem;

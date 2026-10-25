@@ -29,7 +29,7 @@
             .controls { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 
     .add-event-btn { background: none; border: 1px solid var(--text-dim); color: var(--purple); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-    .add-event-btn:hover { border-color: var(--purple); background: #1e1b2e; }
+    .add-event-btn:hover { border-color: var(--purple); background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .add-game-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
     .add-game-btn:hover { border-color: var(--link); background: var(--bg-page); }
 
@@ -42,7 +42,7 @@
     .month-label { font-size: 1rem; font-weight: 600; min-width: 140px; text-align: center; }
 
     /* ── Add event form ─────────────────────────────────────────── */
-    .add-event-form { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: #1e1b2e; border: 1px solid var(--purple-border); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
+    .add-event-form { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; background: color-mix(in srgb, var(--accent) 16%, transparent); border: 1px solid var(--purple-border); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
     .add-event-form label { font-size: 0.78rem; color: var(--purple-light); font-weight: 600; white-space: nowrap; }
     .add-event-form input[type="date"], .add-event-form input[type="text"] {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm);
@@ -50,9 +50,9 @@
     }
     .add-event-form input[type="date"] { width: 140px; }
     .add-event-form input[type="text"] { flex: 1; min-width: 140px; }
-    .add-event-form input:focus { border-color: #7c3aed; }
-    .add-event-form .form-save { background: #7c3aed; border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
-    .add-event-form .form-save:hover { background: #6d28d9; }
+    .add-event-form input:focus { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+    .add-event-form .form-save { background: var(--accent); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .add-event-form .form-save:hover { background: color-mix(in srgb, var(--accent) 82%, black); }
     .add-event-form .form-save:disabled { opacity: 0.5; cursor: default; }
     .add-event-form .form-cancel { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
     .add-event-form .form-cancel:hover { color: var(--text-muted); }
@@ -74,10 +74,10 @@
     .game-row-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 0.1rem; transition: color 0.1s; }
     .game-row-del:hover { color: var(--danger); }
     .add-game-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .add-game-form .add-another { background: none; border: 1px dashed var(--accent-panel-bg); color: #4b6fa8; border-radius: var(--radius-sm); padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
+    .add-game-form .add-another { background: none; border: 1px dashed var(--accent-panel-bg); color: var(--accent-light); border-radius: var(--radius-sm); padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
     .add-game-form .add-another:hover { border-color: var(--accent); color: var(--link); }
     .add-game-form .form-save { background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
-    .add-game-form .form-save:hover { background: #1e40af; }
+    .add-game-form .form-save:hover { background: color-mix(in srgb, var(--accent-dark) 82%, black); }
     .add-game-form .form-save:disabled { opacity: 0.5; cursor: default; }
     .add-game-form .form-cancel { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
     .add-game-form .form-cancel:hover { color: var(--text-muted); }
@@ -172,8 +172,8 @@
     .cal td.future .day-num       { color: var(--border); }
 
     .cal td.has-vesting .day-num  { color: var(--text-secondary); }
-    .cal td.has-vesting:not(.has-games) { background: #1c1710; }
-    .cal td.has-vesting:not(.has-games):hover { background: #25200f; }
+    .cal td.has-vesting:not(.has-games) { background: var(--bg-card); }
+    .cal td.has-vesting:not(.has-games):hover { background: var(--bg-card); }
 
     .cal td.has-custom .day-num   { color: var(--text-secondary); }
     .cal td.has-custom:not(.has-games):not(.has-vesting) { background: var(--bg-deep); }

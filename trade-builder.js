@@ -57,7 +57,7 @@
       .tb-type-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); margin-right: 0.4rem; flex-shrink: 0; }
       .tb-type-player      { background: var(--bg-card); color: var(--accent-light); }
       .tb-type-two-way     { background: var(--bg-card); color: var(--purple-light); }
-      .tb-type-draft-rights { background: var(--bg-card); color: #fcd34d; }
+      .tb-type-draft-rights { background: var(--bg-card); color: var(--gold); }
       .tb-type-cap-hold    { background: var(--gold-bg); color: var(--danger-alt); }
       .tb-type-dead        { background: var(--danger-bg); color: var(--danger); }
       .tb-sat-form { margin: 0.2rem 1rem 0.6rem; padding: 0.6rem 0.7rem; background: var(--bg-page); border: 1px solid #f59e0b55; border-radius: var(--radius-sm); width: 100%; }

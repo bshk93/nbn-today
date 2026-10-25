@@ -31,9 +31,9 @@
     .txn-badge-pick    { background: var(--accent-panel-bg); color: var(--accent-light); }
     .txn-badge-option  { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .txn-badge-release { background: var(--danger-bg); color: var(--danger); }
-    .txn-badge-convert_twoway { background: #1c1917; color: #a8a29e; }
-    .txn-badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
-    .txn-badge-offer_sheet { background: #1e1b4b; color: #a5b4fc; }
+    .txn-badge-convert_twoway { background: var(--bg-card); color: var(--text-secondary); }
+    .txn-badge-trade   { background: var(--purple-light-bg); color: var(--accent-light); }
+    .txn-badge-offer_sheet { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .txn-badge-recap   { background: var(--gold-bg); color: var(--gold); }
     .txn-badge-retired { background: var(--bg-card); color: var(--text-secondary); }
     .txn-row-retired td { font-weight: 600; color: var(--text-primary); }
@@ -53,7 +53,7 @@
     .txn-note-cell { text-align: center; vertical-align: middle !important; }
     .txn-note-icon {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 20px; height: 20px; color: #38bdf8; cursor: pointer;
+      width: 20px; height: 20px; color: var(--accent-light); cursor: pointer;
       filter: drop-shadow(0 0 3px rgba(56,189,248,0.85));
       transition: filter 0.15s;
     }
@@ -64,7 +64,7 @@
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
       padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.75rem;
       white-space: pre-line; line-height: 1.5; text-align: left;
-      pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+      pointer-events: none; box-shadow: var(--shadow-overlay);
     }
     .txn-pagination { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0 0.25rem; font-size: 0.8rem; color: var(--text-muted); }
     .txn-page-btn { padding: 0.28rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);

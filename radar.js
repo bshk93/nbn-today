@@ -35,10 +35,10 @@
   }
 
   function dotColor(p) {
-    if (p >= 0.95) return '#a855f7';
-    if (p >= 0.80) return '#eab308';
-    if (p >= 0.50) return '#94a3b8';
-    return '#b87333';
+    if (p >= 0.95) return 'var(--cat-violet)';
+    if (p >= 0.80) return 'var(--cat-amber)';
+    if (p >= 0.50) return 'var(--cat-slate)';
+    return 'var(--cat-bronze)';
   }
 
   function el(tag, attrs, text) {

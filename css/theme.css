@@ -136,6 +136,10 @@
   --overlay-scrim: rgba(0, 0, 0, 0.65);
   --shadow-color: rgba(0, 0, 0, 0.45);
   --shadow-color-strong: rgba(0, 0, 0, 0.6);
+  /* The only shadows the site draws: something lifted over the page (a menu,
+     a popover, a dialog), and the focus ring. Nothing else casts one. */
+  --shadow-overlay: 0 8px 24px var(--shadow-color-strong);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 
   /* Secondary accent tones (site-wide, lower frequency than the core set above) */
   --accent-panel-bg: #13233a;   /* selected/info panel bg-tint, paired with --accent border */
@@ -161,6 +165,21 @@
   --purple-light-bg: #2e1065;
 
   --gold-chip-border: #78350f;  /* balance/status chip border, distinct from --gold-border */
+
+  /* Categorical colours: a set of things that need telling apart and carry no
+     good/bad meaning (award kinds, data-quality categories, contract parts,
+     badge and percentile tiers). Use them by name, in this order of
+     preference; light themes darken each so it reads as text on white. */
+  --cat-sky: #38bdf8;
+  --cat-violet: #a855f7;
+  --cat-teal: #2dd4bf;
+  --cat-orange: #fb923c;
+  --cat-lime: #84cc16;
+  --cat-pink: #f472b6;
+  --cat-amber: #eab308;
+  --cat-slate: #94a3b8;
+  --cat-bronze: #c27c3e;
+  --cat-silver: #b0b8c1;
 }
 
 /* ── NBN Today Light ──────────────────────────────────────────────────────
@@ -270,6 +289,17 @@
   --purple-light-bg: #ede9fe;
 
   --gold-chip-border: #fbbf24;
+
+  --cat-sky: #0369a1;
+  --cat-violet: #7e22ce;
+  --cat-teal: #0f766e;
+  --cat-orange: #c2410c;
+  --cat-lime: #4d7c0f;
+  --cat-pink: #be185d;
+  --cat-amber: #a16207;
+  --cat-slate: #475569;
+  --cat-bronze: #8a5a2b;
+  --cat-silver: #64748b;
 }
 
 /* ── Lavender Rose ─────────────────────────────────────────────────────────
@@ -367,6 +397,17 @@
   --purple-light-bg: #e8ddf2;
 
   --gold-chip-border: #d9be6e;
+
+  --cat-sky: #0369a1;
+  --cat-violet: #7e22ce;
+  --cat-teal: #0f766e;
+  --cat-orange: #c2410c;
+  --cat-lime: #4d7c0f;
+  --cat-pink: #be185d;
+  --cat-amber: #a16207;
+  --cat-slate: #475569;
+  --cat-bronze: #8a5a2b;
+  --cat-silver: #64748b;
 }
 
 /* ── Phoenix Suns ──────────────────────────────────────────────────────

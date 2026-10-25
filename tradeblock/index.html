@@ -74,7 +74,7 @@
     .filter-menu-btn.active { border-color: var(--accent); color: var(--text-secondary); }
     .filter-menu-count {
       background: var(--accent);
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       color: var(--text-on-accent);
       font-size: 0.65rem;
       line-height: 1;
@@ -90,7 +90,7 @@
       background: var(--bg-page);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--shadow-overlay);
       padding: 0.7rem;
       min-width: 15rem;
     }
@@ -206,7 +206,7 @@
     .pos-chip {
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
@@ -267,7 +267,7 @@
       z-index: 20;
     }
     .pick-badge-wrap:hover::after { opacity: 1; }
-    .pick-note-dot { font-size: 0.55rem; color: #818cf8; line-height: 1; cursor: help; }
+    .pick-note-dot { font-size: 0.55rem; color: var(--accent-light); line-height: 1; cursor: help; }
 
     td.cap-non-gtd    { color: var(--text-dim); text-decoration: line-through; }
 
@@ -281,7 +281,7 @@
       border-top: 1px solid var(--border-subtle);
     }
     .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
-    .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+    .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-sm); }
 
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 
@@ -986,7 +986,7 @@
           } else if (col.key === 'player') {
             if (row.isPick) {
               const badge = document.createElement('span');
-              badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:var(--radius-sm);background:var(--purple-bg);color:#a5b4fc;';
+              badge.style.cssText = 'font-size:0.72rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:0.15rem 0.5rem;border-radius:var(--radius-sm);background:var(--purple-bg);color:var(--accent-light);';
               badge.textContent = row.player;
               if (row.pickApiNotes) {
                 const wrap = document.createElement('span');

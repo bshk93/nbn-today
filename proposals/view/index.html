@@ -39,7 +39,7 @@
     .badge-voting    { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
     .badge-closed    { background: var(--bg-subtle); border: 1px solid var(--border); color: var(--text-dim); }
     .badge-draft     { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
-    .badge-passed    { background: var(--success-dark-bg); border: 1px solid #16a34a; color: var(--success); }
+    .badge-passed    { background: var(--success-dark-bg); border: 1px solid color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
     .badge-failed    { background: var(--danger-bg); border: 1px solid var(--danger-border-strong); color: var(--danger); }
 
     /* Proposal header */
@@ -57,7 +57,7 @@
       border: 1px solid transparent;
     }
                                 .btn-warning { background: var(--gold-bg); border-color: var(--gold-dim); color: var(--gold); }
-    .btn-warning:hover { background: #451f00; }
+    .btn-warning:hover { background: color-mix(in srgb, var(--warning) 16%, transparent); }
                 
     /* Divider */
     .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
@@ -112,10 +112,10 @@
       border: 2px solid transparent; cursor: pointer; font-family: inherit;
       transition: background 0.1s, border-color 0.1s;
     }
-    .vote-btn-yes    { background: var(--success-dark-bg); border-color: #16a34a; color: var(--success); }
-    .vote-btn-yes:hover, .vote-btn-yes.active    { background: #166534; border-color: var(--success-alt); }
+    .vote-btn-yes    { background: var(--success-dark-bg); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
+    .vote-btn-yes:hover, .vote-btn-yes.active    { background: color-mix(in srgb, var(--success) 16%, transparent); border-color: var(--success-alt); }
     .vote-btn-no     { background: var(--danger-bg); border-color: var(--danger-border-strong); color: var(--danger); }
-    .vote-btn-no:hover, .vote-btn-no.active      { background: #4b2121; border-color: var(--danger); }
+    .vote-btn-no:hover, .vote-btn-no.active      { background: color-mix(in srgb, var(--danger) 16%, transparent); border-color: var(--danger); }
     .vote-btn-abstain { background: var(--bg-card); border-color: var(--text-dim); color: var(--text-muted); }
     .vote-btn-abstain:hover, .vote-btn-abstain.active { background: var(--bg-hover); border-color: var(--text-muted); }
     .vote-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.6rem; }

@@ -56,7 +56,7 @@
     .strike-icon {
       display: inline-flex; align-items: center; justify-content: center;
       background: var(--danger-border); color: var(--danger-light);
-      font-size: 0.65rem; font-weight: 700; border-radius: 99px;
+      font-size: 0.65rem; font-weight: 700; border-radius: var(--radius-sm);
       min-width: 1.25rem; height: 1.25rem; padding: 0 0.3rem;
       margin-left: 0.35rem; cursor: default; vertical-align: middle;
     }
@@ -135,7 +135,7 @@
     .role-check-label input[type=checkbox] { cursor: pointer; accent-color: var(--accent); }
 
     .token-result-box {
-      background: var(--bg-page); border: 1px solid #2d6a30; border-radius: var(--radius-sm);
+      background: var(--bg-page); border: 1px solid color-mix(in srgb, var(--success) 40%, transparent); border-radius: var(--radius-sm);
       padding: 0.65rem 0.75rem; display: flex; flex-direction: column; gap: 0.35rem;
     }
     .token-result-label { font-size: 0.7rem; color: var(--text-muted); }
@@ -144,7 +144,7 @@
       color: var(--success-light); word-break: break-all; line-height: 1.5;
     }
     .btn-copy-result {
-      background: none; border: 1px solid #2d6a30; color: var(--success-light);
+      background: none; border: 1px solid color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light);
       border-radius: var(--radius-sm); padding: 0.15rem 0.5rem; font-size: 0.7rem;
       cursor: pointer; font-family: inherit; align-self: flex-start;
     }
@@ -459,7 +459,7 @@ let allMembers = [];
 let strikeMap = {}; // member name -> count
 let achCount = {};  // member name -> number of achievements unlocked (undefined while loading)
 
-const COSM_PALETTE = ['var(--warning)','var(--danger)','#a855f7','var(--link)','var(--market-positive)','#f472b6','var(--danger-alt)','#2dd4bf'];
+const COSM_PALETTE = ['var(--warning)','var(--danger)','var(--cat-violet)','var(--link)','var(--market-positive)','var(--cat-pink)','var(--danger-alt)','var(--cat-teal)'];
 let selectedColor = ''; // '' means "none"
 
 function buildSwatches() {

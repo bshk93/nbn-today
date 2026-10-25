@@ -278,9 +278,9 @@
 
     .ch-generate-btn {
       align-self: flex-start;
-      background: #1e3a8a;
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
       border: 1px solid var(--accent);
-      color: #dbeafe;
+      color: var(--accent-light);
       border-radius: var(--radius-sm);
       padding: 0.4rem 0.9rem;
       cursor: pointer;
@@ -288,7 +288,7 @@
       font-weight: 600;
     }
 
-    .ch-generate-btn:hover { background: #1e40af; }
+    .ch-generate-btn:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
     .ch-hint { font-size: 0.72rem; color: var(--text-muted); }
 
@@ -340,14 +340,14 @@
     .check-row + .check-row { border-top: 1px solid var(--bg-page); }
     .check-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 0.05rem; }
     .check-row.error .check-msg  { color: var(--danger-light); }
-    .check-row.warning .check-msg { color: #fde68a; }
+    .check-row.warning .check-msg { color: var(--gold); }
     .check-row.pass .check-msg   { color: var(--text-muted); }
     .validation-actions {
       margin-top: 0.85rem; display: flex; align-items: center; gap: 0.75rem;
       padding-top: 0.75rem; border-top: 1px solid var(--border);
     }
     .btn-force {
-      background: #92400e; color: #fde68a; border: 1px solid var(--gold-dim);
+      background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--gold); border: 1px solid var(--gold-dim);
       border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
       padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit;
     }
@@ -421,7 +421,7 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       padding: 0.2rem 0.75rem;
       font-size: 0.78rem;
       cursor: pointer;
@@ -485,7 +485,7 @@
 
     .badge {
       display: inline-block;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem;
       font-size: 0.72rem;
       font-weight: 700;
@@ -496,7 +496,7 @@
     .badge-sign    { background: var(--market-positive-bg); color: var(--market-positive); }
     .badge-pick    { background: var(--accent-panel-bg); color: var(--accent-light); }
     .badge-option  { background: var(--danger-alt-bg); color: var(--danger-alt); }
-    .badge-guarantee { background: #052e2b; color: #2dd4bf; }
+    .badge-guarantee { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
 
     /* ── Trade details (log view, grouped per team) ── */
     .trade-log-team { margin-bottom: 0.4rem; }
@@ -564,21 +564,21 @@
     .txn-voided td        { color: var(--text-dim); }
     .txn-voided .badge:not(.badge-voided) { text-decoration: line-through; opacity: 0.6; }
     .voided-reason        { margin-top: 0.25rem; font-size: 0.75rem; color: var(--danger); }
-    .badge-waiver_clear   { background: #0c2a3d; color: #38bdf8; }
+    .badge-waiver_clear   { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .badge-waiver_flagged { background: var(--gold-bg); color: var(--gold); }
-    .badge-renounce       { background: #3b2f0a; color: #fcd34d; }
-    .badge-convert_twoway { background: #1c1917; color: #a8a29e; }
-    .badge-extension      { background: #0c1f3d; color: #60a5fa; }
+    .badge-renounce       { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--gold); }
+    .badge-convert_twoway { background: var(--bg-card); color: var(--text-secondary); }
+    .badge-extension      { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .badge-void_player    { background: var(--bg-subtle); color: var(--text-muted); }
-    .badge-stash          { background: #0c2340; color: #93c5fd; }
+    .badge-stash          { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .badge-set_hard_cap_level { background: var(--gold-bg); color: var(--gold); }
-    .badge-offer_sheet    { background: #1e1b4b; color: #a5b4fc; }
-    .badge-offer_sheet_decision { background: #1e1b4b; color: #818cf8; }
-    .badge-qualifying_offer { background: #1e1b4b; color: #a5b4fc; }
+    .badge-offer_sheet    { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
+    .badge-offer_sheet_decision { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
+    .badge-qualifying_offer { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .badge-accept_qo      { background: var(--market-positive-bg); color: var(--market-positive); }
     .badge-callup  { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-calldown { background: var(--danger-alt-bg); color: var(--danger-alt); }
-    .badge-trade   { background: var(--purple-light-bg); color: #c084fc; }
+    .badge-trade   { background: var(--purple-light-bg); color: var(--accent-light); }
     .badge-tbd     { background: var(--border); color: var(--text-muted); font-size: 0.68rem; }
 
     /* ── Trade builder ── */

@@ -152,7 +152,7 @@
       white-space: nowrap;
       z-index: 100;
       display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      box-shadow: var(--shadow-overlay);
     }
 
     /* ── Career Earnings ── */
@@ -213,7 +213,7 @@
       width: 5px;
       min-height: 1px;
       display: block;
-      border-radius: 1px;
+      border-radius: var(--radius-sm);
       background: var(--accent);
     }
     .earn-spark i.fut { background: var(--text-dim); }
@@ -228,7 +228,7 @@
       margin-left: auto;
       align-self: center;
     }
-    .earn-legend .swatch { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+    .earn-legend .swatch { width: 9px; height: 9px; border-radius: var(--radius-sm); display: inline-block; }
     .earn-legend .swatch.past { background: var(--accent); }
     .earn-legend .swatch.fut { background: var(--text-dim); }
 
@@ -334,7 +334,7 @@
     .quad-suggest {
       position: absolute; top: 100%; left: 0; z-index: 20; min-width: 16rem; margin-top: 4px;
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); overflow: hidden;
+      box-shadow: var(--shadow-overlay); overflow: hidden;
     }
     .quad-suggest button {
       display: flex; justify-content: space-between; gap: 1rem; width: 100%;
@@ -347,7 +347,7 @@
     .quad-chips { flex-wrap: wrap; gap: 0.4rem; }
     .quad-chip {
       display: inline-flex; align-items: center; gap: 0.25rem;
-      padding: 0.15rem 0.25rem 0.15rem 0.6rem; border: 1px solid var(--border); border-radius: 999px;
+      padding: 0.15rem 0.25rem 0.15rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
       background: var(--bg-page); font-size: 0.78rem; color: var(--text-primary);
     }
     .quad-chip--missing { opacity: 0.55; text-decoration: line-through; }
@@ -374,7 +374,7 @@
       position: absolute; top: 0.4rem; right: 0.4rem; border: 0; background: none;
       color: var(--text-muted); font-size: 1.05rem; cursor: pointer; padding: 0.1rem 0.35rem;
     }
-    .quad-card-del:hover { color: var(--danger, #e5484d); }
+    .quad-card-del:hover { color: var(--danger, var(--danger-light)); }
     @media (max-width: 560px) {
       .quad-captions { grid-template-columns: 1fr; }
       .quad-search input { width: 100%; }
@@ -459,7 +459,7 @@
 
     #tab-retros .verdict {
       font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 999px;
+      letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);
       white-space: nowrap; border: 1px solid;
     }
     #tab-retros .verdict.fleecing { color: var(--danger-light); background: var(--danger-bg); border-color: var(--danger-border); }
@@ -515,6 +515,7 @@
       #tab-retros .controls input, #tab-retros .controls select { flex: 1 1 100%; }
     }
   </style>
+  <script src="/team-colors.js"></script>
   <script src="/league-time.js"></script>
   <script src="/names.js"></script>
 </head>
@@ -620,16 +621,8 @@
   </div>
 
   <script>
-    const TEAM_COLORS = {
-      ATL: '#E03A3E', BKN: '#9EA1A2', BOS: '#007A33', CHA: '#00788C',
-      CHI: '#CE1141', CLE: '#860038', DAL: '#00538C', DEN: '#FEC524',
-      DET: '#1D428A', GSW: '#FFC72C', HOU: '#BA0C2F', IND: '#FDBB30',
-      LAC: '#C8102E', LAL: '#552583', MEM: '#5D76A9', MIA: '#98002E',
-      MIL: '#00471B', MIN: '#236192', NOP: '#85714D', NYK: '#F58426',
-      OKC: '#007AC1', ORL: '#0077C0', PHI: '#006BB6', PHX: '#E56020',
-      POR: '#E03A3E', SAC: '#5A2D81', SAS: '#8A8D8F', TOR: '#A4224B',
-      UTA: '#002B5C', WAS: '#E31837',
-    };
+    // Each team's chart colour, from build/team-colors.json (team-colors.js).
+    const TEAM_COLORS = Object.fromEntries(Object.entries(window.NBN_TEAM_COLORS).map(([t, c]) => [t, c.chart]));
 
     const TEAMS = {
       ATL: "Atlanta Hawks",     BKN: "Brooklyn Nets",       BOS: "Boston Celtics",
@@ -2079,11 +2072,11 @@
 
           // Drawn last-placed first, so the best players sit on top of any overlap.
           const faces = [...placed].reverse().map(({ g, fx: x, fy: y }) => {
-            const color = TEAM_COLORS[g.team] || '#6b7280';
+            const color = TEAM_COLORS[g.team] || 'var(--text-dim)';
             const label = `${formatName(g.name)} · ${cfg.season || 'Career'} ${g.teamsLabel} · ${xV.label} ${xV.fmt(g.vals[cfg.x])} · ${yV.label} ${yV.fmt(g.vals[cfg.y])}`;
             return `<g class="quad-face" transform="translate(${x.toFixed(1)},${y.toFixed(1)})" data-label="${qEsc(label)}" data-slug="${qEsc(g.slug)}">
                 <circle r="${R}" fill="${color}"/>
-                <text y="${(R * 0.34).toFixed(1)}" text-anchor="middle" fill="#fff" font-size="${Math.round(R * 0.82)}" font-weight="700">${qEsc(initials(g.name))}</text>
+                <text y="${(R * 0.34).toFixed(1)}" text-anchor="middle" fill="white" font-size="${Math.round(R * 0.82)}" font-weight="700">${qEsc(initials(g.name))}</text>
                 <image opacity="0" href="/api/players/${encodeURIComponent(g.slug)}/headshot" data-fallback="${qEsc(bios[g.slug]?.photo_url || '')}"
                   x="${-R}" y="${-R}" width="${2 * R}" height="${2 * R}" preserveAspectRatio="xMidYMin slice" clip-path="url(#quad-clip)"/>
                 <circle r="${R}" fill="none" stroke="${color}" stroke-width="${R > 18 ? 3 : 2.4}"/>
@@ -2198,7 +2191,7 @@
             // var(--…) colours are resolved to real values first.
             const cs = getComputedStyle(document.body);
             const text = new XMLSerializer().serializeToString(clone)
-              .replace(/var\((--[\w-]+)\)/g, (_, v) => cs.getPropertyValue(v).trim() || '#888');
+              .replace(/var\((--[\w-]+)\)/g, (_, v) => cs.getPropertyValue(v).trim() || 'gray');
             const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(text);
             const im = new Image();
             await new Promise((res, rej) => { im.onload = res; im.onerror = rej; im.src = url; });

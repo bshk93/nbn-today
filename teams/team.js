@@ -258,7 +258,7 @@ const coachingConfigReady = new Promise(resolve => {
   .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   /* On the team-colour band (components.css § Team pages): light on colour. */
   :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
-  :root[data-team] .team-share-btn:hover { color: #fff; border-color: #fff; }
+  :root[data-team] .team-share-btn:hover { color: white; border-color: white; }
   .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
   .team-header {
     display: flex;
@@ -347,7 +347,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pos { width: 6.5rem; white-space: nowrap; }
   .ts-pos2 { color: var(--text-muted); }
   .ts-min { width: 9rem; text-align: right !important; white-space: nowrap; }
-  .ts-minbar { display: inline-block; vertical-align: middle; width: 4rem; height: 4px; border-radius: 2px; background: var(--bg-subtle); overflow: hidden; margin-right: 0.5rem; }
+  .ts-minbar { display: inline-block; vertical-align: middle; width: 4rem; height: 4px; border-radius: var(--radius-sm); background: var(--bg-subtle); overflow: hidden; margin-right: 0.5rem; }
   .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
   .ts-minval { display: inline-block; min-width: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
   .ts-minval.dim { color: var(--text-dim); font-weight: 400; }
@@ -559,7 +559,7 @@ const coachingConfigReady = new Promise(resolve => {
   .picks-swatch {
     display: inline-block;
     width: 10px; height: 10px;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     flex-shrink: 0;
   }
   .fo-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: var(--space-3) var(--space-5); align-items: start; }
@@ -603,7 +603,7 @@ const coachingConfigReady = new Promise(resolve => {
     display: none; position: fixed; right: 1.25rem; bottom: 1.25rem;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 0.5rem 1rem; font-size: 0.82rem; color: var(--text-secondary);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4); z-index: 500;
+    box-shadow: var(--shadow-overlay); z-index: 500;
     pointer-events: none; white-space: nowrap;
   }
   .range-sum-bar b { color: var(--text-primary); }
@@ -620,7 +620,7 @@ const coachingConfigReady = new Promise(resolve => {
   .cap-swatch {
     display: inline-block;
     width: 10px; height: 10px;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
     flex-shrink: 0;
   }
   tfoot tr td { font-size: 0.8rem; padding: 0.3rem 0.6rem; color: var(--text-muted); border-top: none; }
@@ -851,7 +851,7 @@ const coachingConfigReady = new Promise(resolve => {
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 0.3rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    padding: 0.3rem; box-shadow: var(--shadow-overlay);
   }
   .move-menu-head {
     font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
@@ -959,10 +959,11 @@ const coachingConfigReady = new Promise(resolve => {
     overflow: hidden; background: var(--bg-card); border: 1px solid var(--border);
   }
   .roster-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-  .roster-avatar-empty {
-    background:
-      radial-gradient(circle at 50% 38%, var(--text-dim) 0 6px, transparent 7px),
-      radial-gradient(ellipse 10px 7px at 50% 100%, var(--text-dim) 0 100%, transparent 0);
+  /* No photo: the person icon (css/ui-icons.css), bottom-anchored like a headshot. */
+  .roster-avatar-empty::after {
+    content: ''; display: block; width: 100%; height: 100%;
+    background-color: var(--text-dim);
+    -webkit-mask: var(--ui-icon) center 4px / 80% no-repeat; mask: var(--ui-icon) center 4px / 80% no-repeat;
   }
   /* Top-10%-in-category badges, shown inline after the player name (same
      slot the jersey number tag used to occupy). Same muted color at both
@@ -992,7 +993,7 @@ const coachingConfigReady = new Promise(resolve => {
     background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
     padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.75rem;
     white-space: pre-line; line-height: 1.5; text-align: left;
-    pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    pointer-events: none; box-shadow: var(--shadow-overlay);
   }
 
   /* Tabs: the shared .ui-tabs (css/components.css). */
@@ -2857,10 +2858,10 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           img.src = row._photo;
           img.alt = '';
           img.loading = 'lazy';
-          img.onerror = () => { avatar.classList.add('roster-avatar-empty'); img.remove(); };
+          img.onerror = () => { avatar.classList.add('roster-avatar-empty', 'ui-icon--person'); img.remove(); };
           avatar.appendChild(img);
         } else {
-          avatar.classList.add('roster-avatar-empty');
+          avatar.classList.add('roster-avatar-empty', 'ui-icon--person');
         }
         topRow.appendChild(avatar);
 
@@ -6882,7 +6883,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
     function refreshSaveState() {
       const issues = CS.valuesIssues(values);
       if (issues.length) {
-        statusEl.style.color = 'var(--gold,#c9a227)';
+        statusEl.style.color = 'var(--gold)';
         statusEl.dataset.icon = 'warning';
         statusEl.textContent = 'Not balanced — ' + issues.join(' · ');
       } else {
@@ -6942,7 +6943,7 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
       function syncTotal() {
         const total = CS.poolTotal(pool, poolValues);
         const ok = total === pool.budget;
-        totalLine.style.color = ok ? 'var(--success-light,#4caf50)' : 'var(--gold,#c9a227)';
+        totalLine.style.color = ok ? 'var(--success-light)' : 'var(--gold)';
         totalLine.textContent = ok
           ? `${total} of ${pool.budget} allocated`
           : `${total} of ${pool.budget} allocated · ${pool.budget - total > 0 ? (pool.budget - total) + ' left to place' : (total - pool.budget) + ' over'}`;

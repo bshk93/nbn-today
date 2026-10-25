@@ -60,12 +60,12 @@
     .body .bm { fill: color-mix(in srgb, var(--text-muted) 32%, var(--bg-card)); stroke: var(--bg-page); stroke-width: 2; }
     .body .bm.hair { fill: color-mix(in srgb, var(--text-muted) 18%, var(--bg-card)); }
     /* Severity, light to dark: one scale for the body, the list and the legend. */
-    #content { --sev1: color-mix(in srgb, var(--gold) 60%, #fff); --sev2: var(--warning);
-            --sev3: color-mix(in srgb, var(--warning) 40%, var(--danger)); --sev4: color-mix(in srgb, var(--danger) 82%, #000); }
+    #content { --sev1: color-mix(in srgb, var(--gold) 60%, white); --sev2: var(--warning);
+            --sev3: color-mix(in srgb, var(--warning) 40%, var(--danger)); --sev4: color-mix(in srgb, var(--danger) 82%, black); }
     #content .sev1 { fill: var(--sev1); background-color: var(--sev1); } #content .sev2 { fill: var(--sev2); background-color: var(--sev2); }
     #content .sev3 { fill: var(--sev3); background-color: var(--sev3); } #content .sev4 { fill: var(--sev4); background-color: var(--sev4); }
     .sev-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-secondary); }
-    .sev-legend i { display: inline-block; width: 0.75rem; height: 0.5rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; }
+    .sev-legend i { display: inline-block; width: 0.75rem; height: 0.5rem; border-radius: var(--radius-sm); margin-right: 0.35rem; vertical-align: middle; }
     .body .bm.hit { cursor: pointer; }
     .body .bm.hit:hover { stroke: var(--text-primary); }
     .body .bm.cur { animation: bm-pulse 1.6s ease-in-out infinite; }
@@ -79,7 +79,7 @@
                 padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
     .parts li.click { cursor: pointer; }
     .parts li.click:hover .part-name { text-decoration: underline; }
-    .parts .dot { width: 0.6rem; height: 0.6rem; border-radius: 2px; align-self: center; }
+    .parts .dot { width: 0.6rem; height: 0.6rem; border-radius: var(--radius-sm); align-self: center; }
     .parts .dot.none { background: transparent; border: 1px solid var(--border); }
     .parts .part-name { font-weight: 600; color: var(--text-primary); }
     .parts .part-n { font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; }
@@ -99,7 +99,7 @@
     .tl-axis { position: relative; height: 1rem; font-size: 0.65rem; color: var(--text-muted); }
     .tl-axis span { position: absolute; transform: translateX(-50%); }
     .tl-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
-    .tl-legend i { display: inline-block; width: 0.8rem; height: 0.55rem; border-radius: 2px; margin-right: 0.35rem; vertical-align: middle; }
+    .tl-legend i { display: inline-block; width: 0.8rem; height: 0.55rem; border-radius: var(--radius-sm); margin-right: 0.35rem; vertical-align: middle; }
     .tl-legend i.open { background-color: var(--sev2); background-image: repeating-linear-gradient(135deg, transparent 0 3px, rgba(0,0,0,0.22) 3px 6px); }
 
     /* The log. */

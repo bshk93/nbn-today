@@ -35,7 +35,7 @@
     .pick-input.ui-input { width: 100%; height: 2.6rem; }
     .pick-slot.has-photo .pick-input { padding-left: 2.6rem; }
     .pick-input.selected { border-color: var(--accent); font-weight: 600; }
-    .pick-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 260px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 6px 18px var(--shadow-color); }
+    .pick-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 260px; overflow-y: auto; z-index: 100; display: none; box-shadow: var(--shadow-overlay); }
     .pick-option { padding: 0.5rem 0.75rem; cursor: pointer; font-size: var(--text-sm); display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); color: var(--text-secondary); }
     .pick-option:hover, .pick-option.active { background: var(--bg-hover); color: var(--text-primary); }
     .pick-option-meta { font-size: var(--text-xs); color: var(--text-muted); }
@@ -87,9 +87,9 @@
     .awards-section h3 { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 0.75rem; }
     .awards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .award-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .award-chip { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 600; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
+    .award-chip { display: inline-block; padding: 0.2rem 0.55rem; border-radius: var(--radius-sm); font-size: 0.72rem; font-weight: 600; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary); }
     .award-chip.allstar { background: var(--accent-panel-bg); border-color: var(--accent-panel-bg); color: var(--accent-light); }
-    .award-chip.mvp    { background: var(--champion-bg); border-color: #92400e; color: var(--gold); }
+    .award-chip.mvp    { background: var(--champion-bg); border-color: color-mix(in srgb, var(--warning) 40%, transparent); color: var(--gold); }
     .award-chip.dpoy   { background: var(--market-positive-bg); border-color: var(--market-positive-border); color: var(--market-positive); }
     .award-chip.allnbn { background: var(--champion-bg); border-color: var(--border); color: var(--text-muted); }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
@@ -108,7 +108,7 @@
     .attr-val { width: 1.8rem; text-align: right; font-size: 0.78rem; font-weight: 600; font-variant-numeric: tabular-nums; }
     .attr-note { color: var(--text-muted); font-size: 0.85rem; }
     .attr-badge-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .attr-badge-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--bg-card); border-radius: 999px; padding: 0.15rem 0.55rem 0.15rem 0.42rem; font-size: 0.68rem; color: var(--text-secondary); }
+    .attr-badge-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.15rem 0.55rem 0.15rem 0.42rem; font-size: 0.68rem; color: var(--text-secondary); }
     .attr-badge-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; flex-shrink: 0; }
     .attr-source { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.6rem; }
   </style>

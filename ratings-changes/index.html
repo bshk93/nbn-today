@@ -93,23 +93,23 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .delta .up { color: var(--market-positive, #22c55e); }
-    .delta .down { color: var(--market-negative, #ef4444); }
+    .delta .up { color: var(--market-positive, var(--success-light)); }
+    .delta .down { color: var(--market-negative, var(--danger-light)); }
     .muted-cell { color: var(--text-dim); }
 
     .tag {
       display: inline-block;
       padding: 0.1rem 0.45rem;
-      border-radius: 999px;
+      border-radius: var(--radius-sm);
       font-size: 0.72rem;
       font-weight: 600;
       margin: 0.1rem 0.25rem 0.1rem 0;
       white-space: nowrap;
     }
 
-    .tag.gained { background: color-mix(in srgb, var(--market-positive, #22c55e) 18%, transparent); color: var(--market-positive, #22c55e); }
-    .tag.lost { background: color-mix(in srgb, var(--market-negative, #ef4444) 18%, transparent); color: var(--market-negative, #ef4444); }
-    .tag.retiered { background: color-mix(in srgb, var(--accent, #6366f1) 18%, transparent); color: var(--accent-light, #a5b4fc); }
+    .tag.gained { background: color-mix(in srgb, var(--market-positive, var(--success)) 18%, transparent); color: var(--market-positive, var(--success-light)); }
+    .tag.lost { background: color-mix(in srgb, var(--market-negative, var(--danger)) 18%, transparent); color: var(--market-negative, var(--danger-light)); }
+    .tag.retiered { background: color-mix(in srgb, var(--accent, var(--accent)) 18%, transparent); color: var(--accent-light, var(--accent-light)); }
 
     .attr-details summary {
       cursor: pointer;

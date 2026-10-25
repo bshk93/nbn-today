@@ -33,7 +33,7 @@
     .pk-fp { font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
     .pk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); }
     .pk-msg { font-size: var(--text-sm); color: var(--text-muted); }
-    .pk-msg.err { color: var(--danger, #e5484d); }
+    .pk-msg.err { color: var(--danger, var(--danger-light)); }
 
     .pk-picker { grid-column: 1 / -1; min-width: 0; padding: var(--space-3); background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius); }
     .pk-picker-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }

@@ -322,8 +322,8 @@
     const tip = document.createElement('div');
     tip.setAttribute('role', 'tooltip');
     tip.style.cssText = 'position:absolute;z-index:1000;max-width:300px;padding:0.5rem 0.65rem;'
-      + 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:var(--radius-sm);'
-      + 'box-shadow:0 4px 14px rgba(0,0,0,0.35);color:var(--text-secondary,#ccc);'
+      + 'background:var(--bg-card,var(--bg-card));border:1px solid var(--border,var(--border));border-radius:var(--radius-sm);'
+      + 'box-shadow:var(--shadow-overlay);color:var(--text-secondary,var(--text-secondary));'
       + 'font-size:0.75rem;font-weight:400;line-height:1.4;white-space:pre-line;pointer-events:none';
     tip.textContent = text;
     document.body.appendChild(tip);
@@ -348,7 +348,7 @@
     icon.textContent = 'ⓘ';
     icon.tabIndex = 0;
     icon.setAttribute('aria-label', text);
-    icon.style.cssText = 'margin-left:0.35rem;color:var(--text-muted,#888);cursor:help;font-weight:400;font-size:0.85em';
+    icon.style.cssText = 'margin-left:0.35rem;color:var(--text-muted,var(--text-muted));cursor:help;font-weight:400;font-size:0.85em';
     if (window.matchMedia('(hover: none)').matches) {
       icon.addEventListener('click', e => {
         e.stopPropagation();
@@ -380,24 +380,24 @@
   if (typeof document !== 'undefined' && !document.getElementById('cs-row-style')) {
     const st = document.createElement('style');
     st.id = 'cs-row-style';
-    st.textContent = '.cs-row:nth-child(odd){background:var(--bg-subtle,#202020)}';
+    st.textContent = '.cs-row:nth-child(odd){background:var(--bg-subtle,var(--bg-subtle))}';
     document.head.appendChild(st);
   }
 
   function row(label, value, note, was) {
     const r = document.createElement('div');
     r.className = 'cs-row';
-    r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0.4rem;margin:0 -0.4rem;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,#2a2a2a)';
-    const l = labelWithNote(label, note, 'color:var(--text-muted,#888)');
+    r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0.4rem;margin:0 -0.4rem;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,var(--border))';
+    const l = labelWithNote(label, note, 'color:var(--text-muted,var(--text-muted))');
     const v = document.createElement('span');
-    v.style.cssText = 'color:var(--text-primary,#eee);font-weight:600;text-align:right';
+    v.style.cssText = 'color:var(--text-primary,var(--text-primary));font-weight:600;text-align:right';
     v.textContent = value;
     if (was !== undefined) {
       r.classList.add('cs-changed');
-      r.style.cssText += ';background:var(--gold-bg,rgba(201,162,39,0.15));box-shadow:inset 3px 0 0 var(--gold,#c9a227);padding-left:0.5rem;padding-right:0.4rem;margin:0 -0.4rem';
-      l.style.color = 'var(--text-primary,#eee)';
+      r.style.cssText += ';background:var(--gold-bg);box-shadow:inset 3px 0 0 var(--gold);padding-left:0.5rem;padding-right:0.4rem;margin:0 -0.4rem';
+      l.style.color = 'var(--text-primary)';
       const old = document.createElement('div');
-      old.style.cssText = 'font-size:0.72rem;font-weight:400;color:var(--text-muted,#888)';
+      old.style.cssText = 'font-size:0.72rem;font-weight:400;color:var(--text-muted,var(--text-muted))';
       old.textContent = `was ${was}`;
       v.appendChild(old);
     }
@@ -408,7 +408,7 @@
 
   function groupCard(title, note) {
     const card = document.createElement('div');
-    card.style.cssText = 'background:var(--bg-card,#181818);border:1px solid var(--border,#333);border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
+    card.style.cssText = 'background:var(--bg-card,var(--bg-card));border:1px solid var(--border,var(--border));border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
     const h = document.createElement('div');
     h.style.cssText = 'font-weight:700;font-size:0.95rem;margin-bottom:0.4rem';
     h.textContent = title;
@@ -422,7 +422,7 @@
     container.innerHTML = '';
 
     const status = document.createElement('div');
-    status.style.cssText = 'font-size:0.78rem;color:var(--text-muted,#888);margin-bottom:1rem';
+    status.style.cssText = 'font-size:0.78rem;color:var(--text-muted,var(--text-muted));margin-bottom:1rem';
     if (!record) {
       status.textContent = 'No coaching settings saved yet.';
       container.appendChild(status);
@@ -460,7 +460,7 @@
     const issues = validityIssues(record);
     if (issues.length) {
       const warn = document.createElement('div');
-      warn.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--gold,#c9a227);margin:-0.5rem 0 1rem';
+      warn.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--gold,var(--gold));margin:-0.5rem 0 1rem';
       warn.dataset.icon = 'warning';
       warn.textContent = 'Not balanced — ' + issues.join(' · ');
       container.appendChild(warn);
@@ -531,13 +531,13 @@
 
     if (changesLine) {
       if (!base) {
-        changesLine.style.color = 'var(--text-muted,#888)';
+        changesLine.style.color = 'var(--text-muted)';
         changesLine.textContent = 'First entry — nothing earlier to compare, so enter everything.';
       } else if (changeCount) {
-        changesLine.style.color = 'var(--gold,#c9a227)';
+        changesLine.style.color = 'var(--gold)';
         changesLine.textContent = `${changeCount} change${changeCount === 1 ? '' : 's'} since last entered — highlighted below.`;
       } else {
-        changesLine.style.color = 'var(--text-muted,#888)';
+        changesLine.style.color = 'var(--text-muted)';
         changesLine.textContent = 'Saved again, but nothing differs from what was last entered.';
       }
     }

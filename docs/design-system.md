@@ -20,8 +20,9 @@ page: ten page widths, three header layouts, four tab styles, 67 font sizes,
 Since 2026-10-23 the site aims to read like a sports broadcast rather than a SaaS dashboard. Before it, the site looked like every generated app: rounded bordered cards, pill chips, a gradient hero and emoji for icons. Four rules:
 
 - **Type does the work, not boxes.** Barlow Condensed in capitals is the voice: page titles, tabs, section titles, table headers, chips, big numbers. Inter is for reading: body text, table cells, forms.
-- **Square and flat.** `--radius-sm` is 2px and `--radius` 4px; no pills (circles stay for avatars and dots). No drop shadows except menus and dialogs, and no gradients except functional masks (the tab-strip fade).
+- **Square and flat.** `--radius-sm` is 2px and `--radius` 4px; no pills (circles stay for avatars and dots). The only shadows are `var(--shadow-overlay)`, for something lifted over the page (a menu, a popover, a dialog), and `var(--focus-ring)`; a state stripe is an `inset` shadow or a border. No gradients except functional masks (the tab-strip fade) and repeating hatch patterns.
 - **Colour means something.** Chrome is neutral. Bright colour is a team's, a result (win/loss, up/down), or an alert.
+- **Every colour is a token.** Pages don't write hex. The semantic tones (`--success`, `--danger`, `--warning`, `--gold`, `--accent`) carry meaning; a tinted background is `color-mix(in srgb, var(--tone) 16%, transparent)` so it follows the theme, never a dark hex that turns into a black block on the light theme. A set of things that only needs telling apart (award kinds, data-quality categories, contract parts, badge tiers) uses the categorical palette in `css/theme.css`: `--cat-sky`, `--cat-violet`, `--cat-teal`, `--cat-orange`, `--cat-lime`, `--cat-pink`, `--cat-amber`, `--cat-slate`, `--cat-bronze`, `--cat-silver`, darkened on light themes. A team's colours come from `build/team-colors.json`: `--team-primary`, `--team-accent` and `--team-chart` (the one colour a chart uses for the team) on `[data-team]`, or `window.NBN_TEAM_COLORS` from the generated `team-colors.js` for chart code. The exceptions are the games' own palettes and the futures chart's validated series colours.
 - **Almost no motion.** A 150ms page fade. Nothing rises, staggers, lifts or counts up.
 
 ## Components (`css/components.css`)
@@ -60,7 +61,7 @@ Since 2026-10-23 the site aims to read like a sports broadcast rather than a Saa
 
 ## Keeping it that way
 
-- **The drift ratchet.** `build/check_design_drift.py` counts, per file, the literal font sizes, colours (outside `css/theme.css`), radii, gradients, shadows, emoji and bare `.page` containers, and the pre-commit hook fails if any count goes up against `build/design-drift-baseline.json`. A new file starts at zero. When a change lowers counts, `--update` locks them in; `--report` shows totals and the worst files.
+- **The drift ratchet.** `build/check_design_drift.py` counts, per file, the literal font sizes, colours (outside `css/theme.css` and the generated team colours; the `theme-color` meta tag is exempt), corner radii (not 50% circles), painted gradients (not masks or hatching), literal elevation shadows (not insets or the shadow tokens), emoji and bare `.page` containers, and the pre-commit hook fails if any count goes up against `build/design-drift-baseline.json`. A new file starts at zero. When a change lowers counts, `--update` locks them in; `--report` shows totals and the worst files.
 - **Screenshots.** `tests/frontend/screenshots.js` captures a fixed list of pages at 1440px and 390px in the dark, light and a team theme, named so two runs line up file for file: one against `nbn.today`, one against a branch served by `build/preview_live.py`. It also fails on any page wider than a phone.
 
 ## Sidebar (`css/sidebar.css`, built by `nav.js`)

@@ -86,12 +86,12 @@
     }
 
     .warning {
-      background: #2d1b00;
-      border: 1px solid #713f12;
+      background: color-mix(in srgb, var(--warning) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
       border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
       font-size: 0.85rem;
-      color: #fdba74;
+      color: var(--warning);
       margin: 0.75rem 0;
     }
     .warning strong { color: var(--danger-alt); }

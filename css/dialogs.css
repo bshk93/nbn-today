@@ -30,7 +30,7 @@
   padding: 0.65rem 0.85rem;
   font-size: 0.82rem; line-height: 1.45;
   color: var(--text-primary);
-  box-shadow: 0 6px 20px var(--shadow-color);
+  box-shadow: var(--shadow-overlay);
   cursor: pointer;
   animation: toast-in 0.16s ease-out;
 }
@@ -61,7 +61,7 @@
   padding: 1.4rem;
   width: 100%; max-width: 30rem;
   max-height: calc(100vh - 3rem); overflow-y: auto;
-  box-shadow: 0 18px 50px var(--shadow-color-strong);
+  box-shadow: var(--shadow-overlay);
   animation: dlg-rise 0.14s ease-out;
 }
 .dlg h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }

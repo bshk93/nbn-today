@@ -57,7 +57,7 @@
     /* Eligible roles */
     .roles-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .role-chip {
-      background: transparent; border: 1px solid var(--border); border-radius: 20px;
+      background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
       color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.75rem;
       font-weight: 600; padding: 0.25rem 0.75rem; letter-spacing: 0.04em;
     }
@@ -141,7 +141,7 @@
       margin: 0.8em 0; padding: 0.1em 0 0.1em 1em;
     }
     #body-preview code {
-      background: var(--bg-page); border-radius: var(--radius-sm); color: #a5b4fc;
+      background: var(--bg-page); border-radius: var(--radius-sm); color: var(--accent-light);
       font-family: var(--font-mono); font-size: 0.84em; padding: 0.1em 0.35em;
     }
     #body-preview pre {

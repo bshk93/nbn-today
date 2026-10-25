@@ -28,8 +28,8 @@
   <style>
     
             
-    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: 20px; padding: 0.25rem 0.75rem; white-space: nowrap; }
-    .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 20px; padding: 0.2rem 0.65rem; white-space: nowrap; }
+    .balance-chip { font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: var(--radius-sm); padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; white-space: nowrap; }
     .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
     .lb-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; }
     .pending-tag { font-size: 0.68rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 4px; white-space: nowrap; }
@@ -58,7 +58,7 @@
     .chg-neg { color: var(--danger); }
     .chg-neu { color: var(--text-muted); }
     .buy-btn { background: var(--market-positive-border); border: 1px solid var(--market-positive-bg); color: var(--market-positive-light); border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; cursor: pointer; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
-    .buy-btn:hover { background: #047857; }
+    .buy-btn:hover { background: color-mix(in srgb, var(--success) 16%, transparent); }
     .buy-btn:disabled { opacity: 0.4; cursor: default; }
 
     /* Expanded chart row */
@@ -115,14 +115,14 @@
     .modal-preview .highlight { color: var(--gold); font-weight: 700; }
     .modal-preview .warn { color: var(--danger); }
     .modal-actions { display: flex; gap: 0.5rem; }
-    .btn-confirm { flex: 1; background: #059669; border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
-    .btn-confirm:hover { background: #047857; }
+    .btn-confirm { flex: 1; background: var(--success); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 700; }
+    .btn-confirm:hover { background: color-mix(in srgb, var(--success) 82%, black); }
     .btn-confirm:disabled { opacity: 0.5; cursor: default; }
             .modal-err { font-size: 0.78rem; color: var(--danger); margin-top: 0.5rem; text-align: center; }
 
     /* Bookie controls */
-    .bookie-panel { background: var(--bg-subtle); border: 1px solid #2d2d54; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-    .bookie-panel label { font-size: 0.78rem; color: #818cf8; font-weight: 600; }
+    .bookie-panel { background: var(--bg-subtle); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .bookie-panel label { font-size: 0.78rem; color: var(--accent-light); font-weight: 600; }
     .lock-input { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.8rem; flex: 1; min-width: 150px; font-family: inherit; }
     .btn-lock   { background: var(--danger-border); border: none; color: var(--danger-light); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
     .btn-unlock { background: var(--market-positive-bg); border: none; color: var(--market-positive-light); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 600; }
@@ -151,7 +151,7 @@
     /* Indexes section */
     .index-section { margin-top: 1.75rem; }
     .index-section-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.6rem; }
-    .idx-group-row td { background: var(--bg-page); color: #475569; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.3rem 0.85rem; font-weight: 600; }
+    .idx-group-row td { background: var(--bg-page); color: var(--text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 0.3rem 0.85rem; font-weight: 600; }
     .idx-badge { font-size: 0.68rem; font-weight: 700; font-family: var(--font-mono); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.1rem 0.35rem; color: var(--text-muted); margin-left: 0.4rem; }
     .idx-conf-row .team-abbr { font-weight: 700; color: var(--runnerup-text); }
     .idx-div-row td:first-child { padding-left: 1.75rem; }
@@ -539,7 +539,7 @@ function renderMarketTable() {
       <td class="right" style="color:var(--danger)">${t.total_short > 0 ? fmtNBY(t.total_short * t.price) : '—'}</td>
       <td class="right" style="white-space:nowrap">
         <button class="buy-btn" onclick="event.stopPropagation();openModal('${t.team}','buy')" ${tradeOff(t) ? 'disabled' : ''}>Buy</button>
-        <button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${t.team}','short')" ${tradeOff(t) ? 'disabled' : ''}>Short</button>
+        <button class="buy-btn" style="background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${t.team}','short')" ${tradeOff(t) ? 'disabled' : ''}>Short</button>
       </td>`;
     row.addEventListener('click', () => toggleChart(t.team));
     tbody.appendChild(row);
@@ -604,7 +604,7 @@ function renderIndexTable() {
         <td class="right" style="color:var(--danger)">${idx.total_short > 0 ? fmtNBY(idx.total_short * idx.price) : '—'}</td>
         <td class="right" style="white-space:nowrap">
           <button class="buy-btn" onclick="event.stopPropagation();openModal('${ticker}','buy')" ${tradeOff(idx) ? 'disabled' : ''}>Buy</button>
-          <button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${ticker}','short')" ${tradeOff(idx) ? 'disabled' : ''}>Short</button>
+          <button class="buy-btn" style="background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${ticker}','short')" ${tradeOff(idx) ? 'disabled' : ''}>Short</button>
         </td>`;
       row.addEventListener('click', () => toggleChart(ticker));
       tbody.appendChild(row);
@@ -826,7 +826,7 @@ function renderPortfolio() {
         : `<span style="color:var(--danger);font-size:0.75rem;font-weight:700">SHORT</span>`;
       const closeBtn = isLong
         ? `<button class="buy-btn" style="background:var(--danger-border);color:var(--danger-light);border-color:var(--danger-border)" onclick="openModal('${h.team}','sell')" ${off ? 'disabled' : ''}>Sell</button>`
-        : `<button class="buy-btn" style="background:#2d1b4e;color:var(--purple-light);border-color:var(--purple-border)" onclick="openModal('${h.team}','cover')" ${off ? 'disabled' : ''}>Cover</button>`;
+        : `<button class="buy-btn" style="background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--purple-light);border-color:var(--purple-border)" onclick="openModal('${h.team}','cover')" ${off ? 'disabled' : ''}>Cover</button>`;
       const teamCell = idxEntry
         ? `<span class="team-abbr">${idxEntry.name}</span><span class="idx-badge">${h.team}</span>`
         : `<img class="team-logo" src="/logos/sm/logo-${h.team.toLowerCase()}.webp" alt="${h.team}" onerror="this.style.display='none'"><span class="team-abbr">${h.team}</span>`;

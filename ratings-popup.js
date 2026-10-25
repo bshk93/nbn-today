@@ -43,11 +43,11 @@
   // 2K's own tier palette (bronze/silver/gold are the metals; HOF is purple,
   // Legendary a deeper magenta -- both above gold in the 2K badge system).
   const TIER_COLORS = {
-    Bronze: '#cd7f32',
-    Silver: '#b0b8c1',
-    Gold: '#fbbf24',
-    HOF: '#a78bfa',
-    Legendary: '#f472b6',
+    Bronze: 'var(--cat-bronze)',
+    Silver: 'var(--cat-silver)',
+    Gold: 'var(--gold)',
+    HOF: 'var(--cat-violet)',
+    Legendary: 'var(--cat-pink)',
   };
   const TIER_ORDER = ['Legendary', 'HOF', 'Gold', 'Silver', 'Bronze'];
 
@@ -79,7 +79,7 @@
         background: var(--bg-page);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        box-shadow: var(--shadow-overlay);
         padding: 0.7rem 0.8rem;
         color: var(--text-secondary);
         font-size: 0.75rem;
@@ -138,7 +138,7 @@
         align-items: center;
         gap: 0.3rem;
         background: var(--bg-card);
-        border-radius: 999px;
+        border-radius: var(--radius-sm);
         padding: 0.12rem 0.5rem 0.12rem 0.4rem;
         font-size: 0.64rem;
         color: var(--text-secondary);

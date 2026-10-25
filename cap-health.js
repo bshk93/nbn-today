@@ -309,19 +309,19 @@
 
   const DIFF_CATEGORIES = {
     aggregate:                { label: "Aggregate",         color: "var(--danger)", desc: "Guaranteed salary or hard-cap status disagrees at the team level." },
-    mle:                      { label: "MLE",               color: "#38bdf8", desc: "Mid-level exception usage disagrees." },
-    bae:                      { label: "BAE",               color: "#38bdf8", desc: "Bi-annual exception availability disagrees." },
-    tpe:                      { label: "TPE",               color: "#38bdf8", desc: "Trade exception remaining amount disagrees." },
+    mle:                      { label: "MLE",               color: "var(--cat-sky)", desc: "Mid-level exception usage disagrees." },
+    bae:                      { label: "BAE",               color: "var(--cat-sky)", desc: "Bi-annual exception availability disagrees." },
+    tpe:                      { label: "TPE",               color: "var(--cat-sky)", desc: "Trade exception remaining amount disagrees." },
     player_salary:            { label: "Salary",            color: "var(--danger)", desc: "A signed player's real contract amount disagrees between sheet and site, for the current season." },
-    player_future_years:      { label: "Future Salary",     color: "#fb923c", desc: "This player's salary or free-agent status disagrees with the sheet in one or more seasons beyond the current one. One row per player — every differing season is listed inside it." },
+    player_future_years:      { label: "Future Salary",     color: "var(--cat-orange)", desc: "This player's salary or free-agent status disagrees with the sheet in one or more seasons beyond the current one. One row per player — every differing season is listed inside it." },
     player_hold:              { label: "Cap Hold",          color: "var(--danger-alt)", desc: "A free agent's cap-hold amount disagrees — both sides have computed a real number, they just don't match (e.g. a Bird-rights tier dispute)." },
     player_hold_uncalculated: { label: "Hold Not Calculated", color: "var(--gold-alt)", desc: "The site has never computed a real cap-hold amount for this free agent — it's sitting at a $1 placeholder. A known, systemic gap, not a fresh dispute.", grouped: true },
-    player_status:            { label: "Status",            color: "#e879f9", desc: "One side treats this player as signed to a contract, the other as an unsigned free-agent hold." },
-    player_team_conflict:     { label: "Team Conflict",     color: "#2dd4bf", desc: "Sheet and site disagree on which team currently holds this player's rights." },
-    player_missing:           { label: "Missing on Site",   color: "#94a3b8", desc: "The sheet lists this player on this team; the site has no record of him on any roster." },
-    player_extra:             { label: "Extra on Site",     color: "#94a3b8", desc: "The site has this player on the roster; the sheet doesn't list him anywhere in the league." },
-    player_dead_cap_mismatch: { label: "Dead Cap Status",   color: "#e879f9", desc: "The sheet books this player as a flat Dead Cap charge; the site still carries him as an active roster entry with a real salary/hold. Likely a release/waive that happened but was never entered as a transaction on the site." },
-    pick_signed:              { label: "Pick Signed Early", color: "#dc2626", desc: "The sheet still shows this pick as unsigned draft rights, but the site already has him fully signed to a contract (the 2026 mass-autosign bug, recurring)." },
+    player_status:            { label: "Status",            color: "var(--cat-pink)", desc: "One side treats this player as signed to a contract, the other as an unsigned free-agent hold." },
+    player_team_conflict:     { label: "Team Conflict",     color: "var(--cat-teal)", desc: "Sheet and site disagree on which team currently holds this player's rights." },
+    player_missing:           { label: "Missing on Site",   color: "var(--cat-slate)", desc: "The sheet lists this player on this team; the site has no record of him on any roster." },
+    player_extra:             { label: "Extra on Site",     color: "var(--cat-slate)", desc: "The site has this player on the roster; the sheet doesn't list him anywhere in the league." },
+    player_dead_cap_mismatch: { label: "Dead Cap Status",   color: "var(--cat-pink)", desc: "The sheet books this player as a flat Dead Cap charge; the site still carries him as an active roster entry with a real salary/hold. Likely a release/waive that happened but was never entered as a transaction on the site." },
+    pick_signed:              { label: "Pick Signed Early", color: "var(--danger)", desc: "The sheet still shows this pick as unsigned draft rights, but the site already has him fully signed to a contract (the 2026 mass-autosign bug, recurring)." },
   };
 
   // Severity order, worst first. A player on the wrong roster outranks a dollar

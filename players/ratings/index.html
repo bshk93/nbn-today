@@ -35,7 +35,7 @@
       font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
     }
     .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
-    .edit-btn-primary:hover { background: #223f70; }
+    .edit-btn-primary:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
     .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
@@ -323,7 +323,7 @@
       sorted.forEach(b => {
         const chip = document.createElement('span');
         chip.title = `${b.tier} · ${b.category}`;
-        chip.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;background:var(--bg-card);border-radius:999px;padding:0.2rem 0.65rem 0.2rem 0.5rem;font-size:0.75rem;color:var(--text-secondary);';
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;background:var(--bg-card);border-radius:var(--radius-sm);padding:0.2rem 0.65rem 0.2rem 0.5rem;font-size:0.75rem;color:var(--text-secondary);';
 
         const dot = document.createElement('span');
         dot.style.cssText = `width:0.55rem;height:0.55rem;border-radius:50%;flex-shrink:0;background:${tierColors[b.tier] || 'var(--text-muted)'};`;

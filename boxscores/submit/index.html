@@ -126,7 +126,7 @@
     }
     .min-live-wrap { font-size: 0.8rem; color: var(--text-muted); }
     .min-live {
-      font-size: 1.125rem; font-weight: 800; color: #10b981;
+      font-size: 1.125rem; font-weight: 800; color: var(--success);
       background: rgba(16,185,129,0.12); border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
@@ -188,7 +188,7 @@
     /* Commit-in-progress banner */
     #commit-warning {
       display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-      background: #92400e; color: #fef3c7; text-align: center;
+      background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--gold); text-align: center;
       padding: 0.6rem 1rem; font-size: 0.88rem; font-weight: 600;
       border-bottom: 2px solid var(--champion-border);
     }
@@ -219,11 +219,11 @@
       display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; flex-wrap: wrap;
     }
     .btn-queue {
-      background: #7c3aed; border: 1px solid #8b5cf6; color: #ddd6fe; border-radius: var(--radius-sm);
+      background: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent-light); border-radius: var(--radius-sm);
       padding: 0.55rem 1.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;
       font-family: inherit;
     }
-    .btn-queue:hover { background: #6d28d9; }
+    .btn-queue:hover { background: var(--accent); }
     .btn-queue:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; border-color: var(--border); }
 
     .btn-add-row {

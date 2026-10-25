@@ -198,7 +198,7 @@
       position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem 1rem; font-size: 0.8rem; color: var(--text-primary);
-      box-shadow: 0 4px 16px var(--shadow-color); z-index: 50; max-width: 90vw;
+      box-shadow: var(--shadow-overlay); z-index: 50; max-width: 90vw;
     }
     .toast.bad { border-color: var(--danger-border-strong); color: var(--danger-light); }
 
@@ -269,22 +269,22 @@
       display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%;
       background: transparent; border: 1px solid var(--border);
     }
-    .cd-dot.pending { background: var(--gold, #c9a227); border-color: var(--gold, #c9a227); }
-    .cd-dot.entered { background: var(--success-light, #4caf50); border-color: var(--success-light, #4caf50); }
+    .cd-dot.pending { background: var(--gold, var(--gold)); border-color: var(--gold, color-mix(in srgb, var(--gold) 40%, transparent)); }
+    .cd-dot.entered { background: var(--success-light, var(--success)); border-color: var(--success-light, color-mix(in srgb, var(--success) 40%, transparent)); }
     .cd-incomplete-flag { font-size: 0.8rem; line-height: 1; cursor: default; }
 
     .cd-trow.later { opacity: 0.55; }
 
     /* ── My games tab ──────────────────────────────────────────────────── */
     .mine-warn {
-      border: 1px solid var(--border); border-left: 3px solid var(--gold, #c9a227);
+      border: 1px solid var(--border); border-left: 3px solid var(--gold, var(--gold));
       border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; margin-bottom: 1rem; font-size: 0.8rem;
       color: var(--text-secondary);
     }
     .mine-warn b { color: var(--text-primary); }
     .mine-warn ul { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     .mine-warn li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-    .stream-req { font-size: 0.72rem; color: var(--gold, #c9a227); white-space: nowrap; margin-right: 0.3rem; }
+    .stream-req { font-size: 0.72rem; color: var(--gold, var(--gold)); white-space: nowrap; margin-right: 0.3rem; }
     .mine-day {
       border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.8rem; overflow: hidden;
       background: var(--bg-card);
@@ -306,8 +306,8 @@
     }
     .mine-team .t { font-weight: 700; color: var(--text-secondary); }
     .mine-team .st { color: var(--text-muted); }
-    .mine-team.pending { border-color: var(--gold, #c9a227); }
-    .mine-team.pending .st { color: var(--gold, #c9a227); font-weight: 600; }
+    .mine-team.pending { border-color: var(--gold, color-mix(in srgb, var(--gold) 40%, transparent)); }
+    .mine-team.pending .st { color: var(--gold, var(--gold)); font-weight: 600; }
     .mine-team .acts { margin-left: auto; display: flex; gap: 0.3rem; }
     .mine-detail { grid-column: 1 / -1; padding: 0.4rem 0; }
 
@@ -328,7 +328,7 @@
       font-size: 0.7rem; font-weight: 700; color: var(--danger-light);
       background: var(--danger-bg); border: 1px solid var(--danger-light); cursor: help;
     }
-    .note-box.open { border-color: var(--gold, #c9a227); }
+    .note-box.open { border-color: var(--gold, color-mix(in srgb, var(--gold) 40%, transparent)); }
     .note-box .note-text { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-primary); font-size: 0.85rem; margin: 0.2rem 0; }
     .note-box .note-clear { align-self: flex-start; margin-top: 0.4rem; }
     /* The coaching cards flow into columns, so a row's label and value sit
@@ -340,7 +340,7 @@
     .tab-badge[hidden] { display: none; }
     .tab-badge {
       display: inline-block; min-width: 1.1rem; margin-left: 0.35rem; padding: 0 0.35rem;
-      border-radius: 999px; background: var(--gold, #c9a227); color: #1a1400;
+      border-radius: var(--radius-sm); background: var(--gold, var(--gold)); color: black;
       font-size: 0.68rem; font-weight: 700; line-height: 1.3rem; text-align: center;
     }
   </style>

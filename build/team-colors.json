@@ -1,123 +1,153 @@
 {
-  "_comment": "Per-team (primary, accent) used by build/make_team_theme.py. primary sets the page/card/border/text hue; accent replaces the blue accent family. NOTE: three older hardcoded copies of team colours still exist (champions/index.html, frivolities/index.html, nbn-api/routers/discord.py) and are NOT yet fed from this file.",
+  "_comment": "Per-team colours. primary and accent drive the team themes (build/make_team_theme.py) and css/team-colors.css. chart is the one colour a chart or a series uses for the team: picked to stay distinct from the other 29 and to read on dark and light pages, so it is not always the primary (BKN's black, UTA's navy would vanish). build/make_team_colors_css.py writes all three to css/team-colors.css and to team-colors.js for chart code. nbn-api/routers/discord.py still keeps its own copy.",
   "ATL": {
     "primary": "#C8102E",
-    "accent": "#FDB927"
+    "accent": "#FDB927",
+    "chart": "#E03A3E"
   },
   "BKN": {
     "primary": "#1A1A1A",
-    "accent": "#C4CED4"
+    "accent": "#C4CED4",
+    "chart": "#9EA1A2"
   },
   "BOS": {
     "primary": "#00471B",
-    "accent": "#BA9653"
+    "accent": "#BA9653",
+    "chart": "#007A33"
   },
   "CHA": {
     "primary": "#1D1160",
-    "accent": "#00788C"
+    "accent": "#00788C",
+    "chart": "#00788C"
   },
   "CHI": {
     "primary": "#CE1141",
-    "accent": "#CE1141"
+    "accent": "#CE1141",
+    "chart": "#CE1141"
   },
   "CLE": {
     "primary": "#5C0A2E",
-    "accent": "#FDBB30"
+    "accent": "#FDBB30",
+    "chart": "#860038"
   },
   "DAL": {
     "primary": "#00538C",
-    "accent": "#2E7BC4"
+    "accent": "#2E7BC4",
+    "chart": "#00538C"
   },
   "DEN": {
     "primary": "#0E2240",
-    "accent": "#FEC524"
+    "accent": "#FEC524",
+    "chart": "#FEC524"
   },
   "DET": {
     "primary": "#1D42BA",
-    "accent": "#C8102E"
+    "accent": "#C8102E",
+    "chart": "#1D428A"
   },
   "GSW": {
     "primary": "#1D428A",
-    "accent": "#FFC72C"
+    "accent": "#FFC72C",
+    "chart": "#FFC72C"
   },
   "HOU": {
     "primary": "#CE1141",
-    "accent": "#E03A3E"
+    "accent": "#E03A3E",
+    "chart": "#BA0C2F"
   },
   "IND": {
     "primary": "#002D62",
-    "accent": "#FDBB30"
+    "accent": "#FDBB30",
+    "chart": "#FDBB30"
   },
   "LAC": {
     "primary": "#1D428A",
-    "accent": "#C8102E"
+    "accent": "#C8102E",
+    "chart": "#C8102E"
   },
   "LAL": {
     "primary": "#552583",
-    "accent": "#FDB927"
+    "accent": "#FDB927",
+    "chart": "#552583"
   },
   "MEM": {
     "primary": "#12173F",
-    "accent": "#5D76A9"
+    "accent": "#5D76A9",
+    "chart": "#5D76A9"
   },
   "MIA": {
     "primary": "#5E1030",
-    "accent": "#F9A01B"
+    "accent": "#F9A01B",
+    "chart": "#98002E"
   },
   "MIL": {
     "primary": "#00471B",
-    "accent": "#EEE1C6"
+    "accent": "#EEE1C6",
+    "chart": "#00471B"
   },
   "MIN": {
     "primary": "#0C2340",
-    "accent": "#78BE20"
+    "accent": "#78BE20",
+    "chart": "#236192"
   },
   "NOP": {
     "primary": "#0C2340",
-    "accent": "#C8102E"
+    "accent": "#C8102E",
+    "chart": "#85714D"
   },
   "NYK": {
     "primary": "#00548C",
-    "accent": "#F58426"
+    "accent": "#F58426",
+    "chart": "#F58426"
   },
   "OKC": {
     "primary": "#007AC1",
-    "accent": "#EF3B24"
+    "accent": "#EF3B24",
+    "chart": "#007AC1"
   },
   "ORL": {
     "primary": "#0077C0",
-    "accent": "#0B8FD6"
+    "accent": "#0B8FD6",
+    "chart": "#0077C0"
   },
   "PHI": {
     "primary": "#006BB6",
-    "accent": "#ED174C"
+    "accent": "#ED174C",
+    "chart": "#006BB6"
   },
   "PHX": {
     "primary": "#1D1160",
-    "accent": "#E56020"
+    "accent": "#E56020",
+    "chart": "#E56020"
   },
   "POR": {
     "primary": "#1A1A1A",
-    "accent": "#E03A3E"
+    "accent": "#E03A3E",
+    "chart": "#E03A3E"
   },
   "SAC": {
     "primary": "#5A2D81",
-    "accent": "#7B4FA8"
+    "accent": "#7B4FA8",
+    "chart": "#5A2D81"
   },
   "SAS": {
     "primary": "#1A1A1A",
-    "accent": "#C4CED4"
+    "accent": "#C4CED4",
+    "chart": "#8A8D8F"
   },
   "TOR": {
     "primary": "#CE1141",
-    "accent": "#B4975A"
+    "accent": "#B4975A",
+    "chart": "#A4224B"
   },
   "UTA": {
     "primary": "#002B5C",
-    "accent": "#F9A01B"
+    "accent": "#F9A01B",
+    "chart": "#002B5C"
   },
   "WAS": {
     "primary": "#002B5C",
-    "accent": "#E31837"
+    "accent": "#E31837",
+    "chart": "#E31837"
   }
 }

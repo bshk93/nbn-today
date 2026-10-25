@@ -33,14 +33,13 @@
     }
     .tl-pill {
       display: inline-flex; align-items: center; gap: 0.35rem;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.3rem 0.7rem; font-size: 0.78rem; color: var(--text-muted); cursor: pointer;
       transition: all 0.15s; white-space: nowrap;
     }
-    .tl-pill:hover { border-color: var(--warning); color: #fde68a; }
+    .tl-pill:hover { border-color: var(--warning); color: var(--gold); }
     .tl-pill.active {
-      background: linear-gradient(180deg,var(--warning),var(--gold-dim));
-      border-color: var(--gold); color: var(--text-on-accent); font-weight: 700;
+      background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); font-weight: 700;
     }
     .tl-pill img { height: 16px; width: 16px; object-fit: contain; }
 
@@ -50,14 +49,18 @@
       border: 1px solid var(--border); margin-bottom: 1.5rem;
       background: var(--bg-subtle);
     }
-    .banner-glow { position: absolute; inset: 0; opacity: 0.22; pointer-events: none; }
+    /* The champion's band: its colours, flat, like a team page's header. */
+    .banner[data-team] { background: var(--team-primary); border: 0; border-bottom: 5px solid var(--team-accent); color: white; }
+    .banner[data-team] .banner-season, .banner[data-team] .crown { color: white; }
+    .banner[data-team] .banner-sub, .banner[data-team] .banner-clinch { color: rgba(255, 255, 255, 0.8); }
+    .banner[data-team] .banner-sub a { color: white; text-decoration: underline; }
     .banner-inner {
       position: relative; display: flex; align-items: center; gap: 1.5rem;
       padding: 2rem 2rem; flex-wrap: wrap; justify-content: center; text-align: center;
     }
     .banner-logo {
-      height: 130px; width: 130px; object-fit: contain;
-      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.5));
+      height: 130px; width: 130px; object-fit: contain; padding: 14px;
+      background: white; border-radius: 50%;
       flex-shrink: 0;
     }
     .banner-text { display: flex; flex-direction: column; gap: 0.3rem; align-items: center; }
@@ -72,8 +75,8 @@
     .crown { font-size: 1.4rem; color: var(--gold); }
     .repeat-tag {
       display: inline-block; margin-top: 0.4rem; font-size: 0.72rem; font-weight: 700;
-      color: #fde68a; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
-      border-radius: 999px; padding: 0.15rem 0.6rem; letter-spacing: 0.04em;
+      color: var(--gold); background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
+      border-radius: var(--radius-sm); padding: 0.15rem 0.6rem; letter-spacing: 0.04em;
     }
 
     /* Section */
@@ -99,7 +102,7 @@
       display: inline-block; font-size: 0.62rem; font-weight: 700; border-radius: var(--radius-sm);
       padding: 0.05rem 0.3rem; margin-top: 0.3rem;
     }
-    .badge-foty { background: var(--gold-bg); color: var(--gold); border: 1px solid #92400e; }
+    .badge-foty { background: var(--gold-bg); color: var(--gold); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); }
 
     /* Playoff run */
     .run { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -198,13 +201,6 @@
     OKC:"Oklahoma City Thunder", ORL:"Orlando Magic", PHI:"Philadelphia 76ers", PHX:"Phoenix Suns",
     POR:"Portland Trail Blazers", SAC:"Sacramento Kings", SAS:"San Antonio Spurs", TOR:"Toronto Raptors",
     UTA:"Utah Jazz", WAS:"Washington Wizards",
-  };
-  const TEAM_COLORS = {
-    ATL:"#E03A3E", BKN:"#7a7f87", BOS:"#007A33", CHA:"#1D1160", CHI:"#CE1141", CLE:"#860038",
-    DAL:"#00538C", DEN:"#418FDE", DET:"#C8102E", GSW:"#1D428A", HOU:"#CE1141", IND:"#FDBB30",
-    LAC:"#C8102E", LAL:"#552583", MEM:"#5D76A9", MIA:"#98002E", MIL:"#00471B", MIN:"#236192",
-    NOP:"#85714D", NYK:"#F58426", OKC:"#007AC1", ORL:"#0077C0", PHI:"#006BB6", PHX:"#E56020",
-    POR:"#E03A3E", SAC:"#5A2D81", SAS:"#C4CED4", TOR:"#CE1141", UTA:"#F9A01B", WAS:"#E31837",
   };
   const ROUND_NAMES = { "1":"First Round", "2":"Conf. Semifinals", "3":"Conf. Finals", "4":"NBN Finals" };
 
@@ -397,7 +393,6 @@
 
   async function render() {
     const c = CHAMPS[idx];
-    const color = TEAM_COLORS[c.team] || 'var(--warning)';
     const seriesGames = await loadSeriesGames(c);
     if (CHAMPS[idx] !== c) return; // navigated away while fetching
 
@@ -413,8 +408,7 @@
       ? `<div class="repeat-tag">${TEAMS[c.team]} title #${c.titleNo} · ${ordinalRepeat(c)}</div>` : '';
 
     document.getElementById('content').innerHTML = `
-      <div class="banner">
-        <div class="banner-glow" style="background: radial-gradient(circle at 30% 30%, ${color} 0%, transparent 60%);"></div>
+      <div class="banner" data-team="${c.team}">
         <div class="banner-inner">
           <img class="banner-logo" src="${logoLg(c.team)}" alt="${c.team}">
           <div class="banner-text">

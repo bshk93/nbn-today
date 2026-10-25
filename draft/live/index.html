@@ -29,7 +29,7 @@
 
     /* ── Admin panel ──────────────────────────────────── */
     #admin-panel, #bod-panel {
-      background: #111;
+      background: var(--bg-page);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       margin-bottom: 1.5rem;
@@ -89,7 +89,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      background: #dc2626;
+      background: var(--danger);
       color: var(--text-on-accent);
       font-size: 0.65rem;
       font-weight: 800;
@@ -101,7 +101,7 @@
     }
     .live-dot {
       width: 6px; height: 6px;
-      background: #fff;
+      background: white;
       border-radius: 50%;
       animation: pulse 1.2s infinite;
     }
@@ -174,7 +174,7 @@
       border: none; background: none; font-family: inherit; cursor: pointer;
     }
     .pick-in-btn .pick-in-tap {
-      font-size: 0.6rem; font-weight: 600; color: #a16207;
+      font-size: 0.6rem; font-weight: 600; color: var(--warning);
       letter-spacing: 0.03em; text-transform: none;
     }
     .pick-in-btn:active { opacity: 0.65; }
@@ -271,7 +271,7 @@
       min-width: 0;
       overflow: hidden;
     }
-    .pick-card.on-clock { background: #0d1f3c; border-color: var(--accent); }
+    .pick-card.on-clock { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: var(--accent); }
     .pc-num { font-size: 0.7rem; color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; width: 1.6rem; }
     .pc-team-wrap { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; width: 4.2rem; }
     .pc-team-logo { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
@@ -285,8 +285,8 @@
     /* ── Trade-to-announce banner ─────────────────────── */
     #trade-banner { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
     .trade-card {
-      background: #2d1b00;
-      border: 1px solid #713f12;
+      background: color-mix(in srgb, var(--warning) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
       border-radius: var(--radius);
       padding: 0.75rem 1rem;
       display: flex;
@@ -300,11 +300,11 @@
       color: var(--danger-alt); flex-shrink: 0;
     }
     .trade-card-dot { width: 7px; height: 7px; background: var(--danger-alt); border-radius: 50%; animation: pulse 1.2s infinite; }
-    .trade-card-detail { flex: 1; min-width: 0; font-size: 0.85rem; color: #fdba74; }
-    .trade-card-detail .swap { color: #fed7aa; font-weight: 600; white-space: nowrap; }
+    .trade-card-detail { flex: 1; min-width: 0; font-size: 0.85rem; color: var(--warning); }
+    .trade-card-detail .swap { color: var(--warning); font-weight: 600; white-space: nowrap; }
     .trade-card-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-    .btn-announce { background: #ea580c; color: var(--text-on-accent); }
-    .btn-announce:hover { background: #c2410c; }
+    .btn-announce { background: var(--warning); color: var(--text-on-accent); }
+    .btn-announce:hover { background: color-mix(in srgb, var(--warning) 82%, black); }
 
     /* ── Trade builder rows (BOD drawer) ──────────────── */
     .trade-row { display: flex; gap: 0.4rem; align-items: center; }
@@ -371,13 +371,13 @@
     .show-modal-pick-badge {
       font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em;
       text-transform: uppercase; color: var(--gold-alt);
-      background: var(--gold-bg); border: 1px solid #713f12;
+      background: var(--gold-bg); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
       border-radius: var(--radius-sm); padding: 0.15rem 0.45rem;
       display: inline-block; margin-bottom: 0.35rem;
     }
     .show-modal-title { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
     .show-modal-sub { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.15rem; }
-    .show-embed-wrap { position: relative; width: 100%; padding-top: 56.25%; background: #0f0f0f; }
+    .show-embed-wrap { position: relative; width: 100%; padding-top: 56.25%; background: var(--bg-page); }
     .show-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
     .show-no-video {
       position: absolute; inset: 0;
@@ -440,11 +440,11 @@
       font-size: 0.58rem; font-weight: 700; letter-spacing: 0.09em;
       text-transform: uppercase; color: var(--text-muted);
       background: rgba(0,0,0,0.3); padding: 0.2rem 0.55rem;
-      border-bottom: 1px solid #1a2336;
+      border-bottom: 1px solid var(--accent);
     }
     .depth-player-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.2rem 0.55rem; border-bottom: 1px solid #0f1a28; font-size: 0.78rem;
+      padding: 0.2rem 0.55rem; border-bottom: 1px solid var(--border); font-size: 0.78rem;
     }
     .depth-player-row:last-child { border-bottom: none; }
     .depth-player-name { color: var(--text-primary); font-weight: 600; }
@@ -1663,16 +1663,16 @@
 
       // Half-court SVG (bird's-eye, basket at bottom; 50ft×47ft at 10px/ft)
       const courtSvg = `<svg class="depth-court-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="498" height="468" fill="none" stroke="#fff" stroke-width="2"/>
-        <rect x="170" y="280" width="160" height="190" fill="none" stroke="#fff" stroke-width="2"/>
-        <path d="M 190,280 A 60,60 0 0,0 310,280" fill="none" stroke="#fff" stroke-width="2"/>
-        <path d="M 190,280 A 60,60 0 0,1 310,280" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="6,5"/>
-        <line x1="30" y1="330" x2="30" y2="469" stroke="#fff" stroke-width="2"/>
-        <line x1="470" y1="330" x2="470" y2="469" stroke="#fff" stroke-width="2"/>
-        <path d="M 30,330 A 237,237 0 0,0 470,330" fill="none" stroke="#fff" stroke-width="2"/>
-        <circle cx="250" cy="418" r="10" fill="none" stroke="#fff" stroke-width="2"/>
-        <path d="M 210,418 A 40,40 0 0,0 290,418" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,4"/>
-        <line x1="218" y1="453" x2="282" y2="453" stroke="#fff" stroke-width="3"/>
+        <rect x="1" y="1" width="498" height="468" fill="none" stroke="white" stroke-width="2"/>
+        <rect x="170" y="280" width="160" height="190" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M 190,280 A 60,60 0 0,0 310,280" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M 190,280 A 60,60 0 0,1 310,280" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="6,5"/>
+        <line x1="30" y1="330" x2="30" y2="469" stroke="white" stroke-width="2"/>
+        <line x1="470" y1="330" x2="470" y2="469" stroke="white" stroke-width="2"/>
+        <path d="M 30,330 A 237,237 0 0,0 470,330" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="250" cy="418" r="10" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M 210,418 A 40,40 0 0,0 290,418" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="218" y1="453" x2="282" y2="453" stroke="white" stroke-width="3"/>
       </svg>`;
 
       const overlay = document.getElementById('show-overlay');

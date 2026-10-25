@@ -37,7 +37,7 @@
     .chip {
       background: transparent;
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: var(--radius-sm);
       color: var(--text-muted);
       cursor: pointer;
       font-family: inherit;
@@ -48,7 +48,7 @@
     }
     .chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
     .chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
-    .chip.year-chip.active { background: var(--market-positive-border); border-color: #10b981; color: #d1fae5; }
+    .chip.year-chip.active { background: var(--market-positive-border); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light); }
 
     
     
@@ -86,7 +86,7 @@
       border-top: 1px solid var(--border-subtle);
     }
     .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
-    .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+    .cap-swatch { display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-sm); }
 
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
 
@@ -113,7 +113,7 @@
     .move-menu {
       position: fixed; z-index: 10000; min-width: 230px; max-width: 320px;
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 0.3rem; box-shadow: 0 8px 24px var(--overlay-scrim);
+      padding: 0.3rem; box-shadow: var(--shadow-overlay);
       display: flex; flex-direction: column; gap: 0.1rem;
     }
     .move-menu-head {
@@ -217,7 +217,7 @@
     .waiver-card .wc-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.1rem; }
     .waiver-card .wc-deadline { font-size: 0.76rem; color: var(--text-muted); min-width: 8rem; text-align: right; }
     .waiver-card .wc-deadline.urgent { color: var(--danger); font-weight: 600; }
-    .waiver-card .wc-status { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 999px;
+    .waiver-card .wc-status { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm);
       border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
     .waiver-card .wc-status.mine { border-color: var(--accent); color: var(--accent); }
     .waiver-card .wc-status.pdc { border-color: var(--gold-border); color: var(--gold); }

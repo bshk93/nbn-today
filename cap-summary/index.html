@@ -87,7 +87,7 @@
       white-space: nowrap;
       z-index: 100;
       display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      box-shadow: var(--shadow-overlay);
     }
 
     
@@ -292,7 +292,7 @@
       left: 0;
       background: var(--bg-card);
       z-index: 1;
-      box-shadow: 1px 0 0 var(--border);
+      box-shadow: inset -1px 0 0 var(--border);
     }
 
     tbody tr:hover .team-cell { background: var(--bg-hover); }
@@ -350,7 +350,7 @@
       pointer-events: none;
       z-index: 100;
       display: none;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      box-shadow: var(--shadow-overlay);
       line-height: 1.5;
       max-width: min(280px, calc(100vw - 24px));
     }
@@ -1189,7 +1189,7 @@
         { val: chartLevels.cap,      label: 'Cap',      color: 'var(--text-secondary)', dy: -14 },
         { val: chartLevels.apron1,   label: 'Apron 1',  color: 'var(--warning)', dy: -5  },
         { val: chartLevels.apron2,   label: 'Apron 2',  color: 'var(--danger)', dy: -14 },
-        { val: chartLevels.hard_cap, label: 'Hard Cap', color: '#7c3aed', dy: -5  },
+        { val: chartLevels.hard_cap, label: 'Hard Cap', color: 'var(--cat-violet)', dy: -5  },
       ].filter(t => t.val);
       const threshLines = thresholds.map(t => {
         const x = xS(t.val).toFixed(1);

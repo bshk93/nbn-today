@@ -69,8 +69,8 @@
     .row-form input:focus, .row-form select:focus { outline: none; border-color: var(--link); }
     .row-actions { display: flex; gap: 0.4rem; white-space: nowrap; }
     .btn-row-save {
-      background: var(--accent-dark, #1d4ed8); border: 1px solid var(--accent, #3b82f6);
-      color: var(--text-on-accent, #fff); border-radius: var(--radius-sm); padding: 0.25rem 0.6rem;
+      background: var(--accent-dark, var(--accent)); border: 1px solid var(--accent, color-mix(in srgb, var(--accent) 40%, transparent));
+      color: var(--text-on-accent, white); border-radius: var(--radius-sm); padding: 0.25rem 0.6rem;
       font-size: 0.75rem; cursor: pointer; font-family: inherit;
     }
     .btn-row-cancel {
@@ -92,7 +92,7 @@
       margin-bottom: 1.25rem;
     }
     .total-card .label { font-size: 0.85rem; color: var(--text-muted); }
-    .total-card .amount { font-size: 1.5rem; font-weight: 700; color: var(--success-light, #4ade80); }
+    .total-card .amount { font-size: 1.5rem; font-weight: 700; color: var(--success-light, var(--success-light)); }
 
             thead th.sortable { cursor: pointer; user-select: none; }
     thead th.sortable:hover { color: var(--text-secondary); }

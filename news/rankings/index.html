@@ -30,7 +30,7 @@
     .badge-setup { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
     .badge-voting { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
     .badge-blurbs { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
-    .badge-final { background: var(--success-dark-bg); border: 1px solid #16a34a; color: var(--success); }
+    .badge-final { background: var(--success-dark-bg); border: 1px solid color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
 
         .sub { font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
     .sub .sep { color: var(--border); }
@@ -48,8 +48,8 @@
 
     /* Voter chips */
     .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
-    .chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.55rem; color: var(--text-secondary); }
-    .chip.done { border-color: #16a34a; color: var(--success); }
+    .chip { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.2rem 0.55rem; color: var(--text-secondary); }
+    .chip.done { border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
     .chip.started { border-color: var(--text-dim); color: var(--text-secondary); }
     .part { color: var(--text-dim); }
     .chip button { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; font-size: 0.9rem; line-height: 1; }

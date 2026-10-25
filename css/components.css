@@ -95,7 +95,7 @@
 @property --ui-tabs-fade-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
 @supports (animation-timeline: scroll()) {
   .ui-tabs {
-    mask-image: linear-gradient(to right, transparent, #000 var(--ui-tabs-fade-l), #000 calc(100% - var(--ui-tabs-fade-r)), transparent);
+    mask-image: linear-gradient(to right, transparent, black var(--ui-tabs-fade-l), black calc(100% - var(--ui-tabs-fade-r)), transparent);
     animation: ui-tabs-fade linear both;
     animation-timeline: scroll(self inline);
   }
@@ -385,7 +385,7 @@
 }
 .ui-textarea { height: auto; padding: var(--space-2) var(--space-3); line-height: 1.5; }
 .ui-select { padding-right: var(--space-6); cursor: pointer; }
-.ui-input:focus, .ui-select:focus, .ui-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.ui-input:focus, .ui-select:focus, .ui-textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
 /* Every other form control on the site. :where() gives these zero
    specificity, so any page's own rule still wins; what they set is the
    common ground pages disagreed on: font, colours, border, corners, and one
@@ -400,7 +400,7 @@
 :where(input, select, textarea):focus-visible {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow: var(--focus-ring);
 }
 :where(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: var(--accent); }
 
@@ -606,7 +606,7 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
   background: rgba(255, 255, 255, 0.95);
 }
 :root[data-team] .team-header h1 {
-  color: #fff;
+  color: white;
   text-align: left;
   font-size: 3.25rem;
 }
@@ -626,7 +626,7 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
   color: rgba(255, 255, 255, 0.85);
   border-color: rgba(255, 255, 255, 0.35);
 }
-:root[data-team] .team-nav-btn:hover { color: #fff; border-color: #fff; background: rgba(255, 255, 255, 0.1); }
+:root[data-team] .team-nav-btn:hover { color: white; border-color: white; background: rgba(255, 255, 255, 0.1); }
 :root[data-team] .ui-tab.active { border-bottom-color: var(--team-accent); }
 @media (max-width: 600px) {
   :root[data-team] .team-header-nav { padding: var(--space-4) var(--space-3); gap: var(--space-2); }

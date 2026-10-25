@@ -45,8 +45,8 @@
     .docket { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem; }
     .verdict-chip {
       display: inline-block; margin-top: 0.9rem;
-      background: var(--danger-bg); border: 1px solid #b91c1c; color: var(--danger-light);
-      padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+      background: var(--danger-bg); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); color: var(--danger-light);
+      padding: 0.2rem 0.7rem; border-radius: var(--radius-sm); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
     }
 
     h2 { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 2.2rem 0 0.4rem; letter-spacing: -0.01em; }
@@ -71,15 +71,15 @@
     th, td { padding: 0.35rem 0.55rem; text-align: left; border-bottom: 1px solid var(--bg-card); }
     th { color: var(--text-muted); font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    tr.flag td { background: #2a1c10; }
+    tr.flag td { background: var(--bg-card); }
     .mono { font-family: var(--font-mono); font-size: 0.82em; }
     .hot { color: var(--danger-light); font-weight: 700; }
 
     .callout {
       background: var(--bg-card); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm);
-      padding: 0.7rem 1rem; margin: 1rem 0; font-size: 0.87rem; color: #bfdbfe;
+      padding: 0.7rem 1rem; margin: 1rem 0; font-size: 0.87rem; color: var(--accent-light);
     }
-    .callout.warn { background: #2a1c10; border-color: var(--gold-dim); color: #fcd34d; }
+    .callout.warn { background: var(--bg-card); border-color: var(--gold-dim); color: var(--gold); }
 
     ul { margin: 0.4rem 0; padding-left: 1.3rem; }
     li { margin: 0.25rem 0; }

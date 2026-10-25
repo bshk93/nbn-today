@@ -54,11 +54,11 @@
     .fut-chart svg:focus { outline: none; }
     .fut-chart svg:focus-visible { outline: 1px solid var(--border); outline-offset: 2px; }
     .fut-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; align-items: center; }
-    .fut-legend .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; vertical-align: middle; margin-right: 0.35rem; }
+    .fut-legend .key { display: inline-block; width: 14px; height: 2px; border-radius: var(--radius-sm); vertical-align: middle; margin-right: 0.35rem; }
     .fut-legend .note { color: var(--text-muted); }
     .fut-legend strong { color: var(--text-primary); font-weight: 600; }
     .fut-tip { position: absolute; top: 0; pointer-events: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 0.4rem 0.55rem; font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,.3)); display: none; z-index: 2; }
+      padding: 0.4rem 0.55rem; font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; box-shadow: var(--shadow-overlay); display: none; z-index: 2; }
     .fut-tip .when { color: var(--text-muted); margin-bottom: 0.2rem; }
     .fut-tip .row { display: flex; align-items: center; gap: 0.4rem; }
     .fut-tip .row b { color: var(--text-primary); font-weight: 600; margin-left: auto; padding-left: 0.8rem; font-variant-numeric: tabular-nums; }

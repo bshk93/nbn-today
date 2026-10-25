@@ -164,7 +164,7 @@
         
     td.league-leader {
       font-weight: 700;
-      color: #fcd34d;
+      color: var(--gold);
     }
 
     .row-icon { font-size: 0.95em; margin-left: 4px; color: var(--gold); }
@@ -207,7 +207,7 @@
     .tile-up { color: var(--success); }
     .tile-down { color: var(--danger); }
     .tile-spark { display: block; }
-    .hof-bar { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; margin-top: 0.15rem; }
+    .hof-bar { height: 3px; border-radius: var(--radius-sm); background: var(--border); overflow: hidden; margin-top: 0.15rem; }
     .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
     .hof-top10 .tile-label, .hof-top10 .tile-sub b:first-child { color: var(--gold); }
     .hof-top10 .hof-bar i { background: var(--gold); }
@@ -310,7 +310,7 @@
     }
 
     .missing-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
-    .missing-btn.active { background: #451a03; border-color: var(--champion-border); color: #fcd34d; }
+    .missing-btn.active { background: color-mix(in srgb, var(--warning) 16%, transparent); border-color: var(--champion-border); color: var(--gold); }
 
     .rostered-btn {
       padding: 0.3rem 0.75rem;
@@ -325,7 +325,7 @@
       font-family: inherit;
     }
     .rostered-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
-    .rostered-btn.active { background: var(--success-bg); border-color: #16a34a; color: var(--success-light); }
+    .rostered-btn.active { background: var(--success-bg); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light); }
 
     .filter-bar {
       display: flex;
@@ -450,7 +450,7 @@
       font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
     }
     .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
-    .edit-btn-primary:hover { background: #223f70; }
+    .edit-btn-primary:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
     .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .edit-status { font-size: 0.75rem; color: var(--danger); }
@@ -459,7 +459,7 @@
       border-radius: var(--radius-sm); color: var(--accent-light); font-size: 0.78rem; font-weight: 600;
       cursor: pointer; font-family: inherit; white-space: nowrap;
     }
-    .btn-add-player:hover { background: #223f70; }
+    .btn-add-player:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.65);
       display: flex; align-items: center; justify-content: center; z-index: 100;
@@ -2003,27 +2003,27 @@
 
   const BADGE_DEFS = [
     { label: 'Ring',        award: null,                                  color: 'var(--warning)', rings: true },
-    { label: 'MVP',         award: 'Most Valuable Player',                color: '#a855f7' },
-    { label: 'DPOY',        award: 'Defensive Player of the Year',        color: '#14b8a6' },
+    { label: 'MVP',         award: 'Most Valuable Player',                color: 'var(--cat-violet)' },
+    { label: 'DPOY',        award: 'Defensive Player of the Year',        color: 'var(--cat-teal)' },
     { label: 'ROY',         award: 'Rookie of the Year',                  color: 'var(--success-alt)' },
     { label: 'MIP',         award: 'Most Improved Player',                color: 'var(--accent)' },
-    { label: '6MOY',        award: 'Sixth Man of the Year',               color: '#f97316' },
-    { label: 'All-Star',    award: 'All-Star',                            color: '#38bdf8' },
+    { label: '6MOY',        award: 'Sixth Man of the Year',               color: 'var(--cat-orange)' },
+    { label: 'All-Star',    award: 'All-Star',                            color: 'var(--cat-sky)' },
     { label: 'All-NBN 1st', award: 'All-NBN First Team',                  color: 'var(--warning)' },
     { label: 'All-NBN 2nd', award: 'All-NBN Second Team',                 color: 'var(--text-muted)' },
     { label: 'All-NBN 3rd', award: 'All-NBN Third Team',                  color: 'var(--gold-dim)' },
     { label: 'All-Defense', award: 'All-Defense',                         color: 'var(--danger)' },
-    { label: 'All-Rookie',  award: 'All-Rookie',                          color: '#84cc16' },
+    { label: 'All-Rookie',  award: 'All-Rookie',                          color: 'var(--cat-lime)' },
   ];
 
   const LEADER_BADGE_DEFS = [
     { label: 'Pts Ldr',  stat: 'PTS',  color: 'var(--warning)' },
     { label: 'Reb Ldr',  stat: 'REB',  color: 'var(--success-alt)' },
-    { label: 'Ast Ldr',  stat: 'AST',  color: '#38bdf8' },
-    { label: 'Stl Ldr',  stat: 'STL',  color: '#a855f7' },
+    { label: 'Ast Ldr',  stat: 'AST',  color: 'var(--cat-sky)' },
+    { label: 'Stl Ldr',  stat: 'STL',  color: 'var(--cat-violet)' },
     { label: 'Blk Ldr',  stat: 'BLK',  color: 'var(--danger)' },
-    { label: '3PM Ldr',  stat: '3PM',  color: '#f97316' },
-    { label: 'GMSC Ldr', stat: 'GMSC', color: '#14b8a6' },
+    { label: '3PM Ldr',  stat: '3PM',  color: 'var(--cat-orange)' },
+    { label: 'GMSC Ldr', stat: 'GMSC', color: 'var(--cat-teal)' },
   ];
 
   function renderAccolades(container, playerSlug, rings, playerAwards, seasonLeaders) {

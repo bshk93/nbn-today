@@ -43,7 +43,7 @@
         .doc-meta { margin-top: 0.4rem; font-size: 0.8rem; color: var(--text-muted); display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
     .version-chip {
       background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light);
-      padding: 0.1rem 0.55rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+      padding: 0.1rem 0.55rem; border-radius: var(--radius-sm); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
     }
     .btn-edit {
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
@@ -98,8 +98,8 @@
     }
     .doc-content blockquote p { color: var(--accent-light); margin: 0; }
     .doc-content blockquote a { color: var(--accent-light); text-decoration: underline; }
-    .doc-content blockquote a:hover { color: #bfdbfe; }
-    .doc-content code { background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.1em 0.35em; font-size: 0.85em; color: #a5b4fc; }
+    .doc-content blockquote a:hover { color: var(--accent-light); }
+    .doc-content code { background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.1em 0.35em; font-size: 0.85em; color: var(--accent-light); }
     .doc-content pre { background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.9em 1em; overflow-x: auto; margin: 0.75em 0; }
     .doc-content pre code { background: none; padding: 0; color: var(--text-secondary); }
 
@@ -119,7 +119,7 @@
       text-align: left; padding: 0.3rem 0.75rem; font-size: 0.67rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); border-bottom: 1px solid var(--border);
     }
-    .history-table td { padding: 0.4rem 0.75rem; border-top: 1px solid #1a2332; color: var(--text-secondary); }
+    .history-table td { padding: 0.4rem 0.75rem; border-top: 1px solid var(--accent); color: var(--text-secondary); }
     .history-table td.ht-ver { color: var(--text-dim); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
     .history-table td.ht-date { color: var(--text-muted); white-space: nowrap; }
     .history-table td.ht-author { color: var(--text-muted); white-space: nowrap; }
