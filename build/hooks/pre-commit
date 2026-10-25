@@ -47,6 +47,8 @@ any other hook has to live here too rather than in `.git/hooks`.
 - Run build/check_design_drift.py; abort if any file gained a literal font
   size, colour, radius, gradient, shadow, emoji or bare .page container
   against build/design-drift-baseline.json. A ratchet: counts only go down.
+- Run build/make_ui_icons.py --check; abort if css/ui-icons.css (generated)
+  no longer matches the icons drawn in the script.
 - Regenerate skills/manifest.json from .claude/commands/*.md and stage it, so
   skills/index.html never needs a hand-maintained list of which commands exist.
 - If no changelog entry is pending, nothing user-facing shipped: skip the bump
@@ -174,6 +176,14 @@ if team_colors.exists():
     if result.returncode != 0:
         print('\nCommit aborted: css/team-colors.css no longer matches build/team-colors.json.')
         print('Run: python3 build/make_team_colors_css.py')
+        sys.exit(1)
+
+ui_icons = Path('build/make_ui_icons.py')
+if ui_icons.exists():
+    result = subprocess.run(['python3', str(ui_icons), '--check'])
+    if result.returncode != 0:
+        print('\nCommit aborted: css/ui-icons.css no longer matches build/make_ui_icons.py.')
+        print('Run: python3 build/make_ui_icons.py')
         sys.exit(1)
 
 skills_manifest = Path('build/gen_skills_manifest.py')

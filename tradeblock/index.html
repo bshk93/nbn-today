@@ -1106,7 +1106,7 @@
           else { notesSpan.innerHTML = '<em style="opacity:0.45">no notes</em>'; }
           const removeBtn = document.createElement('button');
           removeBtn.className = 'btn-remove';
-          removeBtn.textContent = '✕ Remove';
+          removeBtn.dataset.icon = 'x'; removeBtn.textContent = 'Remove';
           removeBtn.addEventListener('click', () => { pendingEntries.splice(i, 1); renderEditPanel(); });
           const ageSpan = document.createElement('span');
           ageSpan.className = 'entry-age';
@@ -1174,7 +1174,7 @@
           if (pick.notes) { notesSpan.textContent = pick.notes; }
           else { notesSpan.innerHTML = '<em style="opacity:0.45">no notes</em>'; }
           const removeBtn = document.createElement('button');
-          removeBtn.className = 'btn-remove'; removeBtn.textContent = '✕ Remove';
+          removeBtn.className = 'btn-remove'; removeBtn.dataset.icon = 'x'; removeBtn.textContent = 'Remove';
           removeBtn.addEventListener('click', () => { pendingPicks.splice(i, 1); renderEditPanel(); });
           row.appendChild(pickSpan); row.appendChild(notesSpan); row.appendChild(removeBtn);
           pickList.appendChild(row);

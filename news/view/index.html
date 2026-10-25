@@ -1288,7 +1288,7 @@ async function renderTipSection() {
 
   if (data.total > 0) {
     const byWhom = piecesManyAuthors ? 'the authors' : `<strong>${escHtml(article.author)}</strong>`;
-    html += `<div class="tips-summary">💸 NB¥${data.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} tipped to ${byWhom} for this piece · ${data.tips.length} tip${data.tips.length === 1 ? '' : 's'}</div>`;
+    html += `<div class="tips-summary"><i class="ui-icon ui-icon--coins" aria-hidden="true"></i> NB¥${data.total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})} tipped to ${byWhom} for this piece · ${data.tips.length} tip${data.tips.length === 1 ? '' : 's'}</div>`;
   }
 
   if (!token) {

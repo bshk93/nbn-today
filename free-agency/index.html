@@ -984,6 +984,8 @@
         if (text != null) n.textContent = text;
         return n;
       }
+      // The text stays text; the icon is drawn by css/ui-icons.css from data-icon.
+      function withIcon(node, name) { node.dataset.icon = name; return node; }
 
       function select(options, value, onChange) {
         const s = document.createElement('select');
@@ -1528,10 +1530,10 @@
         panel.appendChild(el('div', 'fs-head',
           data.legal ? 'Legal as it stands' : 'Fails a rule check — cannot be submitted'));
         if (!failing.length) {
-          panel.appendChild(el('div', 'checkline ok', '✓ No constraint is triggered.'));
+          panel.appendChild(withIcon(el('div', 'checkline ok', 'No constraint is triggered.'), 'check'));
         }
-        failing.forEach(c => panel.appendChild(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
-          (c.level === 'error' ? '✗ ' : '⚠ ') + (c.message || c.check))));
+        failing.forEach(c => panel.appendChild(withIcon(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+          c.message || c.check), c.level === 'error' ? 'x' : 'warning')));
         const f = data.fact_sheet || {};
         if (!f.unresolved) {
           const bits = [];
@@ -1826,6 +1828,8 @@
         if (text != null) n.textContent = text;
         return n;
       }
+      // The text stays text; the icon is drawn by css/ui-icons.css from data-icon.
+      function withIcon(node, name) { node.dataset.icon = name; return node; }
 
       function draw() {
         box.innerHTML = '';
@@ -1929,9 +1933,9 @@
           panel.className = 'panel' + (data.legal ? '' : ' bad');
           panel.innerHTML = '';
           panel.appendChild(el('div', 'fs-head', data.legal ? 'Legal as it stands' : 'Fails a rule check'));
-          if (!failing.length) panel.appendChild(el('div', 'checkline ok', '✓ No constraint is triggered.'));
-          failing.forEach(c => panel.appendChild(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
-            (c.level === 'error' ? '✗ ' : '⚠ ') + (c.message || c.check))));
+          if (!failing.length) panel.appendChild(withIcon(el('div', 'checkline ok', 'No constraint is triggered.'), 'check'));
+          failing.forEach(c => panel.appendChild(withIcon(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+            c.message || c.check), c.level === 'error' ? 'x' : 'warning')));
           go.disabled = !data.legal;
         }
       }

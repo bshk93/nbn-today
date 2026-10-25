@@ -93,7 +93,7 @@
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
     .upload-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem; }
-    .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; color: var(--text-muted); }
     .upload-hint { font-size: 0.78rem; color: var(--text-muted); }
     .upload-filename { font-size: 0.82rem; color: var(--market-positive); margin-top: 0.35rem; font-weight: 500; }
 
@@ -276,7 +276,7 @@
   </style>
 </head>
 <body>
-  <div id="commit-warning">⚠ Committing games — do not leave or refresh this page.</div>
+  <div id="commit-warning" data-icon="warning">Committing games — do not leave or refresh this page.</div>
   <main class="ui-page ui-page--wide">
     <nav class="nav"></nav>
     <h1 class="ui-title">Box Score Import</h1>
@@ -331,7 +331,7 @@
 
     <!-- Tab switcher -->
     <div class="tab-bar ui-tabs" role="tablist">
-      <button class="tab-btn ui-tab" data-tab="screenshot" style="display:none">📷 Screenshot Upload</button>
+      <button class="tab-btn ui-tab" data-tab="screenshot" style="display:none"><i class="ui-icon ui-icon--camera" aria-hidden="true"></i> Screenshot Upload</button>
       <button class="tab-btn ui-tab active" data-tab="manual">⌨️ Manual Entry</button>
     </div>
 
@@ -343,7 +343,7 @@
           <div class="upload-zone" id="home-zone">
             <input type="file" id="home-file" accept="image/png,image/jpeg,image/gif,image/webp">
             <div class="upload-label" id="home-team-label">Home Team</div>
-            <div class="upload-icon">🏠</div>
+            <div class="upload-icon"><i class="ui-icon ui-icon--home" aria-hidden="true"></i></div>
             <div class="upload-hint">Click or drag screenshot here</div>
             <div class="upload-filename" id="home-filename"></div>
             <img class="preview-img" id="home-preview">
@@ -351,7 +351,7 @@
           <div class="upload-zone" id="away-zone">
             <input type="file" id="away-file" accept="image/png,image/jpeg,image/gif,image/webp">
             <div class="upload-label" id="away-team-label">Away Team</div>
-            <div class="upload-icon">✈️</div>
+            <div class="upload-icon"><i class="ui-icon ui-icon--plane" aria-hidden="true"></i></div>
             <div class="upload-hint">Click or drag screenshot here</div>
             <div class="upload-filename" id="away-filename"></div>
             <img class="preview-img" id="away-preview">
@@ -1103,7 +1103,7 @@
         const typeLabel = s.game_type === "PLAYOFF" ? " · PO" : "";
         item.innerHTML = `
           <span class="queue-item-label">${s.home_team} vs ${s.away_team}</span>
-          <span class="queue-item-meta">${s.date} · ${s.season}${typeLabel} · ⚠ stats not saved — re-enter then remove this</span>`;
+          <span class="queue-item-meta">${s.date} · ${s.season}${typeLabel} · <i class="ui-icon ui-icon--warning" aria-hidden="true"></i> stats not saved — re-enter then remove this</span>`;
         const rm = document.createElement("button");
         rm.className = "btn-remove-row";
         rm.textContent = "×";
@@ -1269,7 +1269,8 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         status.className = "form-status ok";
         const rewardStr = totalReward > 0 ? ` · +NB¥${totalReward} earned` : '';
-        status.textContent = `✓ ${total} game(s) committed (${totalRows} rows). Rebuilding stats…${rewardStr}`;
+        status.dataset.icon = 'check';
+        status.textContent = `${total} game(s) committed (${totalRows} rows). Rebuilding stats…${rewardStr}`;
         startBuildPoll();
       } catch (e) {
         status.className = "form-status err";
@@ -1379,7 +1380,8 @@
         const data = await res.json();
         status.className = "form-status ok";
         const rewardStr = data.nbyen_reward ? ` · +NB¥${data.nbyen_reward} earned` : '';
-        status.textContent = `✓ Committed ${data.rows_added} rows (${game.home_pts}–${game.away_pts})${data.building ? " · Rebuilding stats…" : ""}${rewardStr}`;
+        status.dataset.icon = 'check';
+        status.textContent = `Committed ${data.rows_added} rows (${game.home_pts}–${game.away_pts})${data.building ? " · Rebuilding stats…" : ""}${rewardStr}`;
         if (data.building) startBuildPoll();
       } catch (e) {
         status.className = "form-status err";
@@ -1486,13 +1488,13 @@
           if (!buildPollInterval) buildPollInterval = setInterval(checkBuildStatus, 4000);
         } else if (data.status === "done") {
           banner.style.display = "flex";
-          icon.textContent = "✓";
+          icon.innerHTML = '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>';
           msg.style.color = "var(--market-positive)";
           msg.textContent = `Site stats updated (finished ${new Date(data.finished_at).toLocaleTimeString()})`;
           stopBuildPoll();
         } else if (data.status === "error") {
           banner.style.display = "flex";
-          icon.textContent = "✗";
+          icon.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
           msg.style.color = "var(--danger)";
           msg.textContent = `Build failed: ${data.error || "unknown error"}`;
           stopBuildPoll();

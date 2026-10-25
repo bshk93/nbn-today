@@ -378,7 +378,7 @@ function buildRow(d) {
     <td class="donor"><a href="/members/${encodeURIComponent(d.member)}/">${d.member}</a></td>
     <td class="amount-cell">${fmtUsd(d.amount)}</td>
     <td class="date-cell">${fmtDate(d.date)}</td>
-    ${isBod ? `<td class="actions-cell"><button class="btn-row-edit" title="Edit">✎</button></td>` : ''}`;
+    ${isBod ? `<td class="actions-cell"><button class="btn-row-edit" title="Edit" aria-label="Edit"><i class="ui-icon ui-icon--pencil" aria-hidden="true"></i></button></td>` : ''}`;
   if (isBod) {
     tr.querySelector('.btn-row-edit').addEventListener('click', () => {
       tr.replaceWith(buildEditRow(d));

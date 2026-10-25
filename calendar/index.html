@@ -939,7 +939,8 @@
 
           const lbl = document.createElement('span');
           lbl.className = 'sched-custom-label';
-          lbl.textContent = `📅 ${ev.label}`;
+          lbl.dataset.icon = 'calendar';
+          lbl.textContent = `${ev.label}`;
           row.appendChild(lbl);
 
           // A recurring event (the team option deadline) is computed by the
@@ -1068,7 +1069,8 @@
 
           const nameEl = document.createElement('span');
           nameEl.className = 'sched-vest-name';
-          nameEl.textContent = `🔒 ${ev.name}${ev.team ? ' · ' + ev.team : ''}`;
+          nameEl.dataset.icon = 'lock';
+          nameEl.textContent = `${ev.name}${ev.team ? ' · ' + ev.team : ''}`;
           row.appendChild(nameEl);
 
           const amt = document.createElement('span');
@@ -1184,7 +1186,8 @@
         custom.forEach(ev => {
           const pip = document.createElement('div');
           pip.className = 'custom-pip';
-          pip.textContent = `📅 ${ev.label}`;
+          pip.dataset.icon = 'calendar';
+          pip.textContent = `${ev.label}`;
           pip.title = ev.label;
           cell.appendChild(pip);
         });
@@ -1226,14 +1229,16 @@
           const ev  = vesting[0];
           const pip = document.createElement('div');
           pip.className = 'vest-pip';
-          pip.textContent = `🔒 ${ev.name}${ev.team ? ' · ' + ev.team : ''} — ${fmtVestAmt(ev.amount)}`;
+          pip.dataset.icon = 'lock';
+          pip.textContent = `${ev.name}${ev.team ? ' · ' + ev.team : ''} — ${fmtVestAmt(ev.amount)}`;
           pip.title = `${ev.name} (${ev.season}) — ${fmtVestAmt(ev.amount)} vests`;
           if (dateStr) pip.onclick = e => { e.stopPropagation(); location.href = `/players/?p=${ev.slug}`; };
           cell.appendChild(pip);
         } else {
           const count = document.createElement('div');
           count.className = 'vest-count';
-          count.textContent = `🔒 ${vesting.length} contracts vest`;
+          count.dataset.icon = 'lock';
+          count.textContent = `${vesting.length} contracts vest`;
           cell.appendChild(count);
           vesting.slice(0, 2).forEach(ev => {
             const pip = document.createElement('div');

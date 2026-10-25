@@ -636,7 +636,7 @@
 
         let statusHtml;
         if (isSubmitted) {
-          statusHtml = `<span class="pick-slot-done">✓ ${bioName(p.player)}${canUnstage ? ` <span style="color:var(--text-muted);font-weight:400">— locked in early</span>` : ''}</span>`;
+          statusHtml = `<span class="pick-slot-done"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> ${bioName(p.player)}${canUnstage ? ` <span style="color:var(--text-muted);font-weight:400">— locked in early</span>` : ''}</span>`;
         } else if (isUp && nextUp) {
           statusHtml = `<span class="pick-slot-queued">You're up${aheadOfSchedule ? ' early' : ''} — press Submit to pick ${bioName(nextUp)}</span>`;
         } else if (isUp) {
@@ -751,7 +751,8 @@
         item.appendChild(downBtn);
 
         const rmBtn = document.createElement('button');
-        rmBtn.className = 'btn btn-danger btn-sm'; rmBtn.textContent = '✕';
+        rmBtn.className = 'btn btn-danger btn-sm'; rmBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+        rmBtn.setAttribute('aria-label', 'Remove');
         rmBtn.addEventListener('click', () => saveQueue(team, queue.filter((_, j) => j !== i)));
         item.appendChild(rmBtn);
 

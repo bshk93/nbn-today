@@ -43,7 +43,7 @@
     }
 
     .cmte-head { display: flex; align-items: baseline; gap: 0.6rem; }
-    .cmte-icon { font-size: 1.15rem; line-height: 1; }
+    .cmte-icon { font-size: 1.15rem; color: var(--accent-light); align-self: center; }
     .cmte-head h2 {
       font-size: 1.02rem; font-weight: 700;
       color: var(--text-primary); letter-spacing: -0.01em;
@@ -141,7 +141,7 @@
   const COMMITTEES = [
     {
       key: 'rosters',
-      icon: '📋',
+      icon: 'clipboard',
       name: 'Rosters',
       purpose: 'Keeps the league’s books correct: contracts, cap figures, roster counts and '
              + 'draft-pick ownership. The committee that answers “is this right?” when the '
@@ -158,7 +158,7 @@
     },
     {
       key: 'pdc',
-      icon: '⚖️',
+      icon: 'scale',
       name: 'PDC',
       full: 'Player Decision Committee',
       purpose: 'Reviews what teams offer players. Free-agent offers under Article III and '
@@ -176,7 +176,7 @@
     },
     {
       key: 'stats',
-      icon: '🗂',
+      icon: 'folder',
       name: 'Stats',
       purpose: 'Owns the box-score corpus every number on the site is built from. Games get '
              + 'entered here, and the aggregation that turns them into 86 CSVs runs off that.',
@@ -192,7 +192,7 @@
     },
     {
       key: 'stream',
-      icon: '📺',
+      icon: 'tv',
       name: 'Stream',
       purpose: 'Broadcasts league games. Claims a night’s games, collects the coaching '
              + 'settings each team owes before tip-off, and posts the VOD afterwards.',
@@ -208,7 +208,7 @@
     },
     {
       key: 'trc',
-      icon: '🤝',
+      icon: 'send',
       name: 'TRC',
       full: 'Trade Request Committee',
       purpose: 'Reviews trades teams propose themselves. Every party has to consent before it '
@@ -233,7 +233,7 @@
     el.className = 'cmte';
     el.innerHTML =
       `<div class="cmte-head">`
-        + `<span class="cmte-icon">${c.icon}</span>`
+        + `<span class="cmte-icon ui-icon ui-icon--${c.icon}" aria-hidden="true"></span>`
         + `<h2>${esc(c.name)}</h2>`
         + (c.full ? `<span class="full">${esc(c.full)}</span>` : '')
       + `</div>`

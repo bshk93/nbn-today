@@ -6,7 +6,7 @@
                                      in <head>, so the body's margin is
                                      reserved before the sidebar is drawn.
      .sb-drawer-open               — below 900px the sidebar is an overlay
-                                     drawer, hidden until the ☰ opens it.
+                                     drawer, hidden until the menu button opens it.
      data-no-sidebar               — a page that opts out (no data-sidebar). */
 
 :root {
@@ -269,7 +269,7 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
    Sign in button goes. It stays on phones, where the sidebar is a drawer. */
 @media (min-width: 900px) {
   html[data-sidebar] .nav .nav-signin-btn { display: none; }
-  /* A nav holding nothing but the ☰ (hidden here) and an empty action row —
+  /* A nav holding nothing but the menu button (hidden here) and an empty action row —
      the homepage's — would still leave its bottom margin as a blank band at
      the top of the page. Pages with a breadcrumb keep theirs. */
   html[data-sidebar] .nav:not(:has(> :not(.nav-menu-btn, .nav-actions))) { display: none; }

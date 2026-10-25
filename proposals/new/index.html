@@ -194,9 +194,9 @@
           <button type="button" class="fmt-btn" title="Heading 2" onclick="fmtLine('## ')">H2</button>
           <button type="button" class="fmt-btn" title="Heading 3" onclick="fmtLine('### ')">H3</button>
           <div class="fmt-sep"></div>
-          <button type="button" class="fmt-btn" title="Blockquote" onclick="fmtLine('> ')">❝</button>
+          <button type="button" class="fmt-btn" title="Blockquote" aria-label="Blockquote" onclick="fmtLine('> ')"><i class="ui-icon ui-icon--quote" aria-hidden="true"></i></button>
           <button type="button" class="fmt-btn" title="Bullet list" onclick="fmtLine('- ')">• —</button>
-          <button type="button" class="fmt-btn" title="Link (Ctrl+K)" onclick="fmtLink()">🔗</button>
+          <button type="button" class="fmt-btn" title="Link (Ctrl+K)" aria-label="Link" onclick="fmtLink()"><i class="ui-icon ui-icon--link" aria-hidden="true"></i></button>
           <div class="mode-tabs">
             <button type="button" class="mode-tab active" data-mode="write" onclick="setMode('write')">Write</button>
             <button type="button" class="mode-tab" data-mode="preview" onclick="setMode('preview')">Preview</button>

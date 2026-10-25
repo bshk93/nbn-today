@@ -197,7 +197,7 @@ function renderArticleCard(a) {
   const tags = ((a.type === 'power_rankings'
       ? [`<span class="ui-chip ui-chip--sm ui-chip--warning">${a.edition ? `Power Rankings #${a.edition}` : 'Power Rankings'}</span>`]
       : []).concat(articleTags(a).map(t => `<span class="ui-chip ui-chip--sm">${escHtml(t)}</span>`))).join('');
-  const commentPart = a.comment_count > 0 ? `<span class="sep">•</span> 💬 ${a.comment_count}` : '';
+  const commentPart = a.comment_count > 0 ? `<span class="sep">•</span> <i class="ui-icon ui-icon--comment" aria-hidden="true"></i> ${a.comment_count}` : '';
   el.innerHTML = `
     ${cover}
     <div class="card-inner">

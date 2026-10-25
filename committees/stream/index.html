@@ -578,7 +578,7 @@
       const due = positionsDue(team);
       const n = due.length;
       const odd = due.filter(i => i.legal === false).length;
-      if (n) parts.push(`${n} player${n === 1 ? '' : 's'}` + (odd ? ` (⚠ ${odd} to OK)` : ''));
+      if (n) parts.push(`${n} player${n === 1 ? '' : 's'}` + (odd ? ` (${odd} to OK)` : ''));
       return parts;
     }
 
@@ -678,12 +678,13 @@
       if (i.primary_changed) whys.push(`primary: 2K has ${i.primary_was}`);
       if (i.changed) whys.push(i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`);
       let why = whys.join('; ');
-      if (!why && i.locked) why = i.due ? '📌 check every game' : '📌 checked today';
+      if (!why && i.locked) why = i.due ? 'pinned: check every game' : 'pinned: checked today';
       if (why) row.appendChild(span('pos-why', `(${why})`));
       // A secondary more than one step from the primary. Teams may ask for
       // one, since there are exceptions, but setting it is the streamer's OK.
       if (i.legal === false) {
-        const flag = span('pos-illegal', '⚠ Not legal under § 2.3');
+        const flag = span('pos-illegal', 'Not legal under § 2.3');
+        flag.dataset.icon = 'warning';
         flag.title = `A ${primary}'s secondary should be one step away, or a position 2K has listed for him. There are exceptions: `
           + 'set it only if you OK it. Marking it entered is your OK.';
         row.appendChild(flag);
@@ -796,7 +797,9 @@
       if (rec && window.CoachingSettings) {
         const issues = window.CoachingSettings.validityIssues(rec);
         if (issues.length) {
-          const flag = span('cd-incomplete-flag', '⚠');
+          const flag = span('cd-incomplete-flag ui-icon ui-icon--warning');
+          flag.setAttribute('role', 'img');
+          flag.setAttribute('aria-label', 'Incomplete');
           flag.title = 'Incomplete: ' + issues.join(' · ');
           tdIncomplete.appendChild(flag);
         }
@@ -1572,7 +1575,8 @@
         tdStreamer.appendChild(pick);
       } else if (held) {
         const chip = span('streamer-chip' + (held === me.name ? ' mine' : ''));
-        chip.appendChild(document.createTextNode(`📺 ${held}`));
+        chip.dataset.icon = 'tv';
+        chip.appendChild(document.createTextNode(held));
         if (held === me.name) {
           const x = document.createElement('button');
           x.className = 'chip-x';

@@ -95,7 +95,7 @@
       .tb-vc-row { display: flex; gap: 0.5rem; font-size: 0.82rem; line-height: 1.45; align-items: flex-start; }
       .tb-vc-icon { flex-shrink: 0; font-weight: 700; width: 1rem; text-align: center; }
       .tb-vc-row.pass { color: var(--text-secondary); }    .tb-vc-row.pass .tb-vc-icon { color: var(--success); }
-      .tb-vc-row.warning { color: #fcd34d; } .tb-vc-row.warning .tb-vc-icon { color: var(--gold); }
+      .tb-vc-row.warning { color: var(--gold); }
       .tb-vc-row.error { color: var(--danger-light); }   .tb-vc-row.error .tb-vc-icon { color: var(--danger); }
     `;
     document.head.appendChild(style);
@@ -267,7 +267,7 @@
         <div class="tb-team-panel-header">
           <img class="tb-team-logo" id="tb-logo-${slotId}" src="" alt="" style="display:none">
           <select class="tb-team-sel" id="tb-sel-${slotId}"><option value="">— Select team —</option></select>
-          <button type="button" class="tb-remove-team-btn" id="tb-rm-${slotId}" title="Remove team">✕</button>
+          <button type="button" class="tb-remove-team-btn" id="tb-rm-${slotId}" title="Remove team" aria-label="Remove team"><i class="ui-icon ui-icon--x" aria-hidden="true"></i></button>
         </div>
         <select class="tb-exc-sel" id="tb-exc-${slotId}">
           <option value="">No exception used</option>
@@ -810,19 +810,19 @@
 
       const { legal, checks = [], fact_sheet = {} } = data;
       const cl = fact_sheet.cap_levels || {};
-      const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+      const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
 
       const cols = abbrs.map(ab => factCol(ab, fact_sheet, cl)).join('');
 
       const myParties = abbrs.filter(ab => (me.owner_of || []).includes(ab));
       const trcBtn = myParties.length
-        ? `<button type="button" class="tb-export-btn" id="tb-trc-btn" title="Send this trade to the Trade Request Committee for review">🤝 Submit to TRC</button>`
+        ? `<button type="button" class="tb-export-btn" id="tb-trc-btn" title="Send this trade to the Trade Request Committee for review"><i class="ui-icon ui-icon--send" aria-hidden="true"></i> Submit to TRC</button>`
         : '';
 
       const checkRows = checks.map(c => {
         const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
         return `<div class="tb-vc-row ${kind}"><span class="tb-vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
-      }).join('') || '<div class="tb-vc-row pass"><span class="tb-vc-icon">✓</span><span>No constraints triggered.</span></div>';
+      }).join('') || '<div class="tb-vc-row pass"><span class="tb-vc-icon"><i class="ui-icon ui-icon--check" aria-hidden="true"></i></span><span>No constraints triggered.</span></div>';
 
       el.innerHTML = `
         <div class="tb-results-header">
@@ -836,8 +836,8 @@
         <div class="tb-vc-list">${checkRows}</div>
         <div class="tb-results-summary">
           ${legal
-            ? '<strong style="color:var(--success)">✓ Trade is legal</strong> — every check the league office runs at submission passes.'
-            : '<strong style="color:var(--danger)">✗ Trade is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.'}
+            ? '<strong style="color:var(--success)"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Trade is legal</strong> — every check the league office runs at submission passes.'
+            : '<strong style="color:var(--danger)"><i class="ui-icon ui-icon--x" aria-hidden="true"></i> Trade is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.'}
         </div>`;
 
       lastResult = { abbrs, data };
@@ -1303,7 +1303,8 @@
         }
         const req = await res.json();
         setExportStatus(`Submitted to TRC — <a href="/committees/trc/" target="_blank" rel="noopener">track it</a>`);
-        btn.textContent = '✓ Submitted';
+        btn.dataset.icon = 'check';
+        btn.textContent = 'Submitted';
         submitted = true;
         if (typeof opts.onSubmitted === 'function') opts.onSubmitted(req);
       } catch (e) {

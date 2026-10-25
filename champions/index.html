@@ -69,7 +69,7 @@
     .banner-sub { font-size: 0.95rem; color: var(--runnerup-border); }
     .banner-sub a { color: var(--accent-light); }
     .banner-clinch { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem; }
-    .crown { font-size: 1.4rem; }
+    .crown { font-size: 1.4rem; color: var(--gold); }
     .repeat-tag {
       display: inline-block; margin-top: 0.4rem; font-size: 0.72rem; font-weight: 700;
       color: #fde68a; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
@@ -93,6 +93,7 @@
       padding: 0.7rem 0.5rem; text-align: center;
     }
     .stat-box .v { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .stat-box .fy-medal { color: var(--gold); }
     .stat-box .l { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
     .badge-foty, .badge-coty {
       display: inline-block; font-size: 0.62rem; font-weight: 700; border-radius: var(--radius-sm);
@@ -417,7 +418,7 @@
         <div class="banner-inner">
           <img class="banner-logo" src="${logoLg(c.team)}" alt="${c.team}">
           <div class="banner-text">
-            <div class="banner-season"><span class="crown">👑</span> ${seasonLabel(c.season)} NBN Champions</div>
+            <div class="banner-season"><span class="crown ui-icon ui-icon--crown" aria-hidden="true"></span> ${seasonLabel(c.season)} NBN Champions</div>
             <div class="banner-team">${TEAMS[c.team]}</div>
             <div class="banner-sub">def. <a href="/teams/${c.loser}/">${TEAMS[c.loser]}</a> in the Finals, <strong>${c.wins}–${c.losses}</strong></div>
             ${c.clinch ? `<div class="banner-clinch">Clinched ${fmtDate(c.clinch)}</div>` : ''}
@@ -437,7 +438,7 @@
           <div class="stat-box"><div class="v">${signed(num(std.DIFF))}</div><div class="l">Net</div></div>
           <div class="stat-box"><div class="v">${signed(num(std.OFF_RTG))}</div><div class="l">Off Rtg</div></div>
           <div class="stat-box"><div class="v">${signed(num(std.DEF_RTG))}</div><div class="l">Def Rtg</div></div>
-          ${std.FOTY === 'TRUE' ? `<div class="stat-box"><div class="v">🏅</div><div class="l">Franchise of the Year</div></div>` : ''}
+          ${std.FOTY === 'TRUE' ? `<div class="stat-box"><div class="v"><i class="ui-icon ui-icon--medal fy-medal" aria-hidden="true"></i></div><div class="l">Franchise of the Year</div></div>` : ''}
         </div>
       </div>` : ''}
 
@@ -522,7 +523,7 @@
                       <span><a href="/players?p=${r.SLUG}">${r.PLAYER}</a>${lead}</span>
                     </span>
                   </td>
-                  <td class="center rings">${'💍'.repeat(Math.min(rings, 6))}${rings > 6 ? '×' + rings : ''}${isFirst ? '<span class="first">1st!</span>' : ''}</td>
+                  <td class="center rings" title="${rings} ring${rings === 1 ? '' : 's'}">${'<i class="ui-icon ui-icon--ring" aria-hidden="true"></i>'.repeat(Math.min(rings, 6))}${rings > 6 ? '×' + rings : ''}${isFirst ? '<span class="first">1st!</span>' : ''}</td>
                   <td class="right num">${g}</td>
                   <td class="right num">${fix1(per(r.MIN, g))}</td>
                   <td class="right num">${fix1(per(r.PTS, g))}</td>

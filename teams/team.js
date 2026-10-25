@@ -360,7 +360,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pos2.ts-pos2-illegal { color: var(--danger-light); font-weight: 700; }
   .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
   .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.75rem; cursor: pointer; user-select: none; }
-  .ts-pin-mark { margin-left: 0.25rem; font-size: 0.7rem; }
+  .ts-pin-mark { margin-left: 0.25rem; font-size: 0.75rem; color: var(--text-muted); }
   .ts-pos-wait { margin-left: 0.3rem; font-size: 0.68rem; color: var(--gold); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
   .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
@@ -471,7 +471,9 @@ const coachingConfigReady = new Promise(resolve => {
     font-size: 0.8rem;
     cursor: pointer;
     vertical-align: middle;
+    color: var(--gold);
   }
+  .rec-badge { color: var(--gold); }
   .on-roster-dot {
     display: inline-block;
     width: 0.4rem;
@@ -1161,7 +1163,7 @@ document.body.innerHTML = `
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick 📌 to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked ⚠ is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked <i class="ui-icon ui-icon--warning" aria-hidden="true"></i> is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -1397,7 +1399,7 @@ async function renderSchedule(allGames, season) {
     }
     const { home, opp } = side(g);
     const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
-    const stream = g.stream ? ' <span class="sched-tag" title="Streamed">📡</span>' : '';
+    const stream = g.stream ? ' <span class="sched-tag" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
     let res;
     if (g.result) {
       const [us, them] = ours(g.result);
@@ -1973,7 +1975,8 @@ function renderHardCapBanner(teamState, el) {
   el.className = 'hard-cap-banner' + (isApron2 ? ' apron2' : '');
   el.style.display = '';
   const reason = teamState.hard_cap_reason ? ` · ${teamState.hard_cap_reason}` : '';
-  el.textContent = `⚠ Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
+  el.dataset.icon = 'warning';
+  el.textContent = `Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
 }
 
 // The undrafted draft-year horizon to reason about for § 7.2 — once every
@@ -2148,13 +2151,14 @@ function renderCapHealth(opts) {
 
   // Only real problems get a warning line of their own. "Over the Salary Cap"
   // is the normal condition for most of the league and the Standing rows above
-  // already say it in dollars; repeating it as a ⚠ would train owners to skip
+  // already say it in dollars; repeating it as a warning would train owners to skip
   // the whole card. What-If Mode renders the full set, where crossing a line is
   // exactly the question being asked.
   warnings.filter(w => w.severity !== 'note').forEach(w => {
     const line = document.createElement('div');
     line.className = 'ch-warning' + (w.severity === 'caution' ? ' caution' : '');
-    line.textContent = (w.severity === 'caution' ? '• ' : '⚠ ') + w.text;
+    if (w.severity !== 'caution') line.dataset.icon = 'warning';
+    line.textContent = (w.severity === 'caution' ? '• ' : '') + w.text;
     standingBlock.appendChild(line);
   });
   wrap.appendChild(standingBlock);
@@ -3527,13 +3531,13 @@ function makeSeasonRenderCell(rows) {
       td.appendChild(a);
       if (row.FOTY === 'TRUE') {
         const b = document.createElement('span');
-        b.className = 'badge'; b.textContent = '⭐';
+        b.className = 'badge ui-icon ui-icon--star';
         attachTooltip(b, 'Franchise of the Year');
         td.appendChild(b);
       }
       if (row.COTY === 'TRUE') {
         const b = document.createElement('span');
-        b.className = 'badge'; b.textContent = '🏅';
+        b.className = 'badge ui-icon ui-icon--medal';
         attachTooltip(b, 'Coach of the Year');
         td.appendChild(b);
       }
@@ -4027,7 +4031,8 @@ function factRow(label, value, color) {
 function checkRow(c) {
   const d = document.createElement('div');
   d.className = 'confirm-check ' + (c.passed ? 'ok' : c.level === 'error' ? 'error' : 'warn');
-  d.textContent = (c.passed ? '✓ ' : c.level === 'error' ? '✕ ' : '⚠ ') + c.message;
+  d.dataset.icon = c.passed ? 'check' : c.level === 'error' ? 'x' : 'warning';
+  d.textContent = c.message;
   return d;
 }
 
@@ -6079,7 +6084,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
           const exc = posException(row.SLUG);
           const ok = exc && exc.approved && exc.secondary === secondary;
           sec.classList.add('ts-pos2-illegal');
-          sec.textContent += ' ⚠';
+          sec.insertAdjacentHTML('beforeend', ' <i class="ui-icon ui-icon--warning" aria-hidden="true"></i>');
           sec.title = ok ? `Outside § 2.3 (one step from ${primary}, or a position 2K has listed). A streamer OK'd it.`
             : `Outside § 2.3 (one step from ${primary}, or a position 2K has listed). It counts once a streamer OKs it.`;
           if (ok) sec.classList.add('ok');
@@ -6088,7 +6093,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       if (posLocked(row.SLUG)) {
         const pin = document.createElement('span');
         pin.className = 'ts-pin-mark';
-        pin.textContent = '📌';
+        pin.classList.add('ui-icon', 'ui-icon--pin');
         pin.title = secondary ? 'The streamer checks this position before every game'
           : 'The streamer checks before every game that 2K gives him no secondary position';
         posTd.appendChild(pin);
@@ -6253,8 +6258,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
         f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec));
       });
       secNote.hidden = !lines.length;
+      secNote.dataset.icon = 'warning';
       secNote.textContent = lines.length
-        ? `⚠ Outside § 2.3, which allows one step from the primary or a position 2K has listed: ${lines.join(', ')}. `
+        ? `Outside § 2.3, which allows one step from the primary or a position 2K has listed: ${lines.join(', ')}. `
           + 'The streamer has to OK an exception before it counts, including for starting.'
         : '';
     }
@@ -6437,7 +6443,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       posWrap.appendChild(document.createTextNode(rowPrimary));
       // Rulebook § 2.3: the secondary is one step either side of the primary,
       // or any position 2K has listed for him. Any other position can still
-      // be picked, marked ⚠: it is an exception the streamer has to OK.
+      // be picked, marked as an exception: one the streamer has to OK.
       // Blank keeps the default secondary; 'none' removes it.
       const eligiblePos = secondaryPool(bio, attributesData[row.SLUG]);
       const otherPos = POSITION_ORDER.includes(rowPrimary)
@@ -6449,16 +6455,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       [{ value: '', label: twoKSec ? `/ ${twoKSec} (2K)` : '/ – (2K)' },
        ...(twoKSec ? [{ value: 'none', label: '/ none' }] : []),
        ...eligiblePos.filter(p => p !== twoKSec).map(p => ({ value: p, label: `/ ${p}` })),
-       ...otherPos.map(p => ({ value: p, label: `/ ${p} ⚠` }))].forEach(o => {
+       ...otherPos.map(p => ({ value: p, label: `/ ${p} · exception` }))].forEach(o => {
         secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
       });
       // Keep a saved exception selectable even if the primary has moved.
       if (secondaryPos && ![...secSel.options].some(o => o.value === secondaryPos)) {
-        secSel.appendChild(new Option(`/ ${secondaryPos} ⚠`, secondaryPos, false, true));
+        secSel.appendChild(new Option(`/ ${secondaryPos} · exception`, secondaryPos, false, true));
       }
       secSel.addEventListener('change', () => refreshSecNote());
       posWrap.appendChild(secSel);
-      // 📌: check this position before every game. With no secondary it
+      // The pin: check this position before every game. With no secondary it
       // means "make sure 2K has none", since 2K can add one back.
       const pinLabel = document.createElement('label');
       pinLabel.className = 'ts-pin';
@@ -6468,7 +6474,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
       pinCheck.checked = posLocked(row.SLUG);
       pinCheck.setAttribute('aria-label', 'Check position before every game');
       const pinIcon = document.createElement('span');
-      pinIcon.textContent = '📌';
+      pinIcon.className = 'ui-icon ui-icon--pin';
+      pinIcon.setAttribute('aria-hidden', 'true');
       pinLabel.append(pinCheck, pinIcon);
       posWrap.appendChild(pinLabel);
       posTd.appendChild(posWrap);
@@ -6672,8 +6679,9 @@ function setupStreamerNote() {
       text.textContent = note.text;
       const meta = document.createElement('div');
       meta.className = 'sn-meta ' + (note.cleared_at ? 'clear' : 'open');
+      if (note.cleared_at) meta.dataset.icon = 'check';
       meta.textContent = note.cleared_at
-        ? `✓ Marked clear by ${note.cleared_by || 'a streamer'}, ${fmtWhen(note.cleared_at)}`
+        ? `Marked clear by ${note.cleared_by || 'a streamer'}, ${fmtWhen(note.cleared_at)}`
         : `Waiting for the streamer · saved ${fmtWhen(note.updated_at)} by ${note.updated_by || 'unknown'}`;
       wrapEl.append(text, meta);
     }
@@ -6871,9 +6879,11 @@ function setupCoachingSettingsTab(wrapId, biosData, record) {
       const issues = CS.valuesIssues(values);
       if (issues.length) {
         statusEl.style.color = 'var(--gold,#c9a227)';
-        statusEl.textContent = '⚠ Not balanced — ' + issues.join(' · ');
+        statusEl.dataset.icon = 'warning';
+        statusEl.textContent = 'Not balanced — ' + issues.join(' · ');
       } else {
         statusEl.style.color = 'var(--text-muted)';
+        delete statusEl.dataset.icon;
         statusEl.textContent = '';
       }
     }
@@ -7080,7 +7090,8 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
         const delTd = tr.insertCell();
         delTd.style.cssText = 'padding:3px 6px;text-align:right';
         const delBtn = document.createElement('button');
-        delBtn.textContent = '✕';
+        delBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+        delBtn.setAttribute('aria-label', 'Remove row');
         delBtn.style.cssText = 'background:none;border:none;color:var(--danger);cursor:pointer;padding:0 4px';
         delBtn.addEventListener('click', () => { rows.splice(ri, 1); render(); });
         delTd.appendChild(delBtn);
@@ -7823,7 +7834,8 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
     warnings.forEach(w => {
       const line = document.createElement('div');
       line.className = 'whatif-warning-line';
-      line.textContent = `⚠ ${w.text}`;
+      line.dataset.icon = 'warning';
+      line.textContent = w.text;
       warningsEl.appendChild(line);
     });
   }
@@ -8390,7 +8402,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const teamSeasonCard = (() => {
       if (!bestSeasons.length) return '';
       const [top, ...rest] = bestSeasons.slice(0, 3);
-      const badges = r => `${r.FOTY === 'TRUE' ? ' ⭐' : ''}${r.COTY === 'TRUE' ? ' 🏅' : ''}`;
+      const badges = r => `${r.FOTY === 'TRUE' ? ' <i class="ui-icon ui-icon--star rec-badge" aria-hidden="true"></i>' : ''}${r.COTY === 'TRUE' ? ' <i class="ui-icon ui-icon--medal rec-badge" aria-hidden="true"></i>' : ''}`;
       const line = r => `${escAttr(r.W)}-${escAttr(r.L)} (${fmtPct(r.PCT)}) · ${escAttr(r.PLAYOFF_RESULT || '—')}${badges(r)}`;
       return `
         <div class="rec-card">

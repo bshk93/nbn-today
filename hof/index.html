@@ -191,7 +191,7 @@
         </ul>
         <p><strong>Accolade bonuses</strong> (added on top):</p>
         <ul>
-          <li>🏆 Championship ring: <strong>+10</strong> · Playoff appearance: <strong>+1</strong></li>
+          <li><i class="ui-icon ui-icon--ring" aria-hidden="true"></i> Championship ring: <strong>+10</strong> · Playoff appearance: <strong>+1</strong></li>
           <li>MVP: <strong>+8</strong> · DPOY: <strong>+5</strong> · 6MOY / ROY: <strong>+3</strong> · MIP: <strong>+2</strong></li>
           <li>All-Star: <strong>+3</strong> · All-NBN 1st: <strong>+4</strong> · 2nd: <strong>+3</strong> · 3rd: <strong>+2</strong> · All-Defense: <strong>+2</strong></li>
         </ul>
@@ -212,7 +212,7 @@
         display: r => r.TEAMS ? r.TEAMS.replace(/,/g, ', ') : '—' },
       { key: 'HOF_POINTS',   label: 'Score',     cls: 'score',                sortField: 'HOF_POINTS',   numeric: true,  defaultDir: -1,
         display: r => { const n = parseFloat(r.HOF_POINTS); return (isNaN(n) || n <= 0) ? '—' : n.toFixed(1); } },
-      { key: 'RINGS',        label: '🏆',        cls: 'center border-left',   sortField: 'RINGS',        numeric: true,  defaultDir: -1,
+      { key: 'RINGS',        label: 'Rings',     cls: 'center border-left',   sortField: 'RINGS',        numeric: true,  defaultDir: -1,
         display: r => parseInt(r.RINGS) > 0 ? r.RINGS : '—' },
       { key: 'PLAYOFF_APPS', label: 'PO',        cls: 'center',               sortField: 'PLAYOFF_APPS', numeric: true,  defaultDir: -1,
         display: r => parseInt(r.PLAYOFF_APPS) > 0 ? r.PLAYOFF_APPS : '—' },

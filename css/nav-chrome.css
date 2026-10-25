@@ -39,7 +39,7 @@
   .nav-actions { order: 2; }
   .nav-trail { order: 3; flex-basis: 100%; gap: 0.5rem; }
 }
-/* flex-wrap: a long breadcrumb plus the action buttons (☰, search, inbox,
+/* flex-wrap: a long breadcrumb plus the action buttons (menu, search, inbox,
    Sign in) don't fit one phone-width row; the buttons drop to their own line
    and stay right-aligned rather than widening the page. */
 .nav a { color: var(--text-muted); text-decoration: none; }
@@ -54,7 +54,7 @@
    wrapper, not on whichever button happens to be first. */
 .nav-actions { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; }
 
-/* Shared circular treatment for the nav's icon buttons (☰, and search and
+/* Shared circular treatment for the nav's icon buttons (menu, and search and
    inbox on a page without the sidebar), so the row reads as one designed set of buttons
    rather than whatever each one felt like individually. Each button also
    keeps its own class for the bits that aren't shared (badge positioning).

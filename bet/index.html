@@ -78,7 +78,7 @@
     .opt-bar-row { display: flex; align-items: center; gap: 0.5rem; }
     .opt-label { font-size: 0.8rem; color: var(--text-secondary); min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .opt-label.winner { color: var(--gold); font-weight: 700; }
-    .opt-label.my-pick::after { content: ' ✓'; color: var(--link); font-size: 0.7rem; }
+    .opt-label.my-pick::after { content: ' (yours)'; color: var(--link); font-size: 0.7rem; }
     .bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: var(--radius-sm); overflow: hidden; }
     .bar-fill { height: 100%; border-radius: var(--radius-sm); background: var(--accent); transition: width 0.3s; }
     .bar-fill.winner { background: var(--warning); }
@@ -321,7 +321,7 @@
       const el = document.getElementById('house-line');
       if (!h || (!h.wagered && !h.paid_out)) { el.style.display = 'none'; return; }
       const verb = h.net >= 0 ? 'up' : 'down';
-      el.innerHTML = `🏦 The house is <strong>${verb} ${nby(Math.abs(h.net))}</strong> since NB¥ restarted`
+      el.innerHTML = `<i class="ui-icon ui-icon--bank" aria-hidden="true"></i> The house is <strong>${verb} ${nby(Math.abs(h.net))}</strong> since NB¥ restarted`
         + ` <span class="house-sub">(${nby(h.wagered - h.refunded)} staked, ${nby(h.paid_out)} paid out)</span>`;
       el.style.display = '';
     }
@@ -490,7 +490,7 @@
         const ok  = Math.abs(sum - 100) < 0.1;
         // Over 100% the house keeps an edge; under it, the odds pay out more than
         // is staked on average and create NB¥. Allowed, but say so.
-        probSumEl.textContent = ok ? `Sum: ${sum.toFixed(1)}% ✓`
+        probSumEl.textContent = ok ? `Sum: ${sum.toFixed(1)}%, balanced`
           : sum > 100 ? `Sum: ${sum.toFixed(1)}% — house edge applies`
           : `Sum: ${sum.toFixed(1)}% — these odds pay out more than is staked`;
         probSumEl.style.color   = ok ? 'var(--market-positive)' : 'var(--warning)';
@@ -886,7 +886,8 @@
         if (isWin) {
           const winBadge = document.createElement('span');
           winBadge.className = 'opt-winner-badge';
-          winBadge.textContent = '🏆 WIN';
+          winBadge.dataset.icon = 'trophy';
+          winBadge.textContent = 'WIN';
           row.appendChild(winBadge);
         }
 
@@ -922,7 +923,8 @@
       if (isLocked && currentUser && !isBetsRole()) {
         const notice = document.createElement('div');
         notice.className = 'locked-notice';
-        notice.textContent = '🔒 Betting is closed — awaiting result.';
+        notice.dataset.icon = 'lock';
+        notice.textContent = 'Betting is closed — awaiting result.';
         card.appendChild(notice);
       }
 
@@ -944,7 +946,8 @@
         if (noWagers || isAdmin) {
           const delBtn = document.createElement('button');
           delBtn.className = 'delete-btn';
-          delBtn.textContent = '✕ Delete bet';
+          delBtn.dataset.icon = 'x';
+          delBtn.textContent = 'Delete bet';
           delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:0.72rem;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:0';
           delBtn.onclick = async () => {
             if (!await confirmDialog({
@@ -1089,7 +1092,8 @@
       if (!alreadyLocked) {
         const lockBtn = document.createElement('button');
         lockBtn.className = 'close-toggle';
-        lockBtn.textContent = '🔒 Lock Bet';
+        lockBtn.dataset.icon = 'lock';
+        lockBtn.textContent = 'Lock Bet';
         lockBtn.style.cssText = 'border-color:#3730a3;color:#818cf8';
         lockBtn.onclick = async () => {
           if (!await confirmDialog({
@@ -1112,7 +1116,8 @@
           } catch(e) {
             toast(e.message, true);
             lockBtn.disabled = false;
-            lockBtn.textContent = '🔒 Lock Bet';
+            lockBtn.dataset.icon = 'lock';
+            lockBtn.textContent = 'Lock Bet';
           }
         };
         sec.appendChild(lockBtn);
@@ -1191,7 +1196,7 @@
       toggleBtn.onclick = () => {
         formVisible = !formVisible;
         closeForm.style.display = formVisible ? '' : 'none';
-        toggleBtn.textContent = formVisible ? '✕ Cancel' : (alreadyLocked ? 'Set Outcome…' : 'Close with Outcome…');
+        toggleBtn.textContent = formVisible ? 'Cancel' : (alreadyLocked ? 'Set Outcome…' : 'Close with Outcome…');
       };
 
       return sec;
@@ -1210,7 +1215,8 @@
         sec.appendChild(hdr);
         const notice = document.createElement('div');
         notice.className = 'voided-notice';
-        notice.textContent = '⚠️ No one picked the winning option — all bets were refunded.';
+        notice.dataset.icon = 'warning';
+        notice.textContent = 'No one picked the winning option — all bets were refunded.';
         sec.appendChild(notice);
         return sec;
       }
@@ -1246,7 +1252,8 @@
       } else if (bet.bet_type === 'fixed_odds') {
         const notice = document.createElement('div');
         notice.className = 'voided-notice';
-        notice.textContent = '⚠️ No one picked the winning option — all stakes forfeit to house.';
+        notice.dataset.icon = 'warning';
+        notice.textContent = 'No one picked the winning option — all stakes forfeit to house.';
         sec.appendChild(notice);
       }
 
@@ -1257,7 +1264,8 @@
         const myProfit = myPayout - myWager;
         const myRow = document.createElement('div');
         myRow.style.cssText = 'margin-top:0.4rem;font-size:0.75rem;color:var(--market-positive);font-weight:600';
-        myRow.textContent = `✓ You won ${nby(myPayout)} (+${nby(myProfit)} profit)`;
+        myRow.dataset.icon = 'check';
+        myRow.textContent = `You won ${nby(myPayout)} (+${nby(myProfit)} profit)`;
         sec.appendChild(myRow);
       }
 
@@ -1267,12 +1275,14 @@
         if (shortfall > 0) {
           const notice = document.createElement('div');
           notice.className = 'shortfall-notice';
-          notice.textContent = `⚠️ Shortfall: ${nby(shortfall)} — admin top-up needed`;
+          notice.dataset.icon = 'warning';
+          notice.textContent = `Shortfall: ${nby(shortfall)} — admin top-up needed`;
           sec.appendChild(notice);
         } else if (shortfall < 0) {
           const notice = document.createElement('div');
           notice.className = 'surplus-notice';
-          notice.textContent = `✓ House surplus: ${nby(Math.abs(shortfall))}`;
+          notice.dataset.icon = 'check';
+          notice.textContent = `House surplus: ${nby(Math.abs(shortfall))}`;
           sec.appendChild(notice);
         }
       }
@@ -1475,10 +1485,12 @@
       typeWrap.className = 'type-toggle-wrap';
       const movBtn   = document.createElement('button');
       movBtn.type = 'button'; movBtn.className = 'type-toggle-btn active';
-      movBtn.textContent = '📊 Margin of Victory';
+      movBtn.dataset.icon = 'bars';
+      movBtn.textContent = 'Margin of Victory';
       const propsBtn = document.createElement('button');
       propsBtn.type = 'button'; propsBtn.className = 'type-toggle-btn';
-      propsBtn.textContent = '🏀 Player Props';
+      propsBtn.dataset.icon = 'basketball';
+      propsBtn.textContent = 'Player Props';
       typeWrap.append(movBtn, propsBtn);
       form.appendChild(typeWrap);
 

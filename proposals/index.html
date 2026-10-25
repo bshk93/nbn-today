@@ -183,7 +183,7 @@ function renderCard(p) {
   const el = document.createElement('a');
   el.className = 'proposal-card';
   el.href = `/proposals/view/?id=${p.id}`;
-  const commentPart = p.comment_count > 0 ? `<span class="sep">•</span> 💬 ${p.comment_count}` : '';
+  const commentPart = p.comment_count > 0 ? `<span class="sep">•</span> <i class="ui-icon ui-icon--comment" aria-hidden="true"></i> ${p.comment_count}` : '';
   const votePart = (p.status === 'voting' && p.vote_count > 0)
     ? `<span class="sep">•</span> ${p.vote_count} vote${p.vote_count !== 1 ? 's' : ''}`
     : '';

@@ -323,7 +323,7 @@ function renderCareerStats(ownerRow) {
   const defRtg = ownerRow.def_rtg ? (+ownerRow.def_rtg).toFixed(1) : '—';
 
   const ringsHtml = rings > 0
-    ? `<span class="cs-ring">${'★'.repeat(rings)}</span> ${rings}`
+    ? `<span class="cs-ring" title="${rings} ring${rings === 1 ? '' : 's'}">${'<i class="ui-icon ui-icon--ring" aria-hidden="true"></i>'.repeat(rings)}</span> ${rings}`
     : '0';
 
   return `<div class="career-stats">

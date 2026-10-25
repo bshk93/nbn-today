@@ -76,6 +76,7 @@
     .dash-glance .tone-violation { color: var(--danger); font-weight: 700; }
     .dash-glance-status { font-size: 0.78rem; font-weight: 600; }
     .dash-glance-status.ok { color: var(--success); }
+    .dash-otd-trophy { color: var(--gold); }
     .dash-glance-status.caution { color: var(--gold); }
     .dash-glance-status.violation { color: var(--danger); }
     .dash-glance-status.note { color: var(--text-muted); }
@@ -2157,7 +2158,7 @@
       const year = date => date.slice(0, 4);
       const items = [];
       (d.clinches || []).forEach(c => items.push({ rank: c.title ? 0 : 1, date: c.date, html: c.title
-        ? `🏆 ${teamSpan(c.winner)} won the title, ${c.wins}–${c.losses} over ${teamSpan(c.loser)}`
+        ? `<i class="ui-icon ui-icon--trophy dash-otd-trophy" aria-hidden="true"></i> ${teamSpan(c.winner)} won the title, ${c.wins}–${c.losses} over ${teamSpan(c.loser)}`
         : `${teamSpan(c.winner)} closed out ${teamSpan(c.loser)}, ${c.wins}–${c.losses} <span class="dash-otd-sub">${esc(ROUND_NAME[c.round] || 'Playoffs')}</span>` }));
       (d.games || []).forEach(g => {
         const L = g.line || {};
@@ -2483,10 +2484,12 @@
         status.className = 'dash-glance-status ' + (bad ? 'violation' : act ? 'caution' : notes ? 'note' : 'ok');
         status.textContent = act ? `${act} ${act === 1 ? 'thing needs' : 'things need'} you`
           : notes ? `${notes} ${notes === 1 ? 'update' : 'updates'}`
-          : settled >= EXPECTED ? '✓ All clear' : '';
+          : settled >= EXPECTED ? 'All clear' : '';
+        if (!act && !notes && settled >= EXPECTED) status.dataset.icon = 'check';
+        else delete status.dataset.icon;
         if (!chips.length) {
           chipBox.innerHTML = settled >= EXPECTED
-            ? '<span class="dash-chip ok">✓ Nothing needs you right now</span>'
+            ? '<span class="dash-chip ok"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Nothing needs you right now</span>'
             : '<span class="dash-chip ok">Checking…</span>';
           return;
         }
