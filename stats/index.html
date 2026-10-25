@@ -27,7 +27,7 @@
                     .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
     .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; text-decoration: none; color: inherit; transition: background 0.15s, border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; gap: 0.6rem; }
     .card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); }
-    .card-icon { font-size: 1.75rem; }
+    .card-icon { font-size: 1.75rem; color: var(--accent-light); }
     .card-title { font-size: 1.05rem; font-weight: 600; }
     .card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
     .card-main { display: flex; flex-direction: column; gap: 0.6rem; text-decoration: none; color: inherit; }
@@ -49,7 +49,7 @@
     <div class="grid">
       <div class="card">
         <a class="card-main" href="/stats/seasons">
-          <span class="card-icon">📅</span>
+          <span class="card-icon ui-icon ui-icon--calendar" aria-hidden="true"></span>
           <span class="card-title">Season Stats</span>
           <p class="card-desc">Per-game lines for every player and team, one season at a time.</p>
         </a>
@@ -61,7 +61,7 @@
       </div>
       <div class="card">
         <a class="card-main" href="/stats/totals">
-          <span class="card-icon">🏅</span>
+          <span class="card-icon ui-icon ui-icon--medal" aria-hidden="true"></span>
           <span class="card-title">Career Leaders</span>
           <p class="card-desc">Career totals and per-game leaders in 19 categories, for the regular season, playoffs or one franchise.</p>
         </a>
@@ -73,7 +73,7 @@
       </div>
       <div class="card">
         <a class="card-main" href="/stats/highs">
-          <span class="card-icon">🔝</span>
+          <span class="card-icon ui-icon ui-icon--top" aria-hidden="true"></span>
           <span class="card-title">Single-Game Highs</span>
           <p class="card-desc">The best single games in 15 categories, and who has the most triple-doubles, 40-point nights and more.</p>
         </a>
@@ -85,14 +85,14 @@
       </div>
       <div class="card">
         <a class="card-main" href="/h2h">
-          <span class="card-icon">⚔️</span>
+          <span class="card-icon ui-icon ui-icon--versus" aria-hidden="true"></span>
           <span class="card-title">Head to Head</span>
           <p class="card-desc">All-time records between every pair of teams, and every owner against every team, regular season and playoffs.</p>
         </a>
       </div>
       <div class="card card--wide">
         <a class="card-main" href="/frivolities">
-          <span class="card-icon">🥧</span>
+          <span class="card-icon ui-icon ui-icon--pie" aria-hidden="true"></span>
           <span class="card-title">Frivolities &amp; Viz</span>
           <p class="card-desc">Odd corners of the data: OVR charts, team attributes, career earnings, a plot-anything tool and every trade regraded.</p>
         </a>

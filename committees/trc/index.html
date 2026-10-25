@@ -328,7 +328,7 @@
       if (c.level === 'warning') return 'warning';
       return c.passed ? 'pass' : 'error';
     }
-    const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+    const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
     function issueRow(kind, text) {
       return `<div class="issue ${kind}"><span>${ICON[kind]}</span><span>${esc(text)}</span></div>`;
     }
@@ -442,7 +442,7 @@
 
       const c = item.consents[team] || {};
       const consent = c.consented
-        ? `<span class="tp-consent yes">✓ consented · ${esc(c.by)}</span>`
+        ? `<span class="tp-consent yes"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> consented · ${esc(c.by)}</span>`
         : `<span class="tp-consent no">awaiting consent</span>`;
 
       let html = `
@@ -490,7 +490,7 @@
         const problems = checks.filter(x => checkKind(x) !== 'pass');
         const passes = checks.filter(x => checkKind(x) === 'pass');
         if (problems.length) html += `<div class="issues">${problems.map(x => issueRow(checkKind(x), x.message)).join('')}</div>`;
-        if (passes.length) html += `<div class="chips">${passes.map(x => `<span class="chip" title="${esc(x.message)}">✓ ${esc(chipLabel(x.check))}</span>`).join('')}</div>`;
+        if (passes.length) html += `<div class="chips">${passes.map(x => `<span class="chip" title="${esc(x.message)}"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> ${esc(chipLabel(x.check))}</span>`).join('')}</div>`;
       }
       return html + '</div>';
     }
@@ -546,7 +546,7 @@
       if (!entries.length) return '<p class="empty">No votes yet.</p>';
       return entries.map(([member, b]) => `
         <div class="ballot-row">
-          <span class="${b.decision === 'approve' ? 'yes' : 'no'}">${b.decision === 'approve' ? '✓ Approve' : '✗ Reject'}</span>
+          <span class="${b.decision === 'approve' ? 'yes' : 'no'}">${b.decision === 'approve' ? '<i class="ui-icon ui-icon--check" aria-hidden="true"></i> Approve' : '<i class="ui-icon ui-icon--x" aria-hidden="true"></i> Reject'}</span>
           · ${esc(member)}
           <div class="note">${esc(b.note)}</div>
         </div>`).join('');
@@ -598,8 +598,8 @@
         body += `
         <div class="ballot-form" data-ballot-form="${item.id}">
           <textarea class="ballot-note" placeholder="Your reasoning (required). Judge fairness; legality is checked above."></textarea>
-          <button type="button" class="ballot-submit" data-decision="approve" data-id="${item.id}">✓ Approve</button>
-          <button type="button" class="ballot-submit" data-decision="reject" data-id="${item.id}">✗ Reject</button>
+          <button type="button" class="ballot-submit" data-decision="approve" data-id="${item.id}"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Approve</button>
+          <button type="button" class="ballot-submit" data-decision="reject" data-id="${item.id}"><i class="ui-icon ui-icon--x" aria-hidden="true"></i> Reject</button>
         </div>`;
       }
 
@@ -628,7 +628,7 @@
               <span class="req-parties">${esc(parties)}</span>
               ${statusBadge(item)}
               ${live && item.status !== 'awaiting_consent' ? `<span class="badge awaiting_consent">${approveCount}/3 votes</span>` : ''}
-              ${live && stale ? '<span class="badge stale">illegal now</span>' : (issueCount ? `<span class="badge balloting">⚠ ${issueCount}</span>` : '')}
+              ${live && stale ? '<span class="badge stale">illegal now</span>' : (issueCount ? `<span class="badge balloting"><i class="ui-icon ui-icon--warning" aria-hidden="true"></i> ${issueCount}</span>` : '')}
             </div>
             <div class="req-gist">${gist(item)}</div>
           </summary>

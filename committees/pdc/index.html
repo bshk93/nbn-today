@@ -291,6 +291,9 @@
     return n;
   }
 
+  // The text stays text; the icon is drawn by css/ui-icons.css from data-icon.
+  function withIcon(node, name) { node.dataset.icon = name; return node; }
+
   function token() { try { return localStorage.getItem('nbn_token'); } catch { return null; } }
 
   // The `.nbn.today` session cookie covers /api/fa/* and /api/auth/me (§ 3.3), so
@@ -889,14 +892,14 @@
     if (review.revalidation) {
       const vsec = el('div', 'section');
       const legal = review.revalidation.legal;
-      vsec.appendChild(el('div', 'banner ' + (legal ? 'info' : 'bad'),
-        (legal ? '✓ Legal as last checked' : '✗ Not legal') + (p.validation ? ` — submitted as ${p.validation.legal ? 'legal' : 'illegal (forced?)'}` : '')));
-      if (review.revalidation.error) vsec.appendChild(el('div', 'note', '✗ ' + review.revalidation.error));
+      vsec.appendChild(withIcon(el('div', 'banner ' + (legal ? 'info' : 'bad'),
+        (legal ? 'Legal as last checked' : 'Not legal') + (p.validation ? ` — submitted as ${p.validation.legal ? 'legal' : 'illegal (forced?)'}` : '')), legal ? 'check' : 'x'));
+      if (review.revalidation.error) vsec.appendChild(withIcon(el('div', 'note', review.revalidation.error), 'x'));
       // Failures, plus the info notes (e.g. an extension superseding a QO).
       const checks = review.revalidation.checks || [];
-      const mark = c => c.passed ? (c.level === 'info' ? 'ℹ ' : '✓ ') : (c.level === 'error' ? '✗ ' : '⚠ ');
+      const mark = c => c.passed ? (c.level === 'info' ? 'info' : 'check') : (c.level === 'error' ? 'x' : 'warning');
       checks.filter(c => !c.passed || c.level === 'info').forEach(c => {
-        vsec.appendChild(el('div', 'note', mark(c) + c.message));
+        vsec.appendChild(withIcon(el('div', 'note', c.message), mark(c)));
       });
       // The rest — every rule the deal was measured against, passed ones too.
       const passed = checks.filter(c => c.passed && c.level !== 'info');
@@ -1080,7 +1083,7 @@
     const body = el('div');
     body.appendChild(el('div', 'note',
       'This extension has warning-level checks — nothing blocking, but worth a look before finalizing:'));
-    checks.filter(c => !c.passed).forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
+    checks.filter(c => !c.passed).forEach(c => body.appendChild(withIcon(el('div', 'note', c.message), 'warning')));
     modal('Finalize with warnings?', body, [{
       label: 'Finalize anyway', cls: 'btn-primary',
       run: () => poextFinalize(slug, true, outcome, eaps),
@@ -2480,7 +2483,7 @@
       const b = el('div', 'banner bad');
       b.appendChild(el('div', null, 'Legal at submit · illegal now'));
       (now.checks || []).filter(c => !c.passed && c.level === 'error')
-        .forEach(c => b.appendChild(el('div', 'checkline err', '✗ ' + (c.message || c.check))));
+        .forEach(c => b.appendChild(withIcon(el('div', 'checkline err', c.message || c.check), 'x')));
       if (now.error) b.appendChild(el('div', 'checkline err', now.error));
       box.appendChild(b);
       return box;
@@ -2490,8 +2493,8 @@
       now.legal === false ? 'illegal' : 'legal now');
     chip.title = 'Frozen at submit: ' + (then.legal ? 'legal' : 'not recorded') + '. Revalidated on this page load.';
     box.appendChild(chip);
-    failing.forEach(c => box.appendChild(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
-      (c.level === 'error' ? '✗ ' : '! ') + (c.message || c.check))));
+    failing.forEach(c => box.appendChild(withIcon(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+      c.message || c.check), c.level === 'error' ? 'x' : 'warning')));
     return box;
   }
 
@@ -3142,7 +3145,7 @@
         body.appendChild(el('div', 'note',
           'Nothing blocks this, but these checks warn — read them before writing it:'));
         (detail.checks || []).filter(c => !c.passed)
-          .forEach(c => body.appendChild(el('div', 'note', '⚠ ' + c.message)));
+          .forEach(c => body.appendChild(withIcon(el('div', 'note', c.message), 'warning')));
         modal('Declare with warnings?', body, [{
           label: 'Declare anyway', cls: 'btn-primary',
           run: () => declareWinner(slug, key, labels, true, eaps),
@@ -3333,8 +3336,8 @@
           legality.appendChild(el('div', 'mini-head', res.legal ? 'Legal' : 'Not legal — can’t be saved'));
           legality.appendChild(el('div', 'bar-lbl', shorthand(contract(), season)));
           (res.checks || []).filter(c => !c.passed).forEach(c => legality.appendChild(
-            el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
-              (c.level === 'error' ? '✗ ' : '! ') + (c.message || c.check))));
+            withIcon(el('div', 'checkline ' + (c.level === 'error' ? 'err' : 'warn'),
+              c.message || c.check), c.level === 'error' ? 'x' : 'warning')));
         } catch (e) {
           if (mine !== seq) return;
           legality.className = 'banner bad';

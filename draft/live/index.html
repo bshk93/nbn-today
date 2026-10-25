@@ -605,7 +605,7 @@
   <div id="control-drawer">
     <div class="drawer-header">
       <h2>Controls</h2>
-      <button class="drawer-close" onclick="closeDrawer()">✕</button>
+      <button class="drawer-close" onclick="closeDrawer()" aria-label="Close"><i class="ui-icon ui-icon--x" aria-hidden="true"></i></button>
     </div>
     <div class="drawer-body">
 
@@ -1239,7 +1239,7 @@
         `<select class="player-select trade-pick-sel">${pickOptionsHtml(state || draftState || {})}</select>` +
         `<span style="color:var(--text-dim)">→</span>` +
         `<select class="player-select trade-owner-sel">${ownerOptionsHtml()}</select>` +
-        `<button class="trade-row-remove" title="Remove">✕</button>`;
+        `<button class="trade-row-remove" title="Remove" aria-label="Remove"><i class="ui-icon ui-icon--x" aria-hidden="true"></i></button>`;
       row.querySelector('.trade-row-remove').addEventListener('click', () => {
         row.remove();
         if (!document.querySelectorAll('#trade-rows .trade-row').length) addTradeRow(draftState);
@@ -1831,7 +1831,7 @@
         } else if (isOnClock) {
           playerWrap.innerHTML = `<span class="pc-clock">⏱ On the Clock</span>`;
         } else if (state.round1_date && Date.now() >= pickWindowEnd(state.round1_date, p.round, p.pick)) {
-          playerWrap.innerHTML = `<span class="pc-late">⚠ Awaiting pick</span>`;
+          playerWrap.innerHTML = `<span class="pc-late"><i class="ui-icon ui-icon--warning" aria-hidden="true"></i> Awaiting pick</span>`;
         } else {
           playerWrap.innerHTML = `<span style="color:var(--border)">—</span>`;
         }

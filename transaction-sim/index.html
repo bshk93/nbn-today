@@ -81,7 +81,7 @@
     .vc-row { display: flex; gap: 0.5rem; font-size: 0.82rem; line-height: 1.45; align-items: flex-start; }
     .vc-icon { flex-shrink: 0; font-weight: 700; width: 1rem; text-align: center; }
     .vc-row.pass { color: var(--text-secondary); }    .vc-row.pass .vc-icon { color: var(--success); }
-    .vc-row.warning { color: #fcd34d; } .vc-row.warning .vc-icon { color: var(--gold); }
+    .vc-row.warning { color: var(--gold); }
     .vc-row.error { color: var(--danger-light); }   .vc-row.error .vc-icon { color: var(--danger); }
 
     /* "What this checks" documentation panel */
@@ -786,12 +786,12 @@ function renderSignResults(data, isOffer) {
   const el = document.getElementById('results');
   el.style.display = '';
   const { legal, checks = [], fact_sheet: f = {} } = data;
-  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+  const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
 
   const checkRows = checks.map(c => {
     const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
     return `<div class="vc-row ${kind}"><span class="vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
-  }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
+  }).join('') || '<div class="vc-row pass"><span class="vc-icon"><i class="ui-icon ui-icon--check" aria-hidden="true"></i></span><span>No constraints triggered.</span></div>';
 
   if (f.unresolved) {
     el.innerHTML = `<div class="results-header"><span class="rh-title">${isOffer ? 'Offer Sheet' : 'Signing'} Analysis</span></div>
@@ -879,8 +879,8 @@ function renderSignResults(data, isOffer) {
     <div class="vc-list">${checkRows}</div>
     <div class="results-summary">
       ${legal
-        ? `<strong style="color:var(--success)">✓ ${isOffer ? 'Offer sheet' : 'Signing'} is legal</strong> — every check the league office runs at submission passes. Nothing here has been submitted.`
-        : `<strong style="color:var(--danger)">✗ ${isOffer ? 'Offer sheet' : 'Signing'} is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.`}
+        ? `<strong style="color:var(--success)"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> ${isOffer ? 'Offer sheet' : 'Signing'} is legal</strong> — every check the league office runs at submission passes. Nothing here has been submitted.`
+        : `<strong style="color:var(--danger)"><i class="ui-icon ui-icon--x" aria-hidden="true"></i> ${isOffer ? 'Offer sheet' : 'Signing'} is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.`}
     </div>`;
 }
 
@@ -1104,12 +1104,12 @@ function renderExtensionResults(data) {
   const el = document.getElementById('results');
   el.style.display = '';
   const { legal, checks = [], fact_sheet: f = {} } = data;
-  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+  const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
 
   const checkRows = checks.map(c => {
     const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : (c.level || 'error'));
     return `<div class="vc-row ${kind}"><span class="vc-icon">${ICON[kind] || '?'}</span><span>${c.message}</span></div>`;
-  }).join('') || '<div class="vc-row pass"><span class="vc-icon">✓</span><span>No constraints triggered.</span></div>';
+  }).join('') || '<div class="vc-row pass"><span class="vc-icon"><i class="ui-icon ui-icon--check" aria-hidden="true"></i></span><span>No constraints triggered.</span></div>';
 
   const row = (label, val, cls) =>
     `<div class="result-row"><span class="label">${label}</span><span${cls ? ` style="color:${cls}"` : ''}>${val}</span></div>`;
@@ -1160,8 +1160,8 @@ function renderExtensionResults(data) {
     <div class="vc-list">${checkRows}</div>
     <div class="results-summary">
       ${legal
-        ? `<strong style="color:var(--success)">✓ Extension is legal</strong> — every check the league office runs at submission passes. Nothing here has been submitted.`
-        : `<strong style="color:var(--danger)">✗ Extension is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.`}
+        ? `<strong style="color:var(--success)"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Extension is legal</strong> — every check the league office runs at submission passes. Nothing here has been submitted.`
+        : `<strong style="color:var(--danger)"><i class="ui-icon ui-icon--x" aria-hidden="true"></i> Extension is not legal</strong> — resolve the failed checks above. Warnings can be force-submitted by the office.`}
     </div>`;
 }
 

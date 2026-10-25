@@ -32,8 +32,8 @@ const _ICON_PERSON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12
 // whoever uses this browser, so it arrives per-member on /api/members/me as
 // `free_themes` and is cached separately from the bought ones.
 const FREE_THEMES = [
-  { id: 'nbn-today',       label: 'NBN Today',       icon: '🌙', free: true },
-  { id: 'nbn-today-light', label: 'NBN Today Light', icon: '☀️', free: true },
+  { id: 'nbn-today',       label: 'NBN Today',       icon: 'moon', free: true },
+  { id: 'nbn-today-light', label: 'NBN Today Light', icon: 'sun',  free: true },
 ];
 let THEMES = FREE_THEMES.slice();
 const THEME_STORAGE_KEY = 'nbn_theme_pref'; // 'auto' or one of THEMES[].id
@@ -216,14 +216,23 @@ async function _unlockTheme(entry, menu) {
 }
 
 // A team theme's row shows that team's logo. The catalog's icon for all 30 is
-// the same 🏀, which identifies none of them; `team` (from GET /api/themes) is
-// what turns it into a specific one. The emoji is kept as the fallback node, so
-// a logo that fails to load leaves a readable row rather than a blank gap.
+// the same basketball, which identifies none of them; `team` (from GET
+// /api/themes) is what turns it into a specific one. The icon is kept as the
+// fallback node, so a logo that fails to load leaves a readable row rather than
+// a blank gap. The catalog still sends emoji; THEME_ICON maps the ones it uses
+// onto css/ui-icons.css, and anything else is shown as sent.
+const THEME_ICON = { '🌙': 'moon', '☀️': 'sun', '🖥️': 'monitor', '🏀': 'basketball' };
 function _themeIcon(c, cls, defer) {
   cls = cls || 'theme-menu-icon';
   const span = document.createElement('span');
   span.className = cls;
-  span.textContent = c.icon;
+  const name = THEME_ICON[c.icon] || c.icon;
+  if (/^[a-z-]+$/.test(name || '')) {
+    span.classList.add('ui-icon', 'ui-icon--' + name);
+    span.setAttribute('aria-hidden', 'true');
+  } else {
+    span.textContent = c.icon;
+  }
   if (!c.team) return span;
   const img = document.createElement('img');
   img.className = cls + ' theme-logo-icon';
@@ -248,7 +257,7 @@ function _hydrateThemeLogos(menu) {
 
 function _themeMenuItems(menu) {
   menu.textContent = '';
-  const choices = [{ id: 'auto', label: 'Match System', icon: '🖥️', free: true }, ...THEMES];
+  const choices = [{ id: 'auto', label: 'Match System', icon: 'monitor', free: true }, ...THEMES];
   choices.forEach(c => {
     const mine = !c.free && _freeThemes().includes(c.id);   // their own team's — free, and worth saying so
     const locked = !c.free && !_hasTheme(c.id);
@@ -257,7 +266,7 @@ function _themeMenuItems(menu) {
     item.dataset.themeChoice = c.id;
     const price = locked ? `<span class="theme-menu-price">${_fmtNby(c.price)}</span>` : '';
     item.innerHTML = `<span class="theme-menu-label"></span>${price}`
-      + `<span class="theme-menu-check">✓</span>`;
+      + `<span class="theme-menu-check ui-icon ui-icon--check" aria-hidden="true"></span>`;
     item.prepend(_themeIcon(c, 'theme-menu-icon', true));
     item.querySelector('.theme-menu-label').textContent = c.label;
     item.title = locked ? `Unlock ${c.label} for ${_fmtNby(c.price)}`
@@ -285,7 +294,7 @@ function _rebuildThemeMenu() {
 // ── Inbox button ─────────────────────────────────────────────────────────────
 // Only on a page that opts out of the sidebar (`<html data-no-sidebar>`):
 // everywhere else the inbox is in the sidebar's account menu, and its unread
-// count rides on the avatar there and on the ☰. The unread count is only
+// count rides on the avatar there and on the menu button. The unread count is only
 // fetched when a token is on hand; a signed-out visitor still gets the button
 // (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
 function _buildInboxButton() {
@@ -309,7 +318,7 @@ function _buildInboxButton() {
   return btn;
 }
 
-// Unread inbox count, once per page — the avatar, the ☰ and the sidebar's Inbox
+// Unread inbox count, once per page — the avatar, the menu button and the sidebar's Inbox
 // row both show it. 0 when signed out (no request then).
 let _unreadPromise = null;
 function _unreadCount() {
@@ -435,7 +444,7 @@ document.addEventListener('keydown', function (e) {
 // Idempotent by design (bails via the .nav-actions check below) — a page that
 // rewrites .nav's innerHTML wholesale after this first runs (players/index.html
 // does, to swap in a breadcrumb once its data loads) must call _initNav() again
-// afterward, or the rewrite silently wipes out the ☰, search and inbox with
+// afterward, or the rewrite silently wipes out the menu button, search and inbox with
 // it. _initNav is a plain global (this file has no module wrapper), so any page
 // that includes nav.js can call it directly.
 function _initNav() {
@@ -506,7 +515,7 @@ function _initNav() {
 // The site's left-hand navigation, drawn from NAV_SECTIONS. Three states:
 //   open  — docked, full width (the default)
 //   rail  — docked, icons only
-//   drawer — below 900px it is never docked; the ☰ in .nav slides it over
+//   drawer — below 900px it is never docked; the menu button in .nav slides it over
 //            the page instead, and open/rail don't apply.
 // open/rail is the visitor's choice, kept in localStorage. The first paint is
 // theme-boot.js's job, for the same reason as the theme: it sets
@@ -596,7 +605,7 @@ function _togglePin(href) {
 
 let _rolesKnown = null; // the resolved _myRoles() set, once it is in
 
-// A row: the link, and the ☆ that pins it. Two siblings rather than a button
+// A row: the link, and the star that pins it. Two siblings rather than a button
 // inside the <a>, which would nest one control inside another.
 function _sidebarRow(p, active) {
   const row = document.createElement('div');
@@ -1237,7 +1246,7 @@ function _buildSidebar() {
     <button type="button" class="sb-close nav-icon-btn" aria-label="Close menu">${_ICON_CLOSE}</button>`;
   head.querySelector('.sb-close').addEventListener('click', _closeDrawer);
   // Expand/collapse lives at the top, beside the logo (where Claude's own
-  // sidebar keeps it); below 900px the ✕ takes its place.
+  // sidebar keeps it); below 900px the close button takes its place.
   head.querySelector('.sb-collapse').addEventListener('click', () => {
     _setSidebarMode(_sidebarMode() === 'rail' ? 'open' : 'rail');
   });
@@ -1328,7 +1337,7 @@ function _trapDrawerFocus(e) {
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
 
-// The ☰ that opens the drawer. Only shown below the docking breakpoint (CSS),
+// The menu button that opens the drawer. Only shown below the docking breakpoint (CSS),
 // and first in .nav so it sits where a phone user looks for it.
 function _buildMenuButton() {
   const btn = document.createElement('button');
@@ -1339,7 +1348,7 @@ function _buildMenuButton() {
   btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = _ICON_MENU;
   btn.addEventListener('click', () => (_drawerOpen() ? _closeDrawer() : _openDrawer()));
-  // On a phone the drawer hides the account menu, so unread mail marks the ☰.
+  // On a phone the drawer hides the account menu, so unread mail marks the menu button.
   _unreadCount().then(n => {
     if (!n) return;
     btn.classList.add('has-unread');

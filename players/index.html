@@ -167,7 +167,7 @@
       color: #fcd34d;
     }
 
-    .row-icon { font-size: 0.78em; margin-left: 4px; vertical-align: middle; }
+    .row-icon { font-size: 0.95em; margin-left: 4px; color: var(--gold); }
 
     .career-row { border-top: 2px solid var(--border) !important; }
 
@@ -1265,8 +1265,10 @@
         if (!isCareer && col.iconSlot && iconFn) {
           iconFn(row).forEach(icon => {
             const span = document.createElement('span');
-            span.className = 'row-icon';
-            span.textContent = icon;
+            span.className = `row-icon ui-icon ui-icon--${icon}`;
+            span.title = ICON_TITLE[icon];
+            span.setAttribute('role', 'img');
+            span.setAttribute('aria-label', ICON_TITLE[icon]);
             td.appendChild(span);
           });
         }
@@ -1488,7 +1490,8 @@
         holdSel.appendChild(opt);
       });
       const removeBtn = document.createElement('button');
-      removeBtn.type = 'button'; removeBtn.textContent = '✕';
+      removeBtn.type = 'button'; removeBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+      removeBtn.setAttribute('aria-label', 'Remove');
       removeBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.9rem;padding:0 0.2rem;font-family:inherit';
       removeBtn.onmouseenter = () => { removeBtn.style.color = 'var(--danger)'; };
       removeBtn.onmouseleave = () => { removeBtn.style.color = 'var(--text-dim)'; };
@@ -1738,7 +1741,7 @@
       if (sl && biosData[sl]) {
         const existing = biosData[sl];
         const displayN = existing.name ? displayName(existing.name) : sl;
-        slugWarn.innerHTML = `⚠ <strong>${displayN}</strong> already exists — <a href="/players/?p=${sl}" target="_blank">view profile</a>`;
+        slugWarn.innerHTML = `<i class="ui-icon ui-icon--warning" aria-hidden="true"></i> <strong>${displayN}</strong> already exists — <a href="/players/?p=${sl}" target="_blank">view profile</a>`;
         slugWarn.style.display = '';
         slugInput.style.borderColor = 'var(--danger)';
       } else {
@@ -2077,8 +2080,10 @@
 
   // ── Row icon helper ──────────────────────────────────────────────────────────
 
-  const AWARD_ICONS = { 'Champion': '💍', 'Most Valuable Player': '👑', 'All-Star': '⭐' };
-  const ICON_ORDER  = ['💍', '👑', '⭐'];
+  // Icon names in css/ui-icons.css, and the award each one stands for.
+  const AWARD_ICONS = { 'Champion': 'ring', 'Most Valuable Player': 'crown', 'All-Star': 'star' };
+  const ICON_ORDER  = ['ring', 'crown', 'star'];
+  const ICON_TITLE  = { ring: 'Champion', crown: 'MVP', star: 'All-Star' };
 
   function makeIconFn(regRows, poRows, playerAwards, slug, bySeasonMode) {
     const awards = playerAwards[slug] || [];
@@ -2786,7 +2791,7 @@
       { label: 'Ht',  field: 'HEIGHT',   defaultDir: 1, cls: 'right muted', display: p => p.HEIGHT   || '—' },
       { label: 'Wt',  field: 'WEIGHT',   defaultDir:-1, cls: 'right muted', display: p => p.WEIGHT != null ? p.WEIGHT + ' lbs' : '—' },
       { label: 'WS',  field: 'WINGSPAN', defaultDir: 1, cls: 'right muted', display: p => p.WINGSPAN  || '—' },
-      { label: 'Ret', field: 'RETIRED',  defaultDir:-1, cls: 'center muted', display: p => p.RETIRED ? '✓' : '—' },
+      { label: 'Ret', field: 'RETIRED',  defaultDir:-1, cls: 'center muted', display: p => p.RETIRED ? 'Yes' : '—' },
     ];
 
     let sortField = 'LAST', sortDir = 1;

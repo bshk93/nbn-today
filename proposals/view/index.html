@@ -569,7 +569,7 @@ function renderVotePanel(p) {
       btn.className = `vote-btn vote-btn-${v}${myVote === v ? ' active' : ''}`;
       btn.textContent = v.charAt(0).toUpperCase() + v.slice(1);
       if (myVote === v) {
-        btn.textContent += ' ✓';
+        btn.dataset.icon = 'check';
         btn.style.outline = '2px solid currentColor';
         btn.style.outlineOffset = '1px';
       }

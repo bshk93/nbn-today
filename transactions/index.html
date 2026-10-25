@@ -1454,7 +1454,7 @@ function renderAuthBar() {
     // submit, so a team owner declining an option never found the Moves
     // menu that does it.
     status.textContent = canManage ? ''
-      : 'Recording transactions is for the league office. Team owners: open your team page and use the ⚙ button next to a player to exercise or decline an option, release, renounce, or sign a draft pick.';
+      : 'Recording transactions is for the league office. Team owners: open your team page and use the gear (Roster moves) button next to a player to exercise or decline an option, release, renounce, or sign a draft pick.';
     btn.textContent = 'Sign out';
     formCard.style.display = canManage ? '' : 'none';
   } else {
@@ -2868,7 +2868,7 @@ function syncEapsVisibility(factSheet) {
 function renderSignRubric(data) {
   const body = document.getElementById('sign-rubric-body');
   const { checks = [], fact_sheet: f = {} } = data;
-  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+  const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
 
   // An unpriceable Full Bird hold passes every § 3.1-§ 3.13 check — the
   // validator doesn't run the hold auto-fill — and then fails at submit with a
@@ -2879,7 +2879,7 @@ function renderSignRubric(data) {
   syncEapsVisibility(f);
 
   const verdict = `<div class="rubric-verdict ${legal ? 'ok' : 'bad'}">${
-    legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'
+    legal ? '<i class="ui-icon ui-icon--check" aria-hidden="true"></i> Legal as currently built' : '<i class="ui-icon ui-icon--x" aria-hidden="true"></i> Not legal yet — resolve the errors below'
   }</div>`;
 
   const rows = checks.map(c => {
@@ -3002,10 +3002,10 @@ async function runTradeRubric() {
 function renderTradeRubric(data) {
   const body = document.getElementById('trade-rubric-body');
   const { legal, checks = [] } = data;
-  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+  const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
 
   const verdict = `<div class="rubric-verdict ${legal ? 'ok' : 'bad'}">${
-    legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'
+    legal ? '<i class="ui-icon ui-icon--check" aria-hidden="true"></i> Legal as currently built' : '<i class="ui-icon ui-icon--x" aria-hidden="true"></i> Not legal yet — resolve the errors below'
   }</div>`;
 
   const rows = checks.map(c => {
@@ -3768,7 +3768,7 @@ function renderValidationPanel(result, originalBody) {
   const btn   = document.getElementById('submit-btn');
   const { checks, can_force } = result;
 
-  const ICON = { error: '✗', warning: '⚠', pass: '✓' };
+  const ICON = { error: '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>', warning: '<i class="ui-icon ui-icon--warning" aria-hidden="true"></i>', pass: '<i class="ui-icon ui-icon--check" aria-hidden="true"></i>' };
 
   panel.innerHTML = '';
   const heading = document.createElement('h4');
@@ -3782,7 +3782,7 @@ function renderValidationPanel(result, originalBody) {
 
     const icon = document.createElement('span');
     icon.className = 'check-icon';
-    icon.textContent = ICON[kind] ?? '?';
+    icon.innerHTML = ICON[kind] ?? '?';
 
     const msg = document.createElement('span');
     msg.className = 'check-msg';

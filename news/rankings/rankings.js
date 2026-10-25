@@ -183,7 +183,7 @@ function renderAuthorPanel() {
     // want opposite things from an author.
     const done = (bp.submitted || []).includes(name);
     const started = !done && (bp.started || []).includes(name);
-    const mark = done ? '<span class="tick">✓</span>'
+    const mark = done ? '<span class="tick"><i class="ui-icon ui-icon--check" aria-hidden="true"></i></span>'
       : started ? '<span class="part" title="Started a ballot, not submitted">◐</span>' : '';
     return `<span class="chip ${done ? 'done' : started ? 'started' : ''}"`
       + (started ? ' title="Part-way through — started but not submitted"' : '')

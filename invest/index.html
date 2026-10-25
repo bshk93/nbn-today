@@ -718,7 +718,7 @@ function drawTeamChart(team, history) {
               const h = history[ctx.dataIndex];
               let s = `¥${ctx.parsed.y.toFixed(2)}`;
               if (h.is_now) s += '  ← Now';
-              else if (h.is_playoff) s += '  🏆 Playoff';
+              else if (h.is_playoff) s += '  · Playoff';
               else if (h.diff != null) s += `  (${h.diff >= 0 ? '+' : ''}${h.diff})`;
               return s;
             },

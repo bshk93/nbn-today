@@ -461,7 +461,8 @@
     if (issues.length) {
       const warn = document.createElement('div');
       warn.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--gold,#c9a227);margin:-0.5rem 0 1rem';
-      warn.textContent = '⚠ Not balanced — ' + issues.join(' · ');
+      warn.dataset.icon = 'warning';
+      warn.textContent = 'Not balanced — ' + issues.join(' · ');
       container.appendChild(warn);
     }
 

@@ -166,7 +166,7 @@
     if (done && m.settled_at) meta.push(`${m.status === 'voided' ? 'Voided' : 'Settled'} ${when(m.settled_at)}`);
     meta.push(`${m.trade_count} trade${m.trade_count === 1 ? '' : 's'}`);
     el.innerHTML = `
-      <div class="fut-head"><div class="fut-title">📈 ${esc(m.title)}</div>
+      <div class="fut-head"><div class="fut-title">${esc(m.title)}</div>
         <span class="ui-badge ${badge[1]}">${badge[0]}</span></div>
       <div class="fut-meta">${meta.join(' · ')}</div>
       ${m.description ? `<div class="fut-desc">${esc(m.description)}</div>` : ''}
@@ -214,7 +214,7 @@
       const h = pos[r.id] || {};
       const held = [h.yes ? `${h.yes.toFixed(2)} Yes` : '', h.no ? `${h.no.toFixed(2)} No` : ''].filter(Boolean).join(', ');
       tr.innerHTML = `
-        <td>${m.status === 'settled' && m.winner === r.id ? '🏆 ' : ''}${esc(r.label)}</td>
+        <td>${m.status === 'settled' && m.winner === r.id ? '<i class="ui-icon ui-icon--trophy fut-won" aria-hidden="true"></i> ' : ''}${esc(r.label)}</td>
         <td class="num price">${px(r.price)}<span class="fut-bar" style="width:${Math.max(2, r.price / maxP * 48)}px"></span></td>
         <td class="num ${Math.abs(chg) < 0.05 ? '' : chg > 0 ? 'up' : 'down'}">${Math.abs(chg) < 0.05 ? '—' : (chg > 0 ? '▲ ' : '▼ ') + Math.abs(chg).toFixed(2)}</td>
         <td class="num">${held}</td>`;

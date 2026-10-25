@@ -116,6 +116,9 @@ function el(tag, cls, text) {
   if (text != null) n.textContent = text;
   return n;
 }
+
+// The text stays text; the icon is drawn by css/ui-icons.css from data-icon.
+function withIcon(node, name) { node.dataset.icon = name; return node; }
 function token() { try { return localStorage.getItem('nbn_token'); } catch { return null; } }
 async function api(path, opts) {
   const o = Object.assign({ credentials: 'same-origin' }, opts || {});
@@ -496,10 +499,10 @@ async function runValidate() {
     if (eapsField) eapsField.style.display = FORM.eapsNeeded ? '' : 'none';
     body.innerHTML = '';
     const legal = data.legal;
-    body.appendChild(el('div', 'banner ' + (legal ? 'info' : 'bad'), legal ? '✓ Legal as currently built' : '✗ Not legal yet — resolve the errors below'));
+    body.appendChild(withIcon(el('div', 'banner ' + (legal ? 'info' : 'bad'), legal ? 'Legal as currently built' : 'Not legal yet — resolve the errors below'), legal ? 'check' : 'x'));
     (data.checks || []).forEach(c => {
       const kind = c.level === 'warning' ? 'warning' : (c.passed ? 'pass' : 'error');
-      body.appendChild(el('div', 'check-row ' + kind, (kind === 'error' ? '✗ ' : kind === 'warning' ? '⚠ ' : '✓ ') + c.message));
+      body.appendChild(withIcon(el('div', 'check-row ' + kind, c.message), kind === 'error' ? 'x' : kind === 'warning' ? 'warning' : 'check'));
     });
     document.getElementById('submit-btn').disabled = !legal;
   } catch (e) {

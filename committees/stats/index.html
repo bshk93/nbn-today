@@ -206,7 +206,7 @@
       <div class="card-body" id="wl-help" hidden>
         <p>Click a team's box, then paste a screenshot (Ctrl+V / ⌘V). You can also drop a file
           on it or choose one. Add a second image to a side if the bench didn't fit. A game is
-          ready to parse once both sides are in. The 🚑 row under each day takes the 2K injury
+          ready to parse once both sides are in. The <i class="ui-icon ui-icon--medical" aria-hidden="true"></i> Injuries row under each day takes the 2K injury
           screen (Entire League), as many screenshots as the list needs. Screenshots stay here
           for 14 days after they are entered.</p>
       </div>
@@ -765,7 +765,8 @@
 
     const m = document.createElement('div');
     m.className = 'game-matchup';
-    m.textContent = '🚑 Injuries';
+    m.dataset.icon = 'medical';
+    m.textContent = 'Injuries';
     row.appendChild(m);
 
     const el = document.createElement('div');

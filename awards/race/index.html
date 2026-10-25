@@ -164,7 +164,7 @@
                   <span class="race-team">${esc(p.team)}</span></div>
                 <div class="race-line">${esc(LINE[key](p))}</div>
               </div>
-              ${isWinner(key, season, p) ? '<span class="race-won">🏆 Won</span>' : ''}
+              ${isWinner(key, season, p) ? '<span class="race-won"><i class="ui-icon ui-icon--trophy" aria-hidden="true"></i> Won</span>' : ''}
             </div>`).join('')
             : `<div class="ui-empty">${key === '6MOY' && season < '26-27'
                 ? 'Starts weren’t recorded before 26-27.' : 'Nobody qualifies yet.'}</div>`;

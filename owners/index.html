@@ -84,6 +84,9 @@
     .achievement--lg {
       font-size: 1.15rem;
     }
+    .achievement--gold { color: var(--gold); }
+    .achievement--silver { color: var(--text-secondary); }
+    .achievement--hot { color: var(--warning); }
 
     .achievement::after {
       content: attr(data-tip);
@@ -161,7 +164,7 @@
         display: r => parseInt(r.po_conf_finals) > 0 ? r.po_conf_finals : '—' },
       { key: 'po_finals',        label: 'Finals',        cls: 'center',      sortField: 'po_finals',        numeric: true,  defaultDir: -1,
         display: r => parseInt(r.po_finals) > 0 ? r.po_finals : '—' },
-      { key: 'championships',    label: '🏆',            cls: 'center',      sortField: 'championships',    numeric: true,  defaultDir: -1 },
+      { key: 'championships',    label: 'Titles',        cls: 'center',      sortField: 'championships',    numeric: true,  defaultDir: -1 },
       { key: 'off_rtg',          label: 'Off Rtg',       cls: 'right',       sortField: 'off_rtg',          numeric: true,  defaultDir: -1,
         display: r => fmtRtg(r.off_rtg) },
       { key: 'def_rtg',          label: 'Def Rtg',       cls: 'right',       sortField: 'def_rtg',          numeric: true,  defaultDir: -1,
@@ -180,26 +183,26 @@
     const ACHIEVEMENTS = [
       {
         id: 'champion',
-        icon: '🏆',
+        icon: 'trophy', tone: 'gold',
         test: r => parseInt(r.championships) >= 1,
         label: r => parseInt(r.championships) > 1 ? `${r.championships}× Champion` : 'Champion',
       },
       {
         id: 'finalist',
-        icon: '🥈',
+        icon: 'medal', tone: 'silver',
         test: r => parseInt(r.po_finals) >= 1 && parseInt(r.championships) === 0,
         label: r => parseInt(r.po_finals) > 1 ? `${r.po_finals}× Finals Appearance` : 'Finals Appearance',
       },
       {
         id: 'season_70',
-        icon: '🔥',
+        icon: 'flame', tone: 'hot',
         large: true,
         test: r => parseBestWins(r.best_reg_season) >= 70,
         label: r => `70-Win Season (${r.best_reg_season})`,
       },
       {
         id: 'season_60',
-        icon: '🔥',
+        icon: 'flame', tone: 'hot',
         test: r => parseBestWins(r.best_reg_season) >= 60 && parseBestWins(r.best_reg_season) < 70,
         label: r => `60-Win Season (${r.best_reg_season})`,
       },
@@ -208,7 +211,7 @@
     function buildAchievements(rows) {
       const map = new Map();
       rows.forEach(r => {
-        map.set(r.owner, ACHIEVEMENTS.filter(a => a.test(r)).map(a => ({ icon: a.icon, label: a.label(r), large: !!a.large })));
+        map.set(r.owner, ACHIEVEMENTS.filter(a => a.test(r)).map(a => ({ icon: a.icon, tone: a.tone, label: a.label(r), large: !!a.large })));
       });
       return map;
     }
@@ -304,9 +307,11 @@
             td.appendChild(ownerLink);
             (ownerAchievements.get(row.owner) ?? []).forEach(a => {
               const span = document.createElement('span');
-              span.className = a.large ? 'achievement achievement--lg' : 'achievement';
+              span.className = 'achievement achievement--' + a.tone + (a.large ? ' achievement--lg' : '');
               span.dataset.tip = a.label;
-              span.textContent = a.icon;
+              span.setAttribute('role', 'img');
+              span.setAttribute('aria-label', a.label);
+              span.innerHTML = `<i class="ui-icon ui-icon--${a.icon}" aria-hidden="true"></i>`;
               td.appendChild(span);
             });
           } else if (col.key === 'championships') {
