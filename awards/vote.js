@@ -80,7 +80,7 @@
       min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .pick-item.empty .pick-name { color: var(--border); font-weight: 400; font-style: italic; }
-    .pick-ineligible { font-size: 0.75rem; font-weight: 500; color: var(--danger); flex-shrink: 0; }
+    .pick-ineligible { font-size: var(--text-xs); font-weight: 500; color: var(--danger); flex-shrink: 0; }
 
     .pick-remove {
       background: none; border: none; color: var(--text-dim);
