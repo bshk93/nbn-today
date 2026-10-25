@@ -387,12 +387,6 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .drag-handle:active { cursor: grabbing; }
   #team-settings-wrap tr.dragging { opacity: 0.4; }
-  .table-wrap {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow-x: auto;
-  }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
@@ -597,10 +591,6 @@ const coachingConfigReady = new Promise(resolve => {
   .retired-no   { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
   .retired-name { font-size: 0.62rem; color: var(--text-muted); text-align: center; line-height: 1.3; }
   .retired-date { font-size: 0.58rem; color: var(--text-dim); margin-top: 0.15rem; }
-  td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
-  td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
-  td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
-  td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
   td.cap-non-gtd    { color: var(--text-dim); }
   td.cell-selected { position: relative; box-shadow: inset 0 0 0 2px var(--accent); }
   td.cell-selected::after {
@@ -1101,7 +1091,7 @@ document.body.innerHTML = `
           </div>
           <button id="whatif-enter-btn" class="whatif-enter-btn" type="button">What If Mode</button>
         </div>
-        <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
         <div id="cap-edit-wrap"></div>
         <div id="dead-cap-edit-wrap"></div>
         <div id="whatif-panel" class="whatif-panel" style="display:none">
@@ -1112,11 +1102,11 @@ document.body.innerHTML = `
           </div>
           <div id="whatif-log" class="whatif-log"></div>
           <div id="whatif-contract-form-slot"></div>
-          <div class="table-wrap" id="whatif-roster-wrap"></div>
+          <div class="ui-table-wrap table-wrap" id="whatif-roster-wrap"></div>
           <div id="whatif-warnings"></div>
           <div id="whatif-attr-impact-wrap" style="display:none">
             <div class="whatif-attr-heading">Attribute Impact <span class="whatif-attr-heading-note">— vs. your real roster, cap holds excluded</span></div>
-            <div id="whatif-attr-impact" class="table-wrap"></div>
+            <div id="whatif-attr-impact" class="ui-table-wrap table-wrap"></div>
           </div>
           <div id="whatif-hard-cap-banner" style="display:none"></div>
           <div id="whatif-exceptions-section" style="display:none">
@@ -1138,7 +1128,7 @@ document.body.innerHTML = `
       </section>
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
-        <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-schedule">
@@ -1192,17 +1182,17 @@ document.body.innerHTML = `
       <section>
         <h2 class="section-title">Season History</h2>
         <div class="timeline" id="timeline-wrap"></div>
-        <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
       </section>
       <section id="rivals-section" style="display:none">
         <h2 class="section-title">Rivalries</h2>
         <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
         <div class="rivals-cards" id="rivals-cards"></div>
-        <div class="table-wrap" id="rivals-wrap"></div>
+        <div class="ui-table-wrap table-wrap" id="rivals-wrap"></div>
       </section>
       <section id="personnel-section" style="display:none">
         <h2 class="section-title">Franchise Personnel</h2>
-        <div class="table-wrap" id="personnel-wrap"></div>
+        <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
       </section>
       <section id="frontoffice-section" style="display:none">
         <h2 class="section-title">Front Office</h2>
@@ -1216,14 +1206,14 @@ document.body.innerHTML = `
     <div class="tab-panel hidden" id="tab-draft">
       <section>
         <h2 class="section-title">Draft History</h2>
-        <div class="table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-alltime">
       <section>
         <h2 class="section-title">All-Time Top Players</h2>
         <p class="section-sub">Regular season · ranked by total Game Score</p>
-        <div class="table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
       </section>
       <section>
         <h2 class="section-title">Franchise Records</h2>
@@ -1403,7 +1393,7 @@ async function renderSchedule(allGames, season) {
     if (m !== month) {
       if (month) html += '</tbody></table></div>';
       month = m;
-      html += `<h3 class="sched-month">${m}</h3><div class="table-wrap"><table class="sched-table"><tbody>`;
+      html += `<h3 class="sched-month">${m}</h3><div class="ui-table-wrap table-wrap"><table class="sched-table"><tbody>`;
     }
     const { home, opp } = side(g);
     const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
@@ -1825,10 +1815,10 @@ const CAP_HOLD_LABELS = {
 };
 
 const SWATCH_COLORS = {
-  UFA:        'hsl(45,  60%, 35%)',
-  RFA:        'hsl(25,  60%, 35%)',
-  PLAYER_OPT: 'hsl(120, 50%, 30%)',
-  TEAM_OPT:   'hsl(210, 55%, 35%)',
+  UFA:        'var(--cap-ufa)',
+  RFA:        'var(--cap-rfa)',
+  PLAYER_OPT: 'var(--cap-player-opt)',
+  TEAM_OPT:   'var(--cap-team-opt)',
   NON_GTD:    'var(--border)',
 };
 
@@ -2559,9 +2549,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           td.textContent = isNaN(n) ? '—' : String(n);
           if (!isNaN(n)) {
             const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
-            const hue = Math.round(t * 120);
-            td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-            td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+            td.classList.add('ui-heat');
+            td.style.setProperty('--heat', t.toFixed(3));
             const ovrSlug = playerSlug(row.PLAYER);
             if (ovrSlug && window.RatingsPopup) {
               RatingsPopup.attach(td, ovrSlug, { name: row.PLAYER });
@@ -2915,9 +2904,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         td.textContent = isNaN(n) ? '—' : String(n);
         if (!isNaN(n)) {
           const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
-          const hue = Math.round(t * 120);
-          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', t.toFixed(3));
           if (row.SLUG && window.RatingsPopup) {
             RatingsPopup.attach(td, row.SLUG, { name: row._name });
           }
@@ -2929,9 +2917,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         } else {
           td.textContent = String(v);
           const t = Math.min(1, Math.max(0, (v - RATING_HEAT_MIN) / (RATING_HEAT_MAX - RATING_HEAT_MIN)));
-          const hue = Math.round(t * 120);
-          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', t.toFixed(3));
         }
       } else if (col.key.startsWith('_s_')) {
         const k = col.key.slice(3);
@@ -3565,9 +3552,8 @@ function makeSeasonRenderCell(rows) {
       if (!isNaN(n)) {
         const { absMax } = ranges[col.key];
         const t = absMax === 0 ? 0.5 : Math.min(1, Math.max(0, n / absMax * 0.5 + 0.5));
-        const hue = Math.round(t * 120);
-        td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-        td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+        td.classList.add('ui-heat');
+        td.style.setProperty('--heat', t.toFixed(3));
       }
     }
   };
@@ -3928,18 +3914,18 @@ const CAP_OPTIONS = [
 ];
 
 const CAP_HOLD_COLORS = {
-  UFA:        { bg: 'hsl(45,60%,20%)',  color: 'hsl(45,90%,72%)'  },
-  RFA:        { bg: 'hsl(25,60%,20%)',  color: 'hsl(25,90%,72%)'  },
-  PLAYER_OPT: { bg: 'hsl(120,50%,17%)', color: 'hsl(120,75%,68%)' },
-  TEAM_OPT:   { bg: 'hsl(210,55%,20%)', color: 'hsl(210,75%,70%)' },
-  NON_GTD:    { bg: 'var(--bg-page)',           color: 'var(--text-dim)'          },
+  UFA:        'var(--cap-ufa)',
+  RFA:        'var(--cap-rfa)',
+  PLAYER_OPT: 'var(--cap-player-opt)',
+  TEAM_OPT:   'var(--cap-team-opt)',
 };
 
+// The cap-hold picker wears its choice: tinted like the salary cell it sets.
 function applyCapHoldColor(sel) {
   const c = CAP_HOLD_COLORS[sel.value];
-  sel.style.background = c ? c.bg : 'var(--bg-page)';
-  sel.style.color = c ? c.color : 'var(--text-secondary)';
-  sel.style.borderColor = c ? c.color.replace(/(\d+)%\)$/, m => m.replace(/\d+/, n => Math.round(n * 0.55))) : 'var(--border)';
+  sel.style.background = c ? `color-mix(in srgb, ${c} 18%, var(--bg-page))` : 'var(--bg-page)';
+  sel.style.color = c ? 'var(--text-primary)' : sel.value === 'NON_GTD' ? 'var(--text-dim)' : 'var(--text-secondary)';
+  sel.style.borderColor = c || 'var(--border)';
 }
 
 function promptToken(onSuccess) {
@@ -5477,7 +5463,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   toolbar.appendChild(statusEl);
 
   const gridWrap = document.createElement('div');
-  gridWrap.className = 'table-wrap';
+  gridWrap.className = 'ui-table-wrap table-wrap';
   gridWrap.style.overflowX = 'auto';
   gridWrap.appendChild(table);
 
@@ -5581,7 +5567,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
     // Build editable table
     const gridWrap = document.createElement('div');
-    gridWrap.className = 'table-wrap';
+    gridWrap.className = 'ui-table-wrap table-wrap';
     gridWrap.style.overflowX = 'auto';
 
     const table = document.createElement('table');
@@ -6035,7 +6021,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
   function mountTable(table, meter) {
     const gridWrap = document.createElement('div');
-    gridWrap.className = 'table-wrap';
+    gridWrap.className = 'ui-table-wrap table-wrap';
     gridWrap.appendChild(table);
     wrapEl.innerHTML = '';
     if (meter) wrapEl.appendChild(meter);
@@ -8617,7 +8603,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         const t = buildHistoricalRoster(allSeasons, abbr, season);
         if (t) {
           const wrap = document.createElement('div');
-          wrap.className = 'table-wrap';
+          wrap.className = 'ui-table-wrap table-wrap';
           wrap.appendChild(t);
           histWrap.appendChild(wrap);
         } else {

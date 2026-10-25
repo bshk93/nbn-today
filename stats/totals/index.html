@@ -31,21 +31,6 @@
     .cl-note { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5); }
 
     /* Overview: a top-5 card per category. */
-    .cl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
-    .cl-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4) var(--space-2); cursor: pointer; text-align: left; font: inherit; color: inherit; transition: border-color 0.12s, background-color 0.12s; }
-    .cl-card:hover { border-color: var(--text-dim); }
-    .cl-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-    .cl-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
-    .cl-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-    .cl-card-abbr { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); }
-    .cl-row { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; column-gap: var(--space-2); padding: 3px 0; font-size: var(--text-sm); }
-    .cl-row-rank { color: var(--text-muted); font-size: var(--text-xs); text-align: right; font-variant-numeric: tabular-nums; }
-    .cl-row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
-    .cl-card-head + .cl-row .cl-row-name { color: var(--text-primary); font-weight: 600; }
-    .cl-row-val { font-variant-numeric: tabular-nums; color: var(--text-primary); }
-    .cl-row-bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; background: var(--border-subtle); overflow: hidden; margin-top: 2px; }
-    .cl-row-bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
-    .cl-card-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
 
     /* Full board for the chosen category. */
     .cl-board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
@@ -54,9 +39,7 @@
     .cl-table th[data-cat] { cursor: pointer; }
     .cl-table th[data-cat]:hover { color: var(--text-secondary); }
     .cl-table th.cl-primary { color: var(--accent-light); }
-    .cl-table td.cl-primary { color: var(--text-primary); font-weight: 600;
-      background: linear-gradient(to left, color-mix(in srgb, var(--accent) 16%, transparent) var(--bar, 0%), transparent var(--bar, 0%)); }
-    .cl-table tbody tr:hover td.cl-primary { background-color: var(--bg-hover); }
+    .cl-table td.cl-primary { color: var(--text-primary); font-weight: 700; }
     .cl-player a { color: var(--text-primary); font-weight: 600; }
     .cl-player img { width: 16px; height: 16px; vertical-align: -3px; margin-left: 6px; }
     .cl-sub { display: block; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
@@ -66,9 +49,6 @@
 
     @media (max-width: 480px) {
       .cl-filters .ui-input { width: 100%; }
-      .cl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-      .cl-card { padding: var(--space-2) var(--space-3) var(--space-1); }
-      .cl-row { grid-template-columns: 1rem 1fr auto; column-gap: var(--space-1); font-size: var(--text-xs); }
       .cl-spacer { display: none; }
     }
   </style>
@@ -100,7 +80,7 @@
       </div>
     </div>
     <p class="cl-note" id="note"></p>
-    <div class="cl-grid" id="grid"><div id="status">Loading…</div></div>
+    <div class="ui-leaders" id="grid"><div id="status">Loading…</div></div>
     <div class="cl-board-head">
       <h2 class="ui-section-title" id="board-title"></h2>
       <input class="ui-input" id="f-search" type="search" placeholder="Find a player" aria-label="Find a player">
@@ -268,18 +248,16 @@
         if (state.per === 'pg' && cat.noPg) return;
         const list = visible(board(all, cat)).slice(0, TOP);
         const card = document.createElement('button');
-        card.className = 'cl-card';
+        card.className = 'ui-leader';
         card.setAttribute('aria-pressed', cat.key === state.stat);
-        const top = list.length ? list[0].v : 0;
-        card.innerHTML = `<div class="cl-card-head"><span class="cl-card-name">${esc(cat.name)}</span>`
-          + `<span class="cl-card-abbr">${esc(label(cat))}</span></div>`
-          + (list.length ? list.map(e => `<div class="cl-row">`
-              + `<span class="cl-row-rank">${e.rank}</span>`
-              + `<span class="cl-row-name">${esc(nbnPlayerName(e.c.name))}</span>`
-              + `<span class="cl-row-val">${esc(fmt(cat, e.v))}</span>`
-              + `<span></span><span class="cl-row-bar"><span style="width:${top > 0 ? (e.v / top * 100).toFixed(1) : 0}%"></span></span>`
+        card.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${esc(cat.name)}</span>`
+          + `<span class="ui-leader-note">${esc(label(cat))}</span></div>`
+          + (list.length ? list.map(e => `<div class="ui-leader-row">`
+              + `<span class="ui-rank">${e.rank}</span>`
+              + `<span>${esc(nbnPlayerName(e.c.name))}</span>`
+              + `<span>${esc(fmt(cat, e.v))}</span>`
               + `</div>`).join('')
-            : '<div class="cl-card-empty">Nobody qualifies.</div>');
+            : '<div class="ui-leader-empty">Nobody qualifies.</div>');
         card.addEventListener('click', () => {
           select(cat.key);
           $('board-title').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -305,7 +283,6 @@
       if (!needle) list = list.slice(0, state.shown);
 
       const cols = COLS.includes(cat.key) ? COLS : [...COLS.slice(0, 1), cat.key, ...COLS.slice(1)];
-      const lead = full.length ? full[0].v : 0;
       const byCol = Object.fromEntries(cols.map(k => [k, CAT[k]]));
 
       const wrap = $('table-wrap');
@@ -331,8 +308,7 @@
               const kc = byCol[k];
               const v = value(c, kc);
               if (k !== cat.key) return `<td class="right">${esc(qualifies(c, kc) || !kc.rate ? fmt(kc, v) : '—')}</td>`;
-              const pct = lead > 0 ? Math.max(0, v / lead * 100).toFixed(1) : 0;
-              return `<td class="right cl-primary" style="--bar:${pct}%">${esc(fmt(kc, v))}</td>`;
+              return `<td class="right cl-primary">${esc(fmt(kc, v))}</td>`;
             }).join('')
           + '</tr>';
       }).join('');

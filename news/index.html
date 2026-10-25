@@ -33,31 +33,21 @@
     .section { margin-bottom: 2.75rem; }
     .section-label { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 0.9rem; }
 
-    /* Tag filter */
-    .tag-filter { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-    .tag-chip {
-      background: transparent; border: 1px solid var(--border); border-radius: 20px;
-      color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.73rem;
-      font-weight: 600; padding: 0.22rem 0.7rem; letter-spacing: 0.02em;
-    }
-    .tag-chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-    .tag-chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
-    .pr-chip { color: var(--gold); border-color: var(--gold-dim); }
-    .pr-chip.active { background: var(--gold-bg); border-color: var(--gold); color: var(--gold); }
+    /* Tag filter: ui-chip buttons */
+    .tag-filter { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: 1.5rem; }
 
     /* Feed grid */
     .feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.1rem; }
     .article-card {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
       display: flex; flex-direction: column; text-decoration: none; color: inherit;
-      transition: border-color 0.12s, transform 0.12s;
+      transition: border-color 0.12s;
     }
-    .article-card:hover { border-color: var(--text-dim); transform: translateY(-2px); text-decoration: none; }
+    .article-card:hover { border-color: var(--text-dim); text-decoration: none; }
     .card-cover { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--bg-page); display: block; }
     .card-cover.placeholder { display: flex; align-items: center; justify-content: center; color: var(--border); font-size: 2rem; font-weight: 800; letter-spacing: 0.1em; }
     .card-inner { padding: 1rem 1.1rem 1.15rem; flex: 1; display: flex; flex-direction: column; }
     .card-tags { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.55rem; }
-    .tag-pill { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-light); background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm); padding: 0.1rem 0.4rem; }
     .card-title { font-size: 1.05rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.5rem; }
     .card-excerpt { font-size: 0.83rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
     .card-meta { font-size: 0.73rem; color: var(--text-muted); margin-top: 0.8rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
@@ -78,7 +68,6 @@
     .badge-draft { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
     .badge-submitted { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
     .badge-ballot { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
-    .pr-pill { color: var(--gold); background: var(--gold-bg); border-color: var(--gold-dim); }
     .row-arrow { color: var(--border); font-size: 1.1rem; }
     .row-card:hover .row-arrow { color: var(--text-muted); }
 
@@ -206,8 +195,8 @@ function renderArticleCard(a) {
     ? `<img class="card-cover" src="${escHtml(a.cover_image)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'card-cover placeholder',textContent:'NBN'}))">`
     : `<div class="card-cover placeholder">NBN</div>`;
   const tags = ((a.type === 'power_rankings'
-      ? [`<span class="tag-pill pr-pill">${a.edition ? `Power Rankings #${a.edition}` : 'Power Rankings'}</span>`]
-      : []).concat(articleTags(a).map(t => `<span class="tag-pill">${escHtml(t)}</span>`))).join('');
+      ? [`<span class="ui-chip ui-chip--sm ui-chip--warning">${a.edition ? `Power Rankings #${a.edition}` : 'Power Rankings'}</span>`]
+      : []).concat(articleTags(a).map(t => `<span class="ui-chip ui-chip--sm">${escHtml(t)}</span>`))).join('');
   const commentPart = a.comment_count > 0 ? `<span class="sep">•</span> 💬 ${a.comment_count}` : '';
   el.innerHTML = `
     ${cover}
@@ -285,8 +274,8 @@ function renderTagFilter() {
   if (!tags.length && !hasRankings) return;
   const addChip = (label, value, extraClass) => {
     const chip = document.createElement('button');
-    chip.className = 'tag-chip' + (extraClass ? ' ' + extraClass : '')
-      + (activeTag === value ? ' active' : '');
+    chip.className = 'ui-chip' + (extraClass ? ' ' + extraClass : '');
+    chip.setAttribute('aria-pressed', activeTag === value);
     chip.textContent = label;
     chip.onclick = () => { activeTag = value; renderFeed(); renderTagFilter(); };
     wrap.appendChild(chip);
@@ -294,7 +283,7 @@ function renderTagFilter() {
   addChip('All', null);
   // Power Rankings leads the row, ahead of the tags — it is a section of the
   // paper, not one more label someone typed on a column.
-  if (hasRankings) addChip('Power Rankings', PR_FILTER, 'pr-chip');
+  if (hasRankings) addChip('Power Rankings', PR_FILTER, 'ui-chip--warning');
   tags.forEach(k => addChip(label[k], k));
 }
 
