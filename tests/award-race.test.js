@@ -12,7 +12,8 @@
 //   - ROTY takes players in their first NBN season, drafted that year or not,
 //     falling back to the draft class in the league's first season; each
 //     carries his draft slot (the homepage's Rookie Watch shows it); MIP needs 20 games last season.
-//   - 6MOY counts only games with known starters, and is empty without them.
+//   - 6MOY counts only games with known starters, and is empty without them;
+//     a sixth man started fewer than half of them (exactly half is out).
 
 const fs = require('fs');
 const path = require('path');
@@ -67,9 +68,9 @@ eq('a rookie carries his draft slot', (({ draftRound, draftPick }) => [draftRoun
 eq('MIP needs 20 games last season', ladder('MIP', rows, '26-27', pct).map(p => p.slug), ['star']);
 eq('6MOY is empty with no starts data', ladder('6MOY', rows, '26-27', pct), []);
 
-const starts = { players: { star: { gs: 10 }, traded: { gs: 2 } }, team_games_known: { AAA: 10, BBB: 10 } };
+const starts = { players: { star: { gs: 10 }, traded: { gs: 2 }, rook: { gs: 5 } }, team_games_known: { AAA: 10, BBB: 10 } };
 const six = ladder('6MOY', rows, '26-27', pct, { starts });
-eq('6MOY: started at most half, never-starters included', six.map(p => p.slug), ['bench', 'traded', 'rook']);
+eq('6MOY: more off the bench than started, never-starters included; half is out', six.map(p => p.slug), ['bench', 'traded']);
 eq('6MOY: known games capped at his own', six.find(p => p.slug === 'traded').known, 10);
 const none = ladder('6MOY', rows, '26-27', pct, { starts: { players: {}, team_games_known: {} } });
 eq('6MOY: no known starters, nobody qualifies', none, []);
