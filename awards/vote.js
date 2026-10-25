@@ -22,10 +22,10 @@
 
 
     header { margin-bottom: 1.75rem; }
-    header h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
-    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: 0.9rem; }
+    header h1 { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: var(--text-base); }
 
-    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
 
     .awards-grid {
       display: grid;
@@ -36,7 +36,7 @@
     .award-section-full { margin-bottom: 1.5rem; }
 
     .award-heading {
-      font-size: 0.75rem; font-weight: 700;
+      font-size: var(--text-xs); font-weight: 700;
       letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: 0.5rem;
     }
@@ -45,7 +45,7 @@
     .pick-list { margin-bottom: 0.4rem; }
 
     .tier-label {
-      font-size: 0.68rem; font-weight: 600;
+      font-size: var(--text-xs); font-weight: 600;
       letter-spacing: 0.06em; text-transform: uppercase;
       color: var(--text-dim); margin: 0.65rem 0 0.3rem;
     }
@@ -64,19 +64,19 @@
     .pick-item.drag-over { border-color: var(--link); background: var(--bg-hover); }
 
     .pick-handle {
-      color: var(--text-dim); font-size: 0.85rem; line-height: 1;
+      color: var(--text-dim); font-size: var(--text-sm); line-height: 1;
       flex-shrink: 0; letter-spacing: -1px;
     }
     .pick-item.empty .pick-handle { visibility: hidden; }
 
     .pick-rank {
       width: 1.5rem; text-align: right; flex-shrink: 0;
-      color: var(--text-muted); font-size: 0.75rem;
+      color: var(--text-muted); font-size: var(--text-xs);
       font-variant-numeric: tabular-nums;
     }
 
     .pick-name {
-      flex: 1; font-size: 0.875rem; font-weight: 600; color: var(--text-primary);
+      flex: 1; font-size: var(--text-base); font-weight: 600; color: var(--text-primary);
       min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .pick-item.empty .pick-name { color: var(--border); font-weight: 400; font-style: italic; }
@@ -84,7 +84,7 @@
 
     .pick-remove {
       background: none; border: none; color: var(--text-dim);
-      cursor: pointer; font-size: 1rem; line-height: 1;
+      cursor: pointer; font-size: var(--text-base); line-height: 1;
       padding: 0 0.1rem; flex-shrink: 0; transition: color 0.1s;
     }
     .pick-remove:hover { color: var(--danger); }
@@ -95,7 +95,7 @@
       width: 100%; padding: 0.45rem 0.65rem;
       background: var(--bg-page); border: 1px solid var(--border-subtle);
       border-radius: var(--radius-sm); color: var(--text-primary);
-      font-size: 0.85rem; outline: none; font-family: inherit;
+      font-size: var(--text-sm); outline: none; font-family: inherit;
     }
     .search-input:focus { border-color: var(--text-dim); }
     .search-input::placeholder { color: var(--border); }
@@ -108,7 +108,7 @@
     }
     .search-option {
       padding: 0.4rem 0.65rem; cursor: pointer;
-      font-size: 0.85rem; color: var(--text-secondary);
+      font-size: var(--text-sm); color: var(--text-secondary);
       border-bottom: 1px solid var(--border-subtle);
     }
     .search-option:last-child { border-bottom: none; }
@@ -120,7 +120,7 @@
       padding-top: 1.25rem; margin-top: 0.5rem;
       border-top: 1px solid var(--bg-card);
     }
-    .save-status { font-size: 0.82rem; color: var(--text-muted); }
+    .save-status { font-size: var(--text-sm); color: var(--text-muted); }
     .save-status.saving { color: var(--warning); }
     .save-status.saved  { color: var(--market-positive); }
     .save-status.error  { color: var(--danger); }
@@ -129,7 +129,7 @@
     .readonly-banner {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.75rem 1rem; margin-bottom: 1.5rem;
-      font-size: 0.875rem; color: var(--text-muted);
+      font-size: var(--text-base); color: var(--text-muted);
     }
   `; document.head.appendChild(_s); }
 

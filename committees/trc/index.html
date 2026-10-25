@@ -28,16 +28,16 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-                .sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+                .sub { font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.3rem; }
 
     .gate { max-width: 480px; margin: 3rem auto; text-align: center; }
-    .gate h2 { font-size: 1.1rem; margin-bottom: 0.6rem; }
-    .gate p { color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1rem; }
-    .gate a { color: var(--link); font-size: 0.85rem; }
+    .gate h2 { font-size: var(--text-md); margin-bottom: 0.6rem; }
+    .gate p { color: var(--text-muted); font-size: var(--text-base); line-height: 1.6; margin-bottom: 1rem; }
+    .gate a { color: var(--link); font-size: var(--text-sm); }
 
     section.trc-section { margin-bottom: 2rem; }
-    section.trc-section h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.7rem; }
-    .empty { color: var(--text-muted); font-size: 0.85rem; padding: 0.8rem 0; }
+    section.trc-section h2 { font-size: var(--text-md); font-weight: 700; margin-bottom: 0.7rem; }
+    .empty { color: var(--text-muted); font-size: var(--text-sm); padding: 0.8rem 0; }
 
     details.req {
       border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.7rem;
@@ -47,32 +47,22 @@
     details.req > summary::-webkit-details-marker { display: none; }
     .req-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .req-num { font-weight: 700; color: var(--text-primary); }
-    .req-parties { color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; }
-    .req-gist { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem; line-height: 1.5; }
+    .req-parties { color: var(--text-secondary); font-size: var(--text-sm); font-weight: 600; }
+    .req-gist { color: var(--text-muted); font-size: var(--text-sm); margin-top: 0.3rem; line-height: 1.5; }
     .req-gist b { color: var(--text-secondary); font-weight: 600; }
 
-    .badge {
-      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .badge.awaiting_consent { background: var(--bg-subtle); color: var(--text-muted); border: 1px solid var(--border); }
-    .badge.balloting { background: rgba(201,162,39,0.15); color: var(--gold,#c9a227); }
-    .badge.ready_to_finalize { background: rgba(34,197,94,0.15); color: var(--success,#22c55e); }
-    .badge.finalized { background: rgba(34,197,94,0.15); color: var(--success,#22c55e); }
-    .badge.rejected, .badge.withdrawn { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
-    .badge.stale { background: rgba(239,68,68,0.12); color: var(--danger,#ef4444); }
 
     .req-body { padding: 0.2rem 0.9rem 1rem; border-top: 1px solid var(--border-subtle); }
-    .req-body h3 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 1.1rem 0 0.45rem; }
+    .req-body h3 { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 1.1rem 0 0.45rem; }
 
     /* Where the request is: consent → votes → finalize. */
-    .steps { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; font-size: 0.75rem; }
-    .step { padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-dim); }
+    .steps { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; font-size: var(--text-xs); }
+    .step { padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-dim); }
     .step.done { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, transparent); }
     .step.now { color: var(--text-primary); border-color: var(--accent); }
 
     /* The one-line legality verdict, above the detail it summarizes. */
-    .verdict { margin-top: 0.7rem; padding: 0.55rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.83rem; line-height: 1.5; border: 1px solid; }
+    .verdict { margin-top: 0.7rem; padding: 0.55rem 0.75rem; border-radius: var(--radius-sm); font-size: var(--text-sm); line-height: 1.5; border: 1px solid; }
     .verdict.ok   { color: var(--success); border-color: color-mix(in srgb, var(--success) 30%, transparent); background: color-mix(in srgb, var(--success) 7%, transparent); }
     .verdict.warn { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 30%, transparent); background: color-mix(in srgb, var(--gold) 7%, transparent); }
     .verdict.bad  { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); background: color-mix(in srgb, var(--danger) 8%, transparent); }
@@ -83,69 +73,69 @@
     .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0.7rem; margin-top: 0.8rem; }
     .tp { border: 1px solid var(--border); border-left: 4px solid var(--team-primary, var(--border)); border-radius: var(--radius-sm); background: var(--bg-subtle); padding: 0.7rem 0.8rem; min-width: 0; }
     .tp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
-    .tp-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
-    .tp-consent { font-size: 0.75rem; }
+    .tp-name { font-weight: 700; font-size: var(--text-base); color: var(--text-primary); }
+    .tp-consent { font-size: var(--text-xs); }
     .tp-consent.yes { color: var(--success); }
     .tp-consent.no { color: var(--text-dim); }
-    .tp-sec { display: flex; justify-content: space-between; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0.7rem 0 0.2rem; }
-    .tp-sec .amt { font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none; font-size: 0.78rem; color: var(--text-muted); }
-    .tp-none { font-size: 0.8rem; color: var(--text-dim); padding: 0.15rem 0; }
+    .tp-sec { display: flex; justify-content: space-between; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0.7rem 0 0.2rem; }
+    .tp-sec .amt { font-variant-numeric: tabular-nums; letter-spacing: 0; text-transform: none; font-size: var(--text-xs); color: var(--text-muted); }
+    .tp-none { font-size: var(--text-sm); color: var(--text-dim); padding: 0.15rem 0; }
 
     .asset { padding: 0.35rem 0; border-top: 1px solid var(--border-subtle); }
     .tp-sec + .asset { border-top: none; }
-    .asset-top { display: flex; justify-content: space-between; gap: 0.6rem; font-size: 0.88rem; }
+    .asset-top { display: flex; justify-content: space-between; gap: 0.6rem; font-size: var(--text-base); }
     .asset-top a { color: var(--text-primary); text-decoration: none; font-weight: 600; }
     .asset-top a:hover { text-decoration: underline; }
     .asset-top .pick { color: var(--text-primary); font-weight: 600; }
     .asset-top .sal { font-variant-numeric: tabular-nums; color: var(--text-secondary); white-space: nowrap; }
-    .asset-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem; }
+    .asset-meta { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.1rem; }
     .asset-meta .route { color: var(--text-secondary); }
     .asset .issue { margin-top: 0.25rem; }
 
-    .money { margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px dashed var(--border); display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; font-size: 0.8rem; }
+    .money { margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px dashed var(--border); display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.7rem; font-size: var(--text-sm); }
     .money .lbl { color: var(--text-dim); }
     .money .val { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
     .money .up { color: var(--gold); }
     .money .down { color: var(--success); }
-    .money .sub { grid-column: 2; margin-top: 0; font-size: 0.72rem; }
+    .money .sub { grid-column: 2; margin-top: 0; font-size: var(--text-xs); }
 
-    .issue { display: flex; gap: 0.45rem; font-size: 0.8rem; line-height: 1.45; padding: 0.15rem 0; }
+    .issue { display: flex; gap: 0.45rem; font-size: var(--text-sm); line-height: 1.45; padding: 0.15rem 0; }
     .issue.error { color: var(--danger); }
     .issue.warning { color: var(--gold); }
     .issue.pass { color: var(--text-muted); }
     .tp .issues { margin-top: 0.55rem; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
-    .chip { font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted); }
+    .chip { font-size: var(--text-xs); padding: 0.1rem 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border); color: var(--text-muted); }
 
-    details.all-checks { margin-top: 0.8rem; font-size: 0.8rem; }
+    details.all-checks { margin-top: 0.8rem; font-size: var(--text-sm); }
     details.all-checks summary { cursor: pointer; color: var(--text-muted); }
     details.all-checks .issue { padding-left: 0.2rem; }
 
-    .ballot-row { font-size: 0.84rem; padding: 0.3rem 0; border-top: 1px solid var(--border-subtle); }
+    .ballot-row { font-size: var(--text-sm); padding: 0.3rem 0; border-top: 1px solid var(--border-subtle); }
     .ballot-row:first-of-type { border-top: none; }
     .ballot-row .yes { color: var(--success); font-weight: 600; }
     .ballot-row .no { color: var(--danger); font-weight: 600; }
-    .ballot-row .note { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.1rem; }
+    .ballot-row .note { color: var(--text-muted); font-size: var(--text-sm); margin-top: 0.1rem; }
 
     .req-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
     .req-actions button {
       padding: 0.4rem 0.9rem; border-radius: var(--radius-sm); border: 1px solid var(--border);
       background: var(--bg-subtle); color: var(--text-primary); font-family: inherit;
-      font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      font-size: var(--text-sm); font-weight: 600; cursor: pointer;
     }
     .req-actions button.primary { background: var(--accent-dark); color: var(--text-on-accent); border-color: transparent; }
-    .req-actions button.danger { color: var(--danger,#ef4444); }
+    .req-actions button.danger { color: var(--danger,var(--danger-light)); }
     .req-actions button:disabled { opacity: 0.5; cursor: default; }
 
     .ballot-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; }
     .ballot-form textarea {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-family: inherit; font-size: 0.82rem; padding: 0.4rem 0.6rem;
+      color: var(--text-primary); font-family: inherit; font-size: var(--text-sm); padding: 0.4rem 0.6rem;
       flex: 1 1 100%; resize: vertical; min-height: 2.6rem;
     }
     .ballot-form button {
       padding: 0.4rem 0.9rem; border-radius: var(--radius-sm); border: 1px solid var(--border);
-      background: var(--bg-subtle); font-family: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      background: var(--bg-subtle); font-family: inherit; font-size: var(--text-sm); font-weight: 600; cursor: pointer;
     }
     .ballot-form button[data-decision="approve"] { color: var(--success); }
     .ballot-form button[data-decision="reject"] { color: var(--danger); }
@@ -153,11 +143,11 @@
     .toast {
       position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 0.6rem 1rem; font-size: 0.85rem; color: var(--text-primary); z-index: 9999;
+      padding: 0.6rem 1rem; font-size: var(--text-sm); color: var(--text-primary); z-index: 9999;
     }
-    .toast.bad { border-color: var(--danger,#ef4444); color: var(--danger,#ef4444); }
+    .toast.bad { border-color: var(--danger,color-mix(in srgb, var(--danger) 40%, transparent)); color: var(--danger,var(--danger-light)); }
 
-    details.help { margin-bottom: 1.5rem; font-size: 0.82rem; color: var(--text-muted); }
+    details.help { margin-bottom: 1.5rem; font-size: var(--text-sm); color: var(--text-muted); }
     details.help summary { cursor: pointer; color: var(--text-secondary); }
     details.help p { margin-top: 0.5rem; line-height: 1.6; }
   </style>
@@ -554,8 +544,10 @@
 
     // `balloting` is the stored status; the page calls it voting.
     const STATUS_LABELS = { balloting: 'voting' };
+    const STATUS_TONE = { balloting: ' ui-badge--warning', ready_to_finalize: ' ui-badge--success', finalized: ' ui-badge--success', rejected: ' ui-badge--danger', withdrawn: ' ui-badge--danger' };
+    const sentence = t => t.charAt(0).toUpperCase() + t.slice(1);
     function statusBadge(item) {
-      return `<span class="badge ${item.status}">${STATUS_LABELS[item.status] || item.status.replace(/_/g, ' ')}</span>`;
+      return `<span class="ui-badge${STATUS_TONE[item.status] || ''}">${sentence(STATUS_LABELS[item.status] || item.status.replace(/_/g, ' '))}</span>`;
     }
 
     function renderRequest(item, terminal) {
@@ -627,8 +619,8 @@
               <span class="req-num">${esc(title)}</span>
               <span class="req-parties">${esc(parties)}</span>
               ${statusBadge(item)}
-              ${live && item.status !== 'awaiting_consent' ? `<span class="badge awaiting_consent">${approveCount}/3 votes</span>` : ''}
-              ${live && stale ? '<span class="badge stale">illegal now</span>' : (issueCount ? `<span class="badge balloting"><i class="ui-icon ui-icon--warning" aria-hidden="true"></i> ${issueCount}</span>` : '')}
+              ${live && item.status !== 'awaiting_consent' ? `<span class="ui-badge">${approveCount}/3 votes</span>` : ''}
+              ${live && stale ? '<span class="ui-badge ui-badge--danger">Illegal now</span>' : (issueCount ? `<span class="ui-badge ui-badge--warning"><i class="ui-icon ui-icon--warning" aria-hidden="true"></i> ${issueCount}</span>` : '')}
             </div>
             <div class="req-gist">${gist(item)}</div>
           </summary>

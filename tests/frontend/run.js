@@ -146,7 +146,7 @@ const PAGES = [
   { path: '/cap-settings/',           selector: '.season-card',    min: 3,  what: 'a card per season on file' },
   { path: '/bet/',                    selector: '.act-title', min: 3, what: "the Action view's three sections" },
   { path: '/bet/#pickem',             selector: '.pk-bar', min: 1, what: "the Pick'em tab" },
-  { path: '/rookie-scale/',           selector: 'table tbody tr',  min: 30, what: 'the § 7.1 scale' },
+  { path: '/cap-settings/#rookie-scale', selector: '#years table tbody tr', min: 30, what: 'the § 7.1 scale' },
   { path: '/stats/seasons/',          selector: 'table tbody tr',  min: 100, what: 'per-season player lines' },
   { path: '/stats/highs/',            selector: '.ui-leader',       min: 25, what: 'a top-5 card per category and feat' },
   { path: '/stats/totals/',           selector: '.ui-leader',       min: 15, what: 'a top-5 card per category' },

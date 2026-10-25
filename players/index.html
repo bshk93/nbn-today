@@ -32,7 +32,7 @@
       display: flex; align-items: center; justify-content: center;
       width: 2rem; height: 2rem; border-radius: 50%;
       background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); font-size: 1rem; cursor: pointer;
+      color: var(--text-muted); font-size: var(--text-base); cursor: pointer;
       text-decoration: none; flex-shrink: 0; line-height: 1;
     }
     .player-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
@@ -47,7 +47,7 @@
       flex-shrink: 0;
     }
 
-    #status { color: var(--text-muted); font-size: 0.9rem; padding: 2rem 0; }
+    #status { color: var(--text-muted); font-size: var(--text-base); padding: 2rem 0; }
 
     /* index grid */
     .player-grid {
@@ -63,7 +63,7 @@
       padding: 0.75rem 1rem;
       text-decoration: none;
       color: var(--text-primary);
-      font-size: 0.9rem;
+      font-size: var(--text-base);
       font-weight: 500;
       transition: background 0.15s, border-color 0.15s;
       display: flex;
@@ -96,7 +96,7 @@
     /* bio line */
     .bio-line {
       color: var(--text-muted);
-      font-size: 0.82rem;
+      font-size: var(--text-sm);
       margin-bottom: 0.9rem;
       display: flex;
       flex-wrap: wrap;
@@ -155,7 +155,7 @@
     
     
     
-    thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: 0.65rem; }
+    thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: var(--text-xs); }
     thead th[data-active="true"] .sort-arrow { opacity: 1; }
 
     
@@ -164,7 +164,7 @@
         
     td.league-leader {
       font-weight: 700;
-      color: #fcd34d;
+      color: var(--gold);
     }
 
     .row-icon { font-size: 0.95em; margin-left: 4px; color: var(--gold); }
@@ -173,13 +173,13 @@
 
     /* Career Totals: each total carries its all-time rank underneath. */
     .ct-cell { white-space: nowrap; }
-    .ct-rank { display: block; font-size: 0.7rem; font-weight: 400; color: var(--text-muted); }
+    .ct-rank { display: block; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); }
     .ct-rank a { color: inherit; text-decoration: none; }
     .ct-rank a:hover { text-decoration: underline; }
     .ct-rank .ct-active { opacity: 0.8; }
     .ct-top10 .ct-rank { color: var(--gold); font-weight: 700; }
     .ct-top50 .ct-rank { color: var(--accent-light); }
-    .ct-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
+    .ct-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
     .career-row td { font-weight: 600; color: var(--text-primary); }
     /* Playoff rows sit in the same tables as the regular season, so they
        carry a gold tint and edge to stand apart. */
@@ -200,19 +200,19 @@
     a.hero-tile:hover { border-color: var(--text-muted); text-decoration: none; }
     .tile-label { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
     .tile-main { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
-    .tile-value { font-size: 1.9rem; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-    .tile-value small { margin-left: 0.25rem; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
-    .tile-sub { font-size: 0.75rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .tile-value { font-size: var(--text-xl); line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .tile-value small { margin-left: 0.25rem; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); }
+    .tile-sub { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .tile-sub b { color: var(--text-secondary); font-weight: 600; }
     .tile-up { color: var(--success); }
     .tile-down { color: var(--danger); }
     .tile-spark { display: block; }
-    .hof-bar { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; margin-top: 0.15rem; }
+    .hof-bar { height: 3px; border-radius: var(--radius-sm); background: var(--border); overflow: hidden; margin-top: 0.15rem; }
     .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
     .hof-top10 .tile-label, .hof-top10 .tile-sub b:first-child { color: var(--gold); }
     .hof-top10 .hof-bar i { background: var(--gold); }
     /* Contract: the shorthand is words, not a figure, so it runs smaller in the same line box. */
-    .tile-value--text { font-size: 1.3rem; line-height: 1.9rem; font-weight: 600; white-space: nowrap; }
+    .tile-value--text { font-size: var(--text-lg); line-height: 1.9rem; font-weight: 600; white-space: nowrap; }
     /* Health: green when healthy, the injury badge's colour when not. */
     .health-tile .tile-value { color: var(--success); }
     .health-tile.hurt { border-left: 3px solid var(--warning); }
@@ -226,7 +226,7 @@
     .player-actions a, .player-actions button {
       padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent;
       border: 1px solid var(--border); color: var(--text-muted);
-      font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; text-decoration: none;
+      font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; text-decoration: none;
     }
     .player-actions a:hover, .player-actions button:hover { color: var(--text-secondary); border-color: var(--text-muted); text-decoration: none; }
     @media (max-width: 600px) {
@@ -257,7 +257,7 @@
       .identity .team-abbr { display: inline; }
     }
     .identity a.team img { width: 18px; height: 18px; object-fit: contain; }
-    .identity .retired { font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.06em; }
+    .identity .retired { font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: var(--text-xs); letter-spacing: 0.06em; }
 
     .page-tabs {
       display: flex;
@@ -271,7 +271,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
@@ -302,7 +302,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
@@ -310,7 +310,7 @@
     }
 
     .missing-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
-    .missing-btn.active { background: #451a03; border-color: var(--champion-border); color: #fcd34d; }
+    .missing-btn.active { background: color-mix(in srgb, var(--warning) 16%, transparent); border-color: var(--champion-border); color: var(--gold); }
 
     .rostered-btn {
       padding: 0.3rem 0.75rem;
@@ -318,14 +318,14 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       font-family: inherit;
     }
     .rostered-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
-    .rostered-btn.active { background: var(--success-bg); border-color: #16a34a; color: var(--success-light); }
+    .rostered-btn.active { background: var(--success-bg); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light); }
 
     .filter-bar {
       display: flex;
@@ -341,7 +341,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       font-family: inherit;
       outline: none;
     }
@@ -353,9 +353,9 @@
 
     .filter-team { cursor: pointer; min-width: 140px; }
 
-    .filter-count { color: var(--text-muted); font-size: 0.85rem; align-self: center; white-space: nowrap; }
+    .filter-count { color: var(--text-muted); font-size: var(--text-sm); align-self: center; white-space: nowrap; }
 
-    .no-results { color: var(--text-muted); font-size: 0.9rem; padding: 1.5rem 0; }
+    .no-results { color: var(--text-muted); font-size: var(--text-base); padding: 1.5rem 0; }
 
     /* player index table */
     .idx-team { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; font-weight: 600; }
@@ -402,13 +402,13 @@
     }
     .bio-edit-form input {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
       padding: 0.32rem 0.55rem; outline: none;
     }
     .bio-edit-form input:focus { border-color: var(--accent); }
     .bio-edit-form select {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
       padding: 0.32rem 0.55rem; outline: none; cursor: pointer;
     }
     .bio-edit-form select:focus { border-color: var(--accent); }
@@ -416,50 +416,50 @@
     .salary-row { display: flex; flex-direction: column; gap: 0.2rem; }
     .salary-row-main { display: flex; gap: 0.4rem; align-items: center; }
     .salary-row-main input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.85rem; font-family: inherit; padding: 0.32rem 0.55rem; outline: none; }
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.32rem 0.55rem; outline: none; }
     .salary-row-main input:focus { border-color: var(--accent); }
     .salary-row-main .season-input { width: 5.5rem; flex: 0 0 auto; }
     .salary-row-main .amount-input { flex: 1; }
     .salary-row-main .hold-select {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-muted); font-size: 0.8rem; font-family: inherit;
+      color: var(--text-muted); font-size: var(--text-sm); font-family: inherit;
       padding: 0.32rem 0.4rem; outline: none; cursor: pointer; flex: 0 0 auto;
     }
     .salary-row-main .hold-select:focus { border-color: var(--accent); }
     /* Guarantee steps */
     .gtd-steps { display: none; flex-direction: column; gap: 0.3rem; margin-left: 1rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.2); border-left: 2px solid var(--border); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
     .gtd-steps.visible { display: flex; }
-    .gtd-steps-desc { font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-bottom: 0.15rem; }
+    .gtd-steps-desc { font-size: var(--text-xs); color: var(--text-muted); font-style: italic; margin-bottom: 0.15rem; }
     .gtd-step { display: flex; gap: 0.35rem; align-items: center; }
-    .gtd-step-conn { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
-    .gtd-step input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.8rem; font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
+    .gtd-step-conn { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+    .gtd-step input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
     .gtd-step input:focus { border-color: var(--accent); }
     .gtd-step .gtd-step-amount { width: 9rem; }
     .gtd-step .gtd-step-date { width: 9.5rem; }
-    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--text-base); padding: 0 0.2rem; line-height: 1; }
     .gtd-step .gtd-step-remove:hover { color: var(--danger); }
-    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: var(--text-xs); padding: 0.1rem 0.5rem; font-family: inherit; }
     .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
     .bio-edit-form .full-col { grid-column: 1 / -1; }
-    .field-hint { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.4; }
+    .field-hint { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; line-height: 1.4; }
     .bio-edit-actions {
       grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; padding-top: 0.1rem;
     }
     .edit-btn {
-      padding: 0.28rem 0.7rem; border-radius: var(--radius-sm); font-size: 0.78rem;
+      padding: 0.28rem 0.7rem; border-radius: var(--radius-sm); font-size: var(--text-xs);
       font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
     }
     .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
-    .edit-btn-primary:hover { background: #223f70; }
+    .edit-btn-primary:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
     .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-    .edit-status { font-size: 0.75rem; color: var(--danger); }
+    .edit-status { font-size: var(--text-xs); color: var(--danger); }
     .btn-add-player {
       padding: 0.35rem 0.75rem; background: var(--accent-panel-bg); border: 1px solid var(--accent);
-      border-radius: var(--radius-sm); color: var(--accent-light); font-size: 0.78rem; font-weight: 600;
+      border-radius: var(--radius-sm); color: var(--accent-light); font-size: var(--text-xs); font-weight: 600;
       cursor: pointer; font-family: inherit; white-space: nowrap;
     }
-    .btn-add-player:hover { background: #223f70; }
+    .btn-add-player:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.65);
       display: flex; align-items: center; justify-content: center; z-index: 100;
@@ -468,28 +468,28 @@
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 1.5rem; width: min(540px, 92vw); max-height: 88vh; overflow-y: auto;
     }
-    .modal-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+    .modal-card h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 1rem; }
     .slug-field {
       display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.75rem;
-      font-size: 0.7rem; color: var(--text-muted); font-weight: 600;
+      font-size: var(--text-xs); color: var(--text-muted); font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em;
     }
     .slug-field input {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
       padding: 0.32rem 0.55rem; outline: none;
     }
     .slug-field input:focus { border-color: var(--accent); }
     .slug-exists-warn {
       display: none; margin-top: 0.3rem; padding: 0.4rem 0.6rem;
       background: var(--danger-alt-bg); border: 1px solid var(--danger-alt-border); border-radius: var(--radius-sm);
-      color: var(--danger-light); font-size: 0.78rem; font-weight: 400;
+      color: var(--danger-light); font-size: var(--text-xs); font-weight: 400;
       text-transform: none; letter-spacing: 0;
     }
     .slug-exists-warn a { color: var(--danger-light); text-decoration: underline; }
     .pos-picker { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
     .pos-pill {
-      padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700;
+      padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 700;
       cursor: pointer; font-family: inherit; border: 1px solid var(--border);
       background: transparent; color: var(--text-muted);
     }
@@ -536,7 +536,7 @@
     .ins-top10 a { color: var(--gold); font-weight: 700; }
     .ins-when { white-space: nowrap; font-size: var(--text-sm); }
     .ins-active { color: var(--success) !important; font-weight: 600; }
-    .ins-note { font-size: 0.75rem; color: var(--text-muted); margin-top: var(--space-2); }
+    .ins-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
     .splits-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
     .splits-head .ui-select { width: auto; }
     .splits-opp { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
@@ -549,15 +549,15 @@
     .similar-season { color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .career-line-note { margin-top: var(--space-4); font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
     .career-line { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-top: var(--space-2); }
-    .career-fig-value { font-family: var(--font-display); font-size: 1.9rem; font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-    .career-fig-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .career-fig-value { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .career-fig-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; }
 
     .gamelog-pagination {
       display: flex;
       align-items: center;
       gap: 0.75rem;
       padding: 0.5rem 0;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       color: var(--text-muted);
     }
     .gl-page-btn {
@@ -566,7 +566,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
@@ -578,7 +578,7 @@
       display: inline-block;
       padding: 0.1rem 0.32rem;
       border-radius: var(--radius-sm);
-      font-size: 0.62rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       background: var(--accent-panel-bg);
       color: var(--accent-light);
@@ -1406,7 +1406,7 @@
     fNotes.rows = 2;
     fNotes.placeholder = 'e.g. Matched RFA offer, no trade clause';
     fNotes.value = initial.notes || '';
-    fNotes.style.cssText = 'width:100%;resize:vertical;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.35rem 0.5rem;font-size:0.85rem;font-family:inherit;outline:none;box-sizing:border-box';
+    fNotes.style.cssText = 'width:100%;resize:vertical;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.35rem 0.5rem;font-size:var(--text-sm);font-family:inherit;outline:none;box-sizing:border-box';
     fNotes.addEventListener('focus', () => fNotes.style.borderColor = 'var(--accent)');
     fNotes.addEventListener('blur',  () => fNotes.style.borderColor = 'var(--border)');
     notesLbl.appendChild(fNotes);
@@ -1430,23 +1430,23 @@
     twowayDiv.className = 'full-col';
     twowayDiv.style.display = 'none';
     const twHeader = Object.assign(document.createElement('span'), { textContent: 'Two-Way Contract' });
-    twHeader.style.cssText = 'font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:0.4rem';
+    twHeader.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);display:block;margin-bottom:0.4rem';
     const twRow = document.createElement('div');
     twRow.style.cssText = 'display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap';
     const twYearsWrap = document.createElement('label');
-    twYearsWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:var(--text-muted)';
+    twYearsWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:var(--text-xs);color:var(--text-muted)';
     twYearsWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Years' }));
     const twYears = document.createElement('input');
     twYears.type = 'number'; twYears.value = '2'; twYears.min = '1'; twYears.max = '10';
-    twYears.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
+    twYears.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:var(--text-sm);font-family:inherit;outline:none';
     twYearsWrap.appendChild(twYears);
     const twStartWrap = document.createElement('label');
-    twStartWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:var(--text-muted)';
+    twStartWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:var(--text-xs);color:var(--text-muted)';
     twStartWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Starting Season' }));
     const twStart = document.createElement('input');
     twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = currentSeasonStr();
     twStart.value = currentSeasonStr();
-    twStart.style.cssText = 'width:5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:0.85rem;font-family:inherit;outline:none';
+    twStart.style.cssText = 'width:5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:var(--text-sm);font-family:inherit;outline:none';
     twStartWrap.appendChild(twStart);
     twRow.appendChild(twYearsWrap); twRow.appendChild(twStartWrap);
     twowayDiv.appendChild(twHeader); twowayDiv.appendChild(twRow);
@@ -1492,7 +1492,7 @@
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button'; removeBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
       removeBtn.setAttribute('aria-label', 'Remove');
-      removeBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.9rem;padding:0 0.2rem;font-family:inherit';
+      removeBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:var(--text-base);padding:0 0.2rem;font-family:inherit';
       removeBtn.onmouseenter = () => { removeBtn.style.color = 'var(--danger)'; };
       removeBtn.onmouseleave = () => { removeBtn.style.color = 'var(--text-dim)'; };
       removeBtn.addEventListener('click', () => row.remove());
@@ -1587,7 +1587,7 @@
 
     const addSalBtn = document.createElement('button');
     addSalBtn.type = 'button'; addSalBtn.textContent = '+ Add season';
-    addSalBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
+    addSalBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:var(--text-xs);padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
     addSalBtn.onmouseenter = () => { addSalBtn.style.color = 'var(--text-secondary)'; addSalBtn.style.borderColor = 'var(--text-muted)'; };
     addSalBtn.onmouseleave = () => { addSalBtn.style.color = 'var(--text-muted)'; addSalBtn.style.borderColor = 'var(--border)'; };
     addSalBtn.addEventListener('click', () => {
@@ -2003,27 +2003,27 @@
 
   const BADGE_DEFS = [
     { label: 'Ring',        award: null,                                  color: 'var(--warning)', rings: true },
-    { label: 'MVP',         award: 'Most Valuable Player',                color: '#a855f7' },
-    { label: 'DPOY',        award: 'Defensive Player of the Year',        color: '#14b8a6' },
+    { label: 'MVP',         award: 'Most Valuable Player',                color: 'var(--cat-violet)' },
+    { label: 'DPOY',        award: 'Defensive Player of the Year',        color: 'var(--cat-teal)' },
     { label: 'ROY',         award: 'Rookie of the Year',                  color: 'var(--success-alt)' },
     { label: 'MIP',         award: 'Most Improved Player',                color: 'var(--accent)' },
-    { label: '6MOY',        award: 'Sixth Man of the Year',               color: '#f97316' },
-    { label: 'All-Star',    award: 'All-Star',                            color: '#38bdf8' },
+    { label: '6MOY',        award: 'Sixth Man of the Year',               color: 'var(--cat-orange)' },
+    { label: 'All-Star',    award: 'All-Star',                            color: 'var(--cat-sky)' },
     { label: 'All-NBN 1st', award: 'All-NBN First Team',                  color: 'var(--warning)' },
     { label: 'All-NBN 2nd', award: 'All-NBN Second Team',                 color: 'var(--text-muted)' },
     { label: 'All-NBN 3rd', award: 'All-NBN Third Team',                  color: 'var(--gold-dim)' },
     { label: 'All-Defense', award: 'All-Defense',                         color: 'var(--danger)' },
-    { label: 'All-Rookie',  award: 'All-Rookie',                          color: '#84cc16' },
+    { label: 'All-Rookie',  award: 'All-Rookie',                          color: 'var(--cat-lime)' },
   ];
 
   const LEADER_BADGE_DEFS = [
     { label: 'Pts Ldr',  stat: 'PTS',  color: 'var(--warning)' },
     { label: 'Reb Ldr',  stat: 'REB',  color: 'var(--success-alt)' },
-    { label: 'Ast Ldr',  stat: 'AST',  color: '#38bdf8' },
-    { label: 'Stl Ldr',  stat: 'STL',  color: '#a855f7' },
+    { label: 'Ast Ldr',  stat: 'AST',  color: 'var(--cat-sky)' },
+    { label: 'Stl Ldr',  stat: 'STL',  color: 'var(--cat-violet)' },
     { label: 'Blk Ldr',  stat: 'BLK',  color: 'var(--danger)' },
-    { label: '3PM Ldr',  stat: '3PM',  color: '#f97316' },
-    { label: 'GMSC Ldr', stat: 'GMSC', color: '#14b8a6' },
+    { label: '3PM Ldr',  stat: '3PM',  color: 'var(--cat-orange)' },
+    { label: 'GMSC Ldr', stat: 'GMSC', color: 'var(--cat-teal)' },
   ];
 
   function renderAccolades(container, playerSlug, rings, playerAwards, seasonLeaders) {
@@ -2623,7 +2623,8 @@
       };
     });
 
-    const allTeams = [...new Set(rows.map(r => r.TEAM).filter(Boolean))].sort();
+    // Every franchise, by name, whether or not it has stats yet.
+    const allTeams = Object.keys(TEAM_NAMES).sort((a, b) => TEAM_NAMES[a].localeCompare(TEAM_NAMES[b]));
 
     const PAGES = [
       { id: 'a-d', label: 'A – D', from: 'A', to: 'D' },
@@ -2655,15 +2656,27 @@
       activeFilters.clear();
       content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
       tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
-      if (push && location.search !== `?tab=${pg.id}`) history.pushState(null, '', `?tab=${pg.id}`);
+      if (push && location.search !== indexQuery()) history.pushState(null, '', indexQuery());
       searchInput.value = '';
       filterQ = '';
       rebuildBody();
     }
     window.onpopstate = () => {
-      const id = new URLSearchParams(location.search).get('tab');
-      selectPage(PAGES.find(p => p.id === id) || PAGES.find(p => p.id === 'all'), false);
+      const q = new URLSearchParams(location.search);
+      setTeamFilter(parseTeams(q.get('team')));
+      selectPage(PAGES.find(p => p.id === q.get('tab')) || PAGES.find(p => p.id === 'all'), false);
+      rebuildBody();
     };
+    // ?tab=all&team=BOS,LAL — the team filter rides in the URL so a filtered
+    // list can be shared and survives Back.
+    function indexQuery() {
+      const q = new URLSearchParams({ tab: activePage.id });
+      if (filterTeams.size) q.set('team', [...filterTeams].join(','));
+      return '?' + q.toString().replace(/%2C/g, ',');
+    }
+    function parseTeams(v) {
+      return new Set((v || '').split(',').map(t => t.trim().toUpperCase()).filter(t => TEAM_NAMES[t]));
+    }
     tabBtns.forEach(b => tabBar.appendChild(b));
     content.appendChild(tabBar);
 
@@ -2678,11 +2691,20 @@
     searchInput.setAttribute('autocomplete', 'off');
     filterBar.appendChild(searchInput);
 
+    // Several teams at once: ui-select.js turns a <select multiple> into the
+    // site's checkbox menu with Clear / Apply. Matches today's roster (the Team
+    // column), not every team a player has ever played for.
     const teamSelect = document.createElement('select');
+    teamSelect.multiple = true;
     teamSelect.className = 'filter-team';
-    [['', 'All teams'], ...allTeams.map(t => [t, t])].forEach(([v, l]) => {
+    teamSelect.setAttribute('aria-label', 'Filter by team');
+    teamSelect.dataset.placeholder = 'All teams';
+    teamSelect.dataset.noun = 'teams';
+    allTeams.forEach(t => {
       const opt = document.createElement('option');
-      opt.value = v; opt.textContent = l;
+      opt.value = t;
+      opt.textContent = TEAM_NAMES[t];
+      opt.dataset.img = `/logos/sm/logo-${t.toLowerCase()}.webp`;
       teamSelect.appendChild(opt);
     });
     filterBar.appendChild(teamSelect);
@@ -2854,9 +2876,7 @@
     function buildRow(p) {
       const tr = document.createElement('tr');
       tr.className = 'clickable-row';
-      tr.dataset.name = p.PLAYER.toLowerCase();
-      tr.dataset.teams = p.TEAMS.join('|');
-      tr.dataset.type = p.TYPE;
+      rowPlayer.set(tr, p);
       tr.addEventListener('click', () => { location.href = `/players/?p=${p.SLUG}`; });
 
       // Jersey cell (IDX_COLS[0])
@@ -2914,7 +2934,15 @@
       return tr;
     }
 
-    let filterQ = '', filterTeam = '', filterRostered = true;
+    const rowPlayer = new WeakMap();  // <tr> → its player, so a filter change only hides rows
+    let filterQ = '', filterRostered = true;
+    let filterTeams = parseTeams(new URLSearchParams(location.search).get('team'));
+    function setTeamFilter(teams) {
+      filterTeams = teams;
+      [...teamSelect.options].forEach(o => { o.selected = teams.has(o.value); });
+      if (window.UiSelect) UiSelect.refresh(teamSelect);
+    }
+    setTeamFilter(filterTeams);
     rosteredBtn.classList.toggle('active', filterRostered);
 
     rosteredBtn.addEventListener('click', () => {
@@ -2925,7 +2953,7 @@
 
     function visible(p) {
       return (!filterQ || p.PLAYER.toLowerCase().includes(filterQ)) &&
-             (!filterTeam || p.TEAMS.includes(filterTeam)) &&
+             (!filterTeams.size || filterTeams.has(p.TEAM)) &&
              (!filterRostered || (!p.RETIRED && (p.TYPE === 'player' || p.TYPE === 'two-way')));
     }
 
@@ -2960,16 +2988,15 @@
       noResults.style.display = count === 0 ? '' : 'none';
     }
 
+    // Same rule as rebuildBody (visible()), without rebuilding every row.
     function applyFilters() {
       filterQ = searchInput.value.trim().toLowerCase();
-      filterTeam = teamSelect.value;
       let count = 0, total = 0;
       tbody.querySelectorAll('tr').forEach(tr => {
+        const p = rowPlayer.get(tr);
+        if (!p) return;
         total++;
-        const nameOk = !filterQ || tr.dataset.name.includes(filterQ);
-        const teamOk = !filterTeam || tr.dataset.teams.split('|').includes(filterTeam);
-        const rosteredOk = !filterRostered || tr.dataset.type === 'player' || tr.dataset.type === 'two-way';
-        const show = nameOk && teamOk && rosteredOk;
+        const show = visible(p);
         tr.style.display = show ? '' : 'none';
         if (show) count++;
       });
@@ -2978,7 +3005,11 @@
     }
 
     searchInput.addEventListener('input', applyFilters);
-    teamSelect.addEventListener('change', applyFilters);
+    teamSelect.addEventListener('change', () => {
+      filterTeams = new Set([...teamSelect.selectedOptions].map(o => o.value));
+      history.replaceState(null, '', indexQuery());
+      applyFilters();
+    });
     updateHeaders();
     rebuildBody();
   }

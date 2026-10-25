@@ -33,14 +33,13 @@
     }
     .tl-pill {
       display: inline-flex; align-items: center; gap: 0.35rem;
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 999px;
-      padding: 0.3rem 0.7rem; font-size: 0.78rem; color: var(--text-muted); cursor: pointer;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0.3rem 0.7rem; font-size: var(--text-xs); color: var(--text-muted); cursor: pointer;
       transition: all 0.15s; white-space: nowrap;
     }
-    .tl-pill:hover { border-color: var(--warning); color: #fde68a; }
+    .tl-pill:hover { border-color: var(--warning); color: var(--gold); }
     .tl-pill.active {
-      background: linear-gradient(180deg,var(--warning),var(--gold-dim));
-      border-color: var(--gold); color: var(--text-on-accent); font-weight: 700;
+      background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); font-weight: 700;
     }
     .tl-pill img { height: 16px; width: 16px; object-fit: contain; }
 
@@ -50,36 +49,40 @@
       border: 1px solid var(--border); margin-bottom: 1.5rem;
       background: var(--bg-subtle);
     }
-    .banner-glow { position: absolute; inset: 0; opacity: 0.22; pointer-events: none; }
+    /* The champion's band: its colours, flat, like a team page's header. */
+    .banner[data-team] { background: var(--team-primary); border: 0; border-bottom: 5px solid var(--team-accent); color: white; }
+    .banner[data-team] .banner-season, .banner[data-team] .crown { color: white; }
+    .banner[data-team] .banner-sub, .banner[data-team] .banner-clinch { color: rgba(255, 255, 255, 0.8); }
+    .banner[data-team] .banner-sub a { color: white; text-decoration: underline; }
     .banner-inner {
       position: relative; display: flex; align-items: center; gap: 1.5rem;
       padding: 2rem 2rem; flex-wrap: wrap; justify-content: center; text-align: center;
     }
     .banner-logo {
-      height: 130px; width: 130px; object-fit: contain;
-      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.5));
+      height: 130px; width: 130px; object-fit: contain; padding: 14px;
+      background: white; border-radius: 50%;
       flex-shrink: 0;
     }
     .banner-text { display: flex; flex-direction: column; gap: 0.3rem; align-items: center; }
     .banner-season {
-      font-size: 0.8rem; letter-spacing: 0.18em; text-transform: uppercase;
+      font-size: var(--text-sm); letter-spacing: 0.18em; text-transform: uppercase;
       color: var(--gold); font-weight: 700;
     }
-    .banner-team { font-size: 2.1rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
-    .banner-sub { font-size: 0.95rem; color: var(--runnerup-border); }
+    .banner-team { font-size: var(--text-xl); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+    .banner-sub { font-size: var(--text-base); color: var(--runnerup-border); }
     .banner-sub a { color: var(--accent-light); }
-    .banner-clinch { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem; }
-    .crown { font-size: 1.4rem; color: var(--gold); }
+    .banner-clinch { font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.2rem; }
+    .crown { font-size: var(--text-lg); color: var(--gold); }
     .repeat-tag {
-      display: inline-block; margin-top: 0.4rem; font-size: 0.72rem; font-weight: 700;
-      color: #fde68a; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
-      border-radius: 999px; padding: 0.15rem 0.6rem; letter-spacing: 0.04em;
+      display: inline-block; margin-top: 0.4rem; font-size: var(--text-xs); font-weight: 700;
+      color: var(--gold); background: color-mix(in srgb, var(--gold) 15%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+      border-radius: var(--radius-sm); padding: 0.15rem 0.6rem; letter-spacing: 0.04em;
     }
 
     /* Section */
     .sec { margin-bottom: 1.5rem; }
     .sec-title {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
       color: var(--text-muted); margin-bottom: 0.7rem; padding-bottom: 0.35rem; border-bottom: 1px solid var(--border);
     }
 
@@ -92,14 +95,14 @@
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 0.7rem 0.5rem; text-align: center;
     }
-    .stat-box .v { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+    .stat-box .v { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
     .stat-box .fy-medal { color: var(--gold); }
-    .stat-box .l { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
+    .stat-box .l { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.15rem; }
     .badge-foty, .badge-coty {
-      display: inline-block; font-size: 0.62rem; font-weight: 700; border-radius: var(--radius-sm);
+      display: inline-block; font-size: var(--text-xs); font-weight: 700; border-radius: var(--radius-sm);
       padding: 0.05rem 0.3rem; margin-top: 0.3rem;
     }
-    .badge-foty { background: var(--gold-bg); color: var(--gold); border: 1px solid #92400e; }
+    .badge-foty { background: var(--gold-bg); color: var(--gold); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); }
 
     /* Playoff run */
     .run { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -108,31 +111,31 @@
     }
     .run-row {
       display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.55rem 0.85rem; font-size: 0.88rem;
+      padding: 0.55rem 0.85rem; font-size: var(--text-base);
     }
     .run-series.expandable .run-row { cursor: pointer; }
     .run-series.expandable:hover { border-color: var(--muted-border); }
-    .run-round { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); width: 105px; flex-shrink: 0; }
+    .run-round { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); width: 105px; flex-shrink: 0; }
     .run-opp { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
     .run-opp img { height: 22px; width: 22px; object-fit: contain; }
-    .run-opp .seed { color: var(--text-muted); font-size: 0.78rem; }
+    .run-opp .seed { color: var(--text-muted); font-size: var(--text-xs); }
     .run-score { font-weight: 700; font-variant-numeric: tabular-nums; }
     .run-score .swept { color: var(--market-positive); }
-    .run-chev { color: var(--text-muted); font-size: 0.7rem; width: 0.9rem; text-align: center; transition: transform 0.15s; }
+    .run-chev { color: var(--text-muted); font-size: var(--text-xs); width: 0.9rem; text-align: center; transition: transform 0.15s; }
     .run-series.open .run-chev { transform: rotate(180deg); color: var(--accent-light); }
     .run-games { border-top: 1px solid var(--border-subtle); background: var(--bg-subtle); padding: 0.3rem 0.85rem 0.5rem; }
     .run-games[hidden] { display: none; }
     .game-line {
       display: flex; align-items: center; gap: 0.6rem; padding: 0.32rem 0;
-      font-size: 0.82rem; border-bottom: 1px solid var(--border-subtle);
+      font-size: var(--text-sm); border-bottom: 1px solid var(--border-subtle);
     }
     .game-line:last-child { border-bottom: none; }
-    .game-no { color: var(--text-muted); width: 3.6rem; flex-shrink: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .game-no { color: var(--text-muted); width: 3.6rem; flex-shrink: 0; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; }
     .game-res { font-weight: 700; width: 1.1rem; flex-shrink: 0; }
     .game-res.w { color: var(--market-positive); } .game-res.l { color: var(--danger); }
     .game-loc { color: var(--text-muted); width: 1.6rem; flex-shrink: 0; }
     .game-pts { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
-    .game-date { margin-left: auto; color: var(--text-muted); font-size: 0.74rem; }
+    .game-date { margin-left: auto; color: var(--text-muted); font-size: var(--text-xs); }
 
     /* Front office */
     .fo-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; }
@@ -142,12 +145,12 @@
       text-decoration: none; color: inherit; transition: border-color 0.15s, background 0.15s;
     }
     .fo-card:hover { border-color: var(--muted-border); background: var(--bg-hover); text-decoration: none; }
-    .fo-card .pos { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); font-weight: 700; }
-    .fo-card .nm { font-size: 1rem; font-weight: 600; }
+    .fo-card .pos { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); font-weight: 700; }
+    .fo-card .nm { font-size: var(--text-base); font-weight: 600; }
     .fo-card:hover .nm { color: var(--accent-light); }
 
     /* Roster table */
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-base); }
     thead th { white-space: nowrap; }
     tbody td { padding: 0.55rem 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
     tbody tr:last-child td { border-bottom: none; }
@@ -159,15 +162,15 @@
     .ply a { font-weight: 600; color: var(--text-primary); }
     .ply a:hover { color: var(--accent-light); }
     .rings { color: var(--gold); font-weight: 700; white-space: nowrap; }
-    .rings .first { color: var(--market-positive); font-size: 0.7rem; font-weight: 700; margin-left: 0.25rem; }
-    .lead-tag { font-size: 0.62rem; font-weight: 700; color: var(--danger-light); background: rgba(220,38,38,0.12); border:1px solid rgba(220,38,38,0.35); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
+    .rings .first { color: var(--market-positive); font-size: var(--text-xs); font-weight: 700; margin-left: 0.25rem; }
+    .lead-tag { font-size: var(--text-xs); font-weight: 700; color: var(--danger-light); background: color-mix(in srgb, var(--danger) 12%, transparent); border:1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
     .num { font-variant-numeric: tabular-nums; }
 
     .loading, .err { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }
     .err { color: var(--danger); }
 
     @media (max-width: 560px) {
-      .banner-team { font-size: 1.6rem; }
+      .banner-team { font-size: var(--text-lg); }
       .banner-logo { height: 100px; width: 100px; }
       .run-round { width: 80px; }
       .ply img { display: none; }
@@ -198,13 +201,6 @@
     OKC:"Oklahoma City Thunder", ORL:"Orlando Magic", PHI:"Philadelphia 76ers", PHX:"Phoenix Suns",
     POR:"Portland Trail Blazers", SAC:"Sacramento Kings", SAS:"San Antonio Spurs", TOR:"Toronto Raptors",
     UTA:"Utah Jazz", WAS:"Washington Wizards",
-  };
-  const TEAM_COLORS = {
-    ATL:"#E03A3E", BKN:"#7a7f87", BOS:"#007A33", CHA:"#1D1160", CHI:"#CE1141", CLE:"#860038",
-    DAL:"#00538C", DEN:"#418FDE", DET:"#C8102E", GSW:"#1D428A", HOU:"#CE1141", IND:"#FDBB30",
-    LAC:"#C8102E", LAL:"#552583", MEM:"#5D76A9", MIA:"#98002E", MIL:"#00471B", MIN:"#236192",
-    NOP:"#85714D", NYK:"#F58426", OKC:"#007AC1", ORL:"#0077C0", PHI:"#006BB6", PHX:"#E56020",
-    POR:"#E03A3E", SAC:"#5A2D81", SAS:"#C4CED4", TOR:"#CE1141", UTA:"#F9A01B", WAS:"#E31837",
   };
   const ROUND_NAMES = { "1":"First Round", "2":"Conf. Semifinals", "3":"Conf. Finals", "4":"NBN Finals" };
 
@@ -397,7 +393,6 @@
 
   async function render() {
     const c = CHAMPS[idx];
-    const color = TEAM_COLORS[c.team] || 'var(--warning)';
     const seriesGames = await loadSeriesGames(c);
     if (CHAMPS[idx] !== c) return; // navigated away while fetching
 
@@ -413,8 +408,7 @@
       ? `<div class="repeat-tag">${TEAMS[c.team]} title #${c.titleNo} · ${ordinalRepeat(c)}</div>` : '';
 
     document.getElementById('content').innerHTML = `
-      <div class="banner">
-        <div class="banner-glow" style="background: radial-gradient(circle at 30% 30%, ${color} 0%, transparent 60%);"></div>
+      <div class="banner" data-team="${c.team}">
         <div class="banner-inner">
           <img class="banner-logo" src="${logoLg(c.team)}" alt="${c.team}">
           <div class="banner-text">

@@ -1,5 +1,5 @@
 // Unit tests for computeStartingFive in teams/lineup.js — the starting five
-// behind Roster Settings' Auto-sort, the Rosters tab's Depth mode, /preview
+// behind Roster Settings' Auto-sort, the Overview tab, /preview
 // and the homepage slate when a team has saved no rotation.
 //
 // Pure: no browser, no network. Runs from the pre-commit hook.

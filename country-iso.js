@@ -66,6 +66,6 @@ window.countryFlagImg = function (name) {
   img.src = `https://flagcdn.com/16x12/${iso.toLowerCase()}.png`;
   img.alt = name;
   img.title = name;
-  img.style.cssText = 'vertical-align:middle;border-radius:1px';
+  img.style.cssText = 'vertical-align:middle;border-radius:var(--radius-sm)';
   return img;
 };

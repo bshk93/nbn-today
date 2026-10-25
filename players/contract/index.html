@@ -27,7 +27,7 @@
   <style>
     .cap-non-gtd    td { background: var(--bg-subtle); }
     :is(.cap-ufa, .cap-rfa, .cap-player-opt, .cap-team-opt) td { background: color-mix(in srgb, var(--cap-c) 10%, transparent); }
-    .dead-cap-row   td { background: hsl(0, 25%, 13%); color: var(--danger); }
+    .dead-cap-row   td { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
     .dead-cap-row td.hold-label { color: var(--danger); opacity: 0.7; }
 
     /* Contract timeline */
@@ -36,17 +36,17 @@
     .ctl-seg { transition: filter 0.1s; }
     .ctl-seg.ctl-hovered { filter: brightness(1.2); }
     .ctl-hit { fill: transparent; cursor: pointer; outline: none; }
-    .ctl-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-top: 0.4rem; font-size: 0.7rem; color: var(--text-muted); }
+    .ctl-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
     .ctl-legend-item { display: flex; align-items: center; gap: 0.35rem; }
-    .ctl-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+    .ctl-legend-swatch { width: 10px; height: 10px; border-radius: var(--radius-sm); flex: none; }
     .ctl-tooltip {
       position: absolute; pointer-events: none; z-index: 5;
       background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 0.4rem 0.6rem; font-size: 0.72rem; line-height: 1.45; color: var(--text-secondary);
-      box-shadow: 0 4px 12px var(--shadow-color); white-space: nowrap; display: none;
+      padding: 0.4rem 0.6rem; font-size: var(--text-xs); line-height: 1.45; color: var(--text-secondary);
+      box-shadow: var(--shadow-overlay); white-space: nowrap; display: none;
     }
     .ctl-tooltip .ctl-tt-season { color: var(--text-primary); font-weight: 700; }
-    .ctl-tooltip .ctl-tt-val { color: var(--text-primary); font-weight: 700; font-size: 0.85rem; }
+    .ctl-tooltip .ctl-tt-val { color: var(--text-primary); font-weight: 700; font-size: var(--text-sm); }
     .ctl-tooltip .ctl-tt-sub { color: var(--text-muted); }
   </style>
 </head>
@@ -225,10 +225,10 @@
   // seasons that are part of one signing render as one unbroken block, with
   // a visible seam only where a new contract actually starts.
   const CTL_COLORS = {
-    guaranteed: '#16a34a',
-    nonGuaranteed: '#b45309',
-    option: '#7c3aed',
-    deadCap: '#dc2626',
+    guaranteed: 'var(--success)',
+    nonGuaranteed: 'var(--warning)',
+    option: 'var(--cat-violet)',
+    deadCap: 'var(--danger)',
   };
   // Contract-creating transaction types — each stamps its own `contract`
   // object with the season(s) it covers, so the *earliest* salary key in

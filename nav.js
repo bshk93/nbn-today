@@ -1,5 +1,13 @@
 // Shared utilities: nav injection, site-wide player search, parseCSV, theming
 
+// The site's dropdown menu (ui-select.js) rides along with nav.js, which every
+// page with a <select> already loads, so no page includes it itself.
+if (!document.querySelector('script[src="/ui-select.js"]')) {
+  const s = document.createElement('script');
+  s.src = '/ui-select.js';
+  document.head.appendChild(s);
+}
+
 // ── Icons ────────────────────────────────────────────────────────────────────
 // Inline SVGs for the nav-action buttons, so search/inbox/profile render as
 // crisp stroked line icons instead of emoji glyphs (which vary in weight and
@@ -852,8 +860,13 @@ function _schedule() {
 let _enteredPromise = null;
 function _enteredGames(season) {
   if (!_enteredPromise) {
+    // A failed fetch must not read as "nothing entered": that turns every game
+    // of the season into a missing box score. Reject instead (the count then
+    // shows nothing and isn't cached), and let the next ask try again.
     _enteredPromise = fetch(`/api/boxscores/games?season=${encodeURIComponent(season)}`)
-      .then(r => (r.ok ? r.json() : [])).catch(() => []);
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(games => (Array.isArray(games) ? games : Promise.reject(new Error('bad index'))))
+      .catch(e => { _enteredPromise = null; throw e; });
   }
   return _enteredPromise;
 }
@@ -892,8 +905,9 @@ function _pdcWork(me) {
     || (isHead && p.needs_result)).length);
 }
 
-// Stats — committees/stats renderTiles' "Awaiting entry": games scheduled up to
-// today with no box score on file. A game with its sides swapped is the same game.
+// Stats — committees/stats renderTiles' "Awaiting entry": games scheduled before
+// today with no box score on file. Tonight's games aren't owed yet, so they
+// don't count. A game with its sides swapped is the same game.
 function _statsWork(me) {
   const roles = new Set(me.roles || []);
   if (!roles.has('stats') && !roles.has('admin')) return Promise.resolve(0);
@@ -903,7 +917,7 @@ function _statsWork(me) {
     if (!sched?.season) return 0;
     return _enteredGames(sched.season).then(games => {
       const entered = new Set(games.map(g => key(g.date, g.home_team, g.away_team)));
-      return (sched.games || []).filter(f => f.date <= today && !entered.has(key(f.date, f.home_team, f.away_team))).length;
+      return (sched.games || []).filter(f => f.date < today && !entered.has(key(f.date, f.home_team, f.away_team))).length;
     });
   });
 }
@@ -1400,7 +1414,9 @@ const NAV_SECTIONS = [
     { title: 'Awards', href: '/awards/', icon: 'medal' },
     { title: 'Season Recaps', href: '/recap/', icon: 'tape' },
     { title: 'Draft', href: '/draft', icon: 'clipboard-list' },
-    { title: 'Draft Live', href: '/draft/live/', icon: 'live' },
+    // The live draft and the guide matter one week a year; /draft links both.
+    { title: 'Draft Live', href: '/draft/live/', icon: 'live', searchOnly: true },
+    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide', searchOnly: true },
   ] },
   { label: 'Stats', icon: 'bar-chart', items: [
     // Searchable, but not a row: Teams is its own entry at the top of the
@@ -1418,7 +1434,9 @@ const NAV_SECTIONS = [
     { title: 'Head to Head', href: '/h2h', icon: 'versus', searchOnly: true },
     { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie', searchOnly: true },
     { title: 'Box Scores', href: '/boxscores/', icon: 'table' },
-    { title: 'Box Score Import', href: '/boxscores/submit/', icon: 'upload', keywords: ['submit box score', 'upload box score'] },
+    // Screenshots go up on /committees/stats; this is the type-it-in fallback.
+    { title: 'Manual Box Score Entry', href: '/boxscores/submit/', icon: 'upload', searchOnly: true,
+      keywords: ['box score import', 'submit box score', 'type in box score'] },
     { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },
   ] },
   { label: 'NB¥ Corner', icon: 'yen', items: [
@@ -1458,7 +1476,6 @@ const NAV_SECTIONS = [
     { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
     { title: 'Constitution', href: '/constitution/', icon: 'charter' },
     { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
-    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide' },
     // Searchable, but its own entry in the sidebar's account menu (_buildAccount).
     { title: 'Change Log', href: '/changelog', icon: 'tag', searchOnly: true },
     // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
@@ -1469,9 +1486,9 @@ const NAV_SECTIONS = [
     { title: 'Proposals', href: '/proposals/', icon: 'vote' },
     { title: 'Suggestions', href: '/suggestions/', icon: 'bulb' },
     { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope' },
-    { title: 'Rookie Scale', href: '/rookie-scale/', icon: 'ruler' },
-    { title: 'Legal — Disciplinary Record', short: 'Legal', href: '/legal/', icon: 'gavel' },
-    { title: 'Cap Settings', href: '/cap-settings/', icon: 'gear', roles: ['rosters'] },
+    { title: 'League Settings', href: '/cap-settings/', icon: 'gear',
+      keywords: ['cap settings', 'salary cap', 'apron', 'minimum salary', 'league year'] },
+    { title: 'Rookie Scale', href: '/cap-settings/#rookie-scale', icon: 'ruler', searchOnly: true },
     { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'] },
     { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [] },
   ] },

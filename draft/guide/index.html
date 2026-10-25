@@ -27,7 +27,7 @@
     
                 
     h2 {
-      font-size: 1.25rem;
+      font-size: var(--text-lg);
       font-weight: 800;
       color: var(--text-primary);
       letter-spacing: -0.01em;
@@ -38,7 +38,7 @@
     h2:first-of-type { margin-top: 0; }
 
     h3 {
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -46,10 +46,10 @@
       margin: 1.75rem 0 0.5rem;
     }
 
-    p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; margin: 0 0 0.75rem; }
+    p { font-size: var(--text-base); color: var(--text-secondary); line-height: 1.65; margin: 0 0 0.75rem; }
 
     ul { margin: 0 0 0.75rem 0; padding-left: 1.4rem; }
-    li { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 0.2rem; }
+    li { font-size: var(--text-base); color: var(--text-secondary); line-height: 1.65; margin-bottom: 0.2rem; }
 
     .card {
       background: var(--bg-card);
@@ -61,7 +61,7 @@
 
     .badge {
       display: inline-block;
-      font-size: 0.65rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -81,17 +81,17 @@
       border-radius: var(--radius-sm);
       padding: 0.1rem 0.4rem;
       font-family: inherit;
-      font-size: 0.78rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
     }
 
     .warning {
-      background: #2d1b00;
-      border: 1px solid #713f12;
+      background: color-mix(in srgb, var(--warning) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
       border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
-      font-size: 0.85rem;
-      color: #fdba74;
+      font-size: var(--text-sm);
+      color: var(--warning);
       margin: 0.75rem 0;
     }
     .warning strong { color: var(--danger-alt); }
@@ -101,7 +101,7 @@
       border: 1px solid var(--accent-panel-bg);
       border-radius: var(--radius-sm);
       padding: 0.75rem 1rem;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       color: var(--accent-light);
       margin: 0.75rem 0;
     }
@@ -110,7 +110,7 @@
       display: grid;
       grid-template-columns: max-content 1fr;
       gap: 0.2rem 1rem;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       margin: 0.5rem 0 0.75rem;
     }
     .schedule-label { color: var(--text-muted); white-space: nowrap; }
@@ -129,7 +129,7 @@
       border-radius: 50%;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      font-size: 0.72rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       color: var(--text-muted);
       display: flex;
@@ -137,12 +137,12 @@
       justify-content: center;
       margin-top: 0.05rem;
     }
-    .step-body { flex: 1; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+    .step-body { flex: 1; font-size: var(--text-base); color: var(--text-secondary); line-height: 1.6; }
     .step-body strong { color: var(--text-primary); }
 
     #bod-section { display: none; }
     .section-eyebrow {
-      font-size: 0.68rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -187,7 +187,7 @@
         <span class="schedule-label">Round 2</span>
         <span class="schedule-val">Day 2 starting at noon ET · picks 31–60, same cadence</span>
       </div>
-      <p style="margin:0;font-size:0.8rem;color:var(--text-muted)">
+      <p style="margin:0;font-size:var(--text-sm);color:var(--text-muted)">
         Pick #1 window: 12:00–12:10 ET.&ensp;Pick #2: 12:10–12:20 ET.&ensp;And so on.
       </p>
     </div>
@@ -315,7 +315,7 @@
     <hr class="divider">
 
     <div id="bod-signin-prompt" style="padding:1.5rem 0;text-align:center;display:none">
-      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:0.8rem;font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='var(--text-muted)';this.style.borderColor='var(--text-muted)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">BOD? Sign in to see BOD guide</button>
+      <button onclick="signInAndCheck()" style="background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);font-size:var(--text-sm);font-family:inherit;padding:0.4rem 1rem;cursor:pointer" onmouseover="this.style.color='var(--text-muted)';this.style.borderColor='var(--text-muted)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">BOD? Sign in to see BOD guide</button>
     </div>
 
     <div id="bod-section">
@@ -434,7 +434,7 @@
           The board updates and the next pick is ready to reveal.
         </div>
       </div>
-      <p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-muted)">
+      <p style="margin-top:0.5rem;font-size:var(--text-sm);color:var(--text-muted)">
         Clicking a team name on the Draft Board also opens their depth chart directly.
         Clicking a revealed player name opens their modal (useful for re-showing highlights).
         Player names shown in <span style="color:var(--accent-light)">blue</span> have a highlights video attached.

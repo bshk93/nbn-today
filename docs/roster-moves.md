@@ -14,7 +14,7 @@ rule-citing reason**, not hidden — "why can't I renounce him?" is a rules ques
 and the menu is where it gets answered.
 
 Rendered in the **Rosters and Contracts** roster views (`MOVE_MODES`), not Stats or
-Ratings. Rosters is the default tab, so gating it to Contracts alone made the
+Ratings. Overview is the default tab, so gating it to Contracts alone made the
 feature invisible to the owners it exists for.
 
 **Getting a token in the first place:** the roster header has a `#team-signin-btn`

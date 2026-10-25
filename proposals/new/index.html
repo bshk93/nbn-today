@@ -32,11 +32,11 @@
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 2rem; text-align: center;
     }
-    #auth-gate h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
-    #auth-gate p { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem; }
+    #auth-gate h2 { font-size: var(--text-base); font-weight: 600; margin-bottom: 0.5rem; }
+    #auth-gate p { color: var(--text-muted); font-size: var(--text-base); margin-bottom: 1.25rem; }
     #auth-gate input {
       width: 100%; max-width: 340px; background: var(--bg-page); border: 1px solid var(--border);
-      color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.875rem;
+      color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: var(--text-base);
       font-family: var(--font-mono); margin-bottom: 0.75rem; display: block; margin: 0 auto 0.75rem;
     }
     #auth-gate input:focus { outline: none; border-color: var(--accent); }
@@ -50,20 +50,20 @@
     }
     .field input[type="text"] {
       width: 100%; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: var(--radius-sm); padding: 0.6rem 0.85rem; font-size: 1rem; font-family: inherit;
+      border-radius: var(--radius-sm); padding: 0.6rem 0.85rem; font-size: var(--text-base); font-family: inherit;
     }
     .field input[type="text"]:focus { outline: none; border-color: var(--accent); }
 
     /* Eligible roles */
     .roles-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .role-chip {
-      background: transparent; border: 1px solid var(--border); border-radius: 20px;
-      color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: 0.75rem;
+      background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: var(--text-xs);
       font-weight: 600; padding: 0.25rem 0.75rem; letter-spacing: 0.04em;
     }
     .role-chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
     .role-chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
-    .roles-hint { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem; }
+    .roles-hint { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.4rem; }
 
     /* Action bar */
     .action-bar {
@@ -75,18 +75,18 @@
 
     button {
       font-family: inherit; cursor: pointer; border-radius: var(--radius-sm);
-      font-size: 0.85rem; font-weight: 500; padding: 0.45rem 1rem;
+      font-size: var(--text-sm); font-weight: 500; padding: 0.45rem 1rem;
       border: 1px solid transparent;
     }
                                         
-    .status-msg { font-size: 0.8rem; color: var(--text-muted); }
+    .status-msg { font-size: var(--text-sm); color: var(--text-muted); }
     .status-msg.ok { color: var(--success); }
     .status-msg.err { color: var(--danger); }
 
     /* Submitted banner */
     .submitted-banner {
       background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm);
-      padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--accent-light); margin-bottom: 1.25rem;
+      padding: 0.75rem 1rem; font-size: var(--text-sm); color: var(--accent-light); margin-bottom: 1.25rem;
       display: none;
     }
 
@@ -101,14 +101,14 @@
     }
     .fmt-btn {
       background: transparent; border: none; border-radius: var(--radius-sm); color: var(--text-muted);
-      cursor: pointer; font-family: inherit; font-size: 0.73rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; font-size: var(--text-xs); font-weight: 700;
       line-height: 1; padding: 0.28rem 0.42rem; min-width: 1.6rem; text-align: center;
     }
     .fmt-btn:hover { background: var(--border); color: var(--text-secondary); }
     .fmt-sep { width: 1px; height: 13px; background: var(--border-dark); margin: 0 0.1rem; flex-shrink: 0; }
     .mode-tabs { display: flex; background: var(--bg-page); border-radius: var(--radius-sm); padding: 2px; margin-left: auto; gap: 0; }
     .mode-tab {
-      padding: 0.18rem 0.6rem; font-size: 0.72rem; font-weight: 600; color: var(--text-dim);
+      padding: 0.18rem 0.6rem; font-size: var(--text-xs); font-weight: 600; color: var(--text-dim);
       background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer;
       font-family: inherit; letter-spacing: 0.02em; transition: color 0.1s;
     }
@@ -119,20 +119,20 @@
       display: block; width: 100%; min-height: 320px; background: transparent; border: none;
       color: var(--text-secondary); caret-color: var(--link); outline: none; resize: vertical;
       font-family: var(--font-mono);
-      font-size: 0.875rem; line-height: 1.8; padding: 1rem 1.25rem;
+      font-size: var(--text-base); line-height: 1.8; padding: 1rem 1.25rem;
     }
     #body-write::placeholder { color: var(--border); }
 
     #body-preview {
       display: none; min-height: 320px; padding: 1.1rem 1.4rem;
-      color: var(--text-secondary); font-size: 0.9rem; line-height: 1.75;
+      color: var(--text-secondary); font-size: var(--text-base); line-height: 1.75;
     }
     #body-preview h1, #body-preview h2, #body-preview h3 {
       color: var(--text-primary); font-weight: 700; margin: 1.4em 0 0.5em; line-height: 1.3;
     }
-    #body-preview h1 { font-size: 1.4rem; }
-    #body-preview h2 { font-size: 1.15rem; }
-    #body-preview h3 { font-size: 1rem; }
+    #body-preview h1 { font-size: var(--text-lg); }
+    #body-preview h2 { font-size: var(--text-md); }
+    #body-preview h3 { font-size: var(--text-base); }
     #body-preview p { margin: 0.7em 0; }
     #body-preview ul, #body-preview ol { padding-left: 1.5em; margin: 0.7em 0; }
     #body-preview li { margin: 0.2em 0; }
@@ -141,7 +141,7 @@
       margin: 0.8em 0; padding: 0.1em 0 0.1em 1em;
     }
     #body-preview code {
-      background: var(--bg-page); border-radius: var(--radius-sm); color: #a5b4fc;
+      background: var(--bg-page); border-radius: var(--radius-sm); color: var(--accent-light);
       font-family: var(--font-mono); font-size: 0.84em; padding: 0.1em 0.35em;
     }
     #body-preview pre {
@@ -155,7 +155,7 @@
     #body-preview strong { color: var(--text-primary); font-weight: 600; }
     #body-preview table { border-collapse: collapse; width: 100%; margin: 0.75em 0; }
     #body-preview th, #body-preview td { border: 1px solid var(--border); padding: 0.4em 0.75em; }
-    #body-preview th { background: var(--bg-page); color: var(--text-muted); font-size: 0.8rem; }
+    #body-preview th { background: var(--bg-page); color: var(--text-muted); font-size: var(--text-sm); }
   </style>
 </head>
 <body>
@@ -221,7 +221,7 @@
 
     <div class="field">
       <label>Vote options</label>
-      <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;text-transform:none;letter-spacing:normal;color:var(--text-secondary);font-size:0.85rem;cursor:pointer;">
+      <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;text-transform:none;letter-spacing:normal;color:var(--text-secondary);font-size:var(--text-sm);cursor:pointer;">
         <input type="checkbox" id="allow-abstain-input" style="width:auto;">
         Allow "Abstain" as a vote choice
       </label>

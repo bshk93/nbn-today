@@ -73,7 +73,7 @@
   // ── Headlines ─────────────────────────────────────────────────────────────
   //
   // A ledger row's `description` is written for the office ("FA round
-  // ffa-07aa84 — offer #195 won the ballot", "Trade 52"), and some rows have
+  // ffa-07aa84 — offer 195 won the ballot", "Trade 52"), and some rows have
   // none. A visitor wants the move itself: "MIL sign Mike Conley". This builds
   // that from `details`, which every type already carries.
   //

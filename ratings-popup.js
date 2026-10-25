@@ -43,11 +43,11 @@
   // 2K's own tier palette (bronze/silver/gold are the metals; HOF is purple,
   // Legendary a deeper magenta -- both above gold in the 2K badge system).
   const TIER_COLORS = {
-    Bronze: '#cd7f32',
-    Silver: '#b0b8c1',
-    Gold: '#fbbf24',
-    HOF: '#a78bfa',
-    Legendary: '#f472b6',
+    Bronze: 'var(--cat-bronze)',
+    Silver: 'var(--cat-silver)',
+    Gold: 'var(--gold)',
+    HOF: 'var(--cat-violet)',
+    Legendary: 'var(--cat-pink)',
   };
   const TIER_ORDER = ['Legendary', 'HOF', 'Gold', 'Silver', 'Bronze'];
 
@@ -79,10 +79,10 @@
         background: var(--bg-page);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        box-shadow: var(--shadow-overlay);
         padding: 0.7rem 0.8rem;
         color: var(--text-secondary);
-        font-size: 0.75rem;
+        font-size: var(--text-xs);
         line-height: 1.3;
       }
       .ratings-pop[hidden] { display: none; }
@@ -94,14 +94,14 @@
         padding-bottom: 0.45rem;
         margin-bottom: 0.5rem;
       }
-      .ratings-pop-name { font-weight: 700; font-size: 0.82rem; }
-      .ratings-pop-meta { color: var(--text-muted); font-size: 0.68rem; margin-left: auto; text-align: right; }
+      .ratings-pop-name { font-weight: 700; font-size: var(--text-sm); }
+      .ratings-pop-meta { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; text-align: right; }
       /* Two balanced columns so the whole breakdown fits without scrolling. */
       .ratings-pop-body { column-count: 2; column-gap: 1.1rem; }
       .ratings-pop-group { break-inside: avoid; page-break-inside: avoid; }
       .ratings-pop-cat {
         color: var(--text-muted);
-        font-size: 0.62rem;
+        font-size: var(--text-xs);
         font-weight: 700;
         letter-spacing: 0.06em;
         text-transform: uppercase;
@@ -115,11 +115,11 @@
         gap: 0.35rem;
         margin-bottom: 0.2rem;
       }
-      .ratings-pop-label { color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ratings-pop-label { color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       /* display:block matters — these are spans, and height is ignored on inline boxes. */
       .ratings-pop-track { display: block; background: var(--bg-card); height: 5px; overflow: hidden; }
       .ratings-pop-fill { display: block; height: 100%; }
-      .ratings-pop-val { font-size: 0.68rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+      .ratings-pop-val { font-size: var(--text-xs); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
       /* Safety valve: on very short viewports (landscape phones) let it scroll
          rather than run off-screen where the bottom rows are unreachable. */
       @media (max-height: 34rem) {
@@ -127,24 +127,24 @@
       }
       @media (max-width: 26rem) {
         .ratings-pop-row { grid-template-columns: 4.4rem 1fr 1.2rem; }
-        .ratings-pop-label { font-size: 0.62rem; }
+        .ratings-pop-label { font-size: var(--text-xs); }
       }
-      .ratings-pop-note { color: var(--text-muted); font-size: 0.7rem; padding: 0.15rem 0; }
+      .ratings-pop-note { color: var(--text-muted); font-size: var(--text-xs); padding: 0.15rem 0; }
       .ratings-pop-badges { border-top: 1px solid var(--bg-card); margin-top: 0.55rem; padding-top: 0.5rem; }
-      .ratings-pop-badges-title { color: var(--text-muted); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.35rem; }
+      .ratings-pop-badges-title { color: var(--text-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.35rem; }
       .ratings-pop-badge-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
       .ratings-pop-badge-chip {
         display: inline-flex;
         align-items: center;
         gap: 0.3rem;
         background: var(--bg-card);
-        border-radius: 999px;
+        border-radius: var(--radius-sm);
         padding: 0.12rem 0.5rem 0.12rem 0.4rem;
-        font-size: 0.64rem;
+        font-size: var(--text-xs);
         color: var(--text-secondary);
       }
       .ratings-pop-badge-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; flex-shrink: 0; }
-      .ratings-pop-foot { color: var(--text-dim); font-size: 0.6rem; border-top: 1px solid var(--bg-card); margin-top: 0.55rem; padding-top: 0.4rem; }
+      .ratings-pop-foot { color: var(--text-dim); font-size: var(--text-xs); border-top: 1px solid var(--bg-card); margin-top: 0.55rem; padding-top: 0.4rem; }
       .ratings-trigger { cursor: help; }
       @media (hover: none) { .ratings-trigger { cursor: pointer; } }
     `;

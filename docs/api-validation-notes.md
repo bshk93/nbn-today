@@ -68,8 +68,8 @@ means only the incumbent may extend.
 ## The § 7.1 rookie scale
 
 `rookie-scale.json` in NBS_DATA_DIR, keyed by draft year, 30 rows of **five**
-figures. Served by `GET /api/rookie-scale`; `/rookie-scale` renders it (public
-read, editing gated on `rosters`) and `GET /api/rookie-scale/contract/{slug}`
+figures. Served by `GET /api/rookie-scale`; the Rookie Scale tab of `/cap-settings` renders it
+(public read, editing gated on `rosters`; `/rookie-scale` redirects there) and `GET /api/rookie-scale/contract/{slug}`
 returns one player's prescribed deal ready to load into a contract form.
 
 **Five figures, not four.** Years 1–4 are the contract (§ 7.1: Years 3 and 4 are

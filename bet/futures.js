@@ -15,11 +15,11 @@
     .fut-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-card.done { background: var(--bg-subtle); border-color: var(--border-dark); }
     .fut-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.3rem; }
-    .fut-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
-    .fut-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.6rem; }
-    .fut-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.6rem; }
-    .fut-explain { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.8rem; }
-    .fut-mine { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.6rem; }
+    .fut-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
+    .fut-meta { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.6rem; }
+    .fut-desc { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.6rem; }
+    .fut-explain { font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: 0.8rem; }
+    .fut-mine { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.6rem; }
     .fut-mine strong { color: var(--gold); }
     .fut-table td.price { font-weight: 700; color: var(--text-primary); }
     .fut-table td.up { color: var(--market-positive); }
@@ -31,11 +31,11 @@
     .fut-trade { display: flex; flex-direction: column; gap: 0.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; margin: 0.8rem 0 0.5rem; }
     .fut-trade-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .fut-trade-row .ui-input { width: 8rem; }
-    .fut-quote { font-size: 0.78rem; color: var(--text-secondary); min-height: 1.1em; }
+    .fut-quote { font-size: var(--text-xs); color: var(--text-secondary); min-height: 1.1em; }
     .fut-quote strong { color: var(--text-primary); }
-    .fut-err { font-size: 0.75rem; color: var(--danger); }
+    .fut-err { font-size: var(--text-xs); color: var(--danger); }
     .fut-admin { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px solid var(--border); }
-        .fut-trades { margin-top: 0.6rem; font-size: 0.78rem; }
+        .fut-trades { margin-top: 0.6rem; font-size: var(--text-xs); }
     .fut-trades summary { cursor: pointer; color: var(--text-muted); }
     .fut-trades td.up { color: var(--market-positive); }
     .fut-trades td.holds { white-space: normal; min-width: 9rem; color: var(--text-muted); }
@@ -53,17 +53,17 @@
     .fut-chart svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
     .fut-chart svg:focus { outline: none; }
     .fut-chart svg:focus-visible { outline: 1px solid var(--border); outline-offset: 2px; }
-    .fut-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; align-items: center; }
-    .fut-legend .key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; vertical-align: middle; margin-right: 0.35rem; }
+    .fut-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: 0.3rem; align-items: center; }
+    .fut-legend .key { display: inline-block; width: 14px; height: 2px; border-radius: var(--radius-sm); vertical-align: middle; margin-right: 0.35rem; }
     .fut-legend .note { color: var(--text-muted); }
     .fut-legend strong { color: var(--text-primary); font-weight: 600; }
     .fut-tip { position: absolute; top: 0; pointer-events: none; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 0.4rem 0.55rem; font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; box-shadow: 0 2px 8px var(--shadow-color, rgba(0,0,0,.3)); display: none; z-index: 2; }
+      padding: 0.4rem 0.55rem; font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; box-shadow: var(--shadow-overlay); display: none; z-index: 2; }
     .fut-tip .when { color: var(--text-muted); margin-bottom: 0.2rem; }
     .fut-tip .row { display: flex; align-items: center; gap: 0.4rem; }
     .fut-tip .row b { color: var(--text-primary); font-weight: 600; margin-left: auto; padding-left: 0.8rem; font-variant-numeric: tabular-nums; }
     .fut-tip .trade { color: var(--text-muted); margin-top: 0.25rem; border-top: 1px solid var(--border); padding-top: 0.25rem; }
-    .fut-form .hint { font-size: 0.72rem; color: var(--text-muted); }
+    .fut-form .hint { font-size: var(--text-xs); color: var(--text-muted); }
   `;
   let cssDone = false;
   let ctx = null;
