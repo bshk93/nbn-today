@@ -80,6 +80,7 @@
       min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .pick-item.empty .pick-name { color: var(--border); font-weight: 400; font-style: italic; }
+    .pick-ineligible { font-size: 0.75rem; font-weight: 500; color: var(--danger); flex-shrink: 0; }
 
     .pick-remove {
       background: none; border: none; color: var(--text-dim);
@@ -186,6 +187,10 @@
   }
 
   let bios = {};
+  // 6MOY eligibility (rulebook § 8.1), from GET /api/game-starters/sixth-man:
+  // slug → {gs, known, eligible}. A player not in it is eligible.
+  let sixthMan = {};
+  const sixthManOut = slug => sixthMan[slug] && !sixthMan[slug].eligible;
   let ballot = {};
   let teamAbb = null;
   let token = null;
@@ -272,6 +277,14 @@
       item.appendChild(rank);
       item.appendChild(name);
 
+      if (key === '6MOY' && sixthManOut(slug)) {
+        const note = document.createElement('span');
+        note.className = 'pick-ineligible';
+        note.textContent = `Not eligible: started ${sixthMan[slug].gs} of ${sixthMan[slug].known}`;
+        note.title = 'Sixth Man of the Year needs more games off the bench than started (rulebook § 8.1)';
+        item.appendChild(note);
+      }
+
       if (isEditable && slug) {
         item.draggable = true;
 
@@ -328,6 +341,7 @@
       .filter(([slug, bio]) => {
         if (cur.has(slug)) return false;
         if (aw.rookiesOnly && !isFirstYearPlayer(bio)) return false;
+        if (aw.key === '6MOY' && sixthManOut(slug)) return false;
         return dispName(slug).toLowerCase().includes(lq) || slug.includes(lq);
       })
       .slice(0, 8)
@@ -382,13 +396,13 @@
     saveTimer = setTimeout(doSave, 1500);
   }
 
-  function setSaveStatus(state) {
+  function setSaveStatus(state, message) {
     const el = document.getElementById('save-status');
     if (!el) return;
     el.className = `save-status ${state}`;
     if (state === 'saving') el.textContent = 'Saving…';
     else if (state === 'saved') el.textContent = 'Saved';
-    else el.textContent = 'Error saving — check your connection';
+    else el.textContent = message || 'Error saving — check your connection';
   }
 
   async function doSave() {
@@ -398,6 +412,12 @@
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(ballot),
       });
+      if (res.status === 422) {
+        // A refused pick (§ 8.1) says who and why; nothing was saved.
+        const detail = (await res.json().catch(() => ({}))).detail;
+        setSaveStatus('error', `Not saved. ${(detail && detail.message) || 'The ballot was refused.'}`);
+        return;
+      }
       if (!res.ok) throw new Error();
       setSaveStatus('saved');
     } catch {
@@ -502,12 +522,16 @@
       ? 'Voting is open. Changes save automatically.'
       : 'Voting has closed. Results have been released.';
 
-    const [biosRes, ballotRes] = await Promise.allSettled([
+    const [biosRes, ballotRes, sixthRes] = await Promise.allSettled([
       fetch('/api/players'),
       fetch(`/api/awards-ballots/${SEASON}/${teamAbb}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`/api/game-starters/sixth-man?season=${SEASON}`),
     ]);
 
     if (biosRes.status === 'fulfilled' && biosRes.value.ok) bios = await biosRes.value.json();
+    // Without it the search can't filter, but the save still refuses an
+    // ineligible pick and says who.
+    if (sixthRes.status === 'fulfilled' && sixthRes.value.ok) sixthMan = (await sixthRes.value.json()).players || {};
 
     ballot = Object.fromEntries(AWARDS.map(aw => [aw.key, new Array(aw.size).fill(null)]));
 
