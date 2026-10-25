@@ -2511,7 +2511,7 @@ function computeStatFields(seasonRow) {
 // Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
 // per-game averages from the player's latest season, 'ratings' shows every
 // individual 2K attribute, and 'depth' reorders the rows into a starting five
-// plus bench (see computeStartingFive, or the team's own `rotation` — `{slot: slug}`
+// plus a bench by OVR (see computeStartingFive, or the team's own `rotation` — `{slot: slug}`
 // from GET /api/rotations — when one is set). `latestSeasonBySlug` comes
 // from computeLatestSeasonBySlug(allSeasons), computed once at page load.
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null) {
@@ -2784,20 +2784,6 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     const five = fromRotation || computeStartingFive(starterPool);
     const started = new Set(five.filter(Boolean));
 
-    // The rotation's 6th–15th, in order, skipping anyone already placed.
-    let benchOrder = [];
-    if (useRotation) {
-      const bySlug = new Map(rotationPool.map(a => [a.SLUG, a]));
-      const taken = new Set(started);
-      const benchSlots = (window.CoachingSettings ? window.CoachingSettings.MINUTES_SLOTS : [])
-        .filter(slot => !DEPTH_SLOTS.includes(slot));
-      benchSlots.forEach(slot => {
-        const p = bySlug.get(rotation[slot]);
-        if (p && !taken.has(p)) { taken.add(p); benchOrder.push(p); }
-      });
-    }
-    const ordered = new Set([...started, ...benchOrder]);
-
     const starterRows = five.map((p, i) => {
       const slot = DEPTH_SLOTS[i];
       if (p) return { ...p, _slot: slot, _group: 'starters' };
@@ -2807,10 +2793,11 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _cap_holds: {}, _salaries: {}, _badges: [], _photo: '', _notes: '',
       };
     });
-    // Bench: the rotation's 6th–15th in order, then any other standard player by OVR.
-    const bench = [...benchOrder, ...starterPool.filter(a => !ordered.has(a)).sort(byOvrDesc)]
+    // The bench is by OVR, not the rotation's 6th–15th: a hurt player left out
+    // of the rotation would otherwise sink below the deep bench.
+    const bench = starterPool.filter(a => !started.has(a)).sort(byOvrDesc)
       .map(a => ({ ...a, _group: 'bench' }));
-    const rest = augmented.filter(a => (a._type !== 'player' || a._erc) && !ordered.has(a))
+    const rest = augmented.filter(a => (a._type !== 'player' || a._erc) && !started.has(a))
       .sort((a, b) => (typeOrder[a._type] ?? 4) - (typeOrder[b._type] ?? 4) || byOvrDesc(a, b))
       .map(a => ({ ...a, _group: a._type }));
 
