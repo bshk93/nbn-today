@@ -131,6 +131,9 @@
     /* Once played, the game's video (vod.js) takes the stream tag's place, and
        its line: a zero-height full-width item breaks the row, so the button
        sits under the matchup at its own size and the time stays up top. */
+    /* The team card spans the page, so there the tag sits beside the matchup. */
+    .dash-games--wide .dash-game-stream { order: 0; flex-basis: auto; padding-left: 0.75rem; }
+    .dash-games--wide .dash-game-date { width: 4.8rem; }
     .dash-game:has(> .vod-watch, > .vod-pending)::after { content: ''; order: 1; flex-basis: 100%; height: 0; }
     .dash-game > .vod-watch, .dash-game > .vod-pending { order: 2; margin-left: 1.05rem; }
     .dash-game-time { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -1035,6 +1038,8 @@
     const previewHref = g => `/preview/?away=${encodeURIComponent(g.away_team)}`
       + `&home=${encodeURIComponent(g.home_team)}&date=${encodeURIComponent(g.date)}`;
     const dayBefore = (d, n = 1) => new Date(at(d) - n * 86400000).toISOString().slice(0, 10);
+    // "Today" / "Tomorrow" for the next two days, the date after that.
+    const relDate = d => d === today ? 'Today' : d === dayBefore(today, -1) ? 'Tomorrow' : shortDate(d);
 
     // ?asof=YYYY-MM-DD shows the in-season cards (last night's best,
     // standings, records) as they were on that date. It changes nothing else
@@ -2357,7 +2362,7 @@
         const g = mine[0], home = g.home_team === team;
         glance.push(`<a class="dash-glance" href="${previewHref(g)}">`
           + `<span class="dash-line-label">Next</span> ${home ? 'vs' : '@'} ${esc(home ? g.away_team : g.home_team)} · `
-          + `${esc(g.date === today ? 'Tonight' : shortDate(g.date))}${g.time_et ? ' ' + esc(g.time_et) : ''}</a>`);
+          + `${esc(relDate(g.date))}${g.time_et ? ' ' + esc(g.time_et) : ''}</a>`);
       }
       const glanceHtml = `<div class="dash-team-glance">${glance.join('')}`
         + `<span class="dash-glance-status" id="dash-glance-status"></span>`
@@ -2435,12 +2440,12 @@
 
       // ── Next games
       if (mine.length) {
-        html += '<div class="dash-sep"></div><div class="dash-games">'
+        html += '<div class="dash-sep"></div><div class="dash-games dash-games--wide">'
           + mine.slice(0, 5).map(g => {
             const home = g.home_team === team;
             const opp = home ? g.away_team : g.home_team;
             return `<div class="dash-game">`
-              + `<span class="dash-game-date">${esc(shortDate(g.date))}</span>`
+              + `<span class="dash-game-date">${esc(relDate(g.date))}</span>`
               + `<span class="dash-game-opp"><span>${home ? 'vs' : '@'}</span>${teamChip(opp, recs)}</span>`
               + streamTag(g)
               + `<span class="dash-game-time">${esc(g.time_et || '')}</span></div>`;
