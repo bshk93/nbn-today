@@ -682,7 +682,7 @@
       content.appendChild(section("Pick'em", 'pickem'));
       content.appendChild(pickemCard(pk));
 
-      content.appendChild(section('Open bets', 'history'));
+      content.appendChild(section('Open bets'));
       if (openBets.length) openBets.forEach(bet => content.appendChild(makeBetCard(bet)));
       else content.appendChild(quiet('No open bets right now.'));
 

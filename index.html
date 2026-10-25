@@ -1965,14 +1965,12 @@
     // back of its 1 seed. The seeds are the build's own (tiebreaks included),
     // so this agrees with /standings by construction.
     //
-    // The playoff odds (GET /api/playoff-odds) aren't shown here — the header
-    // links to them — but the payload still supplies unplayed teams and the
-    // clinch marks.
+    // The playoff odds (GET /api/playoff-odds) aren't shown here, but the
+    // payload still supplies unplayed teams and the clinch marks.
     const oddsPromise = jget('/api/playoff-odds').catch(() => null);
     Promise.all([liveStandingsPromise, oddsPromise, liveSeasonPromise]).then(([rows, odds, season]) => {
       const seeded = rows.filter(r => /^(East|West)-/.test(r.SEED || ''));
       if (!seeded.length) return;
-      const hasOdds = !!(odds && odds.teams && odds.teams.length);
       // The odds payload knows every team's conference and season length,
       // which the standings file can't (it lists only teams that have played):
       // the same fill-in and clinch marks /standings makes.
@@ -2010,7 +2008,7 @@
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span><span class="dash-stand-gb" title="Games back">${gb(list[0], r)}</span></a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
-        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="${hasOdds ? '/standings/#odds' : '/standings'}">Standings</a></div></div>`
+        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings">Standings</a></div></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
     }).catch(() => {});
