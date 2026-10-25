@@ -73,6 +73,8 @@ ICONS = {
     # status
     'check':     [stroke('M4.5 12.5l5 5L19.5 7', 2.6)],
     'x':         [stroke('M6 6l12 12M18 6L6 18', 2.6)],
+    'plus':      [stroke('M12 5v14M5 12h14', 2.6)],
+    'chevron':   [stroke('M6 9l6 6 6-6', 2.6)],   # points down; rotate it for a closed disclosure
     'info':      [fill(circle(12, 12, 10.5) + 'M10.8 10.5h2.4V17h-2.4z' + circle(12, 7.4, 1.4), evenodd=True)],
     'warning':   [fill('M12 2.5L23 21.5H1Z' + 'M11 9h2v6h-2z' + circle(12, 18, 1.25), evenodd=True)],
     'lock':      [fill('M4.5 10.5h15v11h-15z'), stroke('M8 10.5V7.5a4 4 0 0 1 8 0v3', 2.2)],
