@@ -37,21 +37,8 @@
       margin-bottom: 2.5rem;
     }
 
-    .section-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 0.75rem;
-      letter-spacing: 0.01em;
-    }
 
-    .table-scroll {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: auto;
-      max-height: 72vh;
-    }
+    .table-scroll { overflow: auto; max-height: 72vh; }
 
     
     
@@ -59,7 +46,7 @@
       position: sticky;
       left: 0;
       z-index: 3;
-      background: var(--bg-card);
+      background: var(--bg-page);
       min-width: 40px;
       text-align: left;
       padding-left: 0.6rem;
@@ -75,7 +62,7 @@
       position: sticky;
       left: 0;
       z-index: 1;
-      background: var(--bg-card);
+      background: var(--bg-page);
       font-size: 0.7rem;
       font-weight: 700;
       color: var(--text-secondary);
@@ -133,22 +120,22 @@
     </header>
 
     <div class="section">
-      <h2 class="section-title">All-Time (Regular Season + Playoffs)</h2>
-      <div class="table-scroll" id="alltime-wrap">
+      <h2 class="ui-section-title">All-Time (Regular Season + Playoffs)</h2>
+      <div class="ui-table-wrap table-scroll" id="alltime-wrap">
         <div id="alltime-status">Loading…</div>
       </div>
     </div>
 
     <div class="section">
-      <h2 class="section-title">Playoffs Only</h2>
-      <div class="table-scroll" id="playoffs-wrap">
+      <h2 class="ui-section-title">Playoffs Only</h2>
+      <div class="ui-table-wrap table-scroll" id="playoffs-wrap">
         <div id="playoffs-status">Loading…</div>
       </div>
     </div>
 
     <div class="section">
-      <h2 class="section-title">By Owner (All-Time)</h2>
-      <div class="table-scroll" id="owners-wrap">
+      <h2 class="ui-section-title">By Owner (All-Time)</h2>
+      <div class="ui-table-wrap table-scroll" id="owners-wrap">
         <div id="owners-status">Loading…</div>
       </div>
     </div>
@@ -205,9 +192,8 @@
           }
 
           const pct = w / (w + l);
-          const hue = Math.round(pct * 120);
-          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', pct.toFixed(3));
 
           const recDiv = document.createElement('div');
           recDiv.className = 'cell-record';
@@ -270,9 +256,8 @@
           }
 
           const pct = w / (w + l);
-          const hue = Math.round(pct * 120);
-          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', pct.toFixed(3));
 
           const recDiv = document.createElement('div');
           recDiv.className = 'cell-record';

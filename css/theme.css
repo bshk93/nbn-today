@@ -65,6 +65,11 @@
   --radius-sm: 2px;
   --radius: 4px;
 
+  /* The team and player identity bands (components.css): one height and one
+     logo/headshot size for both, so they read as the same component. */
+  --band-height: 9.5rem;
+  --band-image: 88px;
+
   /* Heat-map cells (OVR, ratings, head-to-head): a translucent tint of the
      cell's hue over whatever the background is, with text in the same hue at
      this lightness. Light themes set it darker so the text stays readable;

@@ -228,6 +228,51 @@
   color: var(--text-muted);
 }
 
+/* ── Leaders (top-N lists over a full board) ─────────────────────────────── */
+/* A ruled top-5 per category, the same on /owners, /stats/totals,
+   /stats/highs and /stats/seasons. Each card is a button that picks the
+   board below; the chosen one takes the accent rule. The leader's figure is
+   set in the display face, the rest are a plain ranked list: no bars.
+     <div class="ui-leaders">
+       <button class="ui-leader" aria-pressed="true">
+         <div class="ui-leader-head"><span class="ui-leader-name">Points</span><span class="ui-leader-note">PTS</span></div>
+         <div class="ui-leader-row"><span class="ui-rank">1</span><span>Name</span><span>31,204</span></div>
+       </button>
+     </div>                                                                      */
+.ui-leaders { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4) var(--space-5); margin-bottom: var(--space-6); }
+.ui-leader {
+  display: block; align-self: start; width: 100%; padding: var(--space-2) 0 0; margin: 0;   /* start: a button centres its content, so a short list would float */
+  background: none; border: 0; border-top: 2px solid var(--text-primary); border-radius: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.ui-leader[aria-pressed="true"] { border-top-color: var(--accent); }
+.ui-leader:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ui-leader-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-1); }
+.ui-leader-name {
+  font-family: var(--font-display); font-size: var(--text-base); font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-primary);
+}
+.ui-leader:hover .ui-leader-name,
+.ui-leader[aria-pressed="true"] .ui-leader-name { color: var(--accent-light); }
+.ui-leader-note { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-leader-row {
+  display: grid; grid-template-columns: 1.4rem minmax(0, 1fr) auto; align-items: baseline; column-gap: var(--space-2);
+  padding: 0.25rem 0; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-sm);
+}
+.ui-leader-row:last-child { border-bottom: 0; }
+.ui-leader-row > .ui-rank { text-align: right; }
+.ui-leader-row > :nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); }
+.ui-leader-row > :nth-child(3) { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.ui-leader-head + .ui-leader-row > .ui-rank { color: var(--text-primary); }
+.ui-leader-head + .ui-leader-row > :nth-child(2) { color: var(--text-primary); font-weight: 600; }
+.ui-leader-head + .ui-leader-row > :nth-child(3) { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1; }
+.ui-leader-empty { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-2) 0; }
+@media (max-width: 480px) {
+  .ui-leaders { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .ui-leader-row { grid-template-columns: 1rem minmax(0, 1fr) auto; column-gap: var(--space-1); font-size: var(--text-xs); }
+  .ui-leader-head { flex-direction: column; gap: 0; }
+}
+
 /* ── Card ───────────────────────────────────────────────────────────────── */
 /* A surface, for things that are one object (a game, a player, a form).
    Not for every section: a section is a .ui-section-title and some space. */
@@ -243,13 +288,16 @@
    Cells: .num for figures (right-aligned, tabular), .muted, .strong.
    .ui-table--dense for wide stat tables. The wrap scrolls sideways on a
    phone rather than letting the table widen the page. */
+/* Ruled, not boxed: a table sits on the page under the same 2px rule as a
+   section, and its rows are hairlines. */
 .ui-table-wrap {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-top: 2px solid var(--text-primary);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+/* Inside a card or a homepage section, which already carries the heavy rule,
+   the table's own is a hairline. */
+:is(.ui-card, .dash-card) .ui-table-wrap { border-top: 1px solid var(--border); }
 .ui-table {
   width: 100%;
   border-collapse: collapse;
@@ -284,7 +332,7 @@
 .ui-table--dense th, .ui-table--dense td { padding: 0.35rem 0.6rem; }
 /* First column stays put while a wide table scrolls on a phone. */
 .ui-table--sticky-first th:first-child,
-.ui-table--sticky-first td:first-child { position: sticky; left: 0; background: var(--bg-card); z-index: 1; }
+.ui-table--sticky-first td:first-child { position: sticky; left: 0; background: var(--bg-page); z-index: 1; }
 /* Every table header on the site, ui-table or not, in the display face at one
    size. ~40 pages still carry their own th rule, sized between 0.62 and
    0.72rem for Inter; condensed type at those sizes is unreadable. Those rules
@@ -394,7 +442,69 @@
 .ui-chip--success { color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, transparent); background: color-mix(in srgb, var(--success) 10%, transparent); }
 .ui-chip--danger  { color: var(--danger);  border-color: color-mix(in srgb, var(--danger) 35%, transparent);  background: color-mix(in srgb, var(--danger) 10%, transparent); }
 .ui-chip--warning { color: var(--gold);    border-color: color-mix(in srgb, var(--gold) 35%, transparent);    background: color-mix(in srgb, var(--gold) 10%, transparent); }
-.ui-chip--team    { border-left: 3px solid var(--chip-c, var(--border)); }
+.ui-chip--team    { border-left: 3px solid var(--chip-c, var(--team-primary, var(--border))); }   /* or data-team="BOS" on the chip */
+.ui-chip--sm { font-size: var(--text-xs); padding: 0.1rem 0.35rem; }
+/* A chip that filters: a button, pressed when it is the filter in force.
+     <button class="ui-chip" aria-pressed="true">Draft</button>          */
+button.ui-chip { cursor: pointer; }
+button.ui-chip:hover { color: var(--text-primary); border-color: var(--text-muted); }
+button.ui-chip[aria-pressed="true"] { color: var(--text-on-accent); background: var(--accent); border-color: var(--accent); }
+button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── Heat (a value on a good-to-bad scale) ──────────────────────────────── */
+/* Set --heat from 0 (worst) to 1 (best) on the element. The middle is
+   neutral; the ends lean to --danger and --success, so the scale follows the
+   theme and reads the same everywhere, instead of a rainbow of hues.
+     .ui-heat       a table cell or badge, tinted
+     .ui-heat-ink   text in the scale's colour (a big figure)
+     .ui-heat-fill  a solid mark: a bar's fill, a chart dot (SVG fill too)
+     .ui-ovr        an OVR rating as a square display-face badge, with .ui-heat
+     <td class="ui-heat" style="--heat:0.82">87</td>                         */
+.ui-heat, .ui-heat-ink, .ui-heat-fill {
+  --heat-up: clamp(0%, (var(--heat, 0.5) - 0.5) * 200%, 100%);
+  --heat-down: clamp(0%, (0.5 - var(--heat, 0.5)) * 200%, 100%);
+}
+:root:root .ui-heat {   /* over any table's own cell and hover backgrounds, as the inline style it replaced was */
+  background-color: color-mix(in srgb, var(--success) calc(var(--heat-up) * 0.36),
+                    color-mix(in srgb, var(--danger) calc(var(--heat-down) * 0.36), transparent));
+  color: color-mix(in srgb, var(--success) calc(var(--heat-up) * 0.6),
+         color-mix(in srgb, var(--danger) calc(var(--heat-down) * 0.6), var(--text-primary)));
+}
+.ui-heat-ink {
+  color: color-mix(in srgb, var(--success) calc(var(--heat-up) * 0.85),
+         color-mix(in srgb, var(--danger) calc(var(--heat-down) * 0.85), var(--text-primary)));
+}
+.ui-heat-fill {
+  --heat-c: color-mix(in srgb, var(--success) var(--heat-up),
+            color-mix(in srgb, var(--danger) var(--heat-down), var(--text-muted)));
+  background-color: var(--heat-c); fill: var(--heat-c);
+}
+.ui-ovr {
+  display: inline-block; min-width: 2.1em; padding: 0.1rem 0.3rem;
+  font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums;
+  line-height: 1.2; text-align: center; color: var(--text-primary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+
+/* ── Contract years (cap holds and options) ───────────────────────────────── */
+/* One colour per kind of contract year, on the semantic tokens so it holds in
+   every theme: the roster, trade block, free agency, cap summary and contract
+   page all mark a UFA or an option the same way. Legend swatches use the
+   --cap-* tokens directly; a salary cell takes the class. */
+:root {
+  --cap-ufa: var(--gold);
+  --cap-rfa: var(--warning);
+  --cap-player-opt: var(--success);
+  --cap-team-opt: var(--accent);
+}
+.cap-ufa        { --cap-c: var(--cap-ufa); }
+.cap-rfa        { --cap-c: var(--cap-rfa); }
+.cap-player-opt { --cap-c: var(--cap-player-opt); }
+.cap-team-opt   { --cap-c: var(--cap-team-opt); }
+:root td:is(.cap-ufa, .cap-rfa, .cap-player-opt, .cap-team-opt) {
+  background-color: color-mix(in srgb, var(--cap-c) 18%, transparent);
+  color: var(--text-primary);
+}
 
 /* ── Empty and loading states ───────────────────────────────────────────── */
 .ui-empty {
@@ -473,7 +583,10 @@
 :root[data-team] .team-header-nav {
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-6) var(--space-5);
+  /* Same box as a player's band (§ Player pages): one height, padding and
+     image size, so moving from a team to its player the header doesn't jump. */
+  min-height: var(--band-height);
+  padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-5);
   border-radius: var(--radius);
   background: var(--team-primary);
@@ -483,11 +596,11 @@
   flex-direction: row;
   gap: var(--space-5);
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
 }
 :root[data-team] .team-header img {
-  width: 96px; height: 96px;
-  padding: 12px;
+  width: var(--band-image); height: var(--band-image);
+  padding: 10px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.95);
 }
@@ -499,11 +612,15 @@
 /* The name and its one line of franchise facts (renderHeaderFacts). */
 .team-header-facts:empty { display: none; }
 :root[data-team] .team-header-facts {
-  margin-top: var(--space-1);
-  font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.82);
-  white-space: pre-wrap;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-5);
+  margin-top: var(--space-2);
+  font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
 }
+/* A figure and its label: "256–237 ALL-TIME", "3 PLAYOFF TRIPS IN 7 SEASONS". */
+:root[data-team] .team-header-facts .thf b { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.01em; color: white; }
+:root[data-team] .team-header-facts .thf-owner { flex-basis: 100%; order: -1; color: rgba(255, 255, 255, 0.7); }
 :root[data-team] .team-nav-btn {
   color: rgba(255, 255, 255, 0.85);
   border-color: rgba(255, 255, 255, 0.35);
@@ -511,13 +628,49 @@
 :root[data-team] .team-nav-btn:hover { color: #fff; border-color: #fff; background: rgba(255, 255, 255, 0.1); }
 :root[data-team] .ui-tab.active { border-bottom-color: var(--team-accent); }
 @media (max-width: 600px) {
-  :root[data-team] .team-header-nav { padding: var(--space-5) var(--space-3); gap: var(--space-2); }
+  :root[data-team] .team-header-nav { padding: var(--space-4) var(--space-3); gap: var(--space-2); }
   :root[data-team] .team-header { gap: var(--space-3); }
-  :root[data-team] .team-header img { width: 60px; height: 60px; padding: 8px; }
+  /* On a phone both bands are just the name and its facts, left-aligned: no
+     logo or headshot, no Share (the browser's own share does that), no
+     prev/next arrows (they cost a fifth of the width and forced names onto
+     two lines; the sidebar's Teams panel does the same job). */
+  :root[data-team] .team-header-nav { min-height: 0; padding: var(--space-4); }
+  :root[data-team] :is(.team-nav-btn, .team-header img, .team-share-btn),
+  .ui-header[data-team] :is(.player-nav-btn, .player-share) { display: none; }
+  :root[data-team] .team-header { display: block; }
+  :root[data-team] .team-header-facts { gap: 0 var(--space-3); }
+  :root[data-team] .team-header-facts .thf b { font-size: var(--text-md); }
+  .ui-header[data-team] .header-main { align-items: flex-start; }
+
   :root[data-team] .team-header h1 { font-size: 1.75rem; }
   :root[data-team] .team-header-facts { font-size: var(--text-xs); }
-  :root[data-team] .team-nav-btn { width: 2rem; height: 2rem; font-size: 1.2rem; }
 }
+
+/* ── Player pages in team colours ───────────────────────────────────────── */
+/* A player's header (the profile and its sub-pages) takes his current team's
+   band, the same flat primary block and accent stripe as the team page, so
+   the two read as one family. Set by data-team on the header (renderIdentity
+   in players/index.html, mount in players/subpage.js); a free agent or a
+   retired player has none and keeps the plain header. */
+:root .ui-header[data-team] {
+  align-items: center;
+  min-height: var(--band-height);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--team-primary);
+  border-bottom: 5px solid var(--team-accent);
+  border-radius: var(--radius);
+}
+.ui-header[data-team] .ui-title { color: white; }
+.ui-header[data-team] :is(.ui-subtitle, .ui-subtitle a, .identity .pos, .identity a.team, .bio-sep) { color: rgba(255, 255, 255, 0.85); }
+.ui-header[data-team] :is(.profile-photo, .psub-photo) { width: var(--band-image); height: var(--band-image); border: 0; background: rgba(255, 255, 255, 0.92); }
+/* Phone: no picture and the band's own height (see the team band's note). */
+@media (max-width: 600px) {
+  :root .ui-header[data-team] { min-height: 0; padding: var(--space-4); }
+  .ui-header[data-team] :is(.profile-photo, .psub-photo) { display: none; }
+}
+.ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn) { color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.45); }
+.ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn):hover { color: white; border-color: white; }
 
 /* ── Motion ───────────────────────────────────────────────────────────────── */
 /* Almost none, on purpose. The page fades in once, quickly; nothing rises,

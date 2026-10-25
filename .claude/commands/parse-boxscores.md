@@ -1,7 +1,8 @@
 Parse pending box score screenshots and commit them to the stats database, then any pending injury reports.
 
 Run with no arguments to process all pending games, then all pending injury
-reports (step 7) — one sweep for a stream night.
+reports (step 7), then the day's NBN Twitter posts (step 8) — one sweep for a
+stream night.
 
 ## Why this skill is shaped the way it is
 
@@ -261,6 +262,79 @@ When the games are done (or the user stops), go to step 7.
 
 Follow `.claude/commands/parse-injuries.md` from its step 2, with the token
 you already have (it needs `stats` or `rosters`). If none are pending, say so
-in one line and finish. Its stops still apply here: a cut-off list, an
+in one line and go to step 8. Its stops still apply here: a cut-off list, an
 unmatched name and every `confirm_heals` player are the user's call, never
 yours.
+
+### 8. NBN Twitter
+
+For each game day committed in this run, write one batch of made-up tweets for
+the homepage card. Skip this step if no game was committed. It runs without
+asking: post, then report the count in one line. A bad tweet is deleted after
+the fact (`DELETE /api/tweets/<n>`), not held for review.
+
+**The rule:** the tweets are fiction, the numbers in them are not. Never
+invent a trade, signing, injury, quote from a real person or rumor someone
+could believe. Fiction is the voices and the reactions, not the events.
+
+**What to read**, and nothing more:
+
+- `curl -s 'http://localhost:8001/api/boxscores?date=<date>'` — the day's games.
+  Pick the 3–5 stories worth a tweet: the best line, a blowout or a buzzer
+  game, a rivalry, a bad night from a star.
+- `curl -s http://localhost:8001/api/members/public` — who owns each team that
+  played (the tenure with `end: null`).
+- `grep -n -i '<team or owner>' /var/lib/nothing-but-stats/lore/lore.md` for the
+  teams and owners in those stories. Grep, don't read the whole file. A callback
+  to a real old grudge is what makes a tweet good.
+- Optional: `GET /api/players/<slug>/insights` for a streak, or a career
+  milestone from the homepage's Milestone Watch. A season or career number is
+  allowed only when it came from one of these, read this run.
+
+**The cast.** Use 4–8 tweets per day, from at least three accounts:
+
+| Account | Voice |
+|---|---|
+| `@NBNStatMuse` "NBN StatMuse" | Dry stat lines and "first since" notes. No jokes. |
+| `@NBNInsider` "NBN Insider" | Reports only what really happened today in `GET /api/transactions`. Skip if nothing did. |
+| `@GaryOnTheBeat` "Gary Pruitt" | Old, grumpy beat writer. Hates threes, loves defense, has seen it all. |
+| `@GMWatchNBN` "GM Watch" | Roasts the owners by name, using the lore. Members are fair game, old scandals included. Punch at decisions and history, never at someone's real life outside the league. |
+| Fan accounts, e.g. `@BucksSzn` | One per team that played, if worth it. Overreacts both ways. Set `team`. |
+| The players | Own accounts, a made-up handle like `@PBanchero_NBN`. Short, like real player tweets. Set `slug`. |
+
+Handles are 1–15 letters, digits or underscores. Invent `likes` and `retweets`
+that fit: a 50-point game gets tens of thousands, a beat writer's take a few
+hundred.
+
+**Write it once**, straight to `<scratchpad>/nbn-tweets-<date>.json`:
+
+```json
+{"date": "2026-10-23", "tweets": [
+  {"handle": "NBNStatMuse", "name": "NBN StatMuse", "teams": ["NYK", "BOS"],
+   "about": ["brunson-jalen"], "text": "Jalen Brunson tonight:\n38 points\n9 assists\n0 turnovers",
+   "likes": 4200, "retweets": 610}
+]}
+```
+
+- `teams` is `[away, home]` for the game the tweet is about; leave it out for a
+  tweet about the whole night.
+- `about` lists every player whose stat the tweet quotes. Write stats as
+  `<n> <word>` ("38 points", "12 boards", "6 threes") so the check can read
+  them. The checker drops `about` before posting.
+
+Then check it. It compares every quoted stat and final score with the box
+score:
+
+```bash
+python3 build/check_tweets.py <scratchpad>/nbn-tweets-<date>.json --out <scratchpad>/nbn-tweets-<date>.post.json
+```
+
+On a failure, fix only the tweets it names, or cut them, and run it again. Do
+not rewrite the batch. Once it passes, post:
+
+```bash
+curl -s -X POST http://localhost:8001/api/tweets \
+  -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
+  --data @<scratchpad>/nbn-tweets-<date>.post.json
+rm -f <scratchpad>/nbn-tweets-<date>.json <scratchpad>/nbn-tweets-<date>.post.json
+```

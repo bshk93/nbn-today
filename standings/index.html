@@ -63,12 +63,6 @@
 
     @media (min-width: 1200px) { .conferences { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-    .table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow-x: auto;
-    }
 
     table {
       width: 100%;
@@ -376,7 +370,7 @@
         h.textContent = `${conf}ern Conference`;
         box.appendChild(h);
         const wrap = document.createElement('div');
-        wrap.className = 'table-wrap';
+        wrap.className = 'ui-table-wrap table-wrap';
         const table = document.createElement('table');
         table.className = 'odds-table';
         const hr = table.createTHead().insertRow();
@@ -755,7 +749,7 @@
       h2.textContent = confName;
       wrap.appendChild(h2);
       const tableWrap = document.createElement('div');
-      tableWrap.className = 'table-wrap';
+      tableWrap.className = 'ui-table-wrap table-wrap';
       const tbl = document.createElement('table');
       tbl.innerHTML = `<thead><tr>
         <th></th><th>Team</th>

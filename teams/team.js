@@ -257,7 +257,7 @@ const coachingConfigReady = new Promise(resolve => {
   .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
   .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   /* On the team-colour band (components.css § Team pages): light on colour. */
-  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
+  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
   :root[data-team] .team-share-btn:hover { color: #fff; border-color: #fff; }
   .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
   .team-header {
@@ -387,12 +387,6 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .drag-handle:active { cursor: grabbing; }
   #team-settings-wrap tr.dragging { opacity: 0.4; }
-  .table-wrap {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow-x: auto;
-  }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
@@ -566,6 +560,16 @@ const coachingConfigReady = new Promise(resolve => {
     border-radius: 2px;
     flex-shrink: 0;
   }
+  .fo-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: var(--space-3) var(--space-5); align-items: start; }
+  .fo-strip .fo-item { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .fo-strip .fo-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .fo-strip .ui-statline b { font-size: var(--text-lg); }
+  .fo-strip .fo-sub { font-size: var(--text-xs); color: var(--text-muted); }
+  .fo-strip .fo-patch { font-size: var(--text-sm); color: var(--text-secondary); }
+  .fo-strip .fo-sub a { color: var(--accent-light); text-decoration: none; }
+  .fo-strip .fo-sub a:hover { text-decoration: underline; }
+  .fo-strip .fo-up { color: var(--success); }
+  .fo-strip .fo-down { color: var(--danger); }
   .retired-banners {
     display: flex;
     flex-wrap: wrap;
@@ -587,10 +591,6 @@ const coachingConfigReady = new Promise(resolve => {
   .retired-no   { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
   .retired-name { font-size: 0.62rem; color: var(--text-muted); text-align: center; line-height: 1.3; }
   .retired-date { font-size: 0.58rem; color: var(--text-dim); margin-top: 0.15rem; }
-  td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
-  td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
-  td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
-  td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
   td.cap-non-gtd    { color: var(--text-dim); }
   td.cell-selected { position: relative; box-shadow: inset 0 0 0 2px var(--accent); }
   td.cell-selected::after {
@@ -965,13 +965,13 @@ const coachingConfigReady = new Promise(resolve => {
   .attr-badges { display: inline-flex; align-items: center; gap: 0.2rem; flex: none; }
   .attr-badge {
     display: inline-flex; align-items: center; justify-content: center;
-    padding: 0 0.28rem; height: 14px; border-radius: var(--radius-sm); flex: none;
-    font-size: 0.56rem; font-weight: 700; letter-spacing: 0.02em;
-    font-variant-numeric: tabular-nums; cursor: help;
-    color: var(--text-muted); background: rgba(107,114,128,0.08);
-    box-shadow: 0 0 0 1px rgba(107,114,128,0.16);
+    padding: 0 0.3rem; height: 16px; border-radius: var(--radius-sm); flex: none;
+    font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; font-variant-numeric: tabular-nums; cursor: help;
+    color: var(--text-muted); background: var(--bg-subtle);
+    border: 1px solid var(--border);
   }
-  .attr-badge-elite { box-shadow: 0 0 0 1px rgba(156,163,175,0.55); }
+  .attr-badge-elite { color: var(--text-secondary); border-color: var(--text-dim); }
   .attr-legend .cap-legend-item { cursor: default; }
   .attr-legend-note { color: var(--text-dim); font-style: italic; margin-left: auto; }
   .attr-badge-legend { cursor: default; }
@@ -1091,7 +1091,7 @@ document.body.innerHTML = `
           </div>
           <button id="whatif-enter-btn" class="whatif-enter-btn" type="button">What If Mode</button>
         </div>
-        <div class="table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
         <div id="cap-edit-wrap"></div>
         <div id="dead-cap-edit-wrap"></div>
         <div id="whatif-panel" class="whatif-panel" style="display:none">
@@ -1102,11 +1102,11 @@ document.body.innerHTML = `
           </div>
           <div id="whatif-log" class="whatif-log"></div>
           <div id="whatif-contract-form-slot"></div>
-          <div class="table-wrap" id="whatif-roster-wrap"></div>
+          <div class="ui-table-wrap table-wrap" id="whatif-roster-wrap"></div>
           <div id="whatif-warnings"></div>
           <div id="whatif-attr-impact-wrap" style="display:none">
             <div class="whatif-attr-heading">Attribute Impact <span class="whatif-attr-heading-note">— vs. your real roster, cap holds excluded</span></div>
-            <div id="whatif-attr-impact" class="table-wrap"></div>
+            <div id="whatif-attr-impact" class="ui-table-wrap table-wrap"></div>
           </div>
           <div id="whatif-hard-cap-banner" style="display:none"></div>
           <div id="whatif-exceptions-section" style="display:none">
@@ -1128,7 +1128,7 @@ document.body.innerHTML = `
       </section>
       <section>
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
-        <div class="table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-schedule">
@@ -1182,17 +1182,21 @@ document.body.innerHTML = `
       <section>
         <h2 class="section-title">Season History</h2>
         <div class="timeline" id="timeline-wrap"></div>
-        <div class="table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
       </section>
       <section id="rivals-section" style="display:none">
         <h2 class="section-title">Rivalries</h2>
         <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
         <div class="rivals-cards" id="rivals-cards"></div>
-        <div class="table-wrap" id="rivals-wrap"></div>
+        <div class="ui-table-wrap table-wrap" id="rivals-wrap"></div>
       </section>
       <section id="personnel-section" style="display:none">
         <h2 class="section-title">Franchise Personnel</h2>
-        <div class="table-wrap" id="personnel-wrap"></div>
+        <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
+      </section>
+      <section id="frontoffice-section" style="display:none">
+        <h2 class="section-title">Front Office</h2>
+        <div class="fo-strip" id="frontoffice-wrap"></div>
       </section>
       <section id="retired-section" style="display:none">
         <h2 class="section-title">Retired Numbers</h2>
@@ -1202,14 +1206,14 @@ document.body.innerHTML = `
     <div class="tab-panel hidden" id="tab-draft">
       <section>
         <h2 class="section-title">Draft History</h2>
-        <div class="table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
       </section>
     </div>
     <div class="tab-panel hidden" id="tab-alltime">
       <section>
         <h2 class="section-title">All-Time Top Players</h2>
         <p class="section-sub">Regular season · ranked by total Game Score</p>
-        <div class="table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
+        <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
       </section>
       <section>
         <h2 class="section-title">Franchise Records</h2>
@@ -1389,7 +1393,7 @@ async function renderSchedule(allGames, season) {
     if (m !== month) {
       if (month) html += '</tbody></table></div>';
       month = m;
-      html += `<h3 class="sched-month">${m}</h3><div class="table-wrap"><table class="sched-table"><tbody>`;
+      html += `<h3 class="sched-month">${m}</h3><div class="ui-table-wrap table-wrap"><table class="sched-table"><tbody>`;
     }
     const { home, opp } = side(g);
     const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
@@ -1811,10 +1815,10 @@ const CAP_HOLD_LABELS = {
 };
 
 const SWATCH_COLORS = {
-  UFA:        'hsl(45,  60%, 35%)',
-  RFA:        'hsl(25,  60%, 35%)',
-  PLAYER_OPT: 'hsl(120, 50%, 30%)',
-  TEAM_OPT:   'hsl(210, 55%, 35%)',
+  UFA:        'var(--cap-ufa)',
+  RFA:        'var(--cap-rfa)',
+  PLAYER_OPT: 'var(--cap-player-opt)',
+  TEAM_OPT:   'var(--cap-team-opt)',
   NON_GTD:    'var(--border)',
 };
 
@@ -2545,9 +2549,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           td.textContent = isNaN(n) ? '—' : String(n);
           if (!isNaN(n)) {
             const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
-            const hue = Math.round(t * 120);
-            td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-            td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+            td.classList.add('ui-heat');
+            td.style.setProperty('--heat', t.toFixed(3));
             const ovrSlug = playerSlug(row.PLAYER);
             if (ovrSlug && window.RatingsPopup) {
               RatingsPopup.attach(td, ovrSlug, { name: row.PLAYER });
@@ -2901,9 +2904,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         td.textContent = isNaN(n) ? '—' : String(n);
         if (!isNaN(n)) {
           const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
-          const hue = Math.round(t * 120);
-          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', t.toFixed(3));
           if (row.SLUG && window.RatingsPopup) {
             RatingsPopup.attach(td, row.SLUG, { name: row._name });
           }
@@ -2915,9 +2917,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         } else {
           td.textContent = String(v);
           const t = Math.min(1, Math.max(0, (v - RATING_HEAT_MIN) / (RATING_HEAT_MAX - RATING_HEAT_MIN)));
-          const hue = Math.round(t * 120);
-          td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-          td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', t.toFixed(3));
         }
       } else if (col.key.startsWith('_s_')) {
         const k = col.key.slice(3);
@@ -3551,9 +3552,8 @@ function makeSeasonRenderCell(rows) {
       if (!isNaN(n)) {
         const { absMax } = ranges[col.key];
         const t = absMax === 0 ? 0.5 : Math.min(1, Math.max(0, n / absMax * 0.5 + 0.5));
-        const hue = Math.round(t * 120);
-        td.style.background = `hsl(${hue} 70% 50% / 0.16)`;
-        td.style.color = `hsl(${hue} 70% var(--heat-text-l))`;
+        td.classList.add('ui-heat');
+        td.style.setProperty('--heat', t.toFixed(3));
       }
     }
   };
@@ -3662,18 +3662,32 @@ function renderHeaderFacts(seasonRows, members) {
   (members || []).forEach(m => (m.tenures || []).forEach(t => {
     if (t.team === abbr && t.end == null && t.position === 'owner') owners.push(m.name);
   }));
-  if (owners.length) facts.push(`Owner: ${owners.join(' & ')}`);
+  // Each fact is a figure and its label, the figure in the scoreboard face.
+  const fact = (fig, label) => {
+    const f = document.createElement('span');
+    f.className = 'thf';
+    const b = document.createElement('b');
+    b.textContent = fig;
+    f.append(b, ' ' + label);
+    return f;
+  };
   const rows = (seasonRows || []).filter(r => r.SEASON);
   if (rows.length) {
     const titles = rows.filter(r => r.PLAYOFF_RESULT === 'Champion').length;
     const trips = rows.filter(r => r.PLAYOFF_RESULT && r.PLAYOFF_RESULT !== 'Missed').length;
     const w = rows.reduce((s, r) => s + (+r.W || 0), 0);
     const l = rows.reduce((s, r) => s + (+r.L || 0), 0);
-    if (titles) facts.push(`🏆 ${titles} title${titles === 1 ? '' : 's'}`);
-    facts.push(`${w}–${l} all-time`);
-    facts.push(`${trips} playoff trip${trips === 1 ? '' : 's'} in ${rows.length} season${rows.length === 1 ? '' : 's'}`);
+    facts.push(fact(`${w}–${l}`, 'all-time'));
+    if (titles) facts.push(fact(titles, titles === 1 ? 'title' : 'titles'));
+    facts.push(fact(trips, `NBN playoff trip${trips === 1 ? '' : 's'}`));
   }
-  el.textContent = facts.join('  ·  ');
+  if (owners.length) {
+    const o = document.createElement('span');
+    o.className = 'thf-owner';
+    o.textContent = `Owner ${owners.join(' & ')}`;
+    facts.push(o);
+  }
+  el.replaceChildren(...facts);
 }
 
 function buildPersonnelSection(members, allGames) {
@@ -3900,18 +3914,18 @@ const CAP_OPTIONS = [
 ];
 
 const CAP_HOLD_COLORS = {
-  UFA:        { bg: 'hsl(45,60%,20%)',  color: 'hsl(45,90%,72%)'  },
-  RFA:        { bg: 'hsl(25,60%,20%)',  color: 'hsl(25,90%,72%)'  },
-  PLAYER_OPT: { bg: 'hsl(120,50%,17%)', color: 'hsl(120,75%,68%)' },
-  TEAM_OPT:   { bg: 'hsl(210,55%,20%)', color: 'hsl(210,75%,70%)' },
-  NON_GTD:    { bg: 'var(--bg-page)',           color: 'var(--text-dim)'          },
+  UFA:        'var(--cap-ufa)',
+  RFA:        'var(--cap-rfa)',
+  PLAYER_OPT: 'var(--cap-player-opt)',
+  TEAM_OPT:   'var(--cap-team-opt)',
 };
 
+// The cap-hold picker wears its choice: tinted like the salary cell it sets.
 function applyCapHoldColor(sel) {
   const c = CAP_HOLD_COLORS[sel.value];
-  sel.style.background = c ? c.bg : 'var(--bg-page)';
-  sel.style.color = c ? c.color : 'var(--text-secondary)';
-  sel.style.borderColor = c ? c.color.replace(/(\d+)%\)$/, m => m.replace(/\d+/, n => Math.round(n * 0.55))) : 'var(--border)';
+  sel.style.background = c ? `color-mix(in srgb, ${c} 18%, var(--bg-page))` : 'var(--bg-page)';
+  sel.style.color = c ? 'var(--text-primary)' : sel.value === 'NON_GTD' ? 'var(--text-dim)' : 'var(--text-secondary)';
+  sel.style.borderColor = c || 'var(--border)';
 }
 
 function promptToken(onSuccess) {
@@ -5449,7 +5463,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
   toolbar.appendChild(statusEl);
 
   const gridWrap = document.createElement('div');
-  gridWrap.className = 'table-wrap';
+  gridWrap.className = 'ui-table-wrap table-wrap';
   gridWrap.style.overflowX = 'auto';
   gridWrap.appendChild(table);
 
@@ -5553,7 +5567,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
     // Build editable table
     const gridWrap = document.createElement('div');
-    gridWrap.className = 'table-wrap';
+    gridWrap.className = 'ui-table-wrap table-wrap';
     gridWrap.style.overflowX = 'auto';
 
     const table = document.createElement('table');
@@ -6007,7 +6021,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, coac
 
   function mountTable(table, meter) {
     const gridWrap = document.createElement('div');
-    gridWrap.className = 'table-wrap';
+    gridWrap.className = 'ui-table-wrap table-wrap';
     gridWrap.appendChild(table);
     wrapEl.innerHTML = '';
     if (meter) wrapEl.appendChild(meter);
@@ -8589,7 +8603,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         const t = buildHistoricalRoster(allSeasons, abbr, season);
         if (t) {
           const wrap = document.createElement('div');
-          wrap.className = 'table-wrap';
+          wrap.className = 'ui-table-wrap table-wrap';
           wrap.appendChild(t);
           histWrap.appendChild(wrap);
         } else {
@@ -8868,4 +8882,39 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       bannersEl.appendChild(banner);
     });
   }
+})();
+
+// The Front Office Ledger's line on this franchise (Franchise tab). Flavor,
+// from data/franchise-finances.csv; the full books are /finances. Fetched on
+// its own so a missing file costs the page nothing.
+(function renderFrontOffice() {
+  const money = v => {
+    const a = Math.abs(v), sign = v < 0 ? '-' : '';
+    return a >= 1e9 ? `${sign}NB¥${(a / 1e9).toFixed(2)}B` : `${sign}NB¥${Math.round(a / 1e6)}M`;
+  };
+  const signed = v => `<span class="${v >= 0 ? 'fo-up' : 'fo-down'}">${v >= 0 ? '+' : ''}${money(v)}</span>`;
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  fetch('/data/franchise-finances.csv')
+    .then(r => r.ok ? r.text() : Promise.reject())
+    .then(text => {
+      const rows = parseCSV(text);
+      const seasons = [...new Set(rows.map(r => r.SEASON))].sort();
+      const latest = seasons[seasons.length - 1];
+      const mine = s => rows.find(r => r.SEASON === s && r.TEAM === abbr);
+      const now = mine(latest);
+      if (!now) return;
+      const rank = rows.filter(r => r.SEASON === latest).sort((a, b) => b.VALUE - a.VALUE).findIndex(r => r.TEAM === abbr) + 1;
+      const done = [...seasons].reverse().find(s => mine(s)?.IN_PROGRESS === 'FALSE');
+      const last = done && mine(done);
+      const profit = [...seasons].reverse().map(mine).find(r => r && r.PROFIT && r.PROFIT !== 'NA');
+      const item = (label, body, sub) => `<div class="fo-item"><span class="fo-label">${label}</span>${body}${sub ? `<span class="fo-sub">${sub}</span>` : ''}</div>`;
+      document.getElementById('frontoffice-wrap').innerHTML = [
+        item('Franchise value', `<span class="ui-statline"><b>${money(+now.VALUE)}</b></span>`, `#${rank} of 30 · ${signed(+now.VALUE_CHANGE)} this season`),
+        last ? item(`${done} crowds`, `<span class="ui-statline"><b>${(+last.AVG_ATTENDANCE).toLocaleString()}</b><small>a night</small></span>`, `${last.SELLOUTS} sellouts`) : '',
+        profit ? item(`${profit.SEASON} profit`, `<span class="ui-statline"><b>${signed(+profit.PROFIT)}</b></span>`, profit.IN_PROGRESS === 'TRUE' ? 'projected' : '') : '',
+        now.JERSEY_PATCH && now.JERSEY_PATCH !== 'NA' ? item('Jersey patch', `<span class="fo-patch">${esc(now.JERSEY_PATCH)}</span>`, `<a href="/finances/?team=${abbr}">Full ledger →</a>`) : '',
+      ].join('');
+      document.getElementById('frontoffice-section').style.display = '';
+    })
+    .catch(() => {});
 })();

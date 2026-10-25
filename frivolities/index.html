@@ -61,12 +61,6 @@
       padding: 1rem 0.875rem 0.75rem;
     }
 
-    .attr-table-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow-x: auto;
-    }
 
     .attr-table {
       width: 100%;
@@ -927,8 +921,7 @@
         if (val == null || !ranges[key]) return '';
         const { min, max } = ranges[key];
         const t = max === min ? 0.5 : (val - min) / (max - min);
-        const hue = Math.round(t * 120);
-        return ` style="background:hsl(${hue},55%,18%);color:hsl(${hue},80%,72%);"`;
+        return ` class="ui-heat" style="--heat:${t.toFixed(3)}"`;
       }
 
       function cellText(key, abbr, val) {
@@ -970,7 +963,7 @@
         }).join('');
 
         container.innerHTML = `
-          <div class="attr-table-wrap">
+          <div class="ui-table-wrap attr-table-wrap">
             <table class="attr-table">
               <thead>
                 <tr>${groupRow}</tr>
@@ -1173,7 +1166,7 @@
           </div>
         </div>
 
-        <div class="attr-table-wrap"><table class="attr-table earn-table" id="earn-table"></table></div>
+        <div class="ui-table-wrap attr-table-wrap"><table class="attr-table earn-table" id="earn-table"></table></div>
         <p class="attr-note">
           Every guaranteed dollar in NBN's contract records, by player. Salary tracking begins with the
           <strong>${seasons[0]}</strong> season, so nothing before that counts — this is career earnings

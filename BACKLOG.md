@@ -691,9 +691,13 @@ job.
   rather than work: `GET /api/cap-history?team=UTA` has served a per-day series
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.
-- **Front Office Ledger (franchise finances)** — a fake, tongue-in-cheek P&L
-  per team (gate, merch, media, payroll, "luxury tax") and a valuation in NB¥,
-  reconstructed over all of NBN history from the box scores, brackets and
-  awards. Cosmetic only. Spec: `docs/franchise-finances-spec.md`. First slice:
-  the `/finances` valuation-over-time plot, box score attendance and the team
-  page Finances tab.
+- **Front Office Ledger: headlines and a recap Business section** — the ledger
+  shipped 2026-10-24 (`/finances`, box score attendance, owners, the team page
+  section). Still unbuilt from the spec: feed / NBN Today headlines ("PHX posts
+  record loss after a ¥40M tax bill") and a Business section in the season
+  recap. `docs/franchise-finances-spec.md` § Outputs.
+- **Decide whether fair value replaces Wall Street pricing** — the hidden
+  `/invest/fair/` (2026-10-24) prices every franchise by a DCF on the ledger,
+  snapshotted daily from its first hourly run. Watch it through 26-27, then
+  decide. What has to be settled before it could carry NB¥ is in
+  `docs/franchise-finances-spec.md` § Fair value.

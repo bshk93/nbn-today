@@ -61,9 +61,10 @@
   let styleInjected = false;
 
   // 2K attributes run roughly 25–99; map 40→red through 99→green.
-  function attrHue(n) {
-    const t = Math.min(1, Math.max(0, (n - 40) / (99 - 40)));
-    return Math.round(t * 120);
+  // An attribute on the heat scale (components.css .ui-heat): 40 and below
+  // is the bottom, 99 the top.
+  function attrHeat(n) {
+    return Math.min(1, Math.max(0, (n - 40) / (99 - 40))).toFixed(3);
   }
 
   function injectStyle() {
@@ -116,8 +117,8 @@
       }
       .ratings-pop-label { color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       /* display:block matters — these are spans, and height is ignored on inline boxes. */
-      .ratings-pop-track { display: block; background: var(--bg-card); border-radius: 999px; height: 5px; overflow: hidden; }
-      .ratings-pop-fill { display: block; height: 100%; border-radius: 999px; }
+      .ratings-pop-track { display: block; background: var(--bg-card); height: 5px; overflow: hidden; }
+      .ratings-pop-fill { display: block; height: 100%; }
       .ratings-pop-val { font-size: 0.68rem; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
       /* Safety valve: on very short viewports (landscape phones) let it scroll
          rather than run off-screen where the bottom rows are unreachable. */
@@ -246,15 +247,17 @@
         track.className = 'ratings-pop-track';
         const fill = document.createElement('span');
         fill.className = 'ratings-pop-fill';
-        const hue = attrHue(isNaN(n) ? 0 : n);
+        const heat = attrHeat(isNaN(n) ? 0 : n);
         fill.style.width = `${Math.min(100, Math.max(0, (isNaN(n) ? 0 : n) / 99 * 100))}%`;
-        fill.style.background = `hsl(${hue}, 65%, 45%)`;
+        fill.classList.add('ui-heat-fill');
+        fill.style.setProperty('--heat', heat);
         track.appendChild(fill);
         row.appendChild(track);
 
         const v = document.createElement('span');
         v.className = 'ratings-pop-val';
-        v.style.color = `hsl(${hue}, 80%, 72%)`;
+        v.classList.add('ui-heat-ink');
+        v.style.setProperty('--heat', heat);
         v.textContent = val;
         row.appendChild(v);
 

@@ -139,7 +139,6 @@
         <p class="ui-subtitle" id="page-sub"></p>
       </div>
     </div>
-    <div class="ui-header-actions"><a class="ui-btn ui-btn--ghost ui-btn--sm" id="back" href="/players/">← Profile</a></div>
   </header>
   <nav id="player-tabs" style="display:none"></nav>
 
@@ -192,8 +191,10 @@
     const team = (teamMap || {})[slug] || '';
     document.title = `${name} Injuries - NBN`;
     document.getElementById('page-title').textContent = name;
-    document.getElementById('back').href = profile;
     document.getElementById('page-sub').innerHTML = `Injury history${team ? ` · <a href="/teams/${esc(team)}/">${esc(team)}</a>` : ''}`;
+    // The same team band as the profile (components.css § Player pages).
+    const header = document.getElementById('page-sub').closest('.ui-header');
+    if (header && team && !(bio && bio.retired)) header.dataset.team = team;
     if (bio && bio.photo_url) {
       const img = document.getElementById('photo');
       img.src = bio.photo_url;

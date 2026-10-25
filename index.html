@@ -368,13 +368,14 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "injuries" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
       :root #dash-stream-vod { grid-area: streamvod; }
       :root #dash-box-vod   { grid-area: boxvod; }
       :root #dash-feed      { grid-area: feed; }
+      :root #dash-tweets    { grid-area: tweets; }
       :root #dash-injuries  { grid-area: injuries; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
@@ -524,6 +525,21 @@
     .dash-otd-what b { color: var(--text-primary); font-weight: 600; }
     .dash-otd-sub { color: var(--text-muted); font-size: 0.78rem; }
     .dash-otd-what .dash-feed-team img { width: 14px; height: 14px; }
+
+    /* NBN Twitter: made-up accounts reacting to the latest game day. */
+    .dash-tw { display: grid; grid-template-columns: 2.25rem 1fr; gap: 0 0.6rem; padding: 0.6rem 0; }
+    .dash-tw + .dash-tw { border-top: 1px solid var(--border-subtle); }
+    .dash-tw-av { width: 2.25rem; height: 2.25rem; border-radius: var(--radius-sm); object-fit: cover; background: var(--bg-hover); }
+    .dash-tw-av--init { display: grid; place-items: center; background: var(--accent); color: var(--text-on-accent); font-weight: 700; font-size: var(--text-sm); }
+    .dash-tw-av--logo { object-fit: contain; padding: 0.2rem; }
+    .dash-tw-who { font-size: var(--text-xs); line-height: 1.3; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dash-tw-who b { color: var(--text-primary); }
+    .dash-tw-who span { color: var(--text-muted); }
+    .dash-tw-text { font-size: var(--text-sm); line-height: 1.45; color: var(--text-secondary); margin-top: 0.1rem; white-space: pre-line; overflow-wrap: anywhere; }
+    .dash-tw-foot { display: flex; gap: 1rem; margin-top: 0.3rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .dash-tw-foot a { color: var(--text-muted); }
+    .dash-tw-foot a:hover { color: var(--link); }
+    .dash-tw-more { margin-top: 0.4rem; }
     .dash-ms-what { flex-basis: 100%; padding-left: calc(18px + 0.35rem); font-size: var(--text-xs); color: var(--text-muted); }
 
     /* A slate row's time links to that game's preview. */
@@ -847,6 +863,7 @@
         <div class="dash-skel" style="width:80%"></div>
       </div>
       <!-- The current 2K injury list (GET /api/injuries). Hidden until a report is in. -->
+      <div class="dash-card" id="dash-tweets" hidden></div>
       <div class="dash-card" id="dash-injuries" hidden></div>
     </div>
 
@@ -2168,6 +2185,66 @@
             + `<span class="dash-otd-year">${esc(year(it.date))}</span><span class="dash-otd-what">${it.html}</span></${tag}>`;
         }).join('');
       $('dash-otd').hidden = false;
+    }).catch(() => {});
+
+    // ── NBN Twitter ───────────────────────────────────────────────────────
+    //
+    // Made-up accounts reacting to the latest game day, written by the box
+    // score run (nbn-api routers/tweets.py). Fiction, but the numbers in them
+    // are the box score's. A player's own account shows his face, a fan
+    // account its team's logo, anyone else an initial.
+    const TW_PAGE = 6;
+    const twCount = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'
+      : n >= 1e4 ? Math.round(n / 1e3) + 'K'
+      : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n);
+    const twRow = t => {
+      const av = t.slug
+        ? `<img class="dash-tw-av" src="/api/players/${encodeURIComponent(t.slug)}/headshot" alt="" loading="lazy">`
+        : t.team
+          ? `<img class="dash-tw-av dash-tw-av--logo" src="/logos/sm/logo-${esc(t.team.toLowerCase())}.webp" alt="">`
+          : `<span class="dash-tw-av dash-tw-av--init">${esc(t.name.replace(/[^A-Za-z0-9]/g, '').charAt(0).toUpperCase())}</span>`;
+      const game = t.teams && t.teams.length === 2
+        ? `<a href="/boxscores/?date=${encodeURIComponent(t.date)}&game=${esc(t.teams[0])}-${esc(t.teams[1])}">${esc(t.teams[0])} @ ${esc(t.teams[1])}</a>`
+        : '';
+      return `<div class="dash-tw">${av}<div style="min-width:0">`
+        + `<div class="dash-tw-who"><b>${esc(t.name)}</b> <span>@${esc(t.handle)} · ${esc(shortDate(t.date))}</span></div>`
+        + `<div class="dash-tw-text">${esc(t.text)}</div>`
+        + `<div class="dash-tw-foot"><span>${twCount(t.retweets || 0)} RTs</span>`
+        + `<span>${twCount(t.likes || 0)} likes</span>${game}</div></div></div>`;
+    };
+    jget(`/api/tweets?limit=${TW_PAGE}`).then(list => {
+      if (!list.length) return;
+      const card = $('dash-tweets');
+      card.innerHTML = '<div class="dash-card-title">NBN Twitter</div><div id="dash-tw-list"></div>';
+      const box = $('dash-tw-list');
+      let oldest = null;
+      const add = rows => {
+        box.insertAdjacentHTML('beforeend', rows.map(twRow).join(''));
+        // No cached headshot is a 404; fall back to the initial.
+        box.querySelectorAll('img.dash-tw-av:not([data-tw])').forEach(img => {
+          img.dataset.tw = '1';
+          img.onerror = () => {
+            const name = img.closest('.dash-tw').querySelector('.dash-tw-who b').textContent;
+            img.outerHTML = `<span class="dash-tw-av dash-tw-av--init">${esc(name.charAt(0).toUpperCase())}</span>`;
+          };
+        });
+        oldest = rows[rows.length - 1].id;
+        const more = card.querySelector('.dash-tw-more');
+        if (more) more.remove();
+        if (rows.length < TW_PAGE) return;
+        const btn = document.createElement('button');
+        btn.className = 'ui-btn ui-btn--ghost ui-btn--sm dash-tw-more';
+        btn.textContent = 'Older tweets';
+        btn.onclick = () => {
+          btn.disabled = true;
+          jget(`/api/tweets?limit=${TW_PAGE}&before=${oldest}`)
+            .then(r => r.length ? add(r) : btn.remove())
+            .catch(() => { btn.disabled = false; });
+        };
+        card.appendChild(btn);
+      };
+      add(list);
+      card.hidden = false;
     }).catch(() => {});
 
     // ── Band 1: signed-in only ────────────────────────────────────────────

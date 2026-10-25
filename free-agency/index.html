@@ -72,13 +72,9 @@
     td.ovr-cell { font-weight: 700; text-align: right; }
     td.salary-cell { text-align: right; }
 
-    td.cap-ufa        { background: hsl(45,  60%, 20%); color: hsl(45,  90%, 72%); }
-    td.cap-rfa        { background: hsl(25,  60%, 20%); color: hsl(25,  90%, 72%); }
-    td.cap-player-opt { background: hsl(120, 50%, 17%); color: hsl(120, 75%, 68%); }
-    td.cap-team-opt   { background: hsl(210, 55%, 20%); color: hsl(210, 75%, 70%); }
     td.cap-non-gtd    { color: var(--text-dim); text-decoration: line-through; }
-    td.cap-renounced  { background: hsl(270, 35%, 18%); color: hsl(270, 55%, 76%); font-style: italic; }
-    td.cap-unsigned   { background: hsl(200, 15%, 18%); color: hsl(200, 20%, 68%); font-style: italic; }
+    td.cap-renounced  { background: var(--bg-subtle); color: var(--text-muted); font-style: italic; text-decoration: line-through; }
+    td.cap-unsigned   { background: var(--bg-subtle); color: var(--text-muted); font-style: italic; }
 
     .cap-legend {
       display: flex;
@@ -316,9 +312,9 @@
       RENOUNCED: 'Renounced', UNSIGNED: 'Unsigned',
     };
     const CAP_SWATCH_COLORS = {
-      UFA: 'hsl(45,60%,35%)', RFA: 'hsl(25,60%,35%)',
-      PLAYER_OPT: 'hsl(120,50%,30%)', TEAM_OPT: 'hsl(210,55%,35%)', NON_GTD: 'var(--border)',
-      RENOUNCED: 'hsl(270,45%,45%)', UNSIGNED: 'hsl(200,15%,45%)',
+      UFA: 'var(--cap-ufa)', RFA: 'var(--cap-rfa)',
+      PLAYER_OPT: 'var(--cap-player-opt)', TEAM_OPT: 'var(--cap-team-opt)', NON_GTD: 'var(--border)',
+      RENOUNCED: 'var(--text-dim)', UNSIGNED: 'var(--text-muted)',
     };
 
     const COLS = [
@@ -417,8 +413,8 @@
             td.textContent = row.ovr || '—';
             if (row.ovr) {
               const t = Math.min(1, Math.max(0, (parseFloat(row.ovr) - OVR_MIN) / (OVR_MAX - OVR_MIN)));
-              td.style.background = `hsl(${Math.round(t * 120)},55%,18%)`;
-              td.style.color      = `hsl(${Math.round(t * 120)},80%,72%)`;
+              td.classList.add('ui-heat');
+              td.style.setProperty('--heat', t.toFixed(3));
             }
           } else if (col.key === 'status') {
             td.textContent = row.status;

@@ -183,6 +183,7 @@
   <div class="mkt-summary" id="market-summary">
     <div class="mkt-summary-loading">Loading market summary…</div>
   </div>
+  <div id="daily-moves"></div>
 
   <div class="tabs ui-tabs" role="tablist">
     <button class="tab-btn ui-tab active" onclick="switchTab('market', this)">Market</button>
@@ -289,6 +290,7 @@
 </div>
 
 <script src="/nav.js"></script>
+<script src="/invest/daily-moves.js"></script>
 <script>
 const API = '/api';
 const TOKEN_KEY = 'nbn_token';
@@ -411,6 +413,27 @@ async function init() {
   }
 
   await loadAll();
+  loadDailyMoves();
+}
+
+// What every team moved on each game day (invest/daily-moves.js). Price only
+// changes on a game, so each move carries that game's result.
+async function loadDailyMoves() {
+  const el = document.getElementById('daily-moves');
+  try {
+    const d = await fetch(`${API}/invest/daily`).then(r => r.json());
+    const teams = {};
+    for (const [t, byDay] of Object.entries(d.teams || {})) {
+      teams[t] = {};
+      for (const [day, m] of Object.entries(byDay)) {
+        const res = m.diff > 0 ? `W by ${m.diff}` : m.diff < 0 ? `L by ${-m.diff}` : 'tie';
+        teams[t][day] = { pct: m.pct, note: `${res} v ${m.opp}${m.playoff ? ' (playoffs)' : ''}` };
+      }
+    }
+    DailyMoves.mount(el, { title: `Daily moves · ${d.season || ''}`, days: d.days || [], teams });
+  } catch {
+    el.innerHTML = '';
+  }
 }
 
 async function loadAll() {

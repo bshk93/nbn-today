@@ -88,6 +88,7 @@ PAGES = {
  '/inbox/': (None, 'Your NBN notifications.'),
  '/invest/': (None, 'Buy and sell shares in NBN teams. Prices move with game results.'),
  '/invest/preview/': (None, 'How the NBN Wall Street pricing algorithm values a player.'),
+ '/invest/fair/': (None, 'A discounted-cash-flow price for every NBN franchise, built on the Front Office Ledger.'),
  '/join/': (None, 'How to join the NBN sim league — what a GM does and how to get a team.'),
  '/legal/': (None, 'NBN disciplinary record — filings, findings and penalties.'),
  '/legal/nothing-but-net-sim-league-v-jdbeats/': (None, 'Disciplinary findings in NBN Sim League v. JDBeats.'),

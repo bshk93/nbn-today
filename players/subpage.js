@@ -47,8 +47,10 @@
 
       document.title = `${name} ${label} - NBN`;
       document.getElementById('page-title').textContent = name;
-      document.getElementById('back').href = profile;
       document.getElementById('page-sub').innerHTML = `${esc(label)}${team ? ` · <a href="/teams/${esc(team)}/">${esc(team)}</a>` : ''}`;
+      // The same team band as the profile (components.css § Player pages).
+      const header = document.getElementById('page-title').closest('.ui-header');
+      if (header && team && !(bio && bio.retired)) header.dataset.team = team;
       if (bio && bio.photo_url) {
         const img = document.getElementById('photo');
         img.src = bio.photo_url;
