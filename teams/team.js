@@ -669,6 +669,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-up { color: var(--link) !important; }
   .sched-rec { width: 4rem; }
   .sched-tag { margin-left: 0.35rem; font-size: 0.7rem; }
+  .sched-tag-stream { font-size: var(--text-base); color: var(--accent-light); }
   .sched-tag-po { color: var(--danger); font-weight: 600; }
   tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
@@ -1399,7 +1400,7 @@ async function renderSchedule(allGames, season) {
     }
     const { home, opp } = side(g);
     const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
-    const stream = g.stream ? ' <span class="sched-tag" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
+    const stream = g.stream ? ' <span class="sched-tag sched-tag-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
     let res;
     if (g.result) {
       const [us, them] = ours(g.result);
