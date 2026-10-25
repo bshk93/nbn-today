@@ -462,7 +462,11 @@ const coachingConfigReady = new Promise(resolve => {
   }
   td.right { text-align: right; font-variant-numeric: tabular-nums; }
   td.muted { color: var(--text-muted); }
-  .stat-line-season { color: var(--text-muted); font-size: var(--text-xs); }
+  .stat-line { display: inline-flex; align-items: baseline; gap: var(--space-2); white-space: nowrap; }
+  .stat-line-item { display: inline-flex; align-items: baseline; gap: var(--space-1); }
+  .stat-line-val { font-variant-numeric: tabular-nums; }
+  .stat-line-lbl, .stat-line-season { color: var(--text-muted); font-size: var(--text-xs); }
+  .stat-line-gmsc { padding-left: var(--space-2); border-left: 1px solid var(--border); }
   td.bold { font-weight: 600; color: var(--text-primary); }
   td a { color: var(--link); text-decoration: none; }
   td a:hover { text-decoration: underline; }
@@ -2372,14 +2376,31 @@ const RATING_HEAT_MIN = 25, RATING_HEAT_MAX = 99;
 const STATS_COLS = [
   { key: '_statSeason', label: 'Season', cls: 'muted' },
   { key: '_statG',      label: 'G',      cls: 'right' },
+  // Games started: recorded from 26-27 only, and only for teams whose
+  // starters were entered (GET /api/game-starters/counts). Unknown is '—'.
+  { key: '_statGs',     label: 'GS',     cls: 'right muted', full: 'Games started' },
   { key: '_statMpg',    label: 'MPG',    cls: 'right muted' },
   { key: '_statPpg',    label: 'PPG',    cls: 'right' },
   { key: '_statRpg',    label: 'RPG',    cls: 'right' },
   { key: '_statApg',    label: 'APG',    cls: 'right' },
   { key: '_statSpg',    label: 'SPG',    cls: 'right muted' },
   { key: '_statBpg',    label: 'BPG',    cls: 'right muted' },
+  { key: '_statTopg',   label: 'TOPG',   cls: 'right muted' },
+  { key: '_statFgPct',  label: 'FG%',    cls: 'right div-left' },
+  { key: '_stat3pPct',  label: '3P%',    cls: 'right' },
+  { key: '_statFtPct',  label: 'FT%',    cls: 'right' },
   { key: '_stat3pmpg',  label: '3PM/G',  cls: 'right muted' },
-  { key: '_statGmscpg', label: 'GMSC/G', cls: 'right' },
+  { key: '_statGmscpg', label: 'GMSC/G', cls: 'right div-left' },
+];
+
+// The Overview mode's one-cell stat line: a per-game figure per stat, in this order.
+const STAT_LINE = [
+  { key: 'pts',  label: 'PTS' },
+  { key: 'reb',  label: 'REB' },
+  { key: 'ast',  label: 'AST' },
+  { key: 'stl',  label: 'STL' },
+  { key: 'blk',  label: 'BLK' },
+  { key: 'gmsc', label: 'GMSC' },
 ];
 
 function computeRatingFields(attrSnap) {
@@ -2448,23 +2469,35 @@ function computeAttrTotals(rows, biosData, attributesData, currentOvr, season) {
 
 function computeStatFields(seasonRow) {
   if (!seasonRow) {
-    return { _statSeason: '—', _statG: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _stat3pmpg: '—', _statGmscpg: '—', _statLine: null };
+    return { _statSeason: '—', _statG: '—', _statGs: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _statTopg: '—', _statFgPct: '—', _stat3pPct: '—', _statFtPct: '—', _stat3pmpg: '—', _statGmscpg: '—', _statLine: null };
   }
   const g = Math.max(1, parseInt(seasonRow.G) || 1);
   const pg = k => Math.round((parseFloat(seasonRow[k]) || 0) / g * 10) / 10;
+  const pct = (m, a) => {
+    const att = parseFloat(seasonRow[a]) || 0;
+    return att ? ((parseFloat(seasonRow[m]) || 0) / att * 100).toFixed(1) : '—';
+  };
   return {
     _statSeason: seasonRow.SEASON || '—',
     _statG:      seasonRow.G ?? '0',
+    _statGs:     seasonRow._GS ?? '—',
     _statMpg:    pg('MIN'),
     _statPpg:    pg('PTS'),
     _statRpg:    pg('REB'),
     _statApg:    pg('AST'),
     _statSpg:    pg('STL'),
     _statBpg:    pg('BLK'),
+    _statTopg:   pg('TOV'),
+    _statFgPct:  pct('FGM', 'FGA'),
+    _stat3pPct:  pct('3PM', '3PA'),
+    _statFtPct:  pct('FTM', 'FTA'),
     _stat3pmpg:  pg('3PM'),
     _statGmscpg: pg('GMSC'),
     // The Overview mode's one-cell summary of the Stats mode.
-    _statLine:   { pts: pg('PTS'), reb: pg('REB'), ast: pg('AST'), season: seasonRow.SEASON || '', g: seasonRow.G ?? '0' },
+    _statLine:   {
+      pts: pg('PTS'), reb: pg('REB'), ast: pg('AST'), stl: pg('STL'), blk: pg('BLK'), gmsc: pg('GMSC'),
+      season: seasonRow.SEASON || '', g: seasonRow.G ?? '0',
+    },
   };
 }
 
@@ -2716,7 +2749,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     // Overview: one column summing up each of the other modes — OVR (above)
     // for Ratings, the stat line for Stats, the shorthand for Contracts.
     modeCols = [
-      { key: '_statLine', label: 'Stats', full: 'Points / rebounds / assists per game, latest season played', cls: 'right nosum div-left' },
+      { key: '_statLine', label: 'Stats', full: 'Per game, latest season played', cls: 'nosum div-left' },
       { key: '_contract', label: 'Contract', cls: 'right nosum div-left' },
     ];
   } else {
@@ -2849,15 +2882,28 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           td.textContent = '—';
           td.classList.add('muted');
         } else {
-          const fmt = n => n.toFixed(1);
-          td.textContent = `${fmt(sl.pts)} / ${fmt(sl.reb)} / ${fmt(sl.ast)}`;
+          const line = document.createElement('span');
+          line.className = 'stat-line';
+          STAT_LINE.forEach(({ key, label }) => {
+            const item = document.createElement('span');
+            item.className = 'stat-line-item' + (key === 'gmsc' ? ' stat-line-gmsc' : '');
+            const v = document.createElement('span');
+            v.className = 'stat-line-val';
+            v.textContent = sl[key].toFixed(1);
+            const l = document.createElement('span');
+            l.className = 'stat-line-lbl';
+            l.textContent = label;
+            item.append(v, l);
+            line.appendChild(item);
+          });
           // A line from an earlier season is labelled, so it isn't read as this year's.
           if (sl.season && sl.season !== curYr) {
             const tag = document.createElement('span');
             tag.className = 'stat-line-season';
-            tag.textContent = ` ${sl.season}`;
-            td.appendChild(tag);
+            tag.textContent = sl.season;
+            line.appendChild(tag);
           }
+          td.appendChild(line);
           attachTooltip(td, `${sl.season} · ${sl.g} G`);
         }
       } else if (col.key === '_contract') {
@@ -8181,18 +8227,44 @@ function buildTeamRadar(abbr, allSeasons, standingsRows) {
   return Radar.withSeasons(seasons, buildSvg);
 }
 
-// slug -> that player's most recent player_seasons.csv row (any team), used
-// by the roster table's Stats mode. Season strings ("24-25") sort correctly
-// with plain string comparison, same convention used for the Historical
-// Rosters season dropdown below.
-function computeLatestSeasonBySlug(allSeasons) {
+// slug -> that player's most recent season (any team), used by the roster
+// table's Stats and Overview modes. A player traded mid-season has one
+// player_seasons.csv row per team; those are summed into one line, as the
+// Stats mode would otherwise show whichever stint came first. Season strings
+// ("24-25") sort correctly with plain string comparison, same convention used
+// for the Historical Rosters season dropdown below.
+//
+// `starts` is GET /api/game-starters/counts (one season). It stamps `_GS` on a
+// row from that season, counting only teams whose starters were recorded;
+// otherwise `_GS` is left unset and reads as unknown.
+const STAT_SUM_KEYS = ['G', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF',
+  'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'GMSC'];
+function computeLatestSeasonBySlug(allSeasons, starts = null) {
   const bySlug = {};
   allSeasons.forEach(r => {
     const slug = (r.SLUG || '').trim();
     if (!slug) return;
     const existing = bySlug[slug];
-    if (!existing || r.SEASON > existing.SEASON) bySlug[slug] = r;
+    if (!existing || r.SEASON > existing.SEASON) {
+      bySlug[slug] = { ...r, _teams: [r.TEAM] };
+    } else if (r.SEASON === existing.SEASON) {
+      STAT_SUM_KEYS.forEach(k => {
+        existing[k] = String((parseFloat(existing[k]) || 0) + (parseFloat(r[k]) || 0));
+      });
+      existing._teams.push(r.TEAM);
+      existing.TEAM = existing._teams.join('/');
+    }
   });
+  if (starts && starts.season) {
+    const known = starts.team_games_known || {};
+    Object.entries(bySlug).forEach(([slug, row]) => {
+      if (row.SEASON !== starts.season) return;
+      const teams = row._teams.filter(t => known[t]);
+      if (!teams.length) return;
+      const byTeam = ((starts.players || {})[slug] || {}).by_team || {};
+      row._GS = teams.reduce((n, t) => n + (byTeam[t] || 0), 0);
+    });
+  }
   return bySlug;
 }
 
@@ -8255,7 +8327,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -8281,6 +8353,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/coaching-settings', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : {}),
     fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/rotations').then(r => r.ok ? r.json() : {}),
+    fetch('/api/game-starters/counts').then(r => r.ok ? r.json() : null),
   ]);
 
   await namesReady;
@@ -8435,7 +8508,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   }
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
-  const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons);
+  const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons,
+    gsr.status === 'fulfilled' ? gsr.value : null);
   TWO_WAY_GAMES = computeSeasonGames(allSeasons, currentSeasonYr());
 
   {
