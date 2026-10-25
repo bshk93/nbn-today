@@ -23,6 +23,7 @@ What is counted, per file (html/js/css, excluding vendor/, tests/, build/ and
 the 30 generated team-page shells):
 
   font_size  a literal size (`font-size: 13px`) instead of a --text-* token
+             (em sizes, relative to their context, are not counted)
   hex        a literal colour; css/theme.css and the generated
              css/team-colors.css are where colours are *meant* to live, so
              they are not counted, and neither is <meta name="theme-color">,
@@ -49,7 +50,9 @@ THEME_META = re.compile(r'<meta name="theme-color"[^>]*>')
 MASK = re.compile(r'(?:-webkit-)?mask(?:-image)?\s*:[^;]*;')
 
 METRICS = {
-    'font_size': re.compile(r'font-size\s*:\s*[0-9.]+(?:px|rem|em)\b'),
+    # A literal size in px or rem. An em size is relative to its context, which
+    # is itself set from the scale, so it isn't counted.
+    'font_size': re.compile(r'font-size\s*:\s*[0-9.]+(?:px|rem)\b'),
     'hex':       re.compile(r'#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![\w-])'),
     # A literal corner. 50% is a circle (an avatar, a dot), a shape rather
     # than a corner style, so it isn't counted.

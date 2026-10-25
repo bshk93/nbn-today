@@ -15,7 +15,7 @@
 @import url("/css/sidebar.css");
 
 /* Nav */
-.nav { margin-bottom: var(--space-4); font-size: .875rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.nav { margin-bottom: var(--space-4); font-size: var(--text-base); color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 /* The line above the title, in the display face: the section a page sits in
    ("SEASON", from NAV_SECTIONS — _initNav), or the page's own back link or
    breadcrumb ("← TEAMS", "HOME / PLAYERS / STEPHEN CURRY"). Same type on
@@ -89,7 +89,7 @@
 .inbox-badge {
   display: none; position: absolute; top: -0.4rem; right: -0.4rem;
   background: var(--gold-chip-border); color: var(--bg-page);
-  font-size: 0.6rem; font-weight: 700; line-height: 1; letter-spacing: 0;
+  font-size: var(--text-xs); font-weight: 700; line-height: 1; letter-spacing: 0;
   border-radius: var(--radius-sm); padding: 0.15rem 0.32rem; min-width: 0.9rem;
 }
 .inbox-badge.show { display: block; }
@@ -97,15 +97,15 @@
 /* Search overlay */
 .search-overlay { position: fixed; inset: 0; background: var(--overlay-scrim); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 9999; }
 .search-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); width: min(620px, 90vw); overflow: hidden; box-shadow: var(--shadow-overlay); }
-.search-input { width: 100%; padding: 0.9rem 1.25rem; font-size: 1rem; background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-primary); outline: none; font-family: inherit; }
+.search-input { width: 100%; padding: 0.9rem 1.25rem; font-size: var(--text-base); background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text-primary); outline: none; font-family: inherit; }
 .search-results { max-height: 55vh; overflow-y: auto; }
 .search-result { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; text-decoration: none; color: var(--text-primary); border-bottom: 1px solid var(--bg-page); }
 .search-result:hover, .search-result.active { background: var(--border); }
-.search-result-icon { font-size: 1rem; flex-shrink: 0; }
-.search-result-name { font-size: 0.9rem; font-weight: 600; }
-.search-result-meta { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; padding-left: 0.75rem; }
-.search-hint { padding: 0.4rem 1.25rem; font-size: 0.7rem; color: var(--text-dim); border-top: 1px solid var(--border); }
-.search-empty { padding: 1rem 1.25rem; font-size: 0.85rem; color: var(--text-muted); }
+.search-result-icon { font-size: var(--text-base); flex-shrink: 0; }
+.search-result-name { font-size: var(--text-base); font-weight: 600; }
+.search-result-meta { font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; white-space: nowrap; padding-left: 0.75rem; }
+.search-hint { padding: 0.4rem 1.25rem; font-size: var(--text-xs); color: var(--text-dim); border-top: 1px solid var(--border); }
+.search-empty { padding: 1rem 1.25rem; font-size: var(--text-sm); color: var(--text-muted); }
 
 /* Theme list rows — built by _themeMenuItems in nav.js, shown in the sidebar's account menu */
 .theme-menu {
@@ -119,14 +119,14 @@
 .theme-menu-item {
   display: flex; align-items: center; gap: 0.55rem;
   padding: 0.45rem 0.6rem; border-radius: var(--radius-sm);
-  font-size: 0.82rem; color: var(--text-secondary); cursor: pointer;
+  font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer;
 }
 .theme-menu-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .theme-menu-item.active { color: var(--text-primary); font-weight: 600; }
-.theme-menu-icon { font-size: 0.95rem; width: 1.35rem; text-align: center; flex-shrink: 0; }
+.theme-menu-icon { font-size: var(--text-base); width: 1.35rem; text-align: center; flex-shrink: 0; }
 .theme-logo-icon { height: 1.35rem; width: 1.35rem; object-fit: contain; }
 .theme-menu-label { flex: 1; white-space: nowrap; }
-.theme-menu-check { font-size: 0.75rem; color: var(--accent-light); flex-shrink: 0; opacity: 0; }
+.theme-menu-check { font-size: var(--text-xs); color: var(--accent-light); flex-shrink: 0; opacity: 0; }
 .theme-menu-item.active .theme-menu-check { opacity: 1; }
 /* Locked (not yet unlocked with NB¥). Dimmed but still clickable — clicking
    is how you buy it — so this is not `pointer-events: none`, and the price
@@ -135,7 +135,7 @@
 .theme-menu-item.locked .theme-menu-icon { opacity: 0.55; }
 .theme-menu-item.locked:hover { color: var(--text-secondary); }
 .theme-menu-price {
-  font-size: 0.7rem; color: var(--gold); background: var(--gold-bg);
+  font-size: var(--text-xs); color: var(--gold); background: var(--gold-bg);
   border: 1px solid var(--gold-chip-border); border-radius: var(--radius-sm);
   padding: 0.05rem 0.4rem; white-space: nowrap; flex-shrink: 0;
 }

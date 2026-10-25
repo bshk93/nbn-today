@@ -559,7 +559,7 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
    rules they replace (e.g. .profile-name), which load later. */
 :root :is(.ui-title, .team-header h1, .profile-name) {
   font-family: var(--font-display);
-  font-size: 2.75rem;
+  font-size: var(--text-2xl);
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0.005em;
@@ -571,9 +571,9 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
-:root .team-score { font-size: 1.6rem; }
+:root .team-score { font-size: var(--text-lg); }
 @media (max-width: 600px) {
-  :root :is(.ui-title, .team-header h1, .profile-name) { font-size: 2.25rem; }
+  :root :is(.ui-title, .team-header h1, .profile-name) { font-size: var(--text-xl); }
 }
 
 /* ── Team pages in team colours ─────────────────────────────────────────── */
@@ -608,7 +608,7 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
 :root[data-team] .team-header h1 {
   color: white;
   text-align: left;
-  font-size: 3.25rem;
+  font-size: var(--text-2xl);
 }
 /* The name and its one line of franchise facts (renderHeaderFacts). */
 .team-header-facts:empty { display: none; }
@@ -643,7 +643,7 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
   :root[data-team] .team-header-facts .thf b { font-size: var(--text-md); }
   .ui-header[data-team] .header-main { align-items: flex-start; }
 
-  :root[data-team] .team-header h1 { font-size: 1.75rem; }
+  :root[data-team] .team-header h1 { font-size: var(--text-xl); }
   :root[data-team] .team-header-facts { font-size: var(--text-xs); }
 }
 

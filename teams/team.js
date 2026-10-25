@@ -251,10 +251,10 @@ const coachingConfigReady = new Promise(resolve => {
     display: flex; align-items: center; justify-content: center;
     width: 2.5rem; height: 2.5rem; border-radius: 50%;
     background: transparent; border: 1px solid var(--border);
-    color: var(--text-muted); font-size: 1.5rem; cursor: pointer;
+    color: var(--text-muted); font-size: var(--text-lg); cursor: pointer;
     text-decoration: none; flex-shrink: 0; line-height: 1;
   }
-  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: 0.75rem; font-weight: 500; cursor: pointer; }
+  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; }
   .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   /* On the team-colour band (components.css § Team pages): light on colour. */
   :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
@@ -277,8 +277,8 @@ const coachingConfigReady = new Promise(resolve => {
      each) — same bordered-card shape as .exceptions-card/.ch-card below. */
   .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
   .settings-subsection + .settings-subsection { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid var(--border-subtle); }
-  .settings-subtitle { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
-  .settings-subsub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.65rem; }
+  .settings-subtitle { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .settings-subsub { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.65rem; }
   .settings-card .table-wrap { border: none; padding: 0; }
   /* Coaching Profile's group/pool cards default to a plain stack (mobile,
      and narrow desktop windows). Wide screens switch to a masonry-style
@@ -300,20 +300,20 @@ const coachingConfigReady = new Promise(resolve => {
     .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
   }
   .settings-card.note-card { display: block; margin-bottom: 1rem; }
-  .sn-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.85rem; color: var(--text-primary); }
-  .sn-meta { margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-muted); }
+  .sn-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); color: var(--text-primary); }
+  .sn-meta { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
   .sn-meta.open { color: var(--gold); }
   .sn-meta.clear { color: var(--success-light); }
   .sn-edit textarea { width: 100%; min-height: 5rem; resize: vertical; }
-  .sn-count { font-size: 0.72rem; color: var(--text-dim); margin-right: auto; }
+  .sn-count { font-size: var(--text-xs); color: var(--text-dim); margin-right: auto; }
   .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 1.9rem; margin-bottom: 0.5rem; }
   .settings-head .settings-subtitle { margin-bottom: 0; }
   .settings-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
-  .ts-status { font-size: 0.75rem; color: var(--text-muted); }
+  .ts-status { font-size: var(--text-xs); color: var(--text-muted); }
 
   /* Rotation table (setupTeamSettingsTab). */
   .ts-meter { margin-bottom: 0.75rem; }
-  .ts-meter-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+  .ts-meter-label { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.3rem; }
   .ts-meter-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); }
   .ts-meter.ok .ts-meter-val { color: var(--success-light); }
   .ts-meter.over .ts-meter-val { color: var(--danger-light); }
@@ -321,8 +321,8 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-meter-fill { height: 100%; background: var(--gold); transition: width 0.15s; }
   .ts-meter.ok .ts-meter-fill { background: var(--success-light); }
   .ts-meter.over .ts-meter-fill { background: var(--danger-light); }
-  .ts-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-  .ts-table th { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+  .ts-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  .ts-table th { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
   .ts-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
   .ts-table tbody tr:last-child td { border-bottom: none; }
   /* Classes, not nth-child: the Inactive line is a row of its own, so a
@@ -330,14 +330,14 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-table tbody tr.ts-last-starter td { border-bottom: 2px solid var(--border); }
   .ts-table tbody tr.ts-starter .ts-slot { color: var(--accent-light); font-weight: 700; }
   .ts-table tbody tr.ts-inactive { opacity: 0.55; }
-  .ts-table tbody tr.ts-divider td { background: var(--bg-subtle); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding-block: 0.3rem; }
+  .ts-table tbody tr.ts-divider td { background: var(--bg-subtle); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding-block: 0.3rem; }
   .ts-slot { width: 2.6rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
   .ts-name { font-weight: 600; }
   .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
   .ts-name .ts-injury { margin-left: 0.4rem; font-weight: 600; white-space: nowrap; }
-  .ts-2w-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--gold); }
-  .ts-illegal-note { margin-bottom: 0.75rem; font-size: 0.78rem; color: var(--danger-light); }
+  .ts-2w-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--gold); }
+  .ts-illegal-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--danger-light); }
   .ts-table tbody tr.ts-illegal td { background: var(--danger-bg); }
   .ts-table tbody tr.ts-illegal .ts-pos { color: var(--danger-light); font-weight: 700; }
   .ts-name a { color: var(--text-primary); text-decoration: none; }
@@ -351,25 +351,25 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
   .ts-minval { display: inline-block; min-width: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
   .ts-minval.dim { color: var(--text-dim); font-weight: 400; }
-  .ts-res-tag { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.35rem; }
-  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: 0.78rem; border-radius: var(--radius-sm); }
+  .ts-res-tag { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.35rem; }
+  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: var(--text-xs); border-radius: var(--radius-sm); }
   .ts-num-input { width: 2.2rem; text-align: center; }
   .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
   .ts-sec-select { width: auto; color: var(--text-secondary); }
   .ts-sec-select.ts-sec-illegal { color: var(--danger-light); border-color: var(--danger-light); }
   .ts-pos2.ts-pos2-illegal { color: var(--danger-light); font-weight: 700; }
   .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
-  .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.75rem; cursor: pointer; user-select: none; }
-  .ts-pin-mark { margin-left: 0.25rem; font-size: 0.75rem; color: var(--text-muted); }
-  .ts-pos-wait { margin-left: 0.3rem; font-size: 0.68rem; color: var(--gold); }
+  .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: var(--text-xs); cursor: pointer; user-select: none; }
+  .ts-pin-mark { margin-left: 0.25rem; font-size: var(--text-xs); color: var(--text-muted); }
+  .ts-pos-wait { margin-left: 0.3rem; font-size: var(--text-xs); color: var(--gold); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
   .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-  .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: 0.85rem; cursor: pointer; padding: 0; }
+  .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: var(--text-sm); cursor: pointer; padding: 0; }
   .ts-stepper button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
-  .ts-stepper input { width: 2.2rem; border: none; border-inline: 1px solid var(--border); border-radius: 0; text-align: center; font-size: 0.78rem; padding: 0; -moz-appearance: textfield; }
+  .ts-stepper input { width: 2.2rem; border: none; border-inline: 1px solid var(--border); border-radius: 0; text-align: center; font-size: var(--text-xs); padding: 0; -moz-appearance: textfield; }
   .ts-stepper input::-webkit-outer-spin-button, .ts-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .ts-min-edit:has(.ts-res input:checked) .ts-stepper { opacity: 0.35; }
-  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
+  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
   .ts-res input { position: absolute; opacity: 0; pointer-events: none; }
   .ts-res:has(input:checked) { color: var(--gold); border-color: var(--gold-border); background: var(--gold-bg); }
   .ts-res:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -383,40 +383,40 @@ const coachingConfigReady = new Promise(resolve => {
   .drag-handle {
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.6rem; height: 1.6rem; cursor: grab; color: var(--text-dim);
-    font-size: 1rem; user-select: none; touch-action: none;
+    font-size: var(--text-base); user-select: none; touch-action: none;
   }
   .drag-handle:active { cursor: grabbing; }
   #team-settings-wrap tr.dragging { opacity: 0.4; }
-  .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+  .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
     background: var(--bg-card); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 0.9rem 1rem;
   }
   .rec-stat {
-    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em;
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem;
   }
   .rec-top { display: flex; align-items: baseline; gap: 0.5rem; }
   .rec-top .val {
-    font-size: 1.75rem; font-weight: 700; color: var(--accent-light);
+    font-size: var(--text-xl); font-weight: 700; color: var(--accent-light);
     font-variant-numeric: tabular-nums; line-height: 1;
   }
-  .rec-top .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; font-weight: 600; }
-  .rec-when { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem; }
+  .rec-top .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 600; }
+  .rec-when { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; }
   .rec-rest { margin-top: 0.6rem; border-top: 1px solid var(--border-subtle); padding-top: 0.4rem; }
-  .rec-row { display: flex; gap: 0.5rem; font-size: 0.75rem; padding: 0.15rem 0; align-items: baseline; }
+  .rec-row { display: flex; gap: 0.5rem; font-size: var(--text-xs); padding: 0.15rem 0; align-items: baseline; }
   .rec-row .val { font-variant-numeric: tabular-nums; color: var(--text-secondary); min-width: 2.6rem; }
   .rec-row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rec-row .when { margin-left: auto; color: var(--text-dim); white-space: nowrap; font-size: 0.7rem; }
+  .rec-row .when { margin-left: auto; color: var(--text-dim); white-space: nowrap; font-size: var(--text-xs); }
   .rec-po { color: var(--gold); font-weight: 700; }
-  .rec-group-title { font-size: 0.85rem; font-weight: 700; margin: 0 0 0.5rem; }
+  .rec-group-title { font-size: var(--text-sm); font-weight: 700; margin: 0 0 0.5rem; }
   .rec-group-title:not(:first-child) { margin-top: 1.25rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--text-base); white-space: nowrap; }
   thead th {
     padding: 0.7rem 1rem;
     text-align: left;
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -427,7 +427,7 @@ const coachingConfigReady = new Promise(resolve => {
   }
   thead th:hover { color: var(--text-secondary); }
   thead th[data-active="true"] { color: var(--accent-light); }
-  thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: 0.65rem; }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: var(--text-xs); }
   thead th[data-active="true"] .sort-arrow { opacity: 1; }
   thead th.right { text-align: right; }
   thead th.center { text-align: center; }
@@ -438,7 +438,7 @@ const coachingConfigReady = new Promise(resolve => {
   tr.personnel-active:hover td { background: var(--success-bg-hover); }
   tr.personnel-former { opacity: 0.45; }
   tr.personnel-former:hover { opacity: 0.8; }
-  tr.personnel-divider td { padding: 0.2rem 1rem; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); background: var(--bg-page); border-top: 1px solid var(--border-subtle); }
+  tr.personnel-divider td { padding: 0.2rem 1rem; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); background: var(--bg-page); border-top: 1px solid var(--border-subtle); }
   .cur-role { color: var(--success-light); }
   .cur-since { color: var(--success-light); }
   td { padding: 0.65rem 1rem; color: var(--text-secondary); }
@@ -473,7 +473,7 @@ const coachingConfigReady = new Promise(resolve => {
   .badge {
     display: inline-block;
     margin-left: 0.35rem;
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     cursor: pointer;
     vertical-align: middle;
     color: var(--gold);
@@ -516,9 +516,9 @@ const coachingConfigReady = new Promise(resolve => {
     transition: filter 0.1s;
   }
   .tl-card:hover { filter: brightness(1.15); }
-  .tl-season { display: block; font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.03em; }
-  .tl-wins   { display: block; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1; margin: 0.2rem 0 0.15rem; }
-  .tl-seed   { display: block; font-size: 0.62rem; color: var(--text-muted); }
+  .tl-season { display: block; font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+  .tl-wins   { display: block; font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); line-height: 1; margin: 0.2rem 0 0.15rem; }
+  .tl-seed   { display: block; font-size: var(--text-xs); color: var(--text-muted); }
   .tl-champion   { border-color: var(--champion-border); background: var(--champion-bg); }
   .tl-champion .tl-wins { color: var(--gold); }
   .tl-runnerup   { border-color: var(--runnerup-border); background: var(--runnerup-bg); }
@@ -530,7 +530,7 @@ const coachingConfigReady = new Promise(resolve => {
   .subheader td  {
     background: var(--bg-subtle);
     color: var(--text-muted);
-    font-size: 0.65rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -543,7 +543,7 @@ const coachingConfigReady = new Promise(resolve => {
   .row-erc td    { opacity: 0.7; font-style: italic; color: var(--warning); }
   .row-empty-slot td { opacity: 0.5; font-style: italic; }
   td.depth-slot, th.depth-slot {
-    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+    font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em;
     color: var(--text-muted); width: 2.5rem;
   }
   .picks-acquired td   { color: var(--link); }
@@ -556,7 +556,7 @@ const coachingConfigReady = new Promise(resolve => {
     flex-wrap: wrap;
     gap: 0.4rem 1.25rem;
     padding: 0.6rem 1rem 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     border-top: 1px solid var(--border-subtle);
   }
@@ -595,9 +595,9 @@ const coachingConfigReady = new Promise(resolve => {
     border-radius: var(--radius-sm);
     gap: 0.2rem;
   }
-  .retired-no   { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
-  .retired-name { font-size: 0.62rem; color: var(--text-muted); text-align: center; line-height: 1.3; }
-  .retired-date { font-size: 0.58rem; color: var(--text-dim); margin-top: 0.15rem; }
+  .retired-no   { font-size: var(--text-xl); font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
+  .retired-name { font-size: var(--text-xs); color: var(--text-muted); text-align: center; line-height: 1.3; }
+  .retired-date { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.15rem; }
   td.cap-non-gtd    { color: var(--text-dim); }
   td.cell-selected { position: relative; box-shadow: inset 0 0 0 2px var(--accent); }
   td.cell-selected::after {
@@ -607,7 +607,7 @@ const coachingConfigReady = new Promise(resolve => {
   .range-sum-bar {
     display: none; position: fixed; right: 1.25rem; bottom: 1.25rem;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 0.5rem 1rem; font-size: 0.82rem; color: var(--text-secondary);
+    padding: 0.5rem 1rem; font-size: var(--text-sm); color: var(--text-secondary);
     box-shadow: var(--shadow-overlay); z-index: 500;
     pointer-events: none; white-space: nowrap;
   }
@@ -617,7 +617,7 @@ const coachingConfigReady = new Promise(resolve => {
     flex-wrap: wrap;
     gap: 0.4rem 1.25rem;
     padding: 0.6rem 1rem 0.75rem;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     border-top: 1px solid var(--border-subtle);
   }
@@ -628,42 +628,42 @@ const coachingConfigReady = new Promise(resolve => {
     border-radius: var(--radius-sm);
     flex-shrink: 0;
   }
-  tfoot tr td { font-size: 0.8rem; padding: 0.3rem 0.6rem; color: var(--text-muted); border-top: none; }
+  tfoot tr td { font-size: var(--text-sm); padding: 0.3rem 0.6rem; color: var(--text-muted); border-top: none; }
   tfoot tr.tfoot-divider td { border-top: 1px solid var(--border); padding-top: 0.45rem; }
   tfoot tr.tfoot-total td { font-weight: 700; color: var(--text-secondary); }
   tfoot tr.tfoot-cap td { color: var(--text-muted); }
   tfoot tr.tfoot-cap.over .tfoot-diff { color: var(--danger); }
   tfoot tr.tfoot-cap.under .tfoot-diff { color: var(--success); }
   tfoot td.tfoot-label { color: var(--text-muted); }
-  tfoot td.tfoot-count { color: var(--border); font-size: 0.72rem; text-align: right; }
+  tfoot td.tfoot-count { color: var(--border); font-size: var(--text-xs); text-align: right; }
   tfoot tr.tfoot-hardcap td { padding-top: 0.4rem; }
-  .hardcap-chip { display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
+  .hardcap-chip { display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.02em;
     padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
   .hardcap-chip.apron2 { background: var(--danger-bg); color: var(--danger-light); border-color: var(--danger-border-strong); }
   .cap-edit-form {
     display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
     margin-top: 0.75rem; padding: 0.6rem 0.75rem;
     background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
   }
-  .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
-  .cap-edit-form input { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; }
+  .cap-edit-form input { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
   .cap-edit-form input:focus { border-color: var(--accent); }
-  .cap-edit-form select { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form select { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
   .cap-edit-form select:focus { border-color: var(--accent); }
   .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
-  .cap-edit-form .form-section-label { width: 100%; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
+  .cap-edit-form .form-section-label { width: 100%; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
   .sched-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
   .sched-head-actions { display: flex; align-items: center; gap: 0.75rem; }
-  .sched-recap { font-size: 0.85rem; color: var(--link); text-decoration: none; }
+  .sched-recap { font-size: var(--text-sm); color: var(--link); text-decoration: none; }
   .sched-recap:hover { text-decoration: underline; }
-  .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; font: inherit; font-size: 0.85rem; }
+  .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; font: inherit; font-size: var(--text-sm); }
   .sched-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 0.25rem 0 1rem; }
   .sched-summary:empty { display: none; }
   .sched-stat { display: flex; flex-direction: column; gap: 0.1rem; }
-  .sched-stat span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
-  .sched-stat b { font-size: 1.1rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-  .sched-month { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
+  .sched-stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .sched-stat b { font-size: var(--text-md); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .sched-month { font-size: var(--text-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
   .sched-table td { padding: 0.45rem 1rem; }
   .sched-table .sched-date { width: 7.5rem; }
   /* The team, the Playoffs tag and the stream mark share one centred row, so
@@ -676,7 +676,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-l { color: var(--danger); font-weight: 700; }
   .sched-up { color: var(--link) !important; }
   .sched-rec { width: 4rem; }
-  .sched-tag { margin-left: 0.35rem; font-size: 0.7rem; }
+  .sched-tag { margin-left: 0.35rem; font-size: var(--text-xs); }
   .sched-tag-stream { display: inline-flex; font-size: var(--text-base); color: var(--accent-light); }
   .sched-tag-po { color: var(--danger); font-weight: 600; }
   tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
@@ -688,34 +688,34 @@ const coachingConfigReady = new Promise(resolve => {
     color: inherit; text-decoration: none;
   }
   .rival-card:hover { border-color: var(--text-muted); border-left-color: var(--team-primary, var(--text-muted)); text-decoration: none; }
-  .rival-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
-  .rival-team { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--text-secondary); font-size: 0.85rem; }
+  .rival-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .rival-team { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--text-secondary); font-size: var(--text-sm); }
   .rival-team img, .rival-opp img { width: 20px; height: 20px; object-fit: contain; }
-  .rival-main { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-  .rival-sub { font-size: 0.75rem; color: var(--text-muted); }
+  .rival-main { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .rival-sub { font-size: var(--text-xs); color: var(--text-muted); }
   .rival-opp { display: inline-flex; align-items: center; gap: 0.4rem; }
   .hard-cap-banner {
     background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: var(--radius-sm);
-    padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--danger);
+    padding: 0.6rem 1rem; font-size: var(--text-sm); font-weight: 600; color: var(--danger);
     margin-bottom: 1.25rem;
   }
   .hard-cap-banner.apron2 { background: var(--danger-alt-bg); border-color: var(--danger-alt-border); color: var(--danger-alt); }
-  .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: var(--text-sm); }
   .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border-subtle); gap: 1rem; }
   .exceptions-row:last-child { border-bottom: none; }
-  .exc-label { color: var(--text-muted); font-size: 0.78rem; }
-  .exc-mle-type { font-size: 0.7rem; color: var(--text-muted); margin-left: 0.35rem; }
+  .exc-label { color: var(--text-muted); font-size: var(--text-xs); }
+  .exc-mle-type { font-size: var(--text-xs); color: var(--text-muted); margin-left: 0.35rem; }
   .exc-remaining { color: var(--success); }
   .exc-used { color: var(--danger); }
-  .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: 0.85rem; }
+  .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: var(--text-sm); }
   .ch-block + .ch-block { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
-  .ch-block-title { display: flex; align-items: baseline; gap: 0.6rem; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
-  .ch-block-count { margin-left: auto; font-weight: 600; letter-spacing: normal; text-transform: none; font-size: 0.72rem; color: var(--text-muted); }
+  .ch-block-title { display: flex; align-items: baseline; gap: 0.6rem; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .ch-block-count { margin-left: auto; font-weight: 600; letter-spacing: normal; text-transform: none; font-size: var(--text-xs); color: var(--text-muted); }
   .ch-row { display: grid; grid-template-columns: 10rem minmax(6rem, auto) 1fr; align-items: baseline; gap: 0.5rem 1rem; padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
   .ch-row:last-child { border-bottom: none; }
-  .ch-row-label { color: var(--text-muted); font-size: 0.78rem; }
+  .ch-row-label { color: var(--text-muted); font-size: var(--text-xs); }
   .ch-row-amount { font-variant-numeric: tabular-nums; }
-  .ch-row-note { font-size: 0.76rem; color: var(--text-dim); }
+  .ch-row-note { font-size: var(--text-xs); color: var(--text-dim); }
   .ch-tone-over .ch-row-note { color: var(--danger); }
   .ch-tone-under .ch-row-note { color: var(--success); }
   .ch-tone-unknown .ch-row-amount, .ch-tone-unknown .ch-row-note { color: var(--text-dim); font-style: italic; }
@@ -728,12 +728,12 @@ const coachingConfigReady = new Promise(resolve => {
     .ch-row-note { grid-column: 1 / -1; }
     .ch-row-note:empty { display: none; }
   }
-  .ch-warning { font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0; color: var(--danger); }
+  .ch-warning { font-size: var(--text-xs); font-weight: 600; padding: 0.2rem 0; color: var(--danger); }
   .ch-warning.caution { color: var(--gold-alt); }
-  .ch-foot { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.6rem; line-height: 1.5; }
+  .ch-foot { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.6rem; line-height: 1.5; }
   .whatif-enter-btn, .whatif-exit-btn {
     padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: var(--radius-sm);
-    font-size: 0.75rem; font-weight: 600; cursor: pointer; background: transparent;
+    font-size: var(--text-xs); font-weight: 600; cursor: pointer; background: transparent;
     color: var(--danger); font-family: inherit; white-space: nowrap;
   }
   .whatif-enter-btn:hover, .whatif-exit-btn:hover { background: var(--danger-bg); }
@@ -745,30 +745,30 @@ const coachingConfigReady = new Promise(resolve => {
   .whatif-panel > * + * { margin-top: 0.75rem; }
   .whatif-toolbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .whatif-badge {
-    display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em;
+    display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em;
     text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: var(--radius-sm);
     background: var(--danger-bg); color: var(--danger-light); border: 1px solid var(--danger-border-strong);
   }
   .whatif-add-input {
     background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    color: var(--text-primary); font-size: 0.8rem; padding: 0.3rem 0.55rem;
+    color: var(--text-primary); font-size: var(--text-sm); padding: 0.3rem 0.55rem;
     font-family: inherit; min-width: 240px; outline: none;
   }
   .whatif-add-input:focus { border-color: var(--accent); }
   .whatif-row-action {
-    font-size: 0.68rem; padding: 0.12rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: var(--text-xs); padding: 0.12rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
     background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-family: inherit; margin-left: 0.3rem;
     white-space: nowrap;
   }
   .whatif-row-action:hover { color: var(--text-secondary); border-color: var(--text-muted); }
   .whatif-row-action.danger { color: var(--danger); border-color: var(--danger-border); }
   .whatif-row-action.danger:hover { background: var(--danger-bg); }
-  .whatif-warning-line { color: var(--danger); font-size: 0.78rem; font-weight: 600; padding: 0.15rem 0; }
-  .whatif-attr-heading { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 0.4rem; }
-  .whatif-attr-heading-note { font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: normal; color: var(--text-dim); }
-  #whatif-attr-impact table td, #whatif-attr-impact table th { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+  .whatif-warning-line { color: var(--danger); font-size: var(--text-xs); font-weight: 600; padding: 0.15rem 0; }
+  .whatif-attr-heading { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .whatif-attr-heading-note { font-size: var(--text-xs); font-weight: 500; text-transform: none; letter-spacing: normal; color: var(--text-dim); }
+  #whatif-attr-impact table td, #whatif-attr-impact table th { padding: 0.35rem 0.75rem; font-size: var(--text-xs); }
   .whatif-attr-delta-line { font-weight: 700; }
-  .whatif-attr-ba-line { font-size: 0.68rem; color: var(--text-dim); font-weight: 400; margin-top: 0.1rem; }
+  .whatif-attr-ba-line { font-size: var(--text-xs); color: var(--text-dim); font-weight: 400; margin-top: 0.1rem; }
   .whatif-attr-up   .whatif-attr-delta-line { color: var(--success); }
   .whatif-attr-down .whatif-attr-delta-line { color: var(--danger); }
   .whatif-attr-zero .whatif-attr-delta-line { color: var(--text-dim); }
@@ -778,25 +778,25 @@ const coachingConfigReady = new Promise(resolve => {
   .whatif-contract-form {
     display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;
     padding: 0.6rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
   }
-  .whatif-contract-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+  .whatif-contract-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; }
   .whatif-contract-form input, .whatif-contract-form select {
     background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary);
-    font-size: 0.82rem; font-family: inherit; padding: 0.25rem 0.4rem; width: 7.5rem; outline: none;
+    font-size: var(--text-sm); font-family: inherit; padding: 0.25rem 0.4rem; width: 7.5rem; outline: none;
   }
   .whatif-contract-form input:focus, .whatif-contract-form select:focus { border-color: var(--accent); }
   .whatif-contract-year { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
   .whatif-log { display: flex; flex-direction: column; gap: 0.3rem; }
   .whatif-log-entry {
     display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
-    font-size: 0.76rem; color: var(--text-secondary);
+    font-size: var(--text-xs); color: var(--text-secondary);
     background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
     padding: 0.25rem 0.3rem 0.25rem 0.6rem;
   }
   .whatif-log-entry button {
     background: none; border: none; color: var(--text-dim); cursor: pointer;
-    font-size: 1.05rem; line-height: 1; padding: 0 0.3rem; font-family: inherit;
+    font-size: var(--text-md); line-height: 1; padding: 0 0.3rem; font-family: inherit;
   }
   .whatif-log-entry button:hover { color: var(--danger); }
   .token-overlay {
@@ -816,15 +816,15 @@ const coachingConfigReady = new Promise(resolve => {
     width: 360px;
     max-width: 90vw;
   }
-  .token-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-  .token-modal p  { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
+  .token-modal h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 0.4rem; }
+  .token-modal p  { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
   .token-modal input {
     width: 100%;
     background: var(--bg-page);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
-    font-size: 0.875rem;
+    font-size: var(--text-base);
     font-family: var(--font-mono);
     padding: 0.5rem 0.75rem;
     margin-bottom: 1rem;
@@ -842,16 +842,16 @@ const coachingConfigReady = new Promise(resolve => {
   }
   .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
   .identity-players-col { min-width: 15rem; }
-  .identity-players-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .identity-players-title { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
   .identity-players { list-style: none; margin: 0; padding: 0; counter-reset: ip; }
-  .identity-players li { counter-increment: ip; display: grid; grid-template-columns: 1.2rem 1fr auto; column-gap: 0.4rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+  .identity-players li { counter-increment: ip; display: grid; grid-template-columns: 1.2rem 1fr auto; column-gap: 0.4rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
   .identity-players li:last-child { border-bottom: none; }
   .identity-players li::before { content: counter(ip); grid-row: 1 / span 2; color: var(--text-dim); font-variant-numeric: tabular-nums; }
   .identity-players .ip-name { font-weight: 600; }
   .identity-players .ip-name a { color: var(--text-primary); text-decoration: none; }
   .identity-players .ip-name a:hover { color: var(--accent-light); }
-  .identity-players .ip-line { grid-column: 2; font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-  .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: 0.7rem; color: var(--text-dim); }
+  .identity-players .ip-line { grid-column: 2; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: var(--text-xs); color: var(--text-dim); }
   .move-btn:hover { border-color: var(--text-dim); color: var(--text-primary); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
@@ -859,14 +859,14 @@ const coachingConfigReady = new Promise(resolve => {
     padding: 0.3rem; box-shadow: var(--shadow-overlay);
   }
   .move-menu-head {
-    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em;
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em;
     color: var(--text-dim); padding: 0.3rem 0.5rem 0.35rem;
     border-bottom: 1px solid var(--border); margin-bottom: 0.25rem;
   }
   .move-menu button {
     display: block; width: 100%; text-align: left; background: none; border: none;
     border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer;
-    font-family: inherit; font-size: 0.8rem; padding: 0.4rem 0.5rem;
+    font-family: inherit; font-size: var(--text-sm); padding: 0.4rem 0.5rem;
   }
   .move-menu button:hover:not(:disabled) { background: var(--bg-page); color: var(--text-primary); }
   .move-menu button.danger:hover:not(:disabled) { color: var(--danger); }
@@ -875,7 +875,7 @@ const coachingConfigReady = new Promise(resolve => {
      "why can't I renounce him?" is a rules question, and the menu is where it
      gets answered. */
   .move-menu-why {
-    display: block; font-size: 0.68rem; color: var(--text-dim);
+    display: block; font-size: var(--text-xs); color: var(--text-dim);
     padding: 0 0.5rem 0.35rem; margin-top: -0.2rem; white-space: normal;
   }
   .confirm-modal {
@@ -883,20 +883,20 @@ const coachingConfigReady = new Promise(resolve => {
     padding: 1.35rem; width: 520px; max-width: 92vw;
     max-height: 86vh; overflow-y: auto;
   }
-  .confirm-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.15rem; }
-  .confirm-modal .sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.9rem; }
+  .confirm-modal h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 0.15rem; }
+  .confirm-modal .sub { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.9rem; }
   .confirm-facts {
     border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 0.5rem 0.7rem; margin-bottom: 0.9rem;
   }
   .confirm-fact {
     display: flex; justify-content: space-between; gap: 1rem;
-    font-size: 0.78rem; padding: 0.2rem 0;
+    font-size: var(--text-xs); padding: 0.2rem 0;
   }
   .confirm-fact span:first-child { color: var(--text-muted); }
   .confirm-fact span:last-child  { font-variant-numeric: tabular-nums; font-weight: 600; }
   .confirm-check {
-    font-size: 0.76rem; line-height: 1.4; padding: 0.4rem 0.55rem;
+    font-size: var(--text-xs); line-height: 1.4; padding: 0.4rem 0.55rem;
     border-radius: var(--radius-sm); margin-bottom: 0.4rem; border: 1px solid transparent;
   }
   .confirm-check.ok    { color: var(--text-muted); }
@@ -905,17 +905,17 @@ const coachingConfigReady = new Promise(resolve => {
   .confirm-modal input[type=text] {
     width: 100%; background: var(--bg-page); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit;
-    font-size: 0.85rem; padding: 0.45rem 0.65rem; margin-bottom: 0.9rem;
+    font-size: var(--text-sm); padding: 0.45rem 0.65rem; margin-bottom: 0.9rem;
     box-sizing: border-box;
   }
   .confirm-modal input[type=text]:focus { outline: none; border-color: var(--accent); }
   .confirm-modal label {
-    display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem;
+    display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.3rem;
   }
   .confirm-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
-  .confirm-actions .spacer { flex: 1; font-size: 0.75rem; color: var(--danger); }
+  .confirm-actions .spacer { flex: 1; font-size: var(--text-xs); color: var(--danger); }
   .btn-plain, .btn-danger, .btn-go {
-    padding: 0.4rem 0.85rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
+    padding: 0.4rem 0.85rem; border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 600;
     cursor: pointer; background: transparent; font-family: inherit;
   }
   .btn-plain  { border: 1px solid var(--border); color: var(--text-secondary); }
@@ -928,24 +928,24 @@ const coachingConfigReady = new Promise(resolve => {
   .offer-banner {
     border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
     border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
-    font-size: 0.85rem; color: var(--text-secondary);
+    font-size: var(--text-sm); color: var(--text-secondary);
   }
   .trade-banner {
     border: 1px solid var(--border); background: var(--bg-subtle);
     border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
-    font-size: 0.85rem; color: var(--text-secondary);
+    font-size: var(--text-sm); color: var(--text-secondary);
   }
   .trade-banner b { color: var(--text-primary); }
-  .trade-banner .meta { display: block; margin-top: 0.2rem; font-size: 0.76rem; color: var(--text-muted); }
+  .trade-banner .meta { display: block; margin-top: 0.2rem; font-size: var(--text-xs); color: var(--text-muted); }
   .trade-banner .tag {
-    color: var(--danger); font-weight: 700; font-size: 0.7rem;
+    color: var(--danger); font-weight: 700; font-size: var(--text-xs);
     text-transform: uppercase; letter-spacing: 0.04em;
   }
   .offer-banner.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
   .offer-banner b { color: var(--text-primary); }
-  .offer-banner .meta { display: block; margin-top: 0.2rem; font-size: 0.76rem; color: var(--text-muted); }
+  .offer-banner .meta { display: block; margin-top: 0.2rem; font-size: var(--text-xs); color: var(--text-muted); }
   .offer-banner .tag {
-    color: var(--danger); font-weight: 700; font-size: 0.7rem;
+    color: var(--danger); font-weight: 700; font-size: var(--text-xs);
     text-transform: uppercase; letter-spacing: 0.04em;
   }
   /* Only rendered when no token is stored. Without it a team owner who isn't on
@@ -996,7 +996,7 @@ const coachingConfigReady = new Promise(resolve => {
   .tt-popup {
     position: absolute; z-index: 500; max-width: 260px;
     background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
-    padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.75rem;
+    padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: var(--text-xs);
     white-space: pre-line; line-height: 1.5; text-align: left;
     pointer-events: none; box-shadow: var(--shadow-overlay);
   }
@@ -1018,7 +1018,7 @@ const coachingConfigReady = new Promise(resolve => {
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
-    font-size: 0.875rem;
+    font-size: var(--text-base);
     padding: 0.4rem 0.75rem;
     font-family: inherit;
     cursor: pointer;
@@ -1800,7 +1800,7 @@ function attachCopyBtn(titleId, wrapId) {
   btn.type = 'button';
   btn.className = 'section-copy-btn';
   btn.textContent = 'Copy';
-  btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+  btn.style.cssText = 'font-size:var(--text-xs);padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
   btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
   btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
   btn.addEventListener('click', () => {
@@ -2200,8 +2200,8 @@ function renderExceptionsSection(
       <span class="exc-label">MLE <span class="exc-mle-type">(${mleTypeLabel(mleType)})</span></span>
       <span>
         <span class="${remCls}">${fmtDollars(mleRemaining)} remaining</span>
-        <span style="color:var(--text-dim);font-size:0.75rem"> / ${fmtDollars(mleTotal)}</span>
-        ${mleUsed ? `<span style="color:var(--text-muted);font-size:0.72rem"> (${fmtDollars(mleUsed)} used)</span>` : ''}
+        <span style="color:var(--text-dim);font-size:var(--text-xs)"> / ${fmtDollars(mleTotal)}</span>
+        ${mleUsed ? `<span style="color:var(--text-muted);font-size:var(--text-xs)"> (${fmtDollars(mleUsed)} used)</span>` : ''}
       </span>`;
     wrap.appendChild(row);
   }
@@ -2245,8 +2245,8 @@ function renderTradeExceptionsSection(exceptions) {
       <span class="exc-label">TPE ${noteHtml}</span>
       <span>
         <span class="${remCls}">${fmtDollars(exc.remaining)} remaining</span>
-        <span style="color:var(--text-dim);font-size:0.75rem"> / ${fmtDollars(exc.amount)}</span>
-        <span style="color:var(--text-muted);font-size:0.72rem"> · ${exc.expired ? 'expired' : 'expires'} ${fmtDate(exc.expires_date)}</span>
+        <span style="color:var(--text-dim);font-size:var(--text-xs)"> / ${fmtDollars(exc.amount)}</span>
+        <span style="color:var(--text-muted);font-size:var(--text-xs)"> · ${exc.expired ? 'expired' : 'expires'} ${fmtDate(exc.expires_date)}</span>
       </span>`;
     wrap.appendChild(row);
   });
@@ -3101,7 +3101,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           if (count) {
             const sup = document.createElement('sup');
             sup.textContent = count;
-            sup.style.cssText = 'color:var(--border);font-size:0.65rem;margin-left:2px';
+            sup.style.cssText = 'color:var(--border);font-size:var(--text-xs);margin-left:2px';
             td.appendChild(sup);
           }
         });
@@ -3140,7 +3140,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
             const td = tfCell(tr, formatSalary(val), 'right');
             const diffSpan = document.createElement('span');
             diffSpan.className = 'tfoot-diff';
-            diffSpan.style.cssText = 'display:block;font-size:0.7rem;margin-top:0.1rem';
+            diffSpan.style.cssText = 'display:block;font-size:var(--text-xs);margin-top:0.1rem';
             diffSpan.textContent = over
               ? `+${formatSalary(diff)}`
               : `-${formatSalary(Math.abs(diff))}`;
@@ -3984,7 +3984,7 @@ const canEditTradeBlock = abbr => AUTH_ROLES.includes(abbr.toLowerCase()) || AUT
 let AUTH_OWNER_OF = [];
 const canRenounce = abbr => AUTH_OWNER_OF.includes(abbr.toUpperCase());
 
-const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
+const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-xs);padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
 
 const CAP_OPTIONS = [
   { value: '',           label: '—'          },
@@ -4019,8 +4019,8 @@ function promptToken(onSuccess) {
       <p>Enter your committee token. It will be saved in this browser.</p>
       <input type="password" id="token-input" placeholder="Paste token…" autocomplete="off" />
       <div class="token-modal-actions">
-        <button style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit" id="tok-cancel">Cancel</button>
-        <button style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit" id="tok-submit">Continue</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit" id="tok-cancel">Cancel</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit" id="tok-submit">Continue</button>
       </div>
     </div>
   `;
@@ -5243,7 +5243,7 @@ function makeEditCell(header, value, config, pickerCtx) {
     config.years.forEach(yr => {
       const lbl = document.createElement('span');
       lbl.textContent = yr;
-      lbl.style.cssText = 'font-size:0.65rem;color:var(--text-muted);white-space:nowrap';
+      lbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap';
       const sel = makeSelect(CAP_OPTIONS, holdMap[yr] || '');
       applyCapHoldColor(sel);
       sel.addEventListener('change', () => applyCapHoldColor(sel));
@@ -5282,7 +5282,7 @@ function makeEditCell(header, value, config, pickerCtx) {
     input.type = 'text';
     if (ctx.listId) input.setAttribute('list', ctx.listId);
     input.value = value && ctx.slugToDisplay ? (ctx.slugToDisplay.get(value) || value) : (value || '');
-    input.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
+    input.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-sm);padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
     td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
     td.appendChild(input);
     getValue = () => {
@@ -5368,7 +5368,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
     delTd.style.cssText = 'width:28px;padding:0 0.4rem;text-align:center;vertical-align:middle';
     const delBtn = document.createElement('button');
     delBtn.textContent = '×';
-    delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;line-height:1;padding:0;font-family:inherit';
+    delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:var(--text-md);line-height:1;padding:0;font-family:inherit';
     delBtn.onmouseenter = () => { delBtn.style.color = 'var(--danger)'; };
     delBtn.onmouseleave = () => { delBtn.style.color = 'var(--text-dim)'; };
     delBtn.addEventListener('click', () => tr.remove());
@@ -5394,7 +5394,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
   addTd.style.cssText = 'padding:0.5rem 1rem;border-top:1px solid var(--border)';
   const addBtn = document.createElement('button');
   addBtn.textContent = '+ Add row';
-  addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:0.25rem 0.75rem;font-family:inherit';
+  addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:var(--text-sm);padding:0.25rem 0.75rem;font-family:inherit';
   addBtn.onmouseenter = () => { addBtn.style.color = 'var(--text-secondary)'; addBtn.style.borderColor = 'var(--text-muted)'; };
   addBtn.onmouseleave = () => { addBtn.style.color = 'var(--text-muted)'; addBtn.style.borderColor = 'var(--border)'; };
   addBtn.addEventListener('click', () => tbody.insertBefore(makeRow({}), addTr));
@@ -5436,7 +5436,7 @@ function buildEditableGrid(headers, rows, cellConfig = {}) {
     capHoldCells.forEach(({ wrap, selects }) => {
       const lbl = document.createElement('span');
       lbl.textContent = yr;
-      lbl.style.cssText = 'font-size:0.65rem;color:var(--text-muted);white-space:nowrap';
+      lbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap';
       const sel = makeSelect(CAP_OPTIONS, '');
       applyCapHoldColor(sel);
       sel.addEventListener('change', () => applyCapHoldColor(sel));
@@ -5496,21 +5496,21 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
 
   const saveBtn = document.createElement('button');
   saveBtn.textContent = 'Save';
-  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
   const cancelBtn = document.createElement('button');
   cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
   const statusEl = document.createElement('span');
-  statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
+  statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:auto';
 
   toolbar.appendChild(saveBtn);
   toolbar.appendChild(cancelBtn);
 
   const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
   if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.SLUG)) {
-    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:500;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit';
+    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:500;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit';
     const onYrEnter = e => { e.target.style.color = 'var(--text-secondary)'; e.target.style.borderColor = 'var(--text-muted)'; };
     const onYrLeave = e => { e.target.style.color = 'var(--text-muted)'; e.target.style.borderColor = 'var(--border)'; };
 
@@ -5593,7 +5593,7 @@ function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = 
 }
 
 function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPicks = []) {
-  const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.8rem;padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+  const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-sm);padding:0.2rem 0.4rem;font-family:inherit;width:100%';
 
   const playerOpts = [{ slug: '', label: '—' },
     ...Object.entries(bios)
@@ -5620,7 +5620,7 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
     const btn = document.createElement('button');
     btn.className = 'section-edit-btn';
     btn.textContent = 'Edit';
-    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.style.cssText = 'font-size:var(--text-xs);padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
     btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
     btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
     btn.addEventListener('click', () => withToken(() => enterPicksEdit(currentPicks)));
@@ -5635,14 +5635,14 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 
     const saveBtn = document.createElement('button');
     saveBtn.textContent = 'Save';
-    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.textContent = 'Cancel';
-    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
 
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-left:auto';
+    statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:auto';
 
     toolbar.appendChild(saveBtn);
     toolbar.appendChild(cancelBtn);
@@ -6911,7 +6911,7 @@ function setupCoachingSettingsTab(wrapId, biosData) {
     num.type = 'number'; num.min = String(min); num.max = String(max); num.step = String(step);
     num.value = blank ? '' : String(initial);
     if (allowBlank) num.placeholder = 'Default';
-    num.style.cssText = 'width:4.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:0.75rem;padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+    num.style.cssText = 'width:4.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-xs);padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
     const setDim = dim => { range.style.opacity = dim ? '0.35' : ''; };
     setDim(blank);
     range.addEventListener('input', () => { num.value = range.value; setDim(false); onChange(+range.value); });
@@ -6964,7 +6964,7 @@ function setupCoachingSettingsTab(wrapId, biosData) {
     cancelBtn.textContent = 'Cancel';
 
     const statusEl = document.createElement('span');
-    statusEl.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-right:auto';
+    statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-right:auto';
 
     toolbar.appendChild(statusEl);
     toolbar.appendChild(cancelBtn);
@@ -6997,7 +6997,7 @@ function setupCoachingSettingsTab(wrapId, biosData) {
     function groupCard(title, note) {
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
-      const h = CS.labelWithNote(title, note, 'display:block;font-weight:700;font-size:0.95rem;margin-bottom:0.6rem');
+      const h = CS.labelWithNote(title, note, 'display:block;font-weight:700;font-size:var(--text-base);margin-bottom:0.6rem');
       card.appendChild(h);
       return card;
     }
@@ -7005,7 +7005,7 @@ function setupCoachingSettingsTab(wrapId, biosData) {
     function fieldRow(labelText, control, note) {
       const r = document.createElement('div');
       r.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.3rem 0';
-      const l = CS.labelWithNote(labelText, note, 'font-size:0.8rem;color:var(--text-muted)');
+      const l = CS.labelWithNote(labelText, note, 'font-size:var(--text-sm);color:var(--text-muted)');
       r.appendChild(l);
       r.appendChild(control);
       return r;
@@ -7040,7 +7040,7 @@ function setupCoachingSettingsTab(wrapId, biosData) {
       const poolValues = values[pool.key] || (values[pool.key] = {});
       pool.fields.forEach(f => { if (!(f.key in poolValues)) poolValues[f.key] = f.min || 0; });
       const totalLine = document.createElement('div');
-      totalLine.style.cssText = 'font-size:0.75rem;font-weight:700;margin-top:0.5rem';
+      totalLine.style.cssText = 'font-size:var(--text-xs);font-weight:700;margin-top:0.5rem';
       function syncTotal() {
         const total = CS.poolTotal(pool, poolValues);
         const ok = total === pool.budget;
@@ -7129,7 +7129,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
   const editBtn = document.createElement('button');
   editBtn.className = 'edit-toggle-btn';
-  editBtn.style.cssText = 'margin-top:0.5rem;font-size:0.72rem;padding:0.15rem 0.45rem';
+  editBtn.style.cssText = 'margin-top:0.5rem;font-size:var(--text-xs);padding:0.15rem 0.45rem';
   editBtn.textContent = 'Edit Dead Cap';
   wrapEl.appendChild(editBtn);
 
@@ -7168,7 +7168,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       formEl.innerHTML = '';
 
       const tbl = document.createElement('table');
-      tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.8rem';
+      tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm)';
       const thead = tbl.createTHead();
       const hr = thead.insertRow();
       ['Player', ...seasonList, ''].forEach((lbl, i) => {
@@ -7196,7 +7196,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
           inp.type = 'text';
           inp.value = row[s] || '';
           inp.placeholder = '—';
-          inp.style.cssText = 'width:90px;text-align:right;background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 4px;font-size:0.75rem';
+          inp.style.cssText = 'width:90px;text-align:right;background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 4px;font-size:var(--text-xs)';
           inp.addEventListener('input', () => { row[s] = inp.value.trim(); });
           td.appendChild(inp);
         });
@@ -7222,19 +7222,19 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
       const nameInp = document.createElement('input');
       nameInp.type = 'text'; nameInp.placeholder = 'Player name';
       nameInp.setAttribute('list', dlId);
-      nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:0.75rem;width:160px;margin-right:6px';
+      nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:var(--text-xs);width:160px;margin-right:6px';
 
       const seasonInp = document.createElement('input');
       seasonInp.type = 'text'; seasonInp.placeholder = currentSeasonYr();
-      seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:0.75rem;width:70px;margin-right:6px';
+      seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:var(--text-xs);width:70px;margin-right:6px';
 
       const amtInp = document.createElement('input');
       amtInp.type = 'text'; amtInp.placeholder = '$X,XXX,XXX';
-      amtInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:0.75rem;width:110px;margin-right:6px';
+      amtInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:var(--text-xs);width:110px;margin-right:6px';
 
       const addBtn = document.createElement('button');
       addBtn.textContent = '+ Add';
-      addBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:2px 8px;font-size:0.75rem;cursor:pointer';
+      addBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:2px 8px;font-size:var(--text-xs);cursor:pointer';
       addBtn.addEventListener('click', () => {
         const typed = nameInp.value.trim();
         const slug = nameToSlug.get(typed.toLowerCase()) || '';
@@ -7261,7 +7261,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
       const saveBtn = document.createElement('button');
       saveBtn.textContent = 'Save';
-      saveBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      saveBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:var(--text-xs)';
       saveBtn.addEventListener('click', () => {
         withToken(token => {
           const payload = rows
@@ -7292,7 +7292,7 @@ function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
 
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.cssText = 'background:var(--border);color:var(--text-secondary);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:0.75rem';
+      cancelBtn.style.cssText = 'background:var(--border);color:var(--text-secondary);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:var(--text-xs)';
       cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; });
 
       btns.append(saveBtn, cancelBtn);
@@ -7453,7 +7453,7 @@ function buildContractYearsController(startSeason) {
       yBox.className = 'whatif-contract-year';
       const yLbl = document.createElement('span');
       yLbl.textContent = yr;
-      yLbl.style.cssText = 'font-size:0.68rem;color:var(--text-muted);font-weight:700';
+      yLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:700';
       const salInp = document.createElement('input');
       salInp.type = 'text'; salInp.placeholder = '$X,XXX,XXX'; salInp.dataset.year = yr;
       salInp.className = 'whatif-year-salary';
@@ -7517,7 +7517,7 @@ function buildMinSalaryPresetRow(capLevels, startSeason, yc) {
   presetWrap.style.cssText = 'display:flex;gap:0.3rem;flex-wrap:wrap;width:100%;align-items:center';
   const presetLbl = document.createElement('span');
   presetLbl.textContent = '1-yr Vet Min:';
-  presetLbl.style.cssText = 'font-size:0.68rem;color:var(--text-muted);font-weight:700;text-transform:uppercase';
+  presetLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:700;text-transform:uppercase';
   presetWrap.appendChild(presetLbl);
   presetTiers.forEach(t => {
     const btn = document.createElement('button');
@@ -7604,7 +7604,7 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
 
     const label = document.createElement('span');
     label.textContent = `Decline ${row._name}'s ${season} option — becomes:`;
-    label.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);font-weight:600';
+    label.style.cssText = 'font-size:var(--text-sm);color:var(--text-secondary);font-weight:600';
     form.appendChild(label);
 
     const holdSel = makeSelect([{ value: 'UFA', label: 'UFA' }, { value: 'RFA', label: 'RFA' }], 'UFA');
@@ -7652,7 +7652,7 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
 
     const title = document.createElement('span');
     title.textContent = `${displayNameFromBio(bio.name || '') || slug} — new contract:`;
-    title.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);font-weight:600;width:100%';
+    title.style.cssText = 'font-size:var(--text-sm);color:var(--text-secondary);font-weight:600;width:100%';
     form.appendChild(title);
 
     const yc = buildContractYearsController(startSeason);
@@ -7697,7 +7697,7 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
 
     const title = document.createElement('span');
     title.textContent = 'Add a custom player — not a real roster player, OVR/ratings won\'t apply:';
-    title.style.cssText = 'font-size:0.8rem;color:var(--text-secondary);font-weight:600;width:100%';
+    title.style.cssText = 'font-size:var(--text-sm);color:var(--text-secondary);font-weight:600;width:100%';
     form.appendChild(title);
 
     const nameLbl = document.createElement('label');
@@ -8090,7 +8090,7 @@ function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellC
     const btn = document.createElement('button');
     btn.className = 'section-edit-btn';
     btn.textContent = 'Edit';
-    btn.style.cssText = 'font-size:0.7rem;padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.style.cssText = 'font-size:var(--text-xs);padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
     btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
     btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
     btn.addEventListener('click', () => {
@@ -8864,7 +8864,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       const season = currentSeasonYr();
       const editCapBtn = document.createElement('button');
       editCapBtn.className = 'edit-toggle-btn';
-      editCapBtn.style.cssText = 'margin-top:0.75rem;font-size:0.72rem;padding:0.15rem 0.45rem';
+      editCapBtn.style.cssText = 'margin-top:0.75rem;font-size:var(--text-xs);padding:0.15rem 0.45rem';
       editCapBtn.textContent = 'Edit Team State';
       capEditWrap.appendChild(editCapBtn);
 
@@ -8894,7 +8894,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         hcBlock.style.cssText = 'display:flex;flex-direction:column;gap:0.35rem;width:100%';
         const hcTitle = document.createElement('div');
         hcTitle.textContent = 'Hard Cap (per season)';
-        hcTitle.style.cssText = 'font-size:0.72rem;color:var(--text-muted);font-weight:600';
+        hcTitle.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:600';
         hcBlock.appendChild(hcTitle);
 
         // season → { sel, reason } controls, for diffing on save
@@ -8905,7 +8905,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
           row.style.cssText = 'display:flex;gap:0.4rem;align-items:center';
           const lbl = document.createElement('span');
           lbl.textContent = s;
-          lbl.style.cssText = 'font-size:0.72rem;color:var(--text-muted);width:3.2rem';
+          lbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);width:3.2rem';
           const sel = document.createElement('select');
           [['', 'None'], ['first_apron', 'First Apron'], ['second_apron', 'Second Apron']].forEach(([v, l]) => {
             const o = document.createElement('option');
@@ -8957,7 +8957,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         saveBtn.textContent = 'Save';
         saveBtn.style.cssText = 'align-self:flex-end;margin-top:0.6rem';
         const statusEl = document.createElement('span');
-        statusEl.style.cssText = 'font-size:0.72rem;color:var(--danger);align-self:flex-end';
+        statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--danger);align-self:flex-end';
         capFormEl.appendChild(saveBtn);
         capFormEl.appendChild(statusEl);
 

@@ -28,7 +28,7 @@
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-sm);
   padding: 0.65rem 0.85rem;
-  font-size: 0.82rem; line-height: 1.45;
+  font-size: var(--text-sm); line-height: 1.45;
   color: var(--text-primary);
   box-shadow: var(--shadow-overlay);
   cursor: pointer;
@@ -38,7 +38,7 @@
 .toast.bad { border-left-color: var(--danger); color: var(--danger-light); }
 .toast.good { border-left-color: var(--success); }
 .toast-text { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; }
-.toast-dismiss { color: var(--text-muted); font-size: 0.95rem; line-height: 1; flex-shrink: 0; }
+.toast-dismiss { color: var(--text-muted); font-size: var(--text-base); line-height: 1; flex-shrink: 0; }
 .toast.leaving { animation: toast-out 0.16s ease-in forwards; }
 
 @keyframes toast-in  { from { opacity: 0; transform: translateY(6px); } }
@@ -64,8 +64,8 @@
   box-shadow: var(--shadow-overlay);
   animation: dlg-rise 0.14s ease-out;
 }
-.dlg h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
-.dlg-body { font-size: 0.85rem; line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
+.dlg h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 0.5rem; color: var(--text-primary); }
+.dlg-body { font-size: var(--text-sm); line-height: 1.55; color: var(--text-secondary); white-space: pre-wrap; }
 .dlg-body + .dlg-details, .dlg-body + .dlg-confirm-text,
 .dlg-details + .dlg-confirm-text { margin-top: 0.9rem; }
 
@@ -76,24 +76,24 @@
   list-style: none; display: flex; flex-direction: column; gap: 0.4rem;
   background: var(--bg-subtle); border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm); padding: 0.7rem 0.8rem;
-  font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary);
+  font-size: var(--text-sm); line-height: 1.5; color: var(--text-secondary);
   max-height: 15rem; overflow-y: auto;
 }
 .dlg-details li { display: flex; gap: 0.5rem; }
 .dlg-details li::before { content: '•'; color: var(--danger); flex-shrink: 0; }
 
-.dlg-confirm-text label { display: block; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.35rem; }
+.dlg-confirm-text label { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.35rem; }
 .dlg-confirm-text input {
   width: 100%; padding: 0.5rem 0.65rem;
   background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-  color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+  color: var(--text-primary); font-family: inherit; font-size: var(--text-sm);
 }
 .dlg-confirm-text input:focus { outline: none; border-color: var(--accent); }
 
 .dlg-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.2rem; }
 .dlg-actions button {
   padding: 0.45rem 0.9rem; border-radius: var(--radius-sm); font-family: inherit;
-  font-size: 0.83rem; font-weight: 600; cursor: pointer;
+  font-size: var(--text-sm); font-weight: 600; cursor: pointer;
   border: 1px solid var(--border); background: var(--bg-page); color: var(--text-secondary);
 }
 .dlg-actions button:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text-primary); }

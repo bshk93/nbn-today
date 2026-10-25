@@ -32,5 +32,5 @@ thead th {
 }
 thead th:hover { color: var(--text-secondary); }
 thead th[data-active="true"] { color: var(--accent-light); }
-thead th .sort-arrow { margin-left: 4px; font-size: 0.65rem; }
+thead th .sort-arrow { margin-left: 4px; font-size: var(--text-xs); }
 thead th.right { text-align: right; }
