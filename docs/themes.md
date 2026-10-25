@@ -46,7 +46,7 @@ default for a locked id, which is about a fresh browser rather than about theft.
 | Catalog, price, purchase | `THEME_PRICE` / `LIVE_TEAM_THEMES` — `nbn-api/routers/themes.py`; `GET /api/themes` (public), `POST /api/members/me/themes/{id}` |
 | Your own team's theme, free | `own_team_theme` / `free_theme_ids` — `nbn-api/routers/themes.py`, returned as `free_themes` by `GET /api/members/me` |
 | Picker, lock state, buy flow | `_themeMenuItems` / `_unlockTheme` / `_hasTheme` — `nav.js` |
-| Colours | `css/theme.css`, one `:root[data-theme="…"]` block of 59 tokens each |
+| Colours | `css/theme.css`, one `:root[data-theme="…"]` block of 60 tokens each |
 | Team blocks | **generated** by `build/make_team_theme.py` from `build/team-colors.json` |
 
 Five things to know before touching it:
@@ -80,7 +80,9 @@ Five things to know before touching it:
   hue — primary hue for backgrounds/borders/text at a low chroma, accent hue for
   the accent family, semantic colours (danger/success/gold) left alone so red
   still means alarm. `--text-on-accent` is *computed* black-or-white, which is
-  what stops the gold and silver teams shipping unreadable buttons. Contrast
+  what stops the gold and silver teams shipping unreadable buttons, and
+  `--accent-fill` (the primary button's surface) is `--accent` darkened only as
+  far as that label needs for 4.5:1. Contrast
   repair is capped at what the same token already achieved in the dark theme, so
   a team theme inherits that theme's contrast character exactly — never worse,
   and never silently better.
