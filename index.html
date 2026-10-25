@@ -460,7 +460,6 @@
     /* Standings: East and West side by side in the sidebar. */
     .dash-standings-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
     :root .dash-standings-head .dash-card-title { margin: 0; }
-    .dash-standings-more { font-size: var(--text-xs); color: var(--link); }
     .dash-stand-gb { margin-left: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 1.8rem; text-align: right; }
     .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4) var(--space-6); }
     .dash-stand-line { margin: 0.25rem 0; padding-top: 0.2rem; border-top: 1px dashed var(--border); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
@@ -639,10 +638,15 @@
       margin-bottom: var(--space-3);
     }
 
+    /* A header that is itself the link to the card's full page. */
+    :root a.dash-card-link { display: inline-flex; align-items: baseline; text-decoration: none; }
+    :root .dash-card-title > a.dash-card-link { color: inherit; }
+    :root a.dash-card-link:hover, :root a.dash-card-link:focus-visible { color: var(--link); }
+
     /* Your team is boxed like every other section now (above). */
     :root .dash-team-name { font-size: var(--text-xl); }
 
-    /* A small text link under a list ("Full calendar →"). */
+    /* A small text link under a list. */
     .dash-feed-item { font-size: var(--text-sm); color: var(--text-secondary); }
     a.dash-feed-item:hover { color: var(--text-primary); }
 
@@ -1200,7 +1204,9 @@
         if (ph.phase === 'preseason') title = 'Opening week';
       }
 
-      card.innerHTML = `<div class="dash-card-title">${esc(title)}</div>${head}`
+      // Only the title text is the link: a night's box-score video link is added
+      // beside it later, and a link can't sit inside another.
+      card.innerHTML = `<div class="dash-card-title"><a class="dash-card-link" href="/calendar">${esc(title)}</a></div>${head}`
         // Grouped under a date heading rather than a date column: the card is
         // too narrow for date + two team chips + time on one line, and the
         // times were spilling out past its edge.
@@ -1213,8 +1219,6 @@
             + streamTag(g)
             + `<a class="dash-game-time" title="Game preview" href="${previewHref(g)}">${esc(g.time_et || 'Preview')} ›</a>`
             + `</div><div class="dash-five"><div class="dash-five-inner"></div></div>`).join('') + '</div>' : '');
-      card.insertAdjacentHTML('beforeend',
-        '<a class="dash-feed-item" href="/calendar" style="display:block;margin-top:0.6rem">Full calendar →</a>');
 
       // A game whose box score is already in shows its final in place of the
       // tip time. Matched on date + the two teams, either way round, the same
@@ -1638,9 +1642,8 @@
       const d = new Date(data.last_report.date + 'T12:00:00');
       const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-      card.innerHTML = '<div class="dash-standings-head"><div class="dash-card-title">Injury Report'
-        + `<span class="dash-inj-date">${esc(when)}</span></div>`
-        + '<a class="dash-standings-more" href="/injuries/">See all →</a></div>'
+      card.innerHTML = '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/injuries/">Injury Report'
+        + `<span class="dash-inj-date">${esc(when)}</span></a></div>`
         + (rows.length ? '<div class="dash-feed-filters">'
           + '<div class="ui-segmented dash-feed-kinds" role="group" aria-label="Status">'
           + statuses.map(s => `<button type="button" data-status="${s.key}" aria-pressed="${s.key === state.status}">${esc(s.label)}</button>`).join('')
@@ -1739,8 +1742,7 @@
         const when = String(latest.published_at).slice(0, 10);
         $('dash-ranks').innerHTML =
           `<div class="dash-ranks-head">`
-          + `<div class="dash-standings-head"><div class="dash-card-title">Power Rankings</div>`
-          + `<a class="dash-standings-more" href="/news/view/?id=${encodeURIComponent(latest.id)}">Full rankings →</a></div>`
+          + `<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/news/view/?id=${encodeURIComponent(latest.id)}">Power Rankings</a></div>`
           + `<span class="dash-ranks-edition">${esc(latest.title || 'Latest edition')} · ${esc(shortDate(when))}</span></div>`
           + '<div class="dash-ranks-row">' + top.map(r =>
               `<a class="dash-rank-team" href="/teams/${esc(String(r.team).toLowerCase())}/" `
@@ -2011,8 +2013,7 @@
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span><span class="dash-stand-gb" title="Games back">${gb(list[0], r)}</span></a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title">Standings</div>'
-        + `<a class="dash-standings-more" href="${hasOdds ? '/standings/#odds">Playoff odds' : '/standings">Full standings'} →</a></div>`
+        `<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="${hasOdds ? '/standings/#odds' : '/standings'}">Standings</a></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
     }).catch(() => {});
@@ -2051,9 +2052,8 @@
           + list.map(row).join('') + '</div>' : '';
 
       $('dash-movers').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title">Ratings Movers'
-        + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></div>`
-        + '<a class="dash-standings-more" href="/ratings-changes/">All changes →</a></div>'
+        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/ratings-changes/">Ratings Movers'
+        + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></a></div>`
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
     }).catch(() => {});
@@ -2083,8 +2083,7 @@
            ['MIP', 'MIP', p => `+${(p.gmscPg - p.prevGmscPg).toFixed(1)} GmSc`]]
           .map(([key, label, num]) => { const top = lad(key)[0]; return top ? row(label, top, num(top)) : ''; }).join('');
       $('dash-race').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title">Award Race</div>'
-        + '<a class="dash-standings-more" href="/awards/race/">Full race →</a></div>' + html;
+        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/awards/race/">Award Race</a></div>' + html;
       $('dash-race').hidden = false;
     }).catch(() => {});
 
@@ -2104,8 +2103,7 @@
       const slot = p => (p.draftPick && p.draftPick !== 'NA' ? `Pick #${p.draftPick}` : 'Undrafted');
       const pg = (p, f) => (p[f] / p.G).toFixed(1);
       $('dash-rookies').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title">Rookie Watch</div>'
-        + '<a class="dash-standings-more" href="/awards/race/">ROTY race →</a></div>'
+        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/awards/race/">Rookie Watch</a></div>'
         + list.map(p => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(p.slug)}">`
           + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(p.name))}</span>`
@@ -2127,8 +2125,7 @@
         .slice(0, MS_SHOWN);
       if (!list.length) return;
       $('dash-milestones').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title">Milestone Watch</div>'
-        + '<a class="dash-standings-more" href="/stats/totals">Career totals →</a></div>'
+        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/stats/totals">Milestone Watch</a></div>'
         + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(m.slug)}">`
           + `<img src="/logos/sm/logo-${esc(m.team.toLowerCase())}.webp" alt="" title="${esc(m.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`
