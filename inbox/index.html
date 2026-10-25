@@ -212,7 +212,7 @@ function renderItem(it) {
   const meta = document.createElement('div');
   meta.className = 'item-meta';
   meta.innerHTML = `<span>${fmtDateTime(it.ts)}</span>`
-    + (it.link ? `<span>&middot;</span><a href="${escHtml(it.link)}">Open &rarr;</a>` : '');
+    + (it.link ? `<span>&middot;</span><a href="${escHtml(it.link)}">Open</a>` : '');
   body.appendChild(meta);
   if (it.actions && it.actions.length) body.appendChild(renderMsgActions(it));
   el.appendChild(body);

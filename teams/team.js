@@ -573,8 +573,6 @@ const coachingConfigReady = new Promise(resolve => {
   .fo-strip .ui-statline b { font-size: var(--text-lg); }
   .fo-strip .fo-sub { font-size: var(--text-xs); color: var(--text-muted); }
   .fo-strip .fo-patch { font-size: var(--text-sm); color: var(--text-secondary); }
-  .fo-strip .fo-sub a { color: var(--accent-light); text-decoration: none; }
-  .fo-strip .fo-sub a:hover { text-decoration: underline; }
   .fo-strip .fo-up { color: var(--success); }
   .fo-strip .fo-down { color: var(--danger); }
   .retired-banners {
@@ -1148,7 +1146,7 @@ document.body.innerHTML = `
         <div class="sched-head">
           <h2 class="section-title">Schedule</h2>
           <span class="sched-head-actions">
-            <a id="sched-recap" class="sched-recap" href="/recap/?team=${abbr}">Season recap →</a>
+            <a id="sched-recap" class="sched-recap" href="/recap/?team=${abbr}">Season recap</a>
             <select id="sched-season" class="sched-season" aria-label="Season" hidden></select>
           </span>
         </div>
@@ -1207,7 +1205,7 @@ document.body.innerHTML = `
         <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
       </section>
       <section id="frontoffice-section" style="display:none">
-        <h2 class="section-title">Front Office</h2>
+        <h2 class="section-title"><a class="ui-title-link" href="/finances/?team=${abbr}">Front Office</a></h2>
         <div class="fo-strip" id="frontoffice-wrap"></div>
       </section>
       <section id="retired-section" style="display:none">
@@ -1228,8 +1226,8 @@ document.body.innerHTML = `
         <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
       </section>
       <section>
-        <h2 class="section-title">Franchise Records</h2>
-        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs · <a href="/stats/highs/?team=${abbr}">every category →</a></p>
+        <h2 class="section-title"><a class="ui-title-link" href="/stats/highs/?team=${abbr}">Franchise Records</a></h2>
+        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
         <div id="records-wrap"><div class="status">Loading…</div></div>
         <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
       </section>
@@ -9055,7 +9053,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         item('Franchise value', `<span class="ui-statline"><b>${money(+now.VALUE)}</b></span>`, `#${rank} of 30 · ${signed(+now.VALUE_CHANGE)} this season`),
         last ? item(`${done} crowds`, `<span class="ui-statline"><b>${(+last.AVG_ATTENDANCE).toLocaleString()}</b><small>a night</small></span>`, `${last.SELLOUTS} sellouts`) : '',
         profit ? item(`${profit.SEASON} profit`, `<span class="ui-statline"><b>${signed(+profit.PROFIT)}</b></span>`, profit.IN_PROGRESS === 'TRUE' ? 'projected' : '') : '',
-        now.JERSEY_PATCH && now.JERSEY_PATCH !== 'NA' ? item('Jersey patch', `<span class="fo-patch">${esc(now.JERSEY_PATCH)}</span>`, `<a href="/finances/?team=${abbr}">Full ledger →</a>`) : '',
+        now.JERSEY_PATCH && now.JERSEY_PATCH !== 'NA' ? item('Jersey patch', `<span class="fo-patch">${esc(now.JERSEY_PATCH)}</span>`) : '',
       ].join('');
       document.getElementById('frontoffice-section').style.display = '';
     })

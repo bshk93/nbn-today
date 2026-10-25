@@ -191,6 +191,15 @@
   margin-bottom: var(--space-3);
 }
 
+/* ── Linked heading ─────────────────────────────────────────────────────── */
+/* A heading that is also the way to its full page, instead of a "See all →"
+   beside it. The link sits INSIDE the heading, never as the heading itself,
+   so the title's own colour comes through by inheritance:
+     <h2 class="ui-section-title"><a class="ui-title-link" href="…">Title</a></h2>
+   No arrow or other glyph: it turns link-coloured on hover. */
+:root a.ui-title-link { display: inline-flex; align-items: baseline; color: inherit; text-decoration: none; }
+:root a.ui-title-link:hover, :root a.ui-title-link:focus-visible { color: var(--link); }
+
 /* ── Kicker, rank, stat line ─────────────────────────────────────────────── */
 /* .ui-kicker: the small label above a title that says where you are
    ("SEASON", "26-27 · WEEK 1"). .ui-rank: a list position in the display

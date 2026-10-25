@@ -1008,7 +1008,7 @@ function _buildTeamsEntry() {
     grid.appendChild(col);
   }
   panel.appendChild(grid);
-  panel.insertAdjacentHTML('beforeend', '<a class="sb-teams-all" href="/teams">All teams →</a>');
+  panel.insertAdjacentHTML('beforeend', '<a class="sb-teams-all" href="/teams">All teams</a>');
 
   const docked = () => window.matchMedia('(min-width: 900px)').matches;
   const place = () => {

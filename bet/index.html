@@ -132,7 +132,6 @@
 
     .act-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-5); }
     .act-title:first-child, .act-summary + .act-title { margin-top: var(--space-2); }
-    .act-more { font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
     .act-quiet { font-size: var(--text-sm); color: var(--text-muted); padding: var(--space-2) 0; }
     .act-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
     .act-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: 0.15rem; }
@@ -638,17 +637,19 @@
       refreshBalance,
     });
 
-    const section = (title, link) => {
+    // With a tab, the title itself is the link to it (a ui-title-link).
+    const section = (title, tab) => {
       const h = document.createElement('h2');
       h.className = 'ui-section-title act-title';
-      h.innerHTML = title;
-      if (link) {
+      if (tab) {
         const a = document.createElement('a');
-        a.href = `#${link.tab}`;
-        a.className = 'act-more';
-        a.textContent = link.label;
-        a.onclick = e => { e.preventDefault(); switchTab(link.tab); window.scrollTo(0, 0); };
+        a.href = `#${tab}`;
+        a.className = 'ui-title-link';
+        a.innerHTML = title;
+        a.onclick = e => { e.preventDefault(); switchTab(tab); window.scrollTo(0, 0); };
         h.appendChild(a);
+      } else {
+        h.innerHTML = title;
       }
       return h;
     };
@@ -678,14 +679,14 @@
 
       if (currentUser) content.appendChild(summaryStrip(openBets, liveMarkets, standing));
 
-      content.appendChild(section("Pick'em", { tab: 'pickem', label: 'Lineups & standings →' }));
+      content.appendChild(section("Pick'em", 'pickem'));
       content.appendChild(pickemCard(pk));
 
-      content.appendChild(section('Open bets', { tab: 'history', label: 'Past bets →' }));
+      content.appendChild(section('Open bets', 'history'));
       if (openBets.length) openBets.forEach(bet => content.appendChild(makeBetCard(bet)));
       else content.appendChild(quiet('No open bets right now.'));
 
-      content.appendChild(section('Futures', { tab: 'futures', label: 'Trade →' }));
+      content.appendChild(section('Futures', 'futures'));
       if (liveMarkets.length) liveMarkets.forEach(m => content.appendChild(marketRow(m)));
       else content.appendChild(quiet('No markets trading right now.'));
     }
@@ -779,8 +780,8 @@
       const futs = document.createElement('div');
       content.appendChild(futs);
       window.Futures.render(futs, moduleCtx(), { only: 'done' });
-      content.appendChild(section("Pick'em", { tab: 'pickem', label: 'Every day’s winners →' }));
-      content.appendChild(quiet("Daily winners and the season table are under Pick'em → Standings."));
+      content.appendChild(section("Pick'em", 'pickem'));
+      content.appendChild(quiet("Daily winners and the season table are under Pick'em, in Standings."));
     }
 
     // ── Bet Card ──────────────────────────────────────────────────────────────

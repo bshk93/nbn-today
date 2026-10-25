@@ -196,7 +196,7 @@
       </div>
       <div class="action-right">
         <a class="btn-secondary" id="btn-preview" href="#" target="_blank" style="display:none;"
-           title="Opens this article the way readers will see it — visible only to you until you publish">Preview →</a>
+           title="Opens this article the way readers will see it — visible only to you until you publish">Preview</a>
         <span class="status-msg" id="status-msg"></span>
         <button class="btn-secondary" id="btn-save" onclick="doSave()">Save Draft</button>
         <button class="btn-primary" id="btn-submit" onclick="doPublish()">Publish</button>
@@ -407,7 +407,7 @@ async function loadExisting(id) {
       document.getElementById('pr-fields').style.display = 'none';
       document.getElementById('body-label').textContent = 'Intro';
       const btn = document.getElementById('btn-submit');
-      btn.textContent = 'Ballot & blurbs →';
+      btn.textContent = 'Ballot & blurbs';
       btn.onclick = () => { location.href = `/news/rankings/?id=${articleId}`; };
       btn.style.display = '';
     }
