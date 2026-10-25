@@ -17,48 +17,46 @@
 //     apart would mean the feed carrying its own second map, which is the
 //     thing this file exists to prevent.
 //
-// The colours are the office's own, copied value-for-value from its
-// `.badge-{type}` rules. `/transactions` still renders from that CSS rather
-// than from here — rewriting twenty working rules into inline styles is churn
-// with real regression risk on a 4,000-line page and nothing visible to show
-// for it. If you change a colour, change it in both; the labels, which are the
-// part that actually drifts and the part a reader notices, are single-sourced.
+// The feed's tag is a neutral `ui-chip`; a `tone` (one of the chip's tones:
+// accent, danger, warning) marks the few kinds worth spotting while scanning.
+// Colour means something (docs/design-system.md): a trade is the league's
+// headline event, a release or waiver takes a player off a roster, and a
+// waiver tie or hard-cap level wants someone's attention. A signing is the
+// commonest move there is, and twenty colours made the tag column noise.
+// `/transactions` keeps its own `.badge-{type}` colours; only the labels are
+// shared, since they are what drifts and what a reader notices.
 
 (function (global) {
   'use strict';
 
   const TYPES = {
     // ── Ledger transaction types ──────────────────────────────────────────
-    sign:                  { label: 'Signing',        bg: 'var(--market-positive-bg)', fg: 'var(--market-positive)' },
-    sign_pick:             { label: 'Pick Signing',   bg: 'var(--market-positive-bg)', fg: 'var(--market-positive)' },
-    trade:                 { label: 'Trade',          bg: 'var(--purple-light-bg)',    fg: '#c084fc' },
-    pick:                  { label: 'Draft Pick',     bg: 'var(--accent-panel-bg)',    fg: 'var(--accent-light)' },
-    option:                { label: 'Option',         bg: 'var(--danger-alt-bg)',      fg: 'var(--danger-alt)' },
-    guarantee:             { label: 'Guarantee',      bg: '#052e2b',                   fg: '#2dd4bf' },
-    release:               { label: 'Release',        bg: 'var(--danger-bg)',          fg: 'var(--danger)' },
-    renounce:              { label: 'Renounce',       bg: '#3b2f0a',                   fg: '#fcd34d' },
-    rescind_renounce:      { label: 'Renounce Undone', bg: '#3b2f0a',                  fg: '#fcd34d' },
-    extension:             { label: 'Extension',      bg: '#0c1f3d',                   fg: '#60a5fa' },
-    convert_twoway:        { label: 'Two-Way Conversion', bg: '#1c1917',               fg: '#a8a29e' },
-    void_player:           { label: 'Void Player',    bg: 'var(--bg-subtle)',          fg: 'var(--text-muted)' },
-    stash:                 { label: 'Stash',          bg: '#0c2340',                   fg: '#93c5fd' },
-    set_hard_cap_level:    { label: 'Set Hard Cap',   bg: 'var(--gold-bg)',            fg: 'var(--gold)' },
-    offer_sheet:           { label: 'Offer Sheet',    bg: '#1e1b4b',                   fg: '#a5b4fc' },
-    offer_sheet_decision:  { label: 'Offer Sheet Decision', bg: '#1e1b4b',             fg: '#818cf8' },
-    qualifying_offer:      { label: 'Qualifying Offer', bg: '#1e1b4b',                 fg: '#a5b4fc' },
-    accept_qo:             { label: 'QO Accepted',    bg: 'var(--market-positive-bg)', fg: 'var(--market-positive)' },
-    waiver_clear:          { label: 'Waivers',        bg: '#0c2a3d',                   fg: '#38bdf8' },
-    waiver_flagged:        { label: 'Waiver Tie',     bg: 'var(--gold-bg)',            fg: 'var(--gold)' },
+    sign:                  { label: 'Signing' },
+    sign_pick:             { label: 'Pick Signing' },
+    trade:                 { label: 'Trade',          tone: 'accent' },
+    pick:                  { label: 'Draft Pick' },
+    option:                { label: 'Option' },
+    guarantee:             { label: 'Guarantee' },
+    release:               { label: 'Release',        tone: 'danger' },
+    renounce:              { label: 'Renounce' },
+    rescind_renounce:      { label: 'Renounce Undone' },
+    extension:             { label: 'Extension' },
+    convert_twoway:        { label: 'Two-Way Conversion' },
+    void_player:           { label: 'Void Player',    tone: 'danger' },
+    stash:                 { label: 'Stash' },
+    set_hard_cap_level:    { label: 'Set Hard Cap',   tone: 'warning' },
+    offer_sheet:           { label: 'Offer Sheet' },
+    offer_sheet_decision:  { label: 'Offer Sheet Decision' },
+    qualifying_offer:      { label: 'Qualifying Offer' },
+    accept_qo:             { label: 'QO Accepted' },
+    waiver_clear:          { label: 'Waivers',        tone: 'danger' },
+    waiver_flagged:        { label: 'Waiver Tie',     tone: 'warning' },
 
     // ── Feed-only kinds ───────────────────────────────────────────────────
-    // Rose, which no transaction type uses, so an article never reads as a
-    // move someone made.
-    news:  { label: 'News',  bg: '#3b0d24',        fg: '#f9a8d4' },
-    // Deliberately neutral rather than a colour of its own. In season this is
-    // the most common row by a wide margin, and a bright badge on every third
-    // line turns the tag column into noise — a final score is a fact, not a
-    // category you are scanning for.
-    score: { label: 'Final', bg: 'var(--bg-hover)', fg: 'var(--text-secondary)' },
+    news:  { label: 'News' },
+    // Neutral: in season this is the commonest row by far, and a final score
+    // is a fact, not a category you are scanning for.
+    score: { label: 'Final' },
   };
 
   // Unknown ids fall through to themselves rather than to "Other": a type this
@@ -67,8 +65,9 @@
     return (TYPES[type] || {}).label || type;
   }
 
-  function colors(type) {
-    return TYPES[type] || { bg: 'var(--bg-subtle)', fg: 'var(--text-muted)' };
+  // '' (the neutral chip) for anything without one, unknown ids included.
+  function tone(type) {
+    return (TYPES[type] || {}).tone || '';
   }
 
   // ── Headlines ─────────────────────────────────────────────────────────────
@@ -210,5 +209,5 @@
     }
   }
 
-  global.FeedTypes = { TYPES, label, colors, headline };
+  global.FeedTypes = { TYPES, label, tone, headline };
 })(window);

@@ -155,37 +155,6 @@
     .dash-chip.caution   { border-color: var(--gold-border);   background: var(--gold-bg);   color: var(--gold); }
     .dash-chip.ok        { color: var(--text-muted); }
 
-    /* Band 2 — around the league */
-    .dash-feed { display: flex; flex-direction: column; gap: 0.5rem; }
-    .dash-feed-item { font-size: 0.78rem; line-height: 1.4; color: var(--text-secondary); }
-    .dash-feed-item .meta { color: var(--text-muted); font-size: 0.7rem; display: block; }
-    a.dash-feed-item:hover { color: var(--text-primary); }
-
-    /* A merged feed row: tag, then the thing that happened, then when. The tag
-       is its own column so the badges line up and the column can be scanned;
-       inline they would start at a different x on every row. */
-    .dash-feed-row {
-      display: grid;
-      grid-template-columns: 6.2rem 1fr;
-      gap: 0.15rem 0.6rem;
-      align-items: baseline;
-    }
-    .dash-feed-tag {
-      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em;
-      text-transform: uppercase; text-align: center;
-      padding: 0.12rem 0.35rem; border-radius: var(--radius-sm);
-      /* Wraps rather than truncating. "Offer Sheet Decision" does not fit on
-         one line at any column width the text deserves, and "OFFER SHEE…" is
-         worse than two lines — the label is shared with /transactions, so
-         shortening it here would split the vocabulary this tag exists to keep
-         whole. */
-      line-height: 1.25;
-    }
-    .dash-feed-text { font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary); }
-    a.dash-feed-row:hover .dash-feed-text { color: var(--text-primary); }
-    .dash-feed-when { grid-column: 2; font-size: 0.68rem; color: var(--text-muted); }
-    .dash-feed-score { font-variant-numeric: tabular-nums; }
-
     /* Kind, team and search over the loaded rows. One line on a wide card;
        on a phone the switch keeps its own line and the other two share one. */
     .dash-feed-filters {
@@ -195,7 +164,6 @@
     .dash-feed-kinds { flex: none; max-width: 100%; overflow-x: auto; }
     .dash-feed-teamsel { flex: none; height: 2rem; font-size: var(--text-xs); }
     .dash-feed-search { flex: 1 1 10rem; min-width: 0; height: 2rem; font-size: var(--text-sm); }
-    .dash-feed-score .win { color: var(--text-primary); font-weight: 700; }
 
     /* Injury report — the current 2K injury list, as a table laid out like
        the game's own screen. It scrolls inside the card, as the game's list
@@ -219,14 +187,6 @@
       .dash-inj-table .dash-inj-ovr, .dash-inj-table .dash-inj-status { display: none; }
       .dash-inj-status-sm { display: block; }
       .dash-inj-table th, .dash-inj-table td { padding-left: 0.4rem; padding-right: 0.4rem; }
-    }
-
-    @media (max-width: 480px) {
-      /* The tag column costs a third of a phone's width; above the text it
-         costs a line and the description keeps the full measure. */
-      .dash-feed-row { grid-template-columns: 1fr; }
-      .dash-feed-tag { justify-self: start; }
-      .dash-feed-when { grid-column: 1; }
     }
 
     /* Power rankings — a horizontal standing rather than a fourth column in
@@ -564,11 +524,6 @@
     .dash-otd-what b { color: var(--text-primary); font-weight: 600; }
     .dash-otd-sub { color: var(--text-muted); font-size: 0.78rem; }
     .dash-otd-what .dash-feed-team img { width: 14px; height: 14px; }
-    .dash-feed-row[hidden] { display: none; }
-    .dash-feed-more {
-      margin-top: 0.4rem; padding: 0; background: none; border: none;
-      font: inherit; font-size: var(--text-xs); color: var(--link); cursor: pointer;
-    }
     .dash-ms-what { flex-basis: 100%; padding-left: calc(18px + 0.35rem); font-size: var(--text-xs); color: var(--text-muted); }
 
     /* A slate row's time links to that game's preview. */
@@ -667,53 +622,66 @@
     /* Your team is boxed like every other section now (above). */
     :root .dash-team-name { font-size: var(--text-xl); }
 
-    /* Feed: the label becomes coloured text with a dot rather than a filled
-       pill, and the headline gets a readable size. The pill colours from
-       feed-types.js are kept as the dot and text colour. */
-    :root .dash-feed { gap: 0; }
-    :root .dash-feed-row {
-      grid-template-columns: 7.5rem minmax(0, 1fr);
-      gap: 0.2rem var(--space-4);
-      padding: var(--space-3) 0;
+    /* A small text link under a list ("Full calendar →"). */
+    .dash-feed-item { font-size: var(--text-sm); color: var(--text-secondary); }
+    a.dash-feed-item:hover { color: var(--text-primary); }
+
+    /* Around the League: days under a header, a square tag, the headline.
+       The tag is its own column so the tags line up and can be scanned. */
+    .dash-feed { display: flex; flex-direction: column; }
+    .dash-feed-day {
+      display: block; color: var(--text-secondary);
+      padding: var(--space-5) 0 var(--space-2);
       border-bottom: 1px solid var(--border-subtle);
     }
-    :root .dash-feed-row:last-child { border-bottom: none; }
-    :root .dash-feed-tag {
-      background: none !important;
-      padding: 0;
-      text-align: left;
-      font-size: var(--text-xs);
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      display: flex; align-items: baseline; gap: 0.4rem;
+    .dash-feed-day:first-child { padding-top: 0; }
+    .dash-feed-day[hidden], :root a.dash-feed-row[hidden] { display: none; }
+    :root a.dash-feed-row {
+      display: grid; grid-template-columns: 7.5rem minmax(0, 1fr);
+      gap: var(--space-1) var(--space-4); align-items: baseline;
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      color: inherit; text-decoration: none;
     }
-    :root .dash-feed-tag::before {
-      content: ''; flex: none;
-      width: 6px; height: 6px; border-radius: 50%;
-      background: currentColor;
-      transform: translateY(-1px);
-    }
-    :root .dash-feed-text { font-size: var(--text-base); color: var(--text-primary); line-height: 1.4; }
+    /* The next day's header carries the rule. */
+    :root a.dash-feed-row:last-child, :root a.dash-feed-row:has(+ .dash-feed-day) { border-bottom: none; }
+    /* Wraps rather than truncating: "Offer Sheet Decision" doesn't fit the
+       column, and the label is shared with /transactions, so it isn't
+       shortened here. */
+    .dash-feed-tag.ui-chip { justify-self: start; white-space: normal; transform: translateY(-1px); }
+    :root .dash-feed-text { font-size: var(--text-base); font-weight: 500; color: var(--text-primary); line-height: 1.4; }
     :root a.dash-feed-row:hover .dash-feed-text { color: var(--link); }
-    :root .dash-feed-when { font-size: var(--text-xs); }
     :root .dash-feed-text strong { font-weight: 600; }
     /* A team inside a headline: its logo, then the abbreviation. */
     /* Plain inline, not inline-flex: an inline-flex box takes its baseline
        from the logo's bottom edge, which lifted the abbreviation off the line. */
     .dash-feed-team { font-weight: 600; white-space: nowrap; }
-    .dash-feed-team img { width: 1.1em; height: 1.1em; object-fit: contain; vertical-align: -0.2em; margin-right: 0.3em; }
-    .dash-feed-sub { display: block; font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.1rem; }
-    /* A night's finals, one row: the games wrap, a game never splits. */
-    /* A faint bullet between games. Each bullet leads its game, and the list
-       is pulled left by one bullet's width under an overflow:hidden box, so
-       the bullet of a game that starts a line is clipped. A trailing bullet
-       can't be dropped at a wrap; CSS can't see where the line broke. */
-    .dash-feed-scores { display: block; overflow: hidden; margin-top: 0.2rem;
-                        font-size: var(--text-sm); color: var(--text-muted); }
-    .dash-feed-scores-in { display: flex; flex-wrap: wrap; row-gap: 0.15rem; margin-left: -1.2rem; }
-    .dash-feed-scores .dash-feed-score { white-space: nowrap; }
-    .dash-feed-scores .dash-feed-score::before {
-      content: '•'; display: inline-block; width: 1.2rem; text-align: center; opacity: 0.3;
+    .dash-feed-team img { width: 1.25em; height: 1.25em; object-fit: contain; vertical-align: -0.25em; margin-right: 0.3em; }
+    .dash-feed-sub { display: block; font-size: var(--text-sm); font-weight: 400; color: var(--text-muted); margin-top: 0.1rem; }
+    /* A night's finals as a ticker: one cell per game, away over home, each
+       side edged in its two team colours (design-system.md § Scores). */
+    .dash-feed-scores {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 7.5rem));
+      gap: var(--space-2) var(--space-4); margin-top: var(--space-2);
+    }
+    .dash-feed-score { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .dash-feed-side {
+      display: flex; align-items: center; gap: var(--space-2);
+      font-family: var(--font-display); font-size: var(--text-base); font-weight: 600;
+      line-height: 1.15; letter-spacing: 0.02em; color: var(--text-muted);
+    }
+    .dash-feed-side::before {
+      content: ''; flex: none; width: 2px; align-self: stretch;
+      border-left: 2px solid var(--team-primary); background: var(--team-accent);
+    }
+    .dash-feed-side b { margin-left: auto; font-weight: inherit; font-variant-numeric: tabular-nums; }
+    .dash-feed-side.win { color: var(--text-primary); font-weight: 700; }
+    /* Show more: the card's footer, under a rule. */
+    :root .dash-feed-more {
+      width: 100%; justify-content: flex-start; margin-top: var(--space-2); padding: 0;
+      border-top: 1px solid var(--border-subtle); border-radius: 0;
+      font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary);
     }
 
     /* Schedule */
@@ -779,17 +747,15 @@
     .hero-matchup-at { color: var(--text-muted); font-weight: 400; }
     .hero-matchup-time { color: var(--text-muted); font-size: var(--text-xs); font-weight: 500; margin-left: 0.2rem; }
 
-    :root .dash-feed-tag { letter-spacing: 0.03em; }
-
     /* Phones */
     @media (max-width: 600px) {
       :root .page-wrap { padding: 1.25rem 1rem 3rem; }
       /* Not on phones: too narrow to read a scrolling line. */
       :root .ticker { display: none; }
-      /* Label on its own line above the headline, so the headline gets the
-         full width instead of a narrow strip beside the label. */
-      :root .dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: 0.15rem; }
-      :root .dash-feed-when { grid-column: 1; }
+      /* Tag on its own line above the headline, so the headline gets the
+         full width instead of a narrow strip beside the tag. */
+      :root a.dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+      :root .dash-feed-tag { justify-self: start; }
       :root .dash-card, :root .hero:not(:empty) { padding: var(--space-4); margin-bottom: var(--space-4); }
     }
 
@@ -1001,6 +967,12 @@
       const [y, m, day] = d.split('-').map(Number);
       return new Date(Date.UTC(y, m - 1, day))
         .toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    };
+    // "Thu, Oct 23": a feed day header.
+    const dayLabel = d => {
+      const [y, m, day] = d.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, day))
+        .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
     };
     const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
     // Logo + abbreviation, for a game row that needs to read at a glance
@@ -1418,12 +1390,13 @@
     // slate and pushed every transaction behind "Show more".
     const feedFromScores = () => latestNight.then(night => {
       if (!night || !night.games.length) return [];
+      // A ticker cell: away over home, the winner bright.
       const side = (team, score, won) =>
-        `<span class="${won ? 'win' : ''}">${esc(team)} ${esc(String(score))}</span>`;
+        `<span class="dash-feed-side${won ? ' win' : ''}" data-team="${esc(team)}">${esc(team)} <b>${esc(String(score))}</b></span>`;
       const games = night.games.map(g => {
         const awayWon = g.away_score > g.home_score;
         return '<span class="dash-feed-score">'
-          + side(g.away_team, g.away_score, awayWon) + ' – '
+          + side(g.away_team, g.away_score, awayWon) + ' '
           + side(g.home_team, g.home_score, !awayWon) + '</span>';
       });
       return [{
@@ -1431,7 +1404,7 @@
         date: night.date,
         type: 'score',
         html: plural(night.games.length, 'game')
-          + `<span class="dash-feed-scores"><span class="dash-feed-scores-in">${games.join('')}</span></span>`,
+          + `<span class="dash-feed-scores">${games.join(' ')}</span>`,
         href: `/boxscores/?date=${encodeURIComponent(night.date)}`,
       }];
     });
@@ -1476,16 +1449,15 @@
         return;
       }
 
+      // The date is the day header's (render), so a row is tag + headline.
       const rowHtml = it => {
-        const c = FeedTypes.colors(it.type);
-        const when = it.date ? shortDate(it.date) : '';
+        const tone = FeedTypes.tone(it.type);
+        const sub = it.sub || (it.byline ? 'By ' + esc(it.byline) : '');
         return `<a class="dash-feed-row" href="${esc(it.href)}">`
-          + `<span class="dash-feed-tag" style="background:${esc(c.bg)};color:${esc(c.fg)}">`
+          + `<span class="ui-chip${tone ? ' ui-chip--' + tone : ''} dash-feed-tag">`
           + `${esc(FeedTypes.label(it.type))}</span>`
           + `<span class="dash-feed-text">${it.html || esc(it.text)}`
-          + (it.sub ? `<span class="dash-feed-sub">${it.sub}</span>` : '') + `</span>`
-          + `<span class="dash-feed-when">${esc(when)}`
-          + (it.byline ? ` · ${esc(it.byline)}` : '') + `</span></a>`;
+          + (sub ? `<span class="dash-feed-sub">${sub}</span>` : '') + `</span></a>`;
       };
 
       // What each row can be filtered on, worked out once. Teams come off the
@@ -1499,7 +1471,7 @@
         scratch.innerHTML = html.replace(/></g, '> <');
         const teams = new Set([...html.matchAll(/logo-([a-z]{2,3})\.webp/g)].map(m => m[1].toUpperCase()));
         if (it.type === 'score') {
-          scratch.querySelectorAll('.dash-feed-score span').forEach(sp =>
+          scratch.querySelectorAll('.dash-feed-side').forEach(sp =>
             teams.add(sp.textContent.trim().split(' ')[0].toUpperCase()));
         }
         return { it, html, teams, text: fold(scratch.textContent + ' ' + (it.byline || '')) };
@@ -1529,7 +1501,7 @@
         + `<input type="search" class="ui-input dash-feed-search" placeholder="Search" aria-label="Search the feed" value="${esc(state.q)}">`
         + '</div>'
         + '<div class="dash-feed"></div>'
-        + '<button type="button" class="dash-feed-more" hidden></button>';
+        + '<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm dash-feed-more" hidden></button>';
 
       const list = card.querySelector('.dash-feed');
       const more = card.querySelector('.dash-feed-more');
@@ -1542,9 +1514,17 @@
           && (!state.team || r.teams.has(state.team))
           && terms.every(w => r.text.includes(w)));
         const filtered = state.kind !== 'all' || state.team || terms.length;
+        // A header before each day's run (rows are sorted by date). Past the
+        // cutoff only a tail is hidden, so a header hides with its first row.
+        let day = null;
         list.innerHTML = shown.length
-          ? shown.map((r, i) => (i >= FEED_LIMIT && !open
-              ? r.html.replace('<a class="dash-feed-row"', '<a class="dash-feed-row" hidden') : r.html)).join('')
+          ? shown.map((r, i) => {
+              const hide = i >= FEED_LIMIT && !open;
+              const head = r.it.date && r.it.date !== day
+                ? `<div class="ui-kicker dash-feed-day"${hide ? ' hidden' : ''}>${esc(dayLabel(r.it.date))}</div>` : '';
+              day = r.it.date || day;
+              return head + (hide ? r.html.replace('<a class="dash-feed-row"', '<a class="dash-feed-row" hidden') : r.html);
+            }).join('')
           : `<div class="dash-empty">${filtered ? 'Nothing matches these filters.' : 'Nothing yet.'}</div>`;
         // A night's finals are one row; with a team picked, only its game.
         if (state.team) list.querySelectorAll('.dash-feed-score').forEach(g => {

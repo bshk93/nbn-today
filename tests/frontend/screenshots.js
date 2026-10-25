@@ -24,6 +24,8 @@
 //   --themes dark,light    themes to capture (default: dark,light,team-bos)
 //   --viewports phone      desk and/or phone (default: both)
 //   --all                  every page in build/og_tags.py instead of the list below
+//   --element '#dash-feed' capture that element, whole, instead of the first
+//                          screen — for a section below the fold
 //
 // Themes are applied by setting <html data-theme> after load, which skips the
 // unlock check theme-boot.js does — a screenshot needs no NB¥.
@@ -73,7 +75,9 @@ function findChrome() {
   const pw = '/opt/pw-browsers';
   if (fs.existsSync(pw)) {
     const dir = fs.readdirSync(pw).filter(d => /^chromium-\d+$/.test(d)).sort().pop();
-    if (dir) return path.join(pw, dir, 'chrome-linux', 'chrome');
+    // chrome-linux before Playwright 1.5x, chrome-linux64 since.
+    const bin = dir && ['chrome-linux', 'chrome-linux64'].map(d => path.join(pw, dir, d, 'chrome')).find(fs.existsSync);
+    if (bin) return bin;
   }
   const base = path.join(os.homedir(), '.cache/puppeteer/chrome-headless-shell');
   if (!fs.existsSync(base)) {
@@ -91,6 +95,7 @@ function findChrome() {
   const only = arg('only', null);
   const themes = arg('themes', 'dark,light,team-bos').split(',');
   const viewports = arg('viewports', 'desk,phone').split(',');
+  const element = arg('element', null);
   // --all: every page build/og_tags.py knows (~140), not just the fixed list.
   // For a sweep before a PR that changes shared CSS, where the fixed list
   // has missed pages that carry their own markup.
@@ -128,7 +133,10 @@ function findChrome() {
         for (const t of themes) {
           await page.evaluate(id => document.documentElement.setAttribute('data-theme', id), THEMES[t] || t);
           await new Promise(r => setTimeout(r, 150));
-          await page.screenshot({ path: path.join(out, `${vp}-${t}-${name}.png`) });
+          const file = path.join(out, `${vp}-${t}-${name}.png`);
+          const el = element && await page.$(element);
+          if (element && !el) console.log(`  ${name}: no ${element}`);
+          await (el ? el.screenshot({ path: file }) : page.screenshot({ path: file }));
         }
         if (vp === 'phone') {
           const w = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
