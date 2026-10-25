@@ -455,7 +455,9 @@
 
   function renderTiles() {
     const due = W.fixtures.filter(f => f.date <= today);
-    const missing = due.filter(f => !W.entered.has(gameKey(f.date, f.home_team, f.away_team)));
+    // Tonight's games aren't owed a box score yet, so they aren't "awaiting".
+    const owed = due.filter(f => f.date < today).length;
+    const missing = due.filter(f => f.date < today && !W.entered.has(gameKey(f.date, f.home_team, f.away_team)));
     const ready = [...W.shots.values()].filter(it => it.status === 'pending' && it.ready).length
       + [...W.injuries.keys()].filter(injuryPending).length;
     tiles([
@@ -463,7 +465,7 @@
       { n: due.length, label: 'Games played to date', sub: `of ${W.fixtures.length} scheduled` },
       { n: missing.length, label: 'Awaiting entry',
         tone: missing.length === 0 ? 'good' : missing.length > 5 ? 'bad' : 'warn',
-        sub: due.length ? `${Math.round(100 * (due.length - missing.length) / due.length)}% entered` : '' },
+        sub: owed ? `${Math.round(100 * (owed - missing.length) / owed)}% entered` : '' },
       { n: ready, label: 'Ready to parse', tone: ready ? 'warn' : '',
         sub: 'box scores and injury reports' },
     ]);

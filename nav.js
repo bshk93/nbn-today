@@ -852,8 +852,13 @@ function _schedule() {
 let _enteredPromise = null;
 function _enteredGames(season) {
   if (!_enteredPromise) {
+    // A failed fetch must not read as "nothing entered": that turns every game
+    // of the season into a missing box score. Reject instead (the count then
+    // shows nothing and isn't cached), and let the next ask try again.
     _enteredPromise = fetch(`/api/boxscores/games?season=${encodeURIComponent(season)}`)
-      .then(r => (r.ok ? r.json() : [])).catch(() => []);
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(games => (Array.isArray(games) ? games : Promise.reject(new Error('bad index'))))
+      .catch(e => { _enteredPromise = null; throw e; });
   }
   return _enteredPromise;
 }
@@ -892,8 +897,9 @@ function _pdcWork(me) {
     || (isHead && p.needs_result)).length);
 }
 
-// Stats — committees/stats renderTiles' "Awaiting entry": games scheduled up to
-// today with no box score on file. A game with its sides swapped is the same game.
+// Stats — committees/stats renderTiles' "Awaiting entry": games scheduled before
+// today with no box score on file. Tonight's games aren't owed yet, so they
+// don't count. A game with its sides swapped is the same game.
 function _statsWork(me) {
   const roles = new Set(me.roles || []);
   if (!roles.has('stats') && !roles.has('admin')) return Promise.resolve(0);
@@ -903,7 +909,7 @@ function _statsWork(me) {
     if (!sched?.season) return 0;
     return _enteredGames(sched.season).then(games => {
       const entered = new Set(games.map(g => key(g.date, g.home_team, g.away_team)));
-      return (sched.games || []).filter(f => f.date <= today && !entered.has(key(f.date, f.home_team, f.away_team))).length;
+      return (sched.games || []).filter(f => f.date < today && !entered.has(key(f.date, f.home_team, f.away_team))).length;
     });
   });
 }
