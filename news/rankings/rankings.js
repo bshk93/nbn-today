@@ -136,8 +136,8 @@ function render() {
 
   const phase = a.status === 'published' ? 'published' : (a.phase || 'setup');
   $('phase-badge').innerHTML = a.status === 'published'
-    ? '<span class="badge badge-final">Published</span>'
-    : `<span class="badge badge-${escHtml(a.phase || 'setup')}">${escHtml(PHASE_LABEL[a.phase] || a.phase)}</span>`;
+    ? '<span class="ui-badge ui-badge--success">Published</span>'
+    : `<span class="ui-badge${{ voting: ' ui-badge--accent', blurbs: ' ui-badge--warning', final: ' ui-badge--success' }[a.phase] || ''}">${escHtml(PHASE_LABEL[a.phase] || a.phase)}</span>`;
   $('pr-title').textContent = a.title || 'Untitled';
 
   const bits = [];

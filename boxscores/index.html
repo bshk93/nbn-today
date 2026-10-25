@@ -48,7 +48,7 @@
     .sb-team a { font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.03em; color: inherit; text-decoration: none; }
     .sb-team a:hover { text-decoration: underline; }
     .sb-name { font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sb-score { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-muted); }
+    .sb-score { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-muted); }
     .sb .win, .sb .win a { color: var(--text-primary); }
     .sb-score.win { position: relative; }
     .sb-score.win::after { content: ''; position: absolute; right: -0.8rem; top: 50%; border: 5px solid transparent; border-right-color: var(--text-primary); transform: translateY(-50%); }
@@ -64,7 +64,7 @@
     .gm-link { margin-left: auto; padding: 0 var(--space-1); border: 0; background: none; font: inherit; color: var(--text-muted); cursor: pointer; }
     .gm-link:hover { color: var(--link); text-decoration: underline; }
     .game.focus { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-    .chevron { color: var(--text-dim); font-size: 0.7rem; transition: transform 0.15s; }
+    .chevron { color: var(--text-dim); font-size: var(--text-xs); transition: transform 0.15s; }
     .game.open .chevron { transform: rotate(180deg); }
 
     .game-body { display: none; border-top: 1px solid var(--border); padding: var(--space-4) var(--space-5) var(--space-5); }

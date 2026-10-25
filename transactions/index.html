@@ -33,7 +33,7 @@
       align-items: center;
       gap: 0.75rem;
       margin-bottom: 1.5rem;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       color: var(--text-muted);
     }
 
@@ -44,7 +44,7 @@
       border-radius: var(--radius-sm);
       padding: 0.3rem 0.75rem;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
     }
 
     .auth-bar button:hover { background: var(--text-dim); }
@@ -59,7 +59,7 @@
     }
 
     .form-card h2 {
-      font-size: 1rem;
+      font-size: var(--text-base);
       font-weight: 600;
       margin-bottom: 1.25rem;
       color: var(--text-secondary);
@@ -73,7 +73,7 @@
     .form-card.collapsed h2 { margin-bottom: 0; }
 
     .form-card h2 .form-card-chevron {
-      font-size: 0.75rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
       transition: transform 0.15s;
     }
@@ -110,7 +110,7 @@
       color: var(--text-primary);
       border-radius: var(--radius-sm);
       padding: 0.5rem 0.625rem;
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       font-family: inherit;
       width: 100%;
     }
@@ -135,7 +135,7 @@
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       font-weight: normal;
       text-transform: none;
       letter-spacing: 0;
@@ -146,7 +146,7 @@
     /* ── Salary rows ── */
     .salary-rows { display: flex; flex-direction: column; gap: 0.5rem; }
     .scale-note {
-      font-size: 0.78rem; line-height: 1.45; margin-bottom: 0.6rem;
+      font-size: var(--text-xs); line-height: 1.45; margin-bottom: 0.6rem;
       padding: 0.55rem 0.75rem; border-radius: var(--radius-sm);
       background: var(--accent-panel-bg); color: var(--text-muted);
       border-left: 3px solid var(--accent);
@@ -179,7 +179,7 @@
       color: var(--text-primary);
       border-radius: var(--radius-sm);
       padding: 0.5rem 0.5rem;
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-family: inherit;
     }
 
@@ -189,9 +189,9 @@
     .gtd-step { display: flex; gap: 0.4rem; align-items: center; }
     .gtd-step .gtd-step-amount { max-width: 9rem; }
     .gtd-step .gtd-step-date { max-width: 9.5rem; }
-    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0 0.2rem; line-height: 1; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--text-base); padding: 0 0.2rem; line-height: 1; }
     .gtd-step .gtd-step-remove:hover { color: var(--danger); }
-    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: 0.7rem; padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: var(--text-xs); padding: 0.1rem 0.5rem; font-family: inherit; }
     .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
 
     .salary-row-main button {
@@ -199,7 +199,7 @@
       border: none;
       color: var(--danger);
       cursor: pointer;
-      font-size: 1.1rem;
+      font-size: var(--text-md);
       line-height: 1;
       padding: 0 0.25rem;
     }
@@ -212,7 +212,7 @@
       border-radius: var(--radius-sm);
       padding: 0.3rem 0.75rem;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       width: 100%;
     }
 
@@ -232,7 +232,7 @@
       align-items: center;
       padding: 0.5rem 0.75rem;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       color: var(--text-muted);
       user-select: none;
@@ -240,7 +240,7 @@
 
     .contract-helper-header:hover { color: var(--text-secondary); }
 
-    .contract-helper-header .chevron { transition: transform 0.15s; font-size: 0.7rem; }
+    .contract-helper-header .chevron { transition: transform 0.15s; font-size: var(--text-xs); }
     .contract-helper.open .chevron { transform: rotate(180deg); }
 
     .contract-helper-body {
@@ -258,7 +258,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -272,7 +272,7 @@
       color: var(--text-primary);
       border-radius: var(--radius-sm);
       padding: 0.4rem 0.5rem;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       font-family: inherit;
     }
 
@@ -284,13 +284,13 @@
       border-radius: var(--radius-sm);
       padding: 0.4rem 0.9rem;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
     }
 
     .ch-generate-btn:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 
-    .ch-hint { font-size: 0.72rem; color: var(--text-muted); }
+    .ch-hint { font-size: var(--text-xs); color: var(--text-muted); }
 
     /* ── Pick fields ── */
     #pick-fields { display: none; }
@@ -310,7 +310,7 @@
       color: var(--text-on-accent);
       border-radius: var(--radius-sm);
       padding: 0.55rem 1.5rem;
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       font-weight: 600;
       cursor: pointer;
     }
@@ -319,7 +319,7 @@
     .btn-submit:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
 
     .form-status {
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
     }
 
     .form-status.ok { color: var(--market-positive); }
@@ -330,15 +330,15 @@
       padding: 1rem 1.25rem;
     }
     .validation-panel h4 {
-      font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      font-size: var(--text-xs); font-weight: 700; text-transform: uppercase;
       letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.6rem;
     }
     .check-row {
       display: flex; align-items: flex-start; gap: 0.6rem;
-      padding: 0.3rem 0; font-size: 0.85rem; line-height: 1.5;
+      padding: 0.3rem 0; font-size: var(--text-sm); line-height: 1.5;
     }
     .check-row + .check-row { border-top: 1px solid var(--bg-page); }
-    .check-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 0.05rem; }
+    .check-icon { flex-shrink: 0; font-size: var(--text-base); margin-top: 0.05rem; }
     .check-row.error .check-msg  { color: var(--danger-light); }
     .check-row.warning .check-msg { color: var(--gold); }
     .check-row.pass .check-msg   { color: var(--text-muted); }
@@ -348,7 +348,7 @@
     }
     .btn-force {
       background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--gold); border: 1px solid var(--gold-dim);
-      border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
+      border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 600;
       padding: 0.3rem 0.75rem; cursor: pointer; font-family: inherit;
     }
     .btn-force:hover { background: var(--gold-dim); }
@@ -379,7 +379,7 @@
       gap: 0.875rem;
     }
 
-    .modal h3 { font-size: 1rem; font-weight: 600; }
+    .modal h3 { font-size: var(--text-base); font-weight: 600; }
 
     .modal input {
       background: var(--bg-page);
@@ -387,7 +387,7 @@
       color: var(--text-primary);
       border-radius: var(--radius-sm);
       padding: 0.5rem 0.625rem;
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       width: 100%;
     }
 
@@ -396,7 +396,7 @@
     .modal-actions button {
       border-radius: var(--radius-sm);
       padding: 0.4rem 1rem;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       cursor: pointer;
       border: none;
     }
@@ -412,23 +412,11 @@
     }
 
     .filter-label {
-      font-size: 0.75rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
       margin-right: 0.25rem;
     }
 
-    .chip {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: var(--radius-sm);
-      padding: 0.2rem 0.75rem;
-      font-size: 0.78rem;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .chip.active { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
@@ -437,7 +425,7 @@
       width: 100%;
       min-width: 1020px;
       border-collapse: collapse;
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       table-layout: fixed;
     }
 
@@ -462,7 +450,7 @@
       text-align: left;
       padding: 0.5rem 0.75rem;
       border-bottom: 1px solid var(--border);
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.07em;
@@ -487,7 +475,7 @@
       display: inline-block;
       border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem;
-      font-size: 0.72rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -501,15 +489,15 @@
     /* ── Trade details (log view, grouped per team) ── */
     .trade-log-team { margin-bottom: 0.4rem; }
     .trade-log-team:last-child { margin-bottom: 0; }
-    .trade-log-team-name { font-weight: 700; color: var(--text-secondary); font-size: 0.78rem; margin-bottom: 0.1rem; }
-    .trade-log-asset-out { color: var(--danger-light); font-size: 0.8rem; }
-    .trade-log-asset-in  { color: var(--success-light); font-size: 0.8rem; }
+    .trade-log-team-name { font-weight: 700; color: var(--text-secondary); font-size: var(--text-xs); margin-bottom: 0.1rem; }
+    .trade-log-asset-out { color: var(--danger-light); font-size: var(--text-sm); }
+    .trade-log-asset-in  { color: var(--success-light); font-size: var(--text-sm); }
 
     .del-col { display: none; }
     .txn-table.admin-mode .del-col { display: table-cell; }
     .delete-txn-btn {
       background: none; border: none; color: var(--text-dim); cursor: pointer;
-      font-size: 1rem; padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); line-height: 1;
+      font-size: var(--text-base); padding: 0.15rem 0.4rem; border-radius: var(--radius-sm); line-height: 1;
     }
     .delete-txn-btn:hover { color: var(--danger); }
     /* Rescind (§ 3.10) — restores a renounced free agent from the snapshot the
@@ -518,34 +506,34 @@
        leaves the log alone and puts the player back. */
     .rescind-txn-btn {
       background: none; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer;
-      font-size: 0.7rem; padding: 0.1rem 0.35rem; border-radius: var(--radius-sm); line-height: 1.3;
+      font-size: var(--text-xs); padding: 0.1rem 0.35rem; border-radius: var(--radius-sm); line-height: 1.3;
       font-family: inherit; margin-right: 0.25rem;
     }
     .rescind-txn-btn:hover { color: var(--gold); border-color: var(--gold); }
     /* Open offer sheets (§ 3.15) */
     .offers-panel {
-      border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
+      border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent);
       border-radius: var(--radius); padding: 0.85rem 1rem; margin-bottom: 1.25rem;
     }
-    .offers-panel.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
+    .offers-panel.overdue { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
     .offers-panel h2 {
-      font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em;
-      color: hsl(45,90%,72%); margin: 0 0 0.6rem;
+      font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--gold); margin: 0 0 0.6rem;
     }
-    .offers-panel.overdue h2 { color: hsl(0,85%,74%); }
+    .offers-panel.overdue h2 { color: var(--danger-light); }
     .offer-row {
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.85rem;
-      padding: 0.5rem 0; border-top: 1px solid var(--border); font-size: 0.85rem;
+      padding: 0.5rem 0; border-top: 1px solid var(--border); font-size: var(--text-sm);
     }
     .offer-row:first-of-type { border-top: none; }
     .offer-row .grow { flex: 1 1 260px; }
-    .offer-meta { color: var(--text-muted); font-size: 0.78rem; }
+    .offer-meta { color: var(--text-muted); font-size: var(--text-xs); }
     .offer-overdue-tag {
-      color: var(--danger); font-weight: 700; font-size: 0.72rem;
+      color: var(--danger); font-weight: 700; font-size: var(--text-xs);
       text-transform: uppercase; letter-spacing: 0.04em;
     }
     .offer-btn {
-      border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.7rem;
+      border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 600; padding: 0.3rem 0.7rem;
       cursor: pointer; background: transparent; font-family: inherit;
       border: 1px solid var(--border); color: var(--text-secondary);
     }
@@ -563,7 +551,7 @@
     .badge-voided         { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
     .txn-voided td        { color: var(--text-dim); }
     .txn-voided .badge:not(.badge-voided) { text-decoration: line-through; opacity: 0.6; }
-    .voided-reason        { margin-top: 0.25rem; font-size: 0.75rem; color: var(--danger); }
+    .voided-reason        { margin-top: 0.25rem; font-size: var(--text-xs); color: var(--danger); }
     .badge-waiver_clear   { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .badge-waiver_flagged { background: var(--gold-bg); color: var(--gold); }
     .badge-renounce       { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--gold); }
@@ -579,56 +567,56 @@
     .badge-callup  { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-calldown { background: var(--danger-alt-bg); color: var(--danger-alt); }
     .badge-trade   { background: var(--purple-light-bg); color: var(--accent-light); }
-    .badge-tbd     { background: var(--border); color: var(--text-muted); font-size: 0.68rem; }
+    .badge-tbd     { background: var(--border); color: var(--text-muted); font-size: var(--text-xs); }
 
     /* ── Trade builder ── */
     .trade-leg { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; }
     .trade-leg-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-    .trade-team-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.85rem; font-family: inherit; outline: none; }
+    .trade-team-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: var(--text-sm); font-family: inherit; outline: none; }
     .trade-team-sel:focus { border-color: var(--accent); }
-    .trade-leg-arrow { color: var(--text-muted); font-size: 1.1rem; }
+    .trade-leg-arrow { color: var(--text-muted); font-size: var(--text-md); }
     .trade-asset-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
-    .trade-asset-sel { flex: 1; min-width: 160px; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-asset-sel { flex: 1; min-width: 160px; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: var(--text-sm); font-family: inherit; outline: none; }
     .trade-asset-sel:focus { border-color: var(--accent); }
-    .trade-prot-inp { width: 5rem; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-prot-inp { width: 5rem; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: var(--text-sm); font-family: inherit; outline: none; }
     .trade-prot-inp:focus { border-color: var(--accent); }
-    .trade-swap-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+    .trade-swap-sel { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.38rem 0.5rem; font-size: var(--text-sm); font-family: inherit; outline: none; }
     .trade-swap-sel:focus { border-color: var(--accent); }
-    .trade-add-asset-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; font-family: inherit; margin-top: 0.15rem; }
+    .trade-add-asset-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.2rem 0.6rem; cursor: pointer; font-size: var(--text-xs); font-family: inherit; margin-top: 0.15rem; }
     .trade-add-asset-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
-    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.4rem; cursor: pointer; font-size: 0.82rem; font-family: inherit; margin-bottom: 0.75rem; }
+    .trade-add-main-btn { width: 100%; background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.4rem; cursor: pointer; font-size: var(--text-sm); font-family: inherit; margin-bottom: 0.75rem; }
     .trade-add-main-btn:hover { border-color: var(--text-dim); color: var(--text-muted); }
-    .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.25rem; }
+    .remove-leg-btn, .remove-asset-btn { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: var(--text-base); line-height: 1; padding: 0 0.25rem; }
     .remove-leg-btn:hover, .remove-asset-btn:hover { color: var(--danger); }
     .legality-section { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-top: 1rem; margin-bottom: 0.75rem; }
-    .legality-header { background: var(--bg-card); padding: 0.45rem 0.75rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
-    .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: 0.82rem; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
+    .legality-header { background: var(--bg-card); padding: 0.45rem 0.75rem; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .legality-row { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.75rem; font-size: var(--text-sm); color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); }
     .legality-row:last-child { border-bottom: none; }
     /* § 4.2a per-player absorption picker — sits after the exception select,
        wraps onto its own line on narrow screens rather than squashing it. */
     .legality-row:has(.exc-players) { flex-wrap: wrap; gap: 0.4rem; }
     .exc-players { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-left: auto; }
     .exc-players:empty { display: none; }
-    .exc-players-hint { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
-    .exc-player { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; }
+    .exc-players-hint { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-dim); }
+    .exc-player { display: inline-flex; align-items: center; gap: 0.25rem; font-size: var(--text-xs); color: var(--text-secondary); cursor: pointer; }
     .exc-player input { cursor: pointer; margin: 0; }
     @media (max-width: 640px) { .exc-players { margin-left: 0; width: 100%; } }
     .rubric-body { padding: 0.4rem 0.75rem 0.55rem; }
-    .rubric-empty { font-size: 0.8rem; color: var(--text-muted); padding: 0.35rem 0; }
+    .rubric-empty { font-size: var(--text-sm); color: var(--text-muted); padding: 0.35rem 0; }
     .rubric-empty.err { color: var(--danger); }
-    .rubric-verdict { font-size: 0.82rem; font-weight: 700; padding: 0.3rem 0 0.45rem; }
+    .rubric-verdict { font-size: var(--text-sm); font-weight: 700; padding: 0.3rem 0 0.45rem; }
     .rubric-verdict.ok { color: var(--success); }
     .rubric-verdict.bad { color: var(--danger); }
 
     .trade-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; }
     .trade-summary-card { background: var(--bg-page); border: 1px solid var(--bg-card); border-radius: var(--radius-sm); padding: 0.55rem 0.65rem; }
-    .trade-summary-team { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
-    .trade-summary-net { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .trade-summary-team { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+    .trade-summary-net { font-size: var(--text-xs); font-weight: 600; margin-bottom: 0.35rem; }
     .trade-summary-net.pos { color: var(--danger); }
     .trade-summary-net.neg { color: var(--success); }
     .trade-summary-net.zero { color: var(--text-muted); }
     .trade-summary-detail { font-weight: normal; color: var(--text-muted); }
-    .trade-summary-asset-list { font-size: 0.76rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.15rem; }
+    .trade-summary-asset-list { font-size: var(--text-xs); color: var(--text-muted); display: flex; flex-direction: column; gap: 0.15rem; }
     .trade-summary-asset-list .asset-out { color: var(--danger-light); }
     .trade-summary-asset-list .asset-in { color: var(--success-light); }
 
@@ -636,7 +624,7 @@
       text-align: center;
       color: var(--text-muted);
       padding: 3rem 0;
-      font-size: 0.9rem;
+      font-size: var(--text-base);
     }
 
     /* ── Pagination ── */
@@ -645,7 +633,7 @@
       align-items: center;
       gap: 0.75rem;
       padding: 1rem 0;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       color: var(--text-muted);
     }
     .txn-page-btn {
@@ -654,7 +642,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       cursor: pointer;
       font-family: inherit;
@@ -685,13 +673,13 @@
     .pd-item {
       padding: 0.45rem 0.625rem;
       cursor: pointer;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
     }
 
     .pd-item:hover, .pd-item.focused { background: var(--border); }
 
     .pd-item .pd-slug {
-      font-size: 0.72rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
       margin-left: 0.5rem;
     }
@@ -891,7 +879,7 @@
           <option value="bae">Bi-Annual Exception (BAE)</option>
           <option value="sign_and_trade">Sign-and-Trade</option>
         </select>
-        <span id="mle-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
+        <span id="mle-hint" style="display:none;font-size:var(--text-xs);margin-top:0.25rem"></span>
       </div>
 
       <!-- sign / offer_sheet on the minimum: § 3.12 prices each year on the
@@ -903,7 +891,7 @@
       <div class="form-field" id="f-exp-field" style="display:none">
         <label>NBA experience <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(years, as of Year 1)</span></label>
         <input type="number" id="f-years-exp" min="0" max="25" step="1" placeholder="derive from draft year">
-        <span id="exp-hint" style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted)"></span>
+        <span id="exp-hint" style="font-size:var(--text-xs);margin-top:0.25rem;color:var(--text-muted)"></span>
       </div>
 
       <!-- sign / convert_twoway / offer_sheet: bird rights subtype -->
@@ -972,7 +960,7 @@
       <div class="form-field" id="f-ext-attest-field" style="display:none">
         <label>Team attests deal began <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(season, e.g. 22-23)</span></label>
         <input type="text" id="f-ext-attest" maxlength="5" placeholder="YY-YY">
-        <span style="font-size:0.75rem;margin-top:0.25rem;color:var(--text-muted);display:block">Only asked when no acquisition record is on file. Never trusted as fact — flagged for the committee, and errors instead of warns if it contradicts other partial history the player does have.</span>
+        <span style="font-size:var(--text-xs);margin-top:0.25rem;color:var(--text-muted);display:block">Only asked when no acquisition record is on file. Never trusted as fact — flagged for the committee, and errors instead of warns if it contradicts other partial history the player does have.</span>
       </div>
 
       <!-- Optional override. Left blank, _apply_option computes the § 3.10
@@ -996,7 +984,7 @@
       <div class="form-field" id="f-release-stretch-field" style="display:none">
         <label>Stretch (years)</label>
         <input type="number" id="f-release-stretch" min="1" max="10" placeholder="leave blank for no stretch">
-        <span id="f-release-stretch-hint" style="display:none;font-size:0.75rem;margin-top:0.25rem"></span>
+        <span id="f-release-stretch-hint" style="display:none;font-size:var(--text-xs);margin-top:0.25rem"></span>
       </div>
 
       <div class="form-field" id="f-contract-type-field">
@@ -1190,11 +1178,11 @@
       <div class="legality-section" id="trade-sat-section">
         <div class="legality-header">Sign-and-Trade · § 1.4 row C</div>
         <div class="rubric-body" style="padding:0.6rem 0.75rem">
-          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-muted);font-weight:normal;text-transform:none">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:var(--text-sm);color:var(--text-muted);font-weight:normal;text-transform:none">
             <input type="checkbox" id="f-trade-sat"> This trade completes a sign-and-trade (hard-caps every acquiring team at First Apron)
           </label>
           <div id="f-trade-sat-txn-field" style="display:none;margin-top:0.5rem">
-            <label style="font-size:0.75rem;color:var(--text-muted)">Linked sign transaction ID (optional)</label>
+            <label style="font-size:var(--text-xs);color:var(--text-muted)">Linked sign transaction ID (optional)</label>
             <input type="text" id="f-trade-sat-txn" placeholder="e.g. a1b2c3d4e5f6a7b8" style="width:100%">
           </div>
         </div>
@@ -1208,7 +1196,7 @@
     </div>
 
     <div class="form-actions">
-      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.82rem;color:var(--text-muted);font-weight:normal;text-transform:none;margin-right:auto">
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:var(--text-sm);color:var(--text-muted);font-weight:normal;text-transform:none;margin-right:auto">
         <input type="checkbox" id="f-relay-roster-log"> Also post to #roster-log <span style="color:var(--text-muted)">(off by default — check this only if it isn't already logged there)</span>
       </label>
       <button class="btn-submit" id="submit-btn" type="button">Submit Transaction</button>
@@ -1221,23 +1209,23 @@
   <!-- Filters -->
   <div class="filters" id="filters">
     <span class="filter-label">Type:</span>
-    <span class="chip active" data-filter="type" data-value="">All</span>
-    <span class="chip" data-filter="type" data-value="sign">Signings</span>
-    <span class="chip" data-filter="type" data-value="offer_sheet">Offer Sheets</span>
-    <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
-    <span class="chip" data-filter="type" data-value="sign_pick">Pick Signings</span>
-    <span class="chip" data-filter="type" data-value="option">Options</span>
-    <span class="chip" data-filter="type" data-value="guarantee">Guarantees</span>
-    <span class="chip" data-filter="type" data-value="release">Releases</span>
-    <span class="chip" data-filter="type" data-value="waiver_clear">Waivers</span>
-    <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
-    <span class="chip" data-filter="type" data-value="qualifying_offer">Qualifying Offers</span>
-    <span class="chip" data-filter="type" data-value="trade">Trades</span>
-    <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
-    <span class="chip" data-filter="type" data-value="extension">Extensions</span>
-    <span class="chip" data-filter="type" data-value="void_player">Voids</span>
-    <span class="chip" data-filter="type" data-value="stash">Stashes</span>
-    <span class="chip" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</span>
+    <button type="button" class="ui-chip" aria-pressed="true" data-filter="type" data-value="">All</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="sign">Signings</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="offer_sheet">Offer Sheets</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="pick">Draft Picks</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="sign_pick">Pick Signings</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="option">Options</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="guarantee">Guarantees</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="release">Releases</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="waiver_clear">Waivers</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="renounce">Renounces</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="qualifying_offer">Qualifying Offers</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="trade">Trades</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="convert_twoway">Two-Way Conversions</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="extension">Extensions</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="void_player">Voids</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="stash">Stashes</button>
+    <button type="button" class="ui-chip" aria-pressed="false" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</button>
 
     <span class="filter-label" style="margin-left:0.75rem">Team:</span>
     <select id="team-filter-sel" class="trade-team-sel">
@@ -3182,7 +3170,7 @@ function addTradeLeg(fromTeam, toTeam) {
 
 function sectionLabel(text) {
   const el = document.createElement('div');
-  el.style.cssText = 'font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.35rem;margin-top:0.5rem;';
+  el.style.cssText = 'font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-muted);margin-bottom:0.35rem;margin-top:0.5rem;';
   el.textContent = text;
   return el;
 }
@@ -3236,7 +3224,7 @@ function addPickRow(leg) {
   buildPickOptions(sel, fromTeam, null);
 
   const protLabel = document.createElement('span');
-  protLabel.style.cssText = 'font-size:0.75rem;color:var(--text-muted);white-space:nowrap;';
+  protLabel.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap;';
   protLabel.textContent = 'Prot:';
 
   const protInp = document.createElement('input');
@@ -3247,7 +3235,7 @@ function addPickRow(leg) {
   protInp.max = 30;
 
   const swapLabel = document.createElement('span');
-  swapLabel.style.cssText = 'font-size:0.75rem;color:var(--text-muted);white-space:nowrap;';
+  swapLabel.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap;';
   swapLabel.textContent = 'Swap:';
 
   const swapSel = document.createElement('select');
@@ -3367,10 +3355,10 @@ function collectTrade() {
 
 // ── Filters ────────────────────────────────────────────────────────────────
 function setupFilters() {
-  document.querySelectorAll('.chip[data-filter="type"]').forEach(chip => {
+  document.querySelectorAll('.ui-chip[data-filter="type"]').forEach(chip => {
     chip.addEventListener('click', function() {
-      document.querySelectorAll('.chip[data-filter="type"]').forEach(c => c.classList.remove('active'));
-      this.classList.add('active');
+      document.querySelectorAll('.ui-chip[data-filter="type"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      this.setAttribute('aria-pressed', 'true');
       activeTypeFilter = this.dataset.value;
       currentPage = 0;
       renderTable();
@@ -3797,7 +3785,7 @@ function renderValidationPanel(result, originalBody) {
 
   if (can_force) {
     const note = document.createElement('span');
-    note.style.cssText = 'font-size:0.8rem;color:var(--text-muted);flex:1';
+    note.style.cssText = 'font-size:var(--text-sm);color:var(--text-muted);flex:1';
     note.textContent = 'Warnings above can be overridden.';
     actions.appendChild(note);
 
@@ -3827,7 +3815,7 @@ function renderValidationPanel(result, originalBody) {
     actions.appendChild(forceBtn);
   } else {
     const note = document.createElement('span');
-    note.style.cssText = 'font-size:0.8rem;color:var(--danger-light)';
+    note.style.cssText = 'font-size:var(--text-sm);color:var(--danger-light)';
     note.textContent = 'Fix the errors above before submitting.';
     actions.appendChild(note);
   }

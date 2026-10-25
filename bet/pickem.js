@@ -27,7 +27,7 @@
     .pk-slot:hover, .pk-slot.open { border-color: var(--accent); }
     .pk-slot:disabled { cursor: default; }
     .pk-slot:disabled:hover { border-color: var(--border); }
-    .pk-pos { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--text-muted); text-align: center; }
+    .pk-pos { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); color: var(--text-muted); text-align: center; }
     .pk-who { min-width: 0; }
     .pk-name { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pk-empty { color: var(--text-dim); font-style: italic; }

@@ -25,13 +25,13 @@
   <!-- /NBN:og -->
   <style>
     section { margin-bottom: 2.5rem; }
-    .empty { color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0; }
+    .empty { color: var(--text-muted); font-size: var(--text-sm); padding: 1rem 0; }
 
     /* ── record strip ─────────────────────────────────────────────── */
     .record-strip { display: flex; flex-wrap: wrap; gap: 1.5rem; padding: 1rem 1.25rem; }
-    .record-stat .label { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase;
+    .record-stat .label { font-size: var(--text-xs); letter-spacing: 0.06em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: 0.2rem; }
-    .record-stat .value { font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .record-stat .value { font-size: var(--text-md); font-weight: 700; font-variant-numeric: tabular-nums; }
 
     /* ── game log ─────────────────────────────────────────────────── */
     .ui-table td, .ui-table th { font-variant-numeric: tabular-nums; }
@@ -41,7 +41,7 @@
     .result-T { color: var(--text-muted); font-weight: 700; }
     tr.box-row > td { background: var(--bg-subtle); padding: 0.75rem; }
     tr.box-row:hover > td { background: var(--bg-subtle) !important; }
-    .box h5 { font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase;
+    .box h5 { font-size: var(--text-xs); letter-spacing: 0.06em; text-transform: uppercase;
       color: var(--text-muted); margin: 0.6rem 0 0.3rem; }
     .box h5:first-child { margin-top: 0; }
     .box-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
@@ -51,35 +51,35 @@
     .stat-block { margin-bottom: 1.25rem; }
     .ui-table th.grp { text-align: center; border-bottom: 1px solid var(--border-subtle); }
     .ui-table .grp-start { border-left: 1px solid var(--border-subtle); }
-    .stat-block h3 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+    .stat-block h3 { font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: 0.4rem; }
 
     /* ── entry form ───────────────────────────────────────────────── */
     #entry { border-top: 1px solid var(--border); padding-top: 1.5rem; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.7rem; margin-bottom: 1rem; }
-    .form-grid label { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--text-muted); gap: 0.25rem; }
+    .form-grid label { display: flex; flex-direction: column; font-size: var(--text-xs); color: var(--text-muted); gap: 0.25rem; }
     .stat-row {
       display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end;
       background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.6rem; margin-bottom: 0.5rem;
     }
-    .stat-row label { display: flex; flex-direction: column; font-size: 0.68rem; color: var(--text-muted); gap: 0.2rem; }
+    .stat-row label { display: flex; flex-direction: column; font-size: var(--text-xs); color: var(--text-muted); gap: 0.2rem; }
     .stat-row input, .stat-row select {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); padding: 0.3rem 0.4rem; font-size: 0.8rem; font-family: inherit; width: 110px;
+      color: var(--text-primary); padding: 0.3rem 0.4rem; font-size: var(--text-sm); font-family: inherit; width: 110px;
     }
     .stat-row .player-field input { width: 160px; }
     .stat-row .stat-fields { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .stat-row .stat-fields input { width: 62px; }
     .stat-row button.remove {
-      background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1rem; padding: 0 0.3rem;
+      background: none; border: none; color: var(--danger); cursor: pointer; font-size: var(--text-base); padding: 0 0.3rem;
     }
     .form-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
 
     .toast {
       position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 0.6rem 1rem; font-size: 0.85rem; z-index: 50;
+      padding: 0.6rem 1rem; font-size: var(--text-sm); z-index: 50;
     }
     .toast.bad { border-color: var(--danger-border); color: var(--danger-light); }
   </style>

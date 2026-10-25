@@ -324,7 +324,7 @@
     tip.style.cssText = 'position:absolute;z-index:1000;max-width:300px;padding:0.5rem 0.65rem;'
       + 'background:var(--bg-card,var(--bg-card));border:1px solid var(--border,var(--border));border-radius:var(--radius-sm);'
       + 'box-shadow:var(--shadow-overlay);color:var(--text-secondary,var(--text-secondary));'
-      + 'font-size:0.75rem;font-weight:400;line-height:1.4;white-space:pre-line;pointer-events:none';
+      + 'font-size:var(--text-xs);font-weight:400;line-height:1.4;white-space:pre-line;pointer-events:none';
     tip.textContent = text;
     document.body.appendChild(tip);
     const r = anchor.getBoundingClientRect();
@@ -387,7 +387,7 @@
   function row(label, value, note, was) {
     const r = document.createElement('div');
     r.className = 'cs-row';
-    r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0.4rem;margin:0 -0.4rem;font-size:0.85rem;border-bottom:1px solid var(--border-subtle,var(--border))';
+    r.style.cssText = 'display:flex;justify-content:space-between;gap:1rem;padding:0.3rem 0.4rem;margin:0 -0.4rem;font-size:var(--text-sm);border-bottom:1px solid var(--border-subtle,var(--border))';
     const l = labelWithNote(label, note, 'color:var(--text-muted,var(--text-muted))');
     const v = document.createElement('span');
     v.style.cssText = 'color:var(--text-primary,var(--text-primary));font-weight:600;text-align:right';
@@ -397,7 +397,7 @@
       r.style.cssText += ';background:var(--gold-bg);box-shadow:inset 3px 0 0 var(--gold);padding-left:0.5rem;padding-right:0.4rem;margin:0 -0.4rem';
       l.style.color = 'var(--text-primary)';
       const old = document.createElement('div');
-      old.style.cssText = 'font-size:0.72rem;font-weight:400;color:var(--text-muted,var(--text-muted))';
+      old.style.cssText = 'font-size:var(--text-xs);font-weight:400;color:var(--text-muted,var(--text-muted))';
       old.textContent = `was ${was}`;
       v.appendChild(old);
     }
@@ -410,7 +410,7 @@
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--bg-card,var(--bg-card));border:1px solid var(--border,var(--border));border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
     const h = document.createElement('div');
-    h.style.cssText = 'font-weight:700;font-size:0.95rem;margin-bottom:0.4rem';
+    h.style.cssText = 'font-weight:700;font-size:var(--text-base);margin-bottom:0.4rem';
     h.textContent = title;
     if (note) h.appendChild(noteIcon(note));
     card.appendChild(h);
@@ -422,7 +422,7 @@
     container.innerHTML = '';
 
     const status = document.createElement('div');
-    status.style.cssText = 'font-size:0.78rem;color:var(--text-muted,var(--text-muted));margin-bottom:1rem';
+    status.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted,var(--text-muted));margin-bottom:1rem';
     if (!record) {
       status.textContent = 'No coaching settings saved yet.';
       container.appendChild(status);
@@ -453,14 +453,14 @@
     let changesLine = null;
     if (opts.showChanges && record.pending) {
       changesLine = document.createElement('div');
-      changesLine.style.cssText = 'font-size:0.85rem;font-weight:700;margin:-0.5rem 0 1rem';
+      changesLine.style.cssText = 'font-size:var(--text-sm);font-weight:700;margin:-0.5rem 0 1rem';
       container.appendChild(changesLine);
     }
 
     const issues = validityIssues(record);
     if (issues.length) {
       const warn = document.createElement('div');
-      warn.style.cssText = 'font-size:0.78rem;font-weight:700;color:var(--gold,var(--gold));margin:-0.5rem 0 1rem';
+      warn.style.cssText = 'font-size:var(--text-xs);font-weight:700;color:var(--gold,var(--gold));margin:-0.5rem 0 1rem';
       warn.dataset.icon = 'warning';
       warn.textContent = 'Not balanced — ' + issues.join(' · ');
       container.appendChild(warn);

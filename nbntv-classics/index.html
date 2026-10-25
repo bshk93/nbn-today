@@ -29,14 +29,14 @@
             
     .subtitle {
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       margin: 1.75rem 0 0.75rem;
     }
 
-    #status { color: var(--text-muted); font-size: 0.9rem; padding: 2rem 0; }
+    #status { color: var(--text-muted); font-size: var(--text-base); padding: 2rem 0; }
 
     /* Classic entries */
     .classic-list { display: flex; flex-direction: column; gap: 0.625rem; }
@@ -62,7 +62,7 @@
     .classic-entry.open .classic-header { background: var(--accent-panel-bg); border-bottom: 1px solid var(--border); }
 
     .classic-rank {
-      font-size: 1.75rem;
+      font-size: var(--text-xl);
       font-weight: 700;
       color: var(--text-dim);
       min-width: 2.25rem;
@@ -74,7 +74,7 @@
     .classic-body { flex: 1; min-width: 0; }
 
     .classic-player {
-      font-size: 1rem;
+      font-size: var(--text-base);
       font-weight: 600;
       color: var(--text-primary);
     }
@@ -86,20 +86,20 @@
     }
 
     .classic-statline {
-      font-size: 0.825rem;
+      font-size: var(--text-sm);
       color: var(--text-secondary);
       margin-top: 0.2rem;
       font-variant-numeric: tabular-nums;
     }
 
     .classic-context {
-      font-size: 0.775rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
       margin-top: 0.15rem;
     }
 
     .classic-gmsc {
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -115,7 +115,7 @@
 
     .classic-gmsc span {
       display: block;
-      font-size: 1.1rem;
+      font-size: var(--text-md);
       font-weight: 700;
       color: var(--accent-light);
       letter-spacing: 0;
@@ -123,7 +123,7 @@
 
     .chevron {
       color: var(--text-muted);
-      font-size: 0.8rem;
+      font-size: var(--text-sm);
       flex-shrink: 0;
       transition: transform 0.2s ease;
     }
@@ -142,7 +142,7 @@
     .classic-blurb {
       padding: 1rem 1.25rem 1.25rem;
       color: var(--text-muted);
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       line-height: 1.7;
     }
 
@@ -177,13 +177,13 @@
 
     /* Series tab */
     .seed-chip {
-      font-size: 0.68rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
       font-weight: 600;
     }
 
     .classic-mov {
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -199,7 +199,7 @@
 
     .classic-mov span {
       display: block;
-      font-size: 1.1rem;
+      font-size: var(--text-md);
       font-weight: 700;
       color: var(--market-positive-light);
       letter-spacing: 0;
