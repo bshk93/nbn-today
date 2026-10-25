@@ -640,12 +640,13 @@
 
     /* A header that is itself the link to the card's full page. */
     :root a.dash-card-link { display: inline-flex; align-items: baseline; text-decoration: none; }
+    :root .dash-card-title > a.dash-card-link { color: inherit; }
     :root a.dash-card-link:hover, :root a.dash-card-link:focus-visible { color: var(--link); }
 
     /* Your team is boxed like every other section now (above). */
     :root .dash-team-name { font-size: var(--text-xl); }
 
-    /* A small text link under a list ("Full calendar →"). */
+    /* A small text link under a list. */
     .dash-feed-item { font-size: var(--text-sm); color: var(--text-secondary); }
     a.dash-feed-item:hover { color: var(--text-primary); }
 
@@ -1203,7 +1204,9 @@
         if (ph.phase === 'preseason') title = 'Opening week';
       }
 
-      card.innerHTML = `<div class="dash-card-title">${esc(title)}</div>${head}`
+      // Only the title text is the link: a night's box-score video link is added
+      // beside it later, and a link can't sit inside another.
+      card.innerHTML = `<div class="dash-card-title"><a class="dash-card-link" href="/calendar">${esc(title)}</a></div>${head}`
         // Grouped under a date heading rather than a date column: the card is
         // too narrow for date + two team chips + time on one line, and the
         // times were spilling out past its edge.
@@ -1216,8 +1219,6 @@
             + streamTag(g)
             + `<a class="dash-game-time" title="Game preview" href="${previewHref(g)}">${esc(g.time_et || 'Preview')} ›</a>`
             + `</div><div class="dash-five"><div class="dash-five-inner"></div></div>`).join('') + '</div>' : '');
-      card.insertAdjacentHTML('beforeend',
-        '<a class="dash-feed-item" href="/calendar" style="display:block;margin-top:0.6rem">Full calendar →</a>');
 
       // A game whose box score is already in shows its final in place of the
       // tip time. Matched on date + the two teams, either way round, the same
