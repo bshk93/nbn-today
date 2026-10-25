@@ -157,7 +157,7 @@
     .links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
     .link-chip {
       font-size: var(--text-sm); padding: 0.35rem 0.75rem; border-radius: var(--radius-sm);
-      border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border); background: color-mix(in srgb, var(--text-primary) 3%, transparent);
       color: var(--text-secondary);
     }
     .link-chip:hover { border-color: var(--text-muted); text-decoration: none; }
@@ -169,7 +169,7 @@
     .footnote a { color: var(--link); }
     .footnote code {
       font-family: var(--font-mono); font-size: 0.95em;
-      background: rgba(255,255,255,0.06); padding: 0.05rem 0.3rem; border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--text-primary) 6%, transparent); padding: 0.05rem 0.3rem; border-radius: var(--radius-sm);
     }
 
     @media (max-width: 640px) {

@@ -34,21 +34,6 @@
       margin-bottom: 0.75rem;
     }
 
-    .chip {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
-      cursor: pointer;
-      font-family: inherit;
-      font-size: var(--text-xs);
-      font-weight: 600;
-      padding: 0.2rem 0.7rem;
-      letter-spacing: 0.04em;
-    }
-    .chip:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-    .chip.active { background: var(--accent-dark); border-color: var(--accent); color: var(--text-on-accent); }
-    .chip.year-chip.active { background: var(--market-positive-border); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light); }
 
     
     
@@ -482,13 +467,15 @@
       container.innerHTML = '';
       years.forEach(yr => {
         const btn = document.createElement('button');
-        btn.className = 'chip year-chip' + (yr === activeYear ? ' active' : '');
+        btn.type = 'button';
+        btn.className = 'ui-chip ui-chip--sm year-chip';
+        btn.setAttribute('aria-pressed', String(yr === activeYear));
         btn.textContent = yr;
         btn.addEventListener('click', () => {
           if (yr === activeYear) return;
           activeYear = yr;
-          container.querySelectorAll('.year-chip').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
+          container.querySelectorAll('.year-chip').forEach(b => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
           buildTable();   // not just the body: a header label depends on the year
         });
         container.appendChild(btn);
@@ -500,12 +487,14 @@
       container.innerHTML = '';
       FILTER_DEFS.forEach(def => {
         const btn = document.createElement('button');
-        btn.className = 'chip';
+        btn.type = 'button';
+        btn.className = 'ui-chip ui-chip--sm';
+        btn.setAttribute('aria-pressed', 'false');
         btn.textContent = def.id;
         btn.addEventListener('click', () => {
           if (activePos.has(def.id)) activePos.delete(def.id);
           else activePos.add(def.id);
-          btn.classList.toggle('active');
+          btn.setAttribute('aria-pressed', String(activePos.has(def.id)));
           rebuildBody();
         });
         container.appendChild(btn);

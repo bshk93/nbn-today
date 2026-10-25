@@ -86,9 +86,9 @@
       position: relative;
     }
     .upload-zone:hover, .upload-zone.drag-over {
-      border-color: var(--accent); background: rgba(59,130,246,0.05);
+      border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, transparent);
     }
-    .upload-zone.has-file { border-color: var(--market-positive); background: rgba(52,211,153,0.05); }
+    .upload-zone.has-file { border-color: var(--market-positive); background: color-mix(in srgb, var(--success) 5%, transparent); }
     .upload-zone input[type=file] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
@@ -121,21 +121,21 @@
     .score-live-wrap { font-size: var(--text-sm); color: var(--text-muted); }
     .score-live {
       font-size: var(--text-md); font-weight: 800; color: var(--accent);
-      background: rgba(59,130,246,0.12); border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--accent) 12%, transparent); border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
     .min-live-wrap { font-size: var(--text-sm); color: var(--text-muted); }
     .min-live {
       font-size: var(--text-md); font-weight: 800; color: var(--success);
-      background: rgba(16,185,129,0.12); border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--success) 12%, transparent); border-radius: var(--radius-sm);
       padding: 0.15rem 0.6rem; margin-left: 0.25rem;
     }
 
     /* Row focus highlight */
-    tr.row-active td { background: rgba(59,130,246,0.07); }
+    tr.row-active td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 
     /* Cell error */
-    td.cell-error { background: rgba(239,68,68,0.18) !important; }
+    td.cell-error { background: color-mix(in srgb, var(--danger) 18%, transparent) !important; }
     td.cell-error .cell-input { color: var(--danger-light); }
 
     /* Totals footer */
@@ -145,7 +145,7 @@
     tfoot td.totals-label { text-align: left; color: var(--text-muted); font-size: var(--text-xs); text-transform: uppercase; }
 
     /* Min live error state */
-    .min-live.stat-error { background: rgba(239,68,68,0.18); color: var(--danger-light); }
+    .min-live.stat-error { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger-light); }
 
     /* Drag handle */
     .drag-handle {
@@ -168,7 +168,7 @@
     }
     td.player-col { text-align: left; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
+    tr:hover td { background: color-mix(in srgb, var(--text-primary) 2%, transparent); }
 
     /* Editable cells */
     .cell-input {
@@ -212,7 +212,7 @@
       padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm);
     }
     .queue-item:last-of-type { border-bottom: none; }
-    .queue-item-orphan { background: rgba(245,158,11,0.07); }
+    .queue-item-orphan { background: color-mix(in srgb, var(--gold) 7%, transparent); }
     .queue-item-label { flex: 1; font-weight: 600; color: var(--text-secondary); }
     .queue-item-meta { color: var(--text-muted); font-size: var(--text-xs); }
     .queue-actions {
@@ -238,7 +238,7 @@
       border-radius: var(--radius-sm); width: 1.5rem; height: 1.5rem; cursor: pointer;
       font-size: var(--text-sm); line-height: 1; font-family: inherit; padding: 0;
     }
-    .btn-remove-row:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
+    .btn-remove-row:hover { border-color: var(--danger); color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
 
     /* Token modal */
     .modal-backdrop {
@@ -1449,7 +1449,7 @@
           btn.title = "Remove from queue";
           btn.textContent = "×";
           btn.style.cssText = "background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:var(--radius-sm);width:1.5rem;height:1.5rem;cursor:pointer;font-size:var(--text-sm);flex-shrink:0;line-height:1;";
-          btn.onmouseenter = () => { btn.style.borderColor="var(--danger)"; btn.style.color="var(--danger)"; btn.style.background="rgba(239,68,68,0.08)"; };
+          btn.onmouseenter = () => { btn.style.borderColor="var(--danger)"; btn.style.color="var(--danger)"; btn.style.background="color-mix(in srgb, var(--danger) 8%, transparent)"; };
           btn.onmouseleave = () => { btn.style.borderColor="var(--border)"; btn.style.color="var(--text-muted)"; btn.style.background="none"; };
           btn.onclick = () => removeGame(m.id, row);
           row.appendChild(btn);

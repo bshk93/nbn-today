@@ -132,16 +132,18 @@
     const xOf = i => PAD.left + (entries.length < 2 ? iW / 2 : (i / (entries.length - 1)) * iW);
     const yOf = v => PAD.top + (1 - (v - lo) / (hi - lo)) * iH;
 
+    // Everything but the date labels sits in one group on the heat scale, so
+    // the line, dots and figures take the latest rating's colour (--heat-c).
     const latest = entries.at(-1).ovr;
-    const t = Math.min(1, Math.max(0, (latest - 60) / 40));
-    const hue = Math.round(t * 120);
-    const stroke = `hsl(${hue},70%,55%)`;
-    const fill   = `hsl(${hue},80%,65%)`;
 
     const ns = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(ns, 'svg');
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.style.cssText = 'width:100%;height:72px;display:block;overflow:visible;';
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'ui-heat-fill');
+    g.style.setProperty('--heat', ovrHeat(latest));
+    svg.appendChild(g);
 
     // Area fill under line
     if (entries.length >= 2) {
@@ -149,19 +151,18 @@
       const lastX = xOf(entries.length - 1), firstX = xOf(0), baseY = PAD.top + iH;
       const area = document.createElementNS(ns, 'polygon');
       area.setAttribute('points', `${firstX},${baseY} ${areaPoints} ${lastX},${baseY}`);
-      area.setAttribute('fill', `hsl(${hue},55%,18%)`);
-      area.setAttribute('opacity', '0.6');
-      svg.appendChild(area);
+      area.setAttribute('opacity', '0.18');
+      g.appendChild(area);
 
       // Line
       const poly = document.createElementNS(ns, 'polyline');
       poly.setAttribute('points', areaPoints);
       poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', stroke);
+      poly.style.stroke = 'var(--heat-c)';
       poly.setAttribute('stroke-width', '2');
       poly.setAttribute('stroke-linejoin', 'round');
       poly.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(poly);
+      g.appendChild(poly);
     }
 
     // Dots + endpoint labels
@@ -172,19 +173,17 @@
 
       const dot = document.createElementNS(ns, 'circle');
       dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', r);
-      dot.setAttribute('fill', isLast ? fill : stroke);
-      svg.appendChild(dot);
+      g.appendChild(dot);
 
       if (isFirst || isLast) {
         const label = document.createElementNS(ns, 'text');
         label.setAttribute('x', cx);
         label.setAttribute('y', cy - 6);
         label.setAttribute('text-anchor', isFirst ? 'start' : 'end');
-        label.setAttribute('fill', fill);
         label.setAttribute('font-size', '10');
         label.setAttribute('font-weight', '600');
         label.textContent = e.ovr;
-        svg.appendChild(label);
+        g.appendChild(label);
 
         const dateLabel = document.createElementNS(ns, 'text');
         dateLabel.setAttribute('x', cx);

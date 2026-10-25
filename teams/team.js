@@ -602,7 +602,7 @@ const coachingConfigReady = new Promise(resolve => {
   td.cell-selected { position: relative; box-shadow: inset 0 0 0 2px var(--accent); }
   td.cell-selected::after {
     content: ''; position: absolute; inset: 0;
-    background: rgba(59, 130, 246, 0.25); pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 25%, transparent); pointer-events: none;
   }
   .range-sum-bar {
     display: none; position: fixed; right: 1.25rem; bottom: 1.25rem;
@@ -900,8 +900,8 @@ const coachingConfigReady = new Promise(resolve => {
     border-radius: var(--radius-sm); margin-bottom: 0.4rem; border: 1px solid transparent;
   }
   .confirm-check.ok    { color: var(--text-muted); }
-  .confirm-check.warn  { color: hsl(45,90%,72%);  background: hsl(45,60%,12%);  border-color: hsl(45,60%,22%); }
-  .confirm-check.error { color: hsl(0,85%,74%);   background: hsl(0,55%,12%);   border-color: hsl(0,55%,24%); }
+  .confirm-check.warn  { color: var(--gold);         background: color-mix(in srgb, var(--gold) 12%, transparent);   border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+  .confirm-check.error { color: var(--danger-light); background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
   .confirm-modal input[type=text] {
     width: 100%; background: var(--bg-page); border: 1px solid var(--border);
     border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit;
@@ -926,7 +926,7 @@ const coachingConfigReady = new Promise(resolve => {
   /* Open offer sheet (§ 3.15). Sits above the hard-cap banner because a pending
      offer changes what the team can spend and is waiting on somebody. */
   .offer-banner {
-    border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
+    border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent);
     border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
     font-size: var(--text-sm); color: var(--text-secondary);
   }
@@ -941,7 +941,7 @@ const coachingConfigReady = new Promise(resolve => {
     color: var(--danger); font-weight: 700; font-size: var(--text-xs);
     text-transform: uppercase; letter-spacing: 0.04em;
   }
-  .offer-banner.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
+  .offer-banner.overdue { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
   .offer-banner b { color: var(--text-primary); }
   .offer-banner .meta { display: block; margin-top: 0.2rem; font-size: var(--text-xs); color: var(--text-muted); }
   .offer-banner .tag {

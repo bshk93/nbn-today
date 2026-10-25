@@ -72,17 +72,6 @@
     .card-meta { font-size: var(--text-xs); color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .card-meta .sep { color: var(--border); }
 
-    .badge {
-      display: inline-block; font-size: var(--text-xs); font-weight: 700;
-      letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.5rem;
-      border-radius: var(--radius-sm); flex-shrink: 0;
-    }
-    .badge-draft    { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
-    .badge-submitted { background: var(--accent-panel-bg); border: 1px solid var(--accent-dark); color: var(--accent-light); }
-    .badge-voting   { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
-    .badge-closed   { background: var(--bg-subtle); border: 1px solid var(--border); color: var(--text-dim); }
-    .badge-passed   { background: var(--success-dark-bg); border: 1px solid color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
-    .badge-failed   { background: var(--danger-bg); border: 1px solid var(--danger-border-strong); color: var(--danger); }
 
     .card-arrow { color: var(--border); font-size: var(--text-md); flex-shrink: 0; }
     .proposal-card:hover .card-arrow { color: var(--text-muted); }
@@ -176,7 +165,7 @@ function fmtDate(iso) {
 function badge(p) {
   const key = p.outcome || p.status;
   const labels = { draft: 'Draft', submitted: 'Submitted', voting: 'Voting', closed: 'Closed', passed: 'Passed', failed: 'Failed' };
-  return `<span class="badge badge-${key}">${labels[key] || key}</span>`;
+  return `<span class="ui-badge${{ submitted: ' ui-badge--accent', voting: ' ui-badge--warning', passed: ' ui-badge--success', failed: ' ui-badge--danger' }[key] || ''}">${labels[key] || key}</span>`;
 }
 
 function renderCard(p) {

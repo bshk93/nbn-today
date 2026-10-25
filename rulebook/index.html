@@ -78,7 +78,7 @@
       display: block; color: var(--text-muted); padding: 0.2rem 1rem;
       border-left: 2px solid transparent; line-height: 1.45;
     }
-    .toc a:hover { color: var(--text-primary); text-decoration: none; background: rgba(255,255,255,0.03); }
+    .toc a:hover { color: var(--text-primary); text-decoration: none; background: color-mix(in srgb, var(--text-primary) 3%, transparent); }
     .toc a.art-link {
       font-weight: 600; color: var(--text-secondary); padding-top: 0.35rem; margin-top: 0.1rem;
       display: flex; flex-direction: column; gap: 0.05rem;
@@ -148,7 +148,7 @@
     .cap-table td:first-child { color: var(--text-muted); }
     .cap-table td:last-child { text-align: right; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
     .cap-table tr.divider td { border-top: 1px solid var(--border); }
-    .cap-table tr.highlight td { background: rgba(29,78,216,0.12); }
+    .cap-table tr.highlight td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
     /* ── Rule tables ─────────────────────────────────────────────────── */
     .rule-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: var(--text-sm); }
@@ -167,9 +167,9 @@
       border-left: 3px solid; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       padding: 0.75rem 1rem; margin: 0.75rem 0 1rem; font-size: var(--text-base);
     }
-    .callout-note { border-color: var(--accent-dark); background: rgba(29,78,216,0.08); color: var(--accent-light); }
-    .callout-warn { border-color: var(--gold-dim); background: rgba(180,83,9,0.08); color: var(--gold); }
-    .callout-pending { border-color: var(--border); background: rgba(55,65,81,0.25); color: var(--text-muted); }
+    .callout-note { border-color: var(--accent-dark); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent-light); }
+    .callout-warn { border-color: var(--gold-dim); background: color-mix(in srgb, var(--gold) 8%, transparent); color: var(--gold); }
+    .callout-pending { border-color: var(--border); background: var(--bg-subtle); color: var(--text-muted); }
 
     /* ── Revision history ────────────────────────────────────────────── */
     .rev-type { display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.04em;

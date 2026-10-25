@@ -54,10 +54,10 @@
     .txn-note-icon {
       display: inline-flex; align-items: center; justify-content: center;
       width: 20px; height: 20px; color: var(--accent-light); cursor: pointer;
-      filter: drop-shadow(0 0 3px rgba(56,189,248,0.85));
+      filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-light) 85%, transparent));
       transition: filter 0.15s;
     }
-    .txn-note-icon:hover { filter: drop-shadow(0 0 6px rgba(56,189,248,1)); }
+    .txn-note-icon:hover { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-light) 100%, transparent)); }
     .tt-anchor { cursor: pointer; }
     .tt-popup {
       position: absolute; z-index: 500; max-width: 260px;

@@ -646,11 +646,10 @@
       return `${cap(first)} ${cap(last)}`;
     }
 
-    function ovrColor(ovr) {
-      const t = Math.max(0, Math.min(1, (ovr - 60) / 39));
-      const hue = Math.round(220 - t * 100);
-      const lightness = Math.round(48 + t * 10);
-      return `hsl(${hue},68%,${lightness}%)`;
+    // An OVR on the heat scale (components.css .ui-heat-fill): 60 and below
+    // is the bottom, 99 the top.
+    function ovrHeat(ovr) {
+      return Math.max(0, Math.min(1, (ovr - 60) / 39)).toFixed(3);
     }
 
     // ── shared data cache ─────────────────────────────────────────────────────
@@ -754,7 +753,7 @@
         const x = PAD.l + i * (barW + gap);
         const h = bH(p.ovr);
         const y = PAD.t + chartH - h;
-        return `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${ovrColor(p.ovr)}" rx="1" data-label="${formatName(p.name)} — ${p.ovr}" data-slug="${p.slug}"></rect>`;
+        return `<rect x="${x}" y="${y}" width="${barW}" height="${h}" class="ui-heat-fill" style="--heat:${ovrHeat(p.ovr)}" data-label="${formatName(p.name)} — ${p.ovr}" data-slug="${p.slug}"></rect>`;
       }).join('');
 
       return `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">

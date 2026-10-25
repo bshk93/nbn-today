@@ -193,20 +193,16 @@
                               text-transform: uppercase; color: var(--text-dim); }
     details.ballots summary:hover { color: var(--text-secondary); }
     .btable { width: 100%; border-collapse: collapse; font-size: var(--text-xs); margin-top: 0.9rem; display: block; overflow-x: auto; }
-    .btable th, .btable td { padding: 0.25rem 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
+    .btable th, .btable td { padding: 0.25rem 0.4rem; border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 5%, transparent); white-space: nowrap; }
     .btable th { text-align: left; color: var(--text-dim); font-size: var(--text-xs); letter-spacing: 0.06em; text-transform: uppercase; }
     .btable td.num { font-family: var(--font-mono); text-align: right; color: var(--text-muted); }
     .btable td.voter { color: var(--text-secondary); font-weight: 600; }
 
-    .badge { display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.15rem 0.55rem; border-radius: var(--radius-sm); }
-    .badge-draft { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
-    .badge-submitted { background: var(--gold-bg); border: 1px solid var(--gold-dim); color: var(--gold); }
-    .badge-published { background: var(--success-dark-bg); border: 1px solid color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
 
     .cover { width: 100%; max-height: 380px; object-fit: cover; border-radius: var(--radius); margin-bottom: 1.5rem; display: block; }
 
     .article-header { margin-bottom: 1.5rem; }
-    .article-header .badge { margin-bottom: 0.7rem; }
+    .article-header .ui-badge { margin-bottom: 0.7rem; }
     .article-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
     .article-header h1 { font-size: var(--text-xl); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.6rem; line-height: 1.2; }
     .byline { font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
@@ -371,7 +367,7 @@ marked.use({ gfm: true, breaks: true });
 function getToken() { return localStorage.getItem('nbn_token'); }
 function fmtDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); }
 function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function badgeHtml(s) { const l = { draft: 'Draft', submitted: 'In Queue', published: 'Published' }; return `<span class="badge badge-${s}">${l[s] || s}</span>`; }
+function badgeHtml(s) { const l = { draft: 'Draft', submitted: 'In Queue', published: 'Published' }; return `<span class="ui-badge${{ submitted: ' ui-badge--warning', published: ' ui-badge--success' }[s] || ''}">${l[s] || s}</span>`; }
 
 function computeFlags(a) {
   isAuthor = me && me.name === a.author;

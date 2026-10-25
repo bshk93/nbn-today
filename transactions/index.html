@@ -417,18 +417,6 @@
       margin-right: 0.25rem;
     }
 
-    .chip {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: var(--radius-sm);
-      padding: 0.2rem 0.75rem;
-      font-size: var(--text-xs);
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .chip.active { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
@@ -524,15 +512,15 @@
     .rescind-txn-btn:hover { color: var(--gold); border-color: var(--gold); }
     /* Open offer sheets (§ 3.15) */
     .offers-panel {
-      border: 1px solid hsl(45,60%,26%); background: hsl(45,60%,9%);
+      border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent);
       border-radius: var(--radius); padding: 0.85rem 1rem; margin-bottom: 1.25rem;
     }
-    .offers-panel.overdue { border-color: var(--danger); background: hsl(0,55%,9%); }
+    .offers-panel.overdue { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
     .offers-panel h2 {
       font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.05em;
-      color: hsl(45,90%,72%); margin: 0 0 0.6rem;
+      color: var(--gold); margin: 0 0 0.6rem;
     }
-    .offers-panel.overdue h2 { color: hsl(0,85%,74%); }
+    .offers-panel.overdue h2 { color: var(--danger-light); }
     .offer-row {
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.85rem;
       padding: 0.5rem 0; border-top: 1px solid var(--border); font-size: var(--text-sm);
@@ -1221,23 +1209,23 @@
   <!-- Filters -->
   <div class="filters" id="filters">
     <span class="filter-label">Type:</span>
-    <span class="chip active" data-filter="type" data-value="">All</span>
-    <span class="chip" data-filter="type" data-value="sign">Signings</span>
-    <span class="chip" data-filter="type" data-value="offer_sheet">Offer Sheets</span>
-    <span class="chip" data-filter="type" data-value="pick">Draft Picks</span>
-    <span class="chip" data-filter="type" data-value="sign_pick">Pick Signings</span>
-    <span class="chip" data-filter="type" data-value="option">Options</span>
-    <span class="chip" data-filter="type" data-value="guarantee">Guarantees</span>
-    <span class="chip" data-filter="type" data-value="release">Releases</span>
-    <span class="chip" data-filter="type" data-value="waiver_clear">Waivers</span>
-    <span class="chip" data-filter="type" data-value="renounce">Renounces</span>
-    <span class="chip" data-filter="type" data-value="qualifying_offer">Qualifying Offers</span>
-    <span class="chip" data-filter="type" data-value="trade">Trades</span>
-    <span class="chip" data-filter="type" data-value="convert_twoway">Two-Way Conversions</span>
-    <span class="chip" data-filter="type" data-value="extension">Extensions</span>
-    <span class="chip" data-filter="type" data-value="void_player">Voids</span>
-    <span class="chip" data-filter="type" data-value="stash">Stashes</span>
-    <span class="chip" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</span>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="true" data-filter="type" data-value="">All</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="sign">Signings</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="offer_sheet">Offer Sheets</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="pick">Draft Picks</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="sign_pick">Pick Signings</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="option">Options</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="guarantee">Guarantees</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="release">Releases</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="waiver_clear">Waivers</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="renounce">Renounces</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="qualifying_offer">Qualifying Offers</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="trade">Trades</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="convert_twoway">Two-Way Conversions</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="extension">Extensions</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="void_player">Voids</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="stash">Stashes</button>
+    <button type="button" class="ui-chip ui-chip--sm" aria-pressed="false" data-filter="type" data-value="set_hard_cap_level">Hard Cap Sets</button>
 
     <span class="filter-label" style="margin-left:0.75rem">Team:</span>
     <select id="team-filter-sel" class="trade-team-sel">
@@ -3367,10 +3355,10 @@ function collectTrade() {
 
 // ── Filters ────────────────────────────────────────────────────────────────
 function setupFilters() {
-  document.querySelectorAll('.chip[data-filter="type"]').forEach(chip => {
+  document.querySelectorAll('.ui-chip[data-filter="type"]').forEach(chip => {
     chip.addEventListener('click', function() {
-      document.querySelectorAll('.chip[data-filter="type"]').forEach(c => c.classList.remove('active'));
-      this.classList.add('active');
+      document.querySelectorAll('.ui-chip[data-filter="type"]').forEach(c => c.setAttribute('aria-pressed', 'false'));
+      this.setAttribute('aria-pressed', 'true');
       activeTypeFilter = this.dataset.value;
       currentPage = 0;
       renderTable();

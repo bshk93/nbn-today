@@ -75,7 +75,7 @@
     .crown { font-size: var(--text-lg); color: var(--gold); }
     .repeat-tag {
       display: inline-block; margin-top: 0.4rem; font-size: var(--text-xs); font-weight: 700;
-      color: var(--gold); background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4);
+      color: var(--gold); background: color-mix(in srgb, var(--gold) 15%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
       border-radius: var(--radius-sm); padding: 0.15rem 0.6rem; letter-spacing: 0.04em;
     }
 
@@ -163,7 +163,7 @@
     .ply a:hover { color: var(--accent-light); }
     .rings { color: var(--gold); font-weight: 700; white-space: nowrap; }
     .rings .first { color: var(--market-positive); font-size: var(--text-xs); font-weight: 700; margin-left: 0.25rem; }
-    .lead-tag { font-size: var(--text-xs); font-weight: 700; color: var(--danger-light); background: rgba(220,38,38,0.12); border:1px solid rgba(220,38,38,0.35); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
+    .lead-tag { font-size: var(--text-xs); font-weight: 700; color: var(--danger-light); background: color-mix(in srgb, var(--danger) 12%, transparent); border:1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.4rem; vertical-align: middle; }
     .num { font-variant-numeric: tabular-nums; }
 
     .loading, .err { text-align: center; color: var(--text-muted); padding: 3rem 1rem; }
