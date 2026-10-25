@@ -96,6 +96,7 @@
   /* Accent (blue) */
   --accent: #4a86cf;
   --accent-dark: #2c63a6;
+  --accent-fill: #3874bb;   /* --accent as a surface under --text-on-accent (primary buttons): darkened only as far as the label needs for 4.5:1, since --accent itself is also text on the page */
   --link: #8db6e6;
   --accent-light: #8db6e6;
   --text-on-accent: #ffffff;
@@ -200,6 +201,7 @@
      just under AA). Stated explicitly now so the choice is a choice. */
   --accent: #1f5fae;
   --accent-dark: #174a88;
+  --accent-fill: #1f5fae;   /* already 6.3:1 under a white label */
   --text-on-accent: #ffffff;
   --muted-border: #b9c6da;
   --overlay-scrim: rgba(15, 23, 42, 0.45);
@@ -249,7 +251,7 @@
   --success-bg-hover: #dcfce7;
 
   /* Gold / warning */
-  --gold: #a16207;
+  --gold: #945900;          /* 4.6:1 on its own 10% tint over page and card (warning chips); #a16207 was 4.0 */
   --gold-bg: #fffbeb;
   --gold-border: #fcd34d;
   --gold-dim: #d97706;
@@ -333,6 +335,7 @@
   /* Accent (rose gold, replaces blue) */
   --accent: #b76e79;
   --accent-dark: #8f4a5a;
+  --accent-fill: #a75f6a;   /* rose gold deepened to 4.6:1 under the white label */
   --link: #9d5b7a;
   --accent-light: #7a3f56; /* strongest/most-emphasized state — deepest, not brightest, on a light bg */
   --text-on-accent: #fff;
@@ -355,7 +358,7 @@
   --success-bg-hover: #d9ecdc;
 
   /* Gold / warning (antique gold, distinct hue from the rose accent) */
-  --gold: #8a6a0f;
+  --gold: #7d5f00;          /* 4.6:1 on its own 10% tint over page and card (warning chips); #8a6a0f was 4.0 */
   --gold-bg: #faf3e0;
   --gold-border: #e8cf8f;
   --gold-dim: #b9902a;
@@ -428,6 +431,7 @@
   --text-dim: #5e5f67;
   --accent: #d8540b;
   --accent-dark: #a43c00;
+  --accent-fill: #c74a00;
   --link: #ff9063;
   --accent-light: #ff9063;
   --text-on-accent: #fff;
@@ -494,6 +498,7 @@
   --text-dim: #675d5d;
   --accent: #ab7a00;
   --accent-dark: #815b00;
+  --accent-fill: #986c00;
   --link: #e6a500;
   --accent-light: #e6a500;
   --text-on-accent: #fff;
@@ -560,6 +565,7 @@
   --text-dim: #61605c;
   --accent: #7d858a;
   --accent-dark: #5c6468;
+  --accent-fill: #6e767b;
   --link: #abb4b9;
   --accent-light: #abb4b9;
   --text-on-accent: #fff;
@@ -626,6 +632,7 @@
   --text-dim: #5b625c;
   --accent: #aa7b00;
   --accent-dark: #805b00;
+  --accent-fill: #976d00;
   --link: #d1ac69;
   --accent-light: #d1ac69;
   --text-on-accent: #fff;
@@ -692,6 +699,7 @@
   --text-dim: #5e5f67;
   --accent: #0094ac;
   --accent-dark: #006f81;
+  --accent-fill: #008096;
   --link: #65c2d7;
   --accent-light: #65c2d7;
   --text-on-accent: #fff;
@@ -758,6 +766,7 @@
   --text-dim: #665d5d;
   --accent: #e23e57;
   --accent-dark: #b80037;
+  --accent-fill: #d7324e;
   --link: #ff8a92;
   --accent-light: #ff8a92;
   --text-on-accent: #fff;
@@ -824,6 +833,7 @@
   --text-dim: #665d5f;
   --accent: #ab7a00;
   --accent-dark: #805b00;
+  --accent-fill: #986c00;
   --link: #e6a500;
   --accent-light: #e6a500;
   --text-on-accent: #fff;
@@ -890,6 +900,7 @@
   --text-dim: #5b6166;
   --accent: #3c88d2;
   --accent-dark: #1064ac;
+  --accent-fill: #2876be;
   --link: #72b8ff;
   --accent-light: #72b8ff;
   --text-on-accent: #fff;
@@ -956,6 +967,7 @@
   --text-dim: #5c6067;
   --accent: #a57e00;
   --accent-dark: #7c5d00;
+  --accent-fill: #937000;
   --link: #deaa00;
   --accent-light: #deaa00;
   --text-on-accent: #fff;
@@ -1022,6 +1034,7 @@
   --text-dim: #5c6067;
   --accent: #e33f49;
   --accent-dark: #b90127;
+  --accent-fill: #d83340;
   --link: #ff8c89;
   --accent-light: #ff8c89;
   --text-on-accent: #fff;
@@ -1088,6 +1101,7 @@
   --text-dim: #5c6067;
   --accent: #a57e00;
   --accent-dark: #7c5d00;
+  --accent-fill: #937000;
   --link: #deaa00;
   --accent-light: #deaa00;
   --text-on-accent: #fff;
@@ -1154,6 +1168,7 @@
   --text-dim: #665d5d;
   --accent: #e34042;
   --accent-dark: #ba031f;
+  --accent-fill: #d83439;
   --link: #ff8c85;
   --accent-light: #ff8c85;
   --text-on-accent: #fff;
@@ -1220,6 +1235,7 @@
   --text-dim: #5b6067;
   --accent: #ab7a00;
   --accent-dark: #805b00;
+  --accent-fill: #986c00;
   --link: #e6a500;
   --accent-light: #e6a500;
   --text-on-accent: #fff;
@@ -1286,6 +1302,7 @@
   --text-dim: #5c6067;
   --accent: #e33f49;
   --accent-dark: #b90127;
+  --accent-fill: #d83340;
   --link: #ff8c89;
   --accent-light: #ff8c89;
   --text-on-accent: #fff;
@@ -1352,6 +1369,7 @@
   --text-dim: #615e66;
   --accent: #ab7a00;
   --accent-dark: #815b00;
+  --accent-fill: #986c00;
   --link: #e6a500;
   --accent-light: #e6a500;
   --text-on-accent: #fff;
@@ -1418,6 +1436,7 @@
   --text-dim: #5d5f67;
   --accent: #5c81d1;
   --accent-dark: #3e5fa7;
+  --accent-fill: #4e72c0;
   --link: #97b2e9;
   --accent-light: #97b2e9;
   --text-on-accent: #fff;
@@ -1484,6 +1503,7 @@
   --text-dim: #665d5f;
   --accent: #b77300;
   --accent-dark: #8a5500;
+  --accent-fill: #a36600;
   --link: #f59c10;
   --accent-light: #f59c10;
   --text-on-accent: #fff;
@@ -1550,6 +1570,7 @@
   --text-dim: #5b625c;
   --accent: #a67d00;
   --accent-dark: #7d5d00;
+  --accent-fill: #946f00;
   --link: #caaf75;
   --accent-light: #caaf75;
   --text-on-accent: #fff;
@@ -1616,6 +1637,7 @@
   --text-dim: #5b6067;
   --accent: #5c9800;
   --accent-dark: #437100;
+  --accent-fill: #4d8100;
   --link: #83ca32;
   --accent-light: #83ca32;
   --text-on-accent: #fff;
@@ -1682,6 +1704,7 @@
   --text-dim: #5b6067;
   --accent: #e33f49;
   --accent-dark: #b90127;
+  --accent-fill: #d83340;
   --link: #ff8c89;
   --accent-light: #ff8c89;
   --text-on-accent: #fff;
@@ -1748,6 +1771,7 @@
   --text-dim: #5b6166;
   --accent: #c86500;
   --accent-dark: #974b00;
+  --accent-fill: #b75c00;
   --link: #ff9240;
   --accent-light: #ff9240;
   --text-on-accent: #fff;
@@ -1814,6 +1838,7 @@
   --text-dim: #5a6166;
   --accent: #e3432e;
   --accent-dark: #b71500;
+  --accent-fill: #d83823;
   --link: #ff8e7a;
   --accent-light: #ff8e7a;
   --text-on-accent: #fff;
@@ -1880,6 +1905,7 @@
   --text-dim: #5a6166;
   --accent: #018cd3;
   --accent-dark: #00699f;
+  --accent-fill: #0079b8;
   --link: #5bbcff;
   --accent-light: #5bbcff;
   --text-on-accent: #fff;
@@ -1946,6 +1972,7 @@
   --text-dim: #5b6066;
   --accent: #e23e57;
   --accent-dark: #b90037;
+  --accent-fill: #d7324e;
   --link: #ff8a92;
   --accent-light: #ff8a92;
   --text-on-accent: #fff;
@@ -2012,6 +2039,7 @@
   --text-dim: #61605c;
   --accent: #e34042;
   --accent-dark: #ba031f;
+  --accent-fill: #d83439;
   --link: #ff8c85;
   --accent-light: #ff8c85;
   --text-on-accent: #fff;
@@ -2078,6 +2106,7 @@
   --text-dim: #615e65;
   --accent: #986cc7;
   --accent-dark: #7549a2;
+  --accent-fill: #8c60ba;
   --link: #c79afa;
   --accent-light: #c79afa;
   --text-on-accent: #fff;
@@ -2144,6 +2173,7 @@
   --text-dim: #61605c;
   --accent: #7d858a;
   --accent-dark: #5c6468;
+  --accent-fill: #6e767b;
   --link: #abb4b9;
   --accent-light: #abb4b9;
   --text-on-accent: #fff;
@@ -2210,6 +2240,7 @@
   --text-dim: #665d5d;
   --accent: #a77d00;
   --accent-dark: #7d5d00;
+  --accent-fill: #956f00;
   --link: #ccae71;
   --accent-light: #ccae71;
   --text-on-accent: #fff;
@@ -2276,6 +2307,7 @@
   --text-dim: #5b6067;
   --accent: #b77300;
   --accent-dark: #8a5500;
+  --accent-fill: #a36600;
   --link: #f59c10;
   --accent-light: #f59c10;
   --text-on-accent: #fff;
@@ -2342,6 +2374,7 @@
   --text-dim: #5b6067;
   --accent: #e33f49;
   --accent-dark: #b90127;
+  --accent-fill: #d83340;
   --link: #ff8c89;
   --accent-light: #ff8c89;
   --text-on-accent: #fff;

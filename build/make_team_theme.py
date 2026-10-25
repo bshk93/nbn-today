@@ -5,7 +5,7 @@
     python3 build/make_team_theme.py PHX --write    # insert/replace it in css/theme.css
     python3 build/make_team_theme.py --all --write  # all 30
 
-Why this is generated and not hand-written: a theme block is 59 tokens, every
+Why this is generated and not hand-written: a theme block is 60 tokens, every
 one of which has to be present (css/theme.css has no cross-theme fallback,
 only to the bare :root), and shipping two hand-written light themes turned up
 285 unreadable text/background pairs. Thirty more by hand is not a thing that
@@ -349,6 +349,14 @@ def build_theme(primary, accent, base):
                                            -1 if label == "#fff" else +1)
     out["--text-on-accent"] = label
 
+    # --accent-fill is the primary button's resting surface (components.css).
+    # It can't be --accent, for the reason above, and it can't be
+    # --accent-dark, which is the hover and has to read as a step from it. So
+    # it is --accent moved only as far as the label needs: every team accent
+    # came out at 3.5-4.2 under white, a shade short of AA.
+    out["--accent-fill"] = shift_until(out["--accent"], label, 4.6,
+                                       -1 if label == "#fff" else +1)
+
     # The info panel carries accent-coloured text (links, badges) on an
     # accent-tinted background, so a hue change collapses the separation the
     # base theme got from lightness alone. Darkening the panel is the safe
@@ -402,6 +410,7 @@ CHECK_PAIRS = [
     ("--accent-light", "--bg-card"), ("--link", "--accent-panel-bg"),
     ("--text-primary", "--accent-panel-bg"),
     ("--text-on-accent", "--accent"), ("--text-on-accent", "--accent-dark"),
+    ("--text-on-accent", "--accent-fill"),
     ("--danger", "--bg-card"), ("--success", "--bg-card"),
     ("--gold", "--bg-card"), ("--purple", "--bg-card"),
     ("--market-positive", "--bg-card"), ("--warning", "--bg-card"),
