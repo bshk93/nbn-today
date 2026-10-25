@@ -658,13 +658,19 @@
     .dash-feed-team { font-weight: 600; white-space: nowrap; }
     .dash-feed-team img { width: 1.25em; height: 1.25em; object-fit: contain; vertical-align: -0.25em; margin-right: 0.3em; }
     .dash-feed-sub { display: block; font-size: var(--text-sm); font-weight: 400; color: var(--text-muted); margin-top: 0.1rem; }
-    /* A night's finals as a ticker: one cell per game, away over home, each
-       side edged in its two team colours (design-system.md § Scores). */
+    /* A night's finals as a ticker: a flat tile per game, away over home,
+       each side edged in its two team colours (design-system.md § Scores).
+       The tile is what keeps twelve games from reading as one column of
+       names; --bg-hover because --bg-subtle barely differs from the page. */
     .dash-feed-scores {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 7.5rem));
-      gap: var(--space-2) var(--space-4); margin-top: var(--space-2);
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 8rem));
+      gap: var(--space-2); margin-top: var(--space-2);
     }
-    .dash-feed-score { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .dash-feed-score {
+      display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-hover); border-radius: var(--radius-sm);
+    }
     .dash-feed-side {
       display: flex; align-items: center; gap: var(--space-2);
       font-family: var(--font-display); font-size: var(--text-base); font-weight: 600;
@@ -756,6 +762,7 @@
          full width instead of a narrow strip beside the tag. */
       :root a.dash-feed-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
       :root .dash-feed-tag { justify-self: start; }
+      .dash-feed-scores { grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); }
       :root .dash-card, :root .hero:not(:empty) { padding: var(--space-4); margin-bottom: var(--space-4); }
     }
 
