@@ -207,8 +207,58 @@ Pinned as a test once built:
   (`_with_attendance` in `routers/boxscores.py`); the page shows it under the
   leaders. The same change keys a game by its two teams, so the 19 games
   without one clear away side no longer split into two half games.
-- **Not built yet**: the team page Finances tab, owners' value added,
-  headlines, sponsor names, a recap Business section.
+- **Owners** (v1.1): `data/franchise-owners.csv`, one row per owner per team
+  run. Each season's change in value goes to whoever owned the team on Jan 1
+  (or today, for a season not there yet), not to every owner whose tenure
+  touched it as the playoff stats do, since a summer takeover would otherwise
+  count twice. `VS_LEAGUE` is the change beyond the league average over the
+  same seasons, zero-sum across owners. Inheriting a champion reads as a money
+  pit (KVL, ATL), because the title leaves the revenue window on their watch.
+  Shown on `/finances` as Best stewards / Money pits.
+- **Jersey patches** (v1.1): `JERSEY_PATCH`, a seeded sponsor per team-season
+  from `SPONSORS`, renewed 60% of the time.
+- **Team page**: a Front Office section on the Franchise tab (value and rank,
+  crowds, profit, jersey patch, link to `/finances`), at the end of
+  `teams/team.js`.
+- **Not built yet**: headlines, a recap Business section.
+
+## Fair value (shadow DCF, 2026-10-24)
+
+A share price per franchise built on this ledger, at the hidden
+`/invest/fair/` ("Wall Street 2"). The model is the docstring of
+`nbn-api/routers/fair_value.py`, pinned by `tests/test_fair_value.py`. It
+runs hourly after the playoff odds (`snapshot_playoff_odds.py`) and keeps one
+row per team per day in `fair-value-history.jsonl`. It is not in the nav and
+nothing trades on it.
+
+**Why it exists.** Wall Street's price moves only on game margins. The user
+wanted a price that also moves on trades and signings, so the market can like
+a trade when a team gets better at a fair price, and dislike it when it
+doesn't. A pure DCF gives nonsense here (most teams' profit is small or
+negative, and the ledger's values are 15-20× revenue), so the model is profit
+for three seasons plus a sale at the ledger's own valuation.
+
+**Its history can't be rebuilt.** It reads today's rosters, contracts and
+OVRs, which keep no past states, so its series starts on the day it was first
+deployed. That is why the snapshot is kept, and why a formula change only
+affects days after it.
+
+**Before it could carry NB¥** (the backlog item that decides this):
+
+- **Insider trading on transactions.** Wall Street locks a team while one of
+  its games is played but not entered. A price that moves on trades needs the
+  same lock while a TRC trade request involving the team is open, and probably
+  a ban on trading your own team.
+- **Drift.** Discounting pulls every price up about 8% over a season, and the
+  rollover moves the horizon a season along. A tradable version would price
+  against the league average, or every long position would gain.
+- **Payout budget.** Wall Street's `MOVE_DIVISOR` was tuned against the NB¥
+  budget (`docs/nbyen-economy.md` § 3). This model's volatility is
+  different and would need the same backtest, which it can't have until
+  there is a season of snapshots.
+- **First guesses.** `AGE_CURVE`, `REVERT`, `PRIOR_FLOOR`, the re-signing
+  rule and `CAP_GROWTH` (27-28 onward has no apron figures yet, see the
+  backlog's cap estimate item) are all unfitted.
 
 ## Open
 

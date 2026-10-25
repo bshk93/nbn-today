@@ -473,7 +473,10 @@
 :root[data-team] .team-header-nav {
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-6) var(--space-5);
+  /* Same box as a player's band (§ Player pages): one height, padding and
+     image size, so moving from a team to its player the header doesn't jump. */
+  min-height: var(--band-height);
+  padding: var(--space-4) var(--space-5);
   margin-bottom: var(--space-5);
   border-radius: var(--radius);
   background: var(--team-primary);
@@ -483,11 +486,11 @@
   flex-direction: row;
   gap: var(--space-5);
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
 }
 :root[data-team] .team-header img {
-  width: 96px; height: 96px;
-  padding: 12px;
+  width: var(--band-image); height: var(--band-image);
+  padding: 10px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.95);
 }
@@ -499,11 +502,15 @@
 /* The name and its one line of franchise facts (renderHeaderFacts). */
 .team-header-facts:empty { display: none; }
 :root[data-team] .team-header-facts {
-  margin-top: var(--space-1);
-  font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.82);
-  white-space: pre-wrap;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-5);
+  margin-top: var(--space-2);
+  font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
 }
+/* A figure and its label: "256–237 ALL-TIME", "3 PLAYOFF TRIPS IN 7 SEASONS". */
+:root[data-team] .team-header-facts .thf b { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.01em; color: white; }
+:root[data-team] .team-header-facts .thf-owner { flex-basis: 100%; order: -1; color: rgba(255, 255, 255, 0.7); }
 :root[data-team] .team-nav-btn {
   color: rgba(255, 255, 255, 0.85);
   border-color: rgba(255, 255, 255, 0.35);
@@ -511,13 +518,49 @@
 :root[data-team] .team-nav-btn:hover { color: #fff; border-color: #fff; background: rgba(255, 255, 255, 0.1); }
 :root[data-team] .ui-tab.active { border-bottom-color: var(--team-accent); }
 @media (max-width: 600px) {
-  :root[data-team] .team-header-nav { padding: var(--space-5) var(--space-3); gap: var(--space-2); }
+  :root[data-team] .team-header-nav { padding: var(--space-4) var(--space-3); gap: var(--space-2); }
   :root[data-team] .team-header { gap: var(--space-3); }
-  :root[data-team] .team-header img { width: 60px; height: 60px; padding: 8px; }
+  /* On a phone both bands are just the name and its facts, left-aligned: no
+     logo or headshot, no Share (the browser's own share does that), no
+     prev/next arrows (they cost a fifth of the width and forced names onto
+     two lines; the sidebar's Teams panel does the same job). */
+  :root[data-team] .team-header-nav { min-height: 0; padding: var(--space-4); }
+  :root[data-team] :is(.team-nav-btn, .team-header img, .team-share-btn),
+  .ui-header[data-team] :is(.player-nav-btn, .player-share) { display: none; }
+  :root[data-team] .team-header { display: block; }
+  :root[data-team] .team-header-facts { gap: 0 var(--space-3); }
+  :root[data-team] .team-header-facts .thf b { font-size: var(--text-md); }
+  .ui-header[data-team] .header-main { align-items: flex-start; }
+
   :root[data-team] .team-header h1 { font-size: 1.75rem; }
   :root[data-team] .team-header-facts { font-size: var(--text-xs); }
-  :root[data-team] .team-nav-btn { width: 2rem; height: 2rem; font-size: 1.2rem; }
 }
+
+/* ── Player pages in team colours ───────────────────────────────────────── */
+/* A player's header (the profile and its sub-pages) takes his current team's
+   band, the same flat primary block and accent stripe as the team page, so
+   the two read as one family. Set by data-team on the header (renderIdentity
+   in players/index.html, mount in players/subpage.js); a free agent or a
+   retired player has none and keeps the plain header. */
+:root .ui-header[data-team] {
+  align-items: center;
+  min-height: var(--band-height);
+  margin-bottom: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: var(--team-primary);
+  border-bottom: 5px solid var(--team-accent);
+  border-radius: var(--radius);
+}
+.ui-header[data-team] .ui-title { color: white; }
+.ui-header[data-team] :is(.ui-subtitle, .ui-subtitle a, .identity .pos, .identity a.team, .bio-sep) { color: rgba(255, 255, 255, 0.85); }
+.ui-header[data-team] :is(.profile-photo, .psub-photo) { width: var(--band-image); height: var(--band-image); border: 0; background: rgba(255, 255, 255, 0.92); }
+/* Phone: no picture and the band's own height (see the team band's note). */
+@media (max-width: 600px) {
+  :root .ui-header[data-team] { min-height: 0; padding: var(--space-4); }
+  .ui-header[data-team] :is(.profile-photo, .psub-photo) { display: none; }
+}
+.ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn) { color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.45); }
+.ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn):hover { color: white; border-color: white; }
 
 /* ── Motion ───────────────────────────────────────────────────────────────── */
 /* Almost none, on purpose. The page fades in once, quickly; nothing rises,
