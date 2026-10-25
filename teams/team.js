@@ -661,6 +661,9 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-month { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
   .sched-table td { padding: 0.45rem 1rem; }
   .sched-table .sched-date { width: 7.5rem; }
+  /* The team, the Playoffs tag and the stream mark share one centred row, so
+     the mark lines up with the name rather than the text baseline. */
+  .sched-opp-team { display: inline-flex; align-items: center; vertical-align: middle; }
   .sched-opp a { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.35rem; font-weight: 600; color: var(--text-primary); }
   .sched-opp img { width: 18px; height: 18px; object-fit: contain; }
   .sched-res { font-variant-numeric: tabular-nums; color: var(--text-primary) !important; }
@@ -669,7 +672,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-up { color: var(--link) !important; }
   .sched-rec { width: 4rem; }
   .sched-tag { margin-left: 0.35rem; font-size: 0.7rem; }
-  .sched-tag-stream { font-size: var(--text-base); color: var(--accent-light); }
+  .sched-tag-stream { display: inline-flex; font-size: var(--text-base); color: var(--accent-light); }
   .sched-tag-po { color: var(--danger); font-weight: 600; }
   tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
@@ -1412,7 +1415,7 @@ async function renderSchedule(allGames, season) {
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
       <td class="muted sched-date">${fmtDay(g.date)}</td>
       <td class="sched-opp"><span class="muted">${home ? 'vs' : '@'}</span>
-        <a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${stream}</td>
+        <span class="sched-opp-team"><a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${stream}</span></td>
       <td class="right">${res}</td>
       <td class="right muted sched-rec">${g.recAfter || ''}</td>
     </tr>`;
