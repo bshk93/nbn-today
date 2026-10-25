@@ -2,16 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/css/shared.css">
-  <title>Rookie Scale - NBN</title>
+  <title>Moved - Rookie Scale - NBN</title>
   <!-- NBN:og -->
-  <meta name="description" content="The § 7.1 rookie scale — what every first-round pick is owed.">
+  <meta name="description" content="Moved — the rookie scale is now a tab of League Settings.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Rookie Scale - NBN">
-  <meta property="og:description" content="The § 7.1 rookie scale — what every first-round pick is owed.">
+  <meta property="og:title" content="Moved - Rookie Scale - NBN">
+  <meta property="og:description" content="Moved — the rookie scale is now a tab of League Settings.">
   <meta property="og:url" content="https://nbn.today/rookie-scale/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -23,275 +21,16 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
-  <style>
-                
-    .years { display: flex; flex-direction: column; gap: 1.25rem; }
-
-    .year-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-    }
-    .year-card h2 {
-      font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
-      color: var(--link); font-family: var(--font-mono);
-    }
-
-            thead th:first-child { text-align: center; width: 2.5rem; }
-        tbody td {
-      padding: 0.25rem 0.5rem; text-align: right;
-      border-bottom: 1px solid var(--border-subtle);
-      font-variant-numeric: tabular-nums;
-    }
-    tbody td:first-child { text-align: center; color: var(--text-muted); font-size: 0.75rem; }
-
-    input[type=number] {
-      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.8rem; font-family: inherit;
-      padding: 0.2rem 0.35rem; outline: none; width: 100%; text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-    input[type=number]:focus { border-color: var(--accent); }
-    input[type=number]:disabled {
-      background: transparent; border-color: transparent; cursor: default;
-    }
-
-    .card-footer {
-      display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem;
-    }
-    .col-season {
-      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em;
-      color: var(--link); margin-top: 0.15rem; text-transform: none;
-      font-family: var(--font-mono);
-    }
-    .hold-mult { color: var(--text-muted); font-size: 0.72rem; margin-left: 0.3rem; }
-
-    .status { font-size: 0.78rem; }
-    .status.ok  { color: var(--success-alt); }
-    .status.err { color: var(--danger); }
-  </style>
+  <!-- The rookie scale is now a tab of League Settings (/cap-settings), next
+       to the cap levels it indexes off. This stub keeps shared links working. -->
+  <script>
+    location.replace('/cap-settings/#rookie-scale');
+  </script>
+  <meta http-equiv="refresh" content="0; url=/cap-settings/#rookie-scale">
 </head>
 <body>
-  <div class="page ui-page">
-    <nav class="nav"></nav>
-    <header class="ui-header">
-      <div>
-        <h1 class="ui-title">Rookie Scale</h1>
-        <p class="ui-subtitle">First-round rookie contract amounts by pick (§ 7.1) — four years, with Years 3 and 4
-         as team options, plus the § 3.10 RFA cap hold the deal rolls into. The scale indexes
-         annually with the salary cap. Second-round picks are not on the scale; they sign off
-         the minimum scale (§ 3.12) via the Second Round Exception.</p>
-      </div>
-    </header>
-
-    <div class="years" id="years">
-      <p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>
-    </div>
-  </div>
-
-  <script>
-    // § 7.1: four contract years, then the § 3.10 hold the deal rolls into.
-    // The fifth figure is deliberately not a contract year — it's the RFA cap
-    // hold, 250% or 300% of Year 4 depending on where Year 4 sits against that
-    // season's EAPS. It lives in the same table because it's part of the same
-    // scale, and `cap_holds` marks it RFA so nothing reads it as salary.
-    const COL_LABELS = ['Year 1', 'Year 2', 'Year 3 (TO)', 'Year 4 (TO)', 'RFA Hold'];
-    const YEARS_PER_DEAL = COL_LABELS.length;
-
-    function currentDraftYear() { return new Date().getFullYear(); }
-
-    // 2026, 0 -> '26-27'. Derived from the draft year rather than stored, so a
-    // table can't drift out of sync with the seasons it's meant to price.
-    function seasonKey(draftYear, offset) {
-      const s = (draftYear + offset) % 100;
-      return String(s).padStart(2, '0') + '-' + String((s + 1) % 100).padStart(2, '0');
-    }
-
-    function fmtMoney(n) {
-      return n ? '$' + Number(n).toLocaleString('en-US') : '—';
-    }
-
-    function getToken() { return localStorage.getItem('nbn_token'); }
-
-    function emptyPicks(n) {
-      return Array.from({ length: n }, () => Array(YEARS_PER_DEAL).fill(0));
-    }
-
-    // Rows can be short if a table predates the fifth column.
-    function padRow(row) {
-      const out = (row || []).slice(0, YEARS_PER_DEAL);
-      while (out.length < YEARS_PER_DEAL) out.push(0);
-      return out;
-    }
-
-    function buildYearCard(year, picks, canEdit) {
-      const card = document.createElement('div');
-      card.className = 'year-card';
-
-      const h2 = document.createElement('h2');
-      h2.textContent = year + ' Draft';
-      card.appendChild(h2);
-
-      const table = document.createElement('table'); table.className = 'ui-table';
-
-      const thead = document.createElement('thead');
-      const headerRow = document.createElement('tr');
-      const pickTh = document.createElement('th');
-      pickTh.textContent = '#';
-      headerRow.appendChild(pickTh);
-      COL_LABELS.forEach((label, j) => {
-        const th = document.createElement('th');
-        th.appendChild(document.createTextNode(label));
-        const sub = document.createElement('div');
-        sub.className = 'col-season';
-        sub.textContent = seasonKey(year, j);
-        th.appendChild(sub);
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-
-      const tbody = document.createElement('tbody');
-      const inputs = [];
-
-      picks.forEach((rawRow, i) => {
-        const row = padRow(rawRow);
-        const tr = document.createElement('tr');
-
-        const pickTd = document.createElement('td');
-        pickTd.textContent = i + 1;
-        tr.appendChild(pickTd);
-
-        const rowInputs = row.map((val, j) => {
-          const td = document.createElement('td');
-          if (canEdit) {
-            const inp = document.createElement('input');
-            inp.type = 'number';
-            inp.value = val || '';
-            inp.placeholder = '0';
-            td.appendChild(inp);
-            tr.appendChild(td);
-            return inp;
-          }
-          // Read-only: this page's whole job is to have the figures handy, and
-          // a grid of disabled number inputs is the least readable way to show
-          // a dollar amount.
-          td.textContent = fmtMoney(val);
-          if (j === YEARS_PER_DEAL - 1 && val && row[3]) {
-            const mult = document.createElement('span');
-            mult.className = 'hold-mult';
-            mult.textContent = ` ${(val / row[3]).toFixed(1)}×`;
-            mult.title = '§ 3.10 multiplier on the Year 4 salary';
-            td.appendChild(mult);
-          }
-          tr.appendChild(td);
-          return null;
-        });
-        if (canEdit) inputs.push(rowInputs);
-        tbody.appendChild(tr);
-      });
-
-      table.appendChild(tbody);
-      // Scrolls inside its own box on a phone rather than widening the page.
-      const tableWrap = document.createElement('div');
-      tableWrap.className = 'ui-table-wrap';
-      tableWrap.appendChild(table);
-      card.appendChild(tableWrap);
-
-      if (canEdit) {
-        const footer = document.createElement('div');
-        footer.className = 'card-footer';
-        const btn = document.createElement('button');
-        btn.className = 'btn btn-primary';
-        btn.textContent = 'Save';
-        const status = document.createElement('span');
-        status.className = 'status';
-        footer.appendChild(btn);
-        footer.appendChild(status);
-        card.appendChild(footer);
-
-        btn.addEventListener('click', async () => {
-          btn.disabled = true;
-          status.textContent = 'Saving…';
-          status.className = 'status';
-          const body = inputs.map(row => row.map(inp => Number(inp.value) || 0));
-          try {
-            const r = await fetch(`/api/rookie-scale/${year}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `Bearer ${getToken()}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(body),
-            });
-            if (r.status === 401) {
-              localStorage.removeItem('nbn_token');
-              status.textContent = 'Token rejected — refresh and re-enter.';
-              status.className = 'status err';
-            } else if (!r.ok) {
-              throw new Error();
-            } else {
-              status.textContent = 'Saved.';
-              status.className = 'status ok';
-              setTimeout(() => { status.textContent = ''; }, 3000);
-            }
-          } catch {
-            status.textContent = 'Error saving.';
-            status.className = 'status err';
-          }
-          btn.disabled = false;
-        });
-      }
-
-      return card;
-    }
-
-    function renderYears(scaleData, canEdit) {
-      const loaded = Object.keys(scaleData).map(Number);
-      // Blank cards for the current and next draft exist so an editor has
-      // somewhere to enter a table that doesn't exist yet. A reader gets
-      // nothing from 30 rows of em-dashes, so they only see real tables.
-      const all = new Set(canEdit
-        ? [...loaded, currentDraftYear(), currentDraftYear() + 1]
-        : loaded);
-      const years = [...all].sort((a, b) => b - a);
-
-      const container = document.getElementById('years');
-      container.innerHTML = '';
-      if (!years.length) {
-        container.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">'
-          + 'No rookie scale tables have been loaded yet.</p>';
-        return;
-      }
-      years.forEach(year => {
-        const picks = scaleData[String(year)] || emptyPicks(30);
-        container.appendChild(buildYearCard(year, picks, canEdit));
-      });
-    }
-
-    async function init() {
-      const token = getToken();
-
-      let canEdit = false;
-
-      // Signing in is the header's job. A member with the role gets the
-      // editable table; everyone else gets the read-only one.
-      if (token) {
-        const meResp = await fetch('/api/me', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(() => null);
-        if (meResp && meResp.ok) {
-          const me = await meResp.json();
-          canEdit = me.roles.some(r => r === 'rosters' || r === 'admin');
-        }
-      }
-
-      const scaleResp = await fetch('/api/rookie-scale').catch(() => null);
-      const scaleData = (scaleResp && scaleResp.ok) ? await scaleResp.json() : {};
-      renderYears(scaleData, canEdit);
-    }
-
-    init();
-  </script>
-  <script src="/nav.js"></script>
+  <p style="font-family:var(--font-sans);padding:2rem">
+    The Rookie Scale is now a tab of <a href="/cap-settings/#rookie-scale">League Settings</a>.
+  </p>
 </body>
 </html>
