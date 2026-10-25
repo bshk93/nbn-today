@@ -3,7 +3,8 @@
 // Each game day, pick a PG, SG, SF, PF, C and a sixth man from the teams
 // playing. The rules, the scoring, the lock and the prizes are all the API's
 // (nbn-api/routers/pickem.py); this file draws what GET /api/pickem/{date}
-// returns and saves a lineup with PUT. It does no scoring of its own.
+// returns and saves a lineup with PUT. It does no scoring of its own: the
+// Leaders view is GET /api/pickem/leaders, scored by the same function.
 //
 // Mounted by bet/index.html: Pickem.render(container, ctx), where ctx is
 // { token, user() → {name, roles} | null, refreshBalance() }. The day shown is
@@ -12,6 +13,7 @@
   const PK_CSS = `
     .pk-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); }
     .pk-day { display: flex; align-items: center; gap: var(--space-2); }
+    .pk-day[hidden] { display: none; }
     .pk-date { font-weight: 600; color: var(--text-primary); min-width: 9.5rem; text-align: center; }
     .pk-status { margin-bottom: var(--space-3); font-size: var(--text-sm); color: var(--text-muted); }
     .pk-status strong { color: var(--text-primary); }
@@ -63,11 +65,19 @@
     .pk-wins { font-size: var(--text-sm); }
     .pk-wins li { padding: 0.2rem 0; color: var(--text-secondary); }
     .pk-wins a { color: var(--text-primary); }
+    .pk-lead-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+    .pk-lead-bar .ui-input { flex: 1; min-width: 10rem; }
+    .pk-lead-bar label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: var(--text-sm); color: var(--text-secondary); }
+    .pk-lead th[data-sort] { cursor: pointer; white-space: nowrap; }
+    .pk-lead th.sorted { color: var(--text-primary); }
+    .pk-lead td.num, .pk-lead th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pk-lead td.rank { color: var(--text-muted); }
     @media (max-width: 520px) {
       .pk-date { min-width: 0; }
       .pk-slots { grid-template-columns: 1fr; }
       .pk-picker-head .ui-select { flex: 1; }
       .pk-list .col-pos, .pk-list .col-ovr { display: none; }
+      .pk-lead .col-min, .pk-lead .col-tot, .pk-lead .col-pos { display: none; }
     }
   `;
 
@@ -79,7 +89,9 @@
   const name = raw => (typeof nbnPlayerName === 'function' ? nbnPlayerName(raw) : raw);
 
   let ctx = null, root = null, cssDone = false;
-  let view = 'day';        // 'day' | 'standings'
+  let view = 'day';        // 'day' | 'standings' | 'leaders'
+  let leaders = null;      // GET /api/pickem/leaders
+  const lead = { pos: '', q: '', minGp: null, today: false, sort: 'fp_avg' };
   let date = null;
   let day = null;          // GET /api/pickem/{date}
   let draft = {};          // slot -> slug, the lineup being edited
@@ -131,6 +143,7 @@
         <div class="ui-segmented" role="tablist">
           <button data-view="day" class="${view === 'day' ? 'active' : ''}">Lineups</button>
           <button data-view="standings" class="${view === 'standings' ? 'active' : ''}">Standings</button>
+          <button data-view="leaders" class="${view === 'leaders' ? 'active' : ''}">Leaders</button>
         </div>
         <div class="pk-day" id="pk-day-nav" ${view === 'day' ? '' : 'hidden'}>
           <button class="ui-btn ui-btn--sm ui-btn--ghost" id="pk-prev" aria-label="Previous game day">←</button>
@@ -150,6 +163,7 @@
     $('#pk-prev').onclick = () => stepDay(-1);
     $('#pk-next').onclick = () => stepDay(1);
     if (view === 'standings') return loadStandings();
+    if (view === 'leaders') return loadLeaders();
     return loadDay();
   }
 
@@ -178,8 +192,15 @@
     const el = $('#pk-body');
     el.innerHTML = '<div class="ui-loading">Loading…</div>';
     const r = await fetch(`/api/pickem/${date}`, { headers: authHeaders() });
-    if (!r.ok) { el.innerHTML = `<div class="ui-empty">Couldn’t load ${esc(date)}.</div>`; return; }
-    day = await r.json();
+    if (!r.ok) {
+      if (view === 'day') el.innerHTML = `<div class="ui-empty">Couldn’t load ${esc(date)}.</div>`;
+      return;
+    }
+    const got = await r.json();
+    if (got.date !== date) return;   // a later day was asked for meanwhile
+    day = got;
+    // Leaders reads the day's slate; drawing the day there would wipe it.
+    if (view !== 'day') return;
     const mine = day.entries.find(e => e.member === me());
     draft = mine ? { ...mine.lineup } : {};
     openSlot = null;
@@ -357,6 +378,7 @@
   async function loadStandings() {
     const el = $('#pk-body');
     const r = await fetch('/api/pickem');
+    if (view !== 'standings') return;
     if (!r.ok) { el.innerHTML = '<div class="ui-empty">Couldn’t load the standings.</div>'; return; }
     const st = await r.json();
     if (!st.days.length) { el.innerHTML = `<div class="ui-empty">No locked days yet in ${esc(st.season)}.</div>`; return; }
@@ -393,6 +415,78 @@
       dateToUrl(date);
       render(root, ctx);
     });
+  }
+
+  // Season fantasy points per player, as a reference while picking. The
+  // numbers are the API's; this only filters and sorts them.
+  const LEAD_COLS = [
+    { key: 'gp', label: 'GP' },
+    { key: 'min', label: 'MIN', cls: 'col-min' },
+    { key: 'fp_avg', label: 'FP/G' },
+    { key: 'last5', label: 'Last 5' },
+    { key: 'best', label: 'Best' },
+    { key: 'fp', label: 'Total', cls: 'col-tot' },
+  ];
+
+  async function loadLeaders() {
+    const el = $('#pk-body');
+    if (!leaders) {
+      const r = await fetch('/api/pickem/leaders');
+      if (!r.ok) { el.innerHTML = '<div class="ui-empty">Couldn’t load the leaders.</div>'; return; }
+      leaders = await r.json();
+    }
+    if (view !== 'leaders') return;
+    if (!leaders.players.length) { el.innerHTML = `<div class="ui-empty">No box scores yet in ${esc(leaders.season)}.</div>`; return; }
+    // Default floor: half the most games anyone has played, so a one-game
+    // spike doesn't top the list.
+    const most = Math.max(...leaders.players.map(p => p.gp));
+    if (lead.minGp == null) lead.minGp = Math.max(1, Math.floor(most / 2));
+    const playing = day && day.date === date && day.games.length
+      ? new Set(day.games.flatMap(g => [g.away, g.home])) : null;
+    const gpOpts = [...new Set([1, 3, 5, 10, 20, 40, lead.minGp])].filter(n => n <= Math.max(most, lead.minGp)).sort((a, b) => a - b);
+    el.innerHTML = `<div class="pk-lead-bar">
+        <input class="ui-input" id="pk-lead-q" placeholder="Search players or teams" autocomplete="off" value="${esc(lead.q)}">
+        <select class="ui-select" id="pk-lead-pos" aria-label="Position">
+          <option value="">All positions</option>${SLOTS.slice(0, 5).map(s => `<option${lead.pos === s ? ' selected' : ''}>${s}</option>`).join('')}
+        </select>
+        <select class="ui-select" id="pk-lead-gp" aria-label="Minimum games">
+          ${gpOpts.map(n => `<option value="${n}"${n === lead.minGp ? ' selected' : ''}>${n}+ games</option>`).join('')}
+        </select>
+        ${playing ? `<label><input type="checkbox" id="pk-lead-today"${lead.today ? ' checked' : ''}> Playing ${esc(dateLabel(date))}</label>` : ''}
+      </div>
+      <div class="ui-table-wrap"><table class="ui-table ui-table--dense pk-lead"><thead><tr>
+        <th>#</th><th>Player</th><th>Team</th><th class="col-pos">Pos</th>
+        ${LEAD_COLS.map(c => `<th class="num ${c.cls || ''}${lead.sort === c.key ? ' sorted' : ''}" data-sort="${c.key}">${c.label}${lead.sort === c.key ? ' ↓' : ''}</th>`).join('')}
+      </tr></thead><tbody id="pk-lead-rows"></tbody></table></div>`;
+    const fill = () => {
+      const q = lead.q.trim().toLowerCase();
+      const rows = leaders.players
+        .filter(p => p.gp >= lead.minGp)
+        .filter(p => !lead.pos || p.positions.includes(lead.pos))
+        .filter(p => !(lead.today && playing) || playing.has(p.team))
+        .filter(p => !q || p.team.toLowerCase() === q || p.name.toLowerCase().includes(q) || name(p.name).toLowerCase().includes(q))
+        .sort((a, b) => b[lead.sort] - a[lead.sort] || b.fp_avg - a.fp_avg);
+      $('#pk-lead-rows').innerHTML = rows.slice(0, 200).map((p, i) => `<tr>
+        <td class="rank">${i + 1}</td>
+        <td><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(name(p.name))}</a></td>
+        <td><span class="pk-meta">${logo(p.team)}${esc(p.team)}</span></td>
+        <td class="col-pos">${esc(p.positions.join('/') || '—')}</td>
+        <td class="num">${p.gp}</td>
+        <td class="num col-min">${fmt(p.min)}</td>
+        <td class="num pk-fp">${fmt(p.fp_avg)}</td>
+        <td class="num">${fmt(p.last5)}</td>
+        <td class="num" title="${esc(p.best_date)}">${fmt(p.best)}</td>
+        <td class="num col-tot">${fmt(p.fp)}</td>
+      </tr>`).join('') || '<tr><td colspan="10" class="ui-empty">Nobody matches.</td></tr>';
+    };
+    fill();
+    const q = $('#pk-lead-q');
+    q.oninput = () => { lead.q = q.value; fill(); };
+    $('#pk-lead-pos').onchange = e => { lead.pos = e.target.value; fill(); };
+    $('#pk-lead-gp').onchange = e => { lead.minGp = +e.target.value; fill(); };
+    const t = $('#pk-lead-today');
+    if (t) t.onchange = () => { lead.today = t.checked; fill(); };
+    el.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => { lead.sort = th.dataset.sort; loadLeaders(); });
   }
 
   /** Today's slate for the Action view: GET /api/pickem/{date} as-is. */
