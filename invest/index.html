@@ -32,7 +32,9 @@
     .market-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; white-space: nowrap; }
     .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
     .lb-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; }
-    .pending-tag { font-size: 0.68rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 4px; white-space: nowrap; }
+    .pending-tag { font-size: var(--text-sm); color: var(--warning); cursor: help; white-space: nowrap; }
+    .pending-tag .pending-text { display: none; font-size: var(--text-xs); margin-left: 3px; }
+    .pending-tag.open .pending-text { display: inline; }
     .market-badge.locked { background: var(--purple-bg); color: var(--danger); border: 1px solid var(--danger-border-strong); }
 
     /* Tabs */
@@ -368,7 +370,8 @@ function pendingText(p) {
   return p ? `Waiting on the ${p.away_team} @ ${p.home_team} box score (${p.date})` : '';
 }
 function pendingTag(p) {
-  return p ? `<span class="pending-tag" title="${pendingText(p)}">box score pending</span>` : '';
+  // A small mark; the tooltip says which game, and a tap (no hover on a phone) spells it out.
+  return p ? `<span class="pending-tag" title="${pendingText(p)}" onclick="event.stopPropagation();this.classList.toggle('open')"><span class="ui-icon ui-icon--warning" aria-hidden="true"></span><span class="pending-text">box score pending</span></span>` : '';
 }
 function tradeOff(entry) {
   return !me || marketData.locked || !!entry?.pending;
