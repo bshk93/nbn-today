@@ -2623,7 +2623,8 @@
       };
     });
 
-    const allTeams = [...new Set(rows.map(r => r.TEAM).filter(Boolean))].sort();
+    // Every franchise, by name, whether or not it has stats yet.
+    const allTeams = Object.keys(TEAM_NAMES).sort((a, b) => TEAM_NAMES[a].localeCompare(TEAM_NAMES[b]));
 
     const PAGES = [
       { id: 'a-d', label: 'A – D', from: 'A', to: 'D' },
@@ -2655,15 +2656,27 @@
       activeFilters.clear();
       content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
       tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
-      if (push && location.search !== `?tab=${pg.id}`) history.pushState(null, '', `?tab=${pg.id}`);
+      if (push && location.search !== indexQuery()) history.pushState(null, '', indexQuery());
       searchInput.value = '';
       filterQ = '';
       rebuildBody();
     }
     window.onpopstate = () => {
-      const id = new URLSearchParams(location.search).get('tab');
-      selectPage(PAGES.find(p => p.id === id) || PAGES.find(p => p.id === 'all'), false);
+      const q = new URLSearchParams(location.search);
+      setTeamFilter(parseTeams(q.get('team')));
+      selectPage(PAGES.find(p => p.id === q.get('tab')) || PAGES.find(p => p.id === 'all'), false);
+      rebuildBody();
     };
+    // ?tab=all&team=BOS,LAL — the team filter rides in the URL so a filtered
+    // list can be shared and survives Back.
+    function indexQuery() {
+      const q = new URLSearchParams({ tab: activePage.id });
+      if (filterTeams.size) q.set('team', [...filterTeams].join(','));
+      return '?' + q.toString().replace(/%2C/g, ',');
+    }
+    function parseTeams(v) {
+      return new Set((v || '').split(',').map(t => t.trim().toUpperCase()).filter(t => TEAM_NAMES[t]));
+    }
     tabBtns.forEach(b => tabBar.appendChild(b));
     content.appendChild(tabBar);
 
@@ -2678,11 +2691,20 @@
     searchInput.setAttribute('autocomplete', 'off');
     filterBar.appendChild(searchInput);
 
+    // Several teams at once: ui-select.js turns a <select multiple> into the
+    // site's checkbox menu with Clear / Apply. Matches today's roster (the Team
+    // column), not every team a player has ever played for.
     const teamSelect = document.createElement('select');
+    teamSelect.multiple = true;
     teamSelect.className = 'filter-team';
-    [['', 'All teams'], ...allTeams.map(t => [t, t])].forEach(([v, l]) => {
+    teamSelect.setAttribute('aria-label', 'Filter by team');
+    teamSelect.dataset.placeholder = 'All teams';
+    teamSelect.dataset.noun = 'teams';
+    allTeams.forEach(t => {
       const opt = document.createElement('option');
-      opt.value = v; opt.textContent = l;
+      opt.value = t;
+      opt.textContent = TEAM_NAMES[t];
+      opt.dataset.img = `/logos/sm/logo-${t.toLowerCase()}.webp`;
       teamSelect.appendChild(opt);
     });
     filterBar.appendChild(teamSelect);
@@ -2854,9 +2876,7 @@
     function buildRow(p) {
       const tr = document.createElement('tr');
       tr.className = 'clickable-row';
-      tr.dataset.name = p.PLAYER.toLowerCase();
-      tr.dataset.teams = p.TEAMS.join('|');
-      tr.dataset.type = p.TYPE;
+      rowPlayer.set(tr, p);
       tr.addEventListener('click', () => { location.href = `/players/?p=${p.SLUG}`; });
 
       // Jersey cell (IDX_COLS[0])
@@ -2914,7 +2934,15 @@
       return tr;
     }
 
-    let filterQ = '', filterTeam = '', filterRostered = true;
+    const rowPlayer = new WeakMap();  // <tr> → its player, so a filter change only hides rows
+    let filterQ = '', filterRostered = true;
+    let filterTeams = parseTeams(new URLSearchParams(location.search).get('team'));
+    function setTeamFilter(teams) {
+      filterTeams = teams;
+      [...teamSelect.options].forEach(o => { o.selected = teams.has(o.value); });
+      if (window.UiSelect) UiSelect.refresh(teamSelect);
+    }
+    setTeamFilter(filterTeams);
     rosteredBtn.classList.toggle('active', filterRostered);
 
     rosteredBtn.addEventListener('click', () => {
@@ -2925,7 +2953,7 @@
 
     function visible(p) {
       return (!filterQ || p.PLAYER.toLowerCase().includes(filterQ)) &&
-             (!filterTeam || p.TEAMS.includes(filterTeam)) &&
+             (!filterTeams.size || filterTeams.has(p.TEAM)) &&
              (!filterRostered || (!p.RETIRED && (p.TYPE === 'player' || p.TYPE === 'two-way')));
     }
 
@@ -2960,16 +2988,15 @@
       noResults.style.display = count === 0 ? '' : 'none';
     }
 
+    // Same rule as rebuildBody (visible()), without rebuilding every row.
     function applyFilters() {
       filterQ = searchInput.value.trim().toLowerCase();
-      filterTeam = teamSelect.value;
       let count = 0, total = 0;
       tbody.querySelectorAll('tr').forEach(tr => {
+        const p = rowPlayer.get(tr);
+        if (!p) return;
         total++;
-        const nameOk = !filterQ || tr.dataset.name.includes(filterQ);
-        const teamOk = !filterTeam || tr.dataset.teams.split('|').includes(filterTeam);
-        const rosteredOk = !filterRostered || tr.dataset.type === 'player' || tr.dataset.type === 'two-way';
-        const show = nameOk && teamOk && rosteredOk;
+        const show = visible(p);
         tr.style.display = show ? '' : 'none';
         if (show) count++;
       });
@@ -2978,7 +3005,11 @@
     }
 
     searchInput.addEventListener('input', applyFilters);
-    teamSelect.addEventListener('change', applyFilters);
+    teamSelect.addEventListener('change', () => {
+      filterTeams = new Set([...teamSelect.selectedOptions].map(o => o.value));
+      history.replaceState(null, '', indexQuery());
+      applyFilters();
+    });
     updateHeaders();
     rebuildBody();
   }

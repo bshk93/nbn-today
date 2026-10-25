@@ -1,5 +1,13 @@
 // Shared utilities: nav injection, site-wide player search, parseCSV, theming
 
+// The site's dropdown menu (ui-select.js) rides along with nav.js, which every
+// page with a <select> already loads, so no page includes it itself.
+if (!document.querySelector('script[src="/ui-select.js"]')) {
+  const s = document.createElement('script');
+  s.src = '/ui-select.js';
+  document.head.appendChild(s);
+}
+
 // ── Icons ────────────────────────────────────────────────────────────────────
 // Inline SVGs for the nav-action buttons, so search/inbox/profile render as
 // crisp stroked line icons instead of emoji glyphs (which vary in weight and

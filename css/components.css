@@ -406,6 +406,88 @@
 
 .ui-label { display: block; margin-bottom: var(--space-1); font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); }
 
+/* ── Dropdown menu ──────────────────────────────────────────────────────── */
+/* ui-select.js gives every <select> the site's own menu and tags it .ui-dd.
+   Closed, it's the page's select with one shared chevron. One class + type
+   beats a page's single-class rule (whose `background` shorthand would wipe
+   the chevron) and still loses to anything more specific. A <select multiple>
+   becomes a .ui-dd-trigger button that takes the select's classes; open, both
+   are a .ui-dd-menu, built like the sidebar's account menu. */
+select.ui-dd, button.ui-dd-trigger {
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%238b919a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.55em center;
+  background-size: 0.75em;
+  padding-right: 1.9em;
+  cursor: pointer;
+}
+/* Without its native arrow, Chrome sizes a select too narrow for its own
+   label ("All seas…"); size it to the chosen option instead. A page width wins. */
+select.ui-dd { field-sizing: content; }
+select.ui-dd.ui-dd-open, button.ui-dd-trigger.ui-dd-open { border-color: var(--accent); }
+.ui-dd-hidden { display: none !important; }
+button.ui-dd-trigger {
+  display: inline-flex; align-items: center;
+  min-height: 2.25rem; padding-left: var(--space-3);
+  font: inherit; font-size: var(--text-sm); color: var(--text-secondary); text-align: left;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+button.ui-dd-trigger:hover { color: var(--text-primary); }
+button.ui-dd-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+button.ui-dd-trigger--set { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+
+.ui-dd-menu {
+  position: fixed; z-index: 10000;
+  display: flex; flex-direction: column;
+  padding: 0.35rem; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-overlay);
+  font-family: var(--font-sans); font-size: var(--text-sm);
+}
+.ui-dd-list { max-height: 22rem; overflow-y: auto; overscroll-behavior: contain; }
+.ui-dd-filter {
+  height: 2rem; margin-bottom: 0.3rem; padding: 0 0.6rem; flex: none;
+  font: inherit; color: var(--text-primary); background: var(--bg-subtle);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.ui-dd-filter:focus { outline: none; border-color: var(--accent); }
+.ui-dd-group {
+  padding: 0.5rem 0.6rem 0.2rem;
+  font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ui-dd-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.42rem 0.6rem; border-radius: var(--radius-sm);
+  color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+}
+.ui-dd-item--grouped { padding-left: 1rem; }
+.ui-dd-item--active { background: var(--bg-hover); color: var(--text-primary); }
+.ui-dd-item[aria-selected="true"] { color: var(--text-primary); font-weight: 600; }
+.ui-dd-menu:not(.ui-dd-menu--multi) .ui-dd-item[aria-selected="true"] { box-shadow: inset 2px 0 0 var(--accent); }
+.ui-dd-item[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+.ui-dd-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ui-dd-img { width: 20px; height: 20px; object-fit: contain; flex: none; }
+.ui-dd-check { color: var(--accent); visibility: hidden; }
+.ui-dd-item[aria-selected="true"] .ui-dd-check { visibility: visible; }
+.ui-dd-box {
+  width: 1rem; height: 1rem; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--text-muted); border-radius: var(--radius-sm);
+  color: var(--text-on-accent); font-size: 0.75rem;
+}
+.ui-dd-box .ui-icon { visibility: hidden; }
+.ui-dd-item[aria-selected="true"] .ui-dd-box { background: var(--accent); border-color: var(--accent); }
+.ui-dd-item[aria-selected="true"] .ui-dd-box .ui-icon { visibility: visible; }
+.ui-dd-foot {
+  display: flex; align-items: center; gap: 0.4rem; flex: none;
+  margin-top: 0.3rem; padding: 0.4rem 0.2rem 0.1rem; border-top: 1px solid var(--border);
+}
+.ui-dd-count { flex: 1; font-size: var(--text-xs); color: var(--text-muted); }
+
 /* ── Badge ──────────────────────────────────────────────────────────────── */
 /* Small status label. Tones: --success, --danger, --warning, --accent. */
 .ui-badge {
