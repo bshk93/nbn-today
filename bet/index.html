@@ -637,16 +637,25 @@
       refreshBalance,
     });
 
-    // With a tab, the title itself is the link to it (a ui-title-link).
-    const section = (title, tab) => {
+    // With a tab, the title itself is the link to it (a ui-title-link);
+    // view picks one of Pick'em's views (?view=), for a link to Standings.
+    const section = (title, tab, view) => {
       const h = document.createElement('h2');
       h.className = 'ui-section-title act-title';
       if (tab) {
         const a = document.createElement('a');
-        a.href = `#${tab}`;
+        a.href = `${view ? `?view=${view}` : ''}#${tab}`;
         a.className = 'ui-title-link';
         a.innerHTML = title;
-        a.onclick = e => { e.preventDefault(); switchTab(tab); window.scrollTo(0, 0); };
+        a.onclick = e => {
+          e.preventDefault();
+          // Push the link's own URL (with its ?view=), then switch without a
+          // second push, so Back returns to this page as it was.
+          history.pushState(null, '', a.getAttribute('href'));
+          window.Pickem.showDate(null);
+          switchTab(tab, true);
+          window.scrollTo(0, 0);
+        };
         h.appendChild(a);
       } else {
         h.innerHTML = title;
@@ -780,7 +789,7 @@
       const futs = document.createElement('div');
       content.appendChild(futs);
       window.Futures.render(futs, moduleCtx(), { only: 'done' });
-      content.appendChild(section("Pick'em", 'pickem'));
+      content.appendChild(section("Pick'em", 'pickem', 'standings'));
       content.appendChild(quiet("Daily winners and the season table are under Pick'em, in Standings."));
     }
 
