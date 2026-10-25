@@ -26,109 +26,109 @@
   <style>
     
             
-    .balance-chip { text-decoration: none; font-size: 0.82rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: var(--radius-sm); padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .balance-chip { text-decoration: none; font-size: var(--text-sm); font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: var(--radius-sm); padding: 0.25rem 0.75rem; white-space: nowrap; }
 
-    .new-bet-btn { background: none; border: 1px solid var(--text-dim); color: var(--market-positive); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .new-bet-btn { background: none; border: 1px solid var(--text-dim); color: var(--market-positive); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: var(--text-sm); font-weight: 500; }
     .new-bet-btn:hover { border-color: var(--market-positive); background: color-mix(in srgb, var(--success) 16%, transparent); }
 
     /* Tabs */
                 
     /* New bet form */
     .new-bet-form { background: color-mix(in srgb, var(--success) 16%, transparent); border: 1px solid var(--market-positive-border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
-    .new-bet-form label { font-size: 0.78rem; color: var(--market-positive-light); font-weight: 600; }
+    .new-bet-form label { font-size: var(--text-xs); color: var(--market-positive-light); font-weight: 600; }
     .new-bet-form input[type="text"], .new-bet-form textarea {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm);
-      padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; width: 100%; font-family: inherit;
+      padding: 0.35rem 0.65rem; font-size: var(--text-sm); outline: none; width: 100%; font-family: inherit;
     }
     .new-bet-form input:focus, .new-bet-form textarea:focus { border-color: color-mix(in srgb, var(--success) 40%, transparent); }
     .new-bet-form textarea { resize: vertical; min-height: 48px; }
     .opt-row { display: flex; gap: 0.4rem; align-items: center; }
     .opt-row input { flex: 1; }
-    .opt-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 1.1rem; padding: 0 0.2rem; }
+    .opt-del { background: none; border: none; color: var(--border); cursor: pointer; font-size: var(--text-md); padding: 0 0.2rem; }
     .opt-del:hover { color: var(--danger); }
-    .add-opt-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.2rem 0.6rem; cursor: pointer; font-size: 0.78rem; width: fit-content; }
+    .add-opt-btn { background: none; border: 1px dashed var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.2rem 0.6rem; cursor: pointer; font-size: var(--text-xs); width: fit-content; }
     .add-opt-btn:hover { border-color: var(--text-muted); color: var(--text-muted); }
     .form-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .form-submit { background: var(--success); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.85rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .form-submit { background: var(--success); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.85rem; cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
     .form-submit:hover { background: color-mix(in srgb, var(--success) 82%, black); }
     .form-submit:disabled { opacity: 0.5; cursor: default; }
-    .form-cancel-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0.3rem 0.5rem; }
+    .form-cancel-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--text-sm); padding: 0.3rem 0.5rem; }
     .form-cancel-btn:hover { color: var(--text-muted); }
-    .form-err { font-size: 0.75rem; color: var(--danger); }
+    .form-err { font-size: var(--text-xs); color: var(--danger); }
 
     /* Bet card */
     .bet-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .bet-card.locked { background: var(--bg-page); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
     .bet-card.closed { background: var(--bg-subtle); border-color: var(--border-dark); }
-    .locked-notice { font-size: 0.78rem; color: var(--accent-light); margin-top: 0.6rem; }
+    .locked-notice { font-size: var(--text-xs); color: var(--accent-light); margin-top: 0.6rem; }
     .bet-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.6rem; }
-    .bet-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
-    .bet-status-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: var(--radius-sm); padding: 0.15rem 0.45rem; white-space: nowrap; flex-shrink: 0; }
+    .bet-title { font-size: var(--text-base); font-weight: 700; color: var(--text-primary); }
+    .bet-status-badge { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: var(--radius-sm); padding: 0.15rem 0.45rem; white-space: nowrap; flex-shrink: 0; }
     .badge-open   { background: var(--market-positive-bg); color: var(--market-positive); }
     .badge-locked { background: var(--purple-bg); color: var(--accent-light); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
     .badge-closed { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
     .badge-voided { background: var(--gold-bg); color: var(--warning); }
-    .bet-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.75rem; }
-    .bet-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem; }
-    .pool-total { font-size: 0.75rem; color: var(--text-muted); margin: 0.5rem 0 0.9rem; }
+    .bet-meta { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.75rem; }
+    .bet-desc { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem; }
+    .pool-total { font-size: var(--text-xs); color: var(--text-muted); margin: 0.5rem 0 0.9rem; }
     .pool-total .nby { color: var(--gold); }
 
     /* Option bars */
     .options-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.5rem; }
     .opt-bar-row { display: flex; align-items: center; gap: 0.5rem; }
-    .opt-label { font-size: 0.8rem; color: var(--text-secondary); min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .opt-label { font-size: var(--text-sm); color: var(--text-secondary); min-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .opt-label.winner { color: var(--gold); font-weight: 700; }
-    .opt-label.my-pick::after { content: ' (yours)'; color: var(--link); font-size: 0.7rem; }
+    .opt-label.my-pick::after { content: ' (yours)'; color: var(--link); font-size: var(--text-xs); }
     .bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: var(--radius-sm); overflow: hidden; }
     .bar-fill { height: 100%; border-radius: var(--radius-sm); background: var(--accent); transition: width 0.3s; }
     .bar-fill.winner { background: var(--warning); }
     .bar-fill.zero   { background: var(--border); }
-    .opt-pct  { font-size: 0.72rem; color: var(--text-muted); min-width: 36px; text-align: right; }
-    .opt-amt  { font-size: 0.72rem; color: var(--gold); min-width: 60px; text-align: right; }
-    .opt-winner-badge { font-size: 0.6rem; font-weight: 700; color: var(--gold); background: var(--gold-bg); border-radius: var(--radius-sm); padding: 0.1rem 0.3rem; }
+    .opt-pct  { font-size: var(--text-xs); color: var(--text-muted); min-width: 36px; text-align: right; }
+    .opt-amt  { font-size: var(--text-xs); color: var(--gold); min-width: 60px; text-align: right; }
+    .opt-winner-badge { font-size: var(--text-xs); font-weight: 700; color: var(--gold); background: var(--gold-bg); border-radius: var(--radius-sm); padding: 0.1rem 0.3rem; }
 
     /* My current bet info */
-    .my-bet-info { font-size: 0.78rem; color: var(--accent-light); background: var(--bg-page); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .my-bet-info { font-size: var(--text-xs); color: var(--accent-light); background: var(--bg-page); border: 1px solid var(--accent-dark); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .my-bet-info .nby { color: var(--gold); font-weight: 700; }
 
     /* Wager form */
     .wager-form { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     .wager-form input[type="number"] {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--gold); border-radius: var(--radius-sm);
-      padding: 0.3rem 0.6rem; font-size: 0.85rem; outline: none; width: 100px; font-family: inherit;
+      padding: 0.3rem 0.6rem; font-size: var(--text-sm); outline: none; width: 100px; font-family: inherit;
     }
     .wager-form input[type="number"]:focus { border-color: var(--warning); }
     .wager-form select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm);
-      padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; cursor: pointer;
+      padding: 0.3rem 0.6rem; font-size: var(--text-sm); outline: none; font-family: inherit; cursor: pointer;
     }
     .wager-form select:focus { border-color: var(--accent); }
-    .wager-form .place-btn { background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .wager-form .place-btn { background: var(--accent-dark); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.8rem; cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
     .wager-form .place-btn:hover { background: color-mix(in srgb, var(--accent-dark) 82%, black); }
     .wager-form .place-btn:disabled { opacity: 0.5; cursor: default; }
-    .wager-avail { font-size: 0.72rem; color: var(--text-muted); }
+    .wager-avail { font-size: var(--text-xs); color: var(--text-muted); }
     .wager-avail .nby { color: var(--gold); }
-    .wager-err { font-size: 0.73rem; color: var(--danger); width: 100%; }
+    .wager-err { font-size: var(--text-xs); color: var(--danger); width: 100%; }
 
     /* Close bet (bets role) */
     .close-bet-section { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .close-toggle { background: none; border: 1px solid var(--text-dim); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.25rem 0.65rem; cursor: pointer; font-size: 0.78rem; }
+    .close-toggle { background: none; border: 1px solid var(--text-dim); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.25rem 0.65rem; cursor: pointer; font-size: var(--text-xs); }
     .close-toggle:hover { border-color: var(--danger); color: var(--danger); }
     .close-form { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-    .close-form select { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: 0.82rem; outline: none; font-family: inherit; }
-    .close-confirm { background: var(--danger); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; }
+    .close-form select { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: var(--text-sm); outline: none; font-family: inherit; }
+    .close-confirm { background: var(--danger); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
     .close-confirm:hover { background: color-mix(in srgb, var(--danger) 82%, black); }
     .close-confirm:disabled { opacity: 0.5; cursor: default; }
-    .delete-btn { background: none; border: none; color: var(--border); cursor: pointer; font-size: 0.78rem; padding: 0.25rem 0.5rem; margin-left: auto; }
+    .delete-btn { background: none; border: none; color: var(--border); cursor: pointer; font-size: var(--text-xs); padding: 0.25rem 0.5rem; margin-left: auto; }
     .delete-btn:hover { color: var(--danger); }
 
     /* Payout info (closed bets) */
-    .payout-section { margin-top: 0.75rem; border-top: 1px solid var(--border-dark); padding-top: 0.75rem; font-size: 0.78rem; }
+    .payout-section { margin-top: 0.75rem; border-top: 1px solid var(--border-dark); padding-top: 0.75rem; font-size: var(--text-xs); }
     .payout-hdr { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; }
     .payout-row { display: flex; justify-content: space-between; padding: 0.15rem 0; color: var(--text-muted); }
     .payout-row .payout-winner { color: var(--gold); font-weight: 600; }
-    .payout-row .payout-profit { font-size: 0.72rem; color: var(--market-positive); }
-    .voided-notice { color: var(--warning); font-size: 0.78rem; font-weight: 600; margin-top: 0.5rem; }
+    .payout-row .payout-profit { font-size: var(--text-xs); color: var(--market-positive); }
+    .voided-notice { color: var(--warning); font-size: var(--text-xs); font-weight: 600; margin-top: 0.5rem; }
 
     .act-title { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-5); }
     .act-title:first-child, .act-summary + .act-title { margin-top: var(--space-2); }
@@ -137,54 +137,54 @@
     .act-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
     .act-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-2) var(--space-3); display: flex; flex-direction: column; gap: 0.15rem; }
     .act-stat-label { font-size: var(--text-xs); color: var(--text-muted); }
-    .act-stat-value { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .act-stat-value { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); color: var(--text-primary); font-variant-numeric: tabular-nums; }
     .act-card { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.1rem; margin-bottom: 0.6rem; color: inherit; text-decoration: none; }
     .act-card-main { min-width: 0; color: var(--text-secondary); font-size: var(--text-sm); }
     .act-card-main strong { color: var(--text-primary); }
     .act-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; }
     .act-market:hover { border-color: var(--accent); text-decoration: none; }
-    .act-go { font-size: 1.4rem; color: var(--text-muted); }
-    .empty-state { color: var(--text-muted); font-size: 0.875rem; padding: 2rem 0; text-align: center; }
-    .loading { color: var(--text-muted); font-size: 0.875rem; }
+    .act-go { font-size: var(--text-lg); color: var(--text-muted); }
+    .empty-state { color: var(--text-muted); font-size: var(--text-base); padding: 2rem 0; text-align: center; }
+    .loading { color: var(--text-muted); font-size: var(--text-base); }
 
     /* How to earn NB¥ panel */
-    .earn-link { font-size: 0.72rem; color: var(--text-dim); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; margin-bottom: 0.85rem; display: block; text-align: left; }
+    .earn-link { font-size: var(--text-xs); color: var(--text-dim); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; margin-bottom: 0.85rem; display: block; text-align: left; }
     .earn-link:hover { color: var(--text-muted); }
     .earn-panel { background: var(--bg-subtle); border: 1px solid var(--border-dark); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
     .earn-panel-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: 0.55rem; }
     .earn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; }
     @media (max-width: 480px) { .earn-grid { grid-template-columns: 1fr; } }
-    .earn-item { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    .earn-item { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.4; }
     .earn-item .earn-amt { color: var(--gold); font-weight: 600; }
-    .earn-note { font-size: 0.75rem; color: var(--text-muted); margin: 0.7rem 0 0; }
-    .house-line { font-size: 0.8rem; color: var(--text-secondary); margin: 0.2rem 0 0.8rem; }
+    .earn-note { font-size: var(--text-xs); color: var(--text-muted); margin: 0.7rem 0 0; }
+    .house-line { font-size: var(--text-sm); color: var(--text-secondary); margin: 0.2rem 0 0.8rem; }
     .house-line strong { color: var(--gold); }
     .house-line .house-sub { color: var(--text-muted); }
-    .earn-item .earn-tag { font-size: 0.65rem; border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.25rem; vertical-align: middle; }
+    .earn-item .earn-tag { font-size: var(--text-xs); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; margin-left: 0.25rem; vertical-align: middle; }
     .earn-tag-auto   { background: var(--market-positive-bg); color: var(--market-positive); }
     .earn-tag-manual { background: var(--bg-subtle); color: var(--text-muted); }
-    .earn-item .earn-note { font-size: 0.68rem; color: var(--text-dim); display: block; margin-top: 0.1rem; }
+    .earn-item .earn-note { font-size: var(--text-xs); color: var(--text-dim); display: block; margin-top: 0.1rem; }
 
 
     /* Fixed-odds type badge */
-    .bet-type-badge { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: var(--radius-sm); padding: 0.1rem 0.35rem; background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); margin-left: 0.4rem; vertical-align: middle; }
+    .bet-type-badge { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; border-radius: var(--radius-sm); padding: 0.1rem 0.35rem; background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); margin-left: 0.4rem; vertical-align: middle; }
     /* Form type toggle */
     .type-toggle-wrap { display: flex; gap: 0.35rem; }
-    .type-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.25rem 0.75rem; cursor: pointer; font-size: 0.78rem; font-weight: 500; }
+    .type-toggle-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.25rem 0.75rem; cursor: pointer; font-size: var(--text-xs); font-weight: 500; }
     .type-toggle-btn.active { background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple); }
     .type-toggle-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text-muted); }
     /* Odds multiplier chip on option row */
-    .opt-odds { font-size: 0.65rem; font-weight: 700; color: var(--purple); background: var(--purple-bg); border-radius: var(--radius-sm); padding: 0.1rem 0.3rem; white-space: nowrap; flex-shrink: 0; margin-left: 0.2rem; }
+    .opt-odds { font-size: var(--text-xs); font-weight: 700; color: var(--purple); background: var(--purple-bg); border-radius: var(--radius-sm); padding: 0.1rem 0.3rem; white-space: nowrap; flex-shrink: 0; margin-left: 0.2rem; }
     /* Potential payout preview in wager form */
-    .payout-preview { font-size: 0.72rem; color: var(--market-positive); padding: 0.15rem 0 0; }
+    .payout-preview { font-size: var(--text-xs); color: var(--market-positive); padding: 0.15rem 0 0; }
     /* Prob sum indicator in form */
-    .prob-sum-row { font-size: 0.72rem; font-weight: 600; }
+    .prob-sum-row { font-size: var(--text-xs); font-weight: 600; }
     /* Shortfall/surplus notice on closed fixed-odds bets */
-    .shortfall-notice { font-size: 0.72rem; color: var(--warning); margin-top: 0.35rem; }
-    .surplus-notice   { font-size: 0.72rem; color: var(--market-positive);  margin-top: 0.35rem; }
+    .shortfall-notice { font-size: var(--text-xs); color: var(--warning); margin-top: 0.35rem; }
+    .surplus-notice   { font-size: var(--text-xs); color: var(--market-positive);  margin-top: 0.35rem; }
 
     /* Canned bet button */
-    .new-canned-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
+    .new-canned-btn { background: none; border: 1px solid var(--text-dim); color: var(--link); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: var(--text-sm); font-weight: 500; }
     .new-canned-btn:hover { border-color: var(--link); background: var(--bg-page); }
 
     /* Canned bet form — uses same .new-bet-form shell but with blue accent */
@@ -195,15 +195,15 @@
     .canned-select:focus { border-color: var(--accent); }
     .canned-select {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm);
-      padding: 0.35rem 0.65rem; font-size: 0.85rem; outline: none; font-family: inherit; cursor: pointer; width: 100%;
+      padding: 0.35rem 0.65rem; font-size: var(--text-sm); outline: none; font-family: inherit; cursor: pointer; width: 100%;
     }
-    .canned-info { font-size: 0.78rem; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--accent-panel-bg); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; }
-    .canned-opts-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: 0.78rem; color: var(--text-muted); }
-    .canned-opt-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.15rem 0.5rem; color: var(--text-secondary); font-size: 0.75rem; }
+    .canned-info { font-size: var(--text-xs); color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--accent-panel-bg); border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; }
+    .canned-opts-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .canned-opt-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.15rem 0.5rem; color: var(--text-secondary); font-size: var(--text-xs); }
     .canned-adj-row { display: flex; align-items: center; gap: 0.5rem; }
-    .canned-adj-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; cursor: pointer; font-size: 1rem; font-family: inherit; line-height: 1; }
+    .canned-adj-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; cursor: pointer; font-size: var(--text-base); font-family: inherit; line-height: 1; }
     .canned-adj-btn:hover { border-color: var(--text-muted); }
-    .canned-line-val { font-weight: 700; font-size: 1.05rem; color: var(--text-primary); min-width: 3rem; text-align: center; }
+    .canned-line-val { font-weight: 700; font-size: var(--text-md); color: var(--text-primary); min-width: 3rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -513,19 +513,19 @@
         const probInp = document.createElement('input');
         probInp.type = 'number'; probInp.min = '0.1'; probInp.max = '99.9'; probInp.step = '0.1';
         probInp.placeholder = '%';
-        probInp.style.cssText = 'width:52px;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
+        probInp.style.cssText = 'width:52px;background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.3rem 0.4rem;font-size:var(--text-sm);outline:none;font-family:inherit;';
 
         const pctLbl = document.createElement('span');
         pctLbl.textContent = '%';
-        pctLbl.style.cssText = 'font-size:0.72rem;color:var(--text-muted);margin-right:2px;';
+        pctLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-right:2px;';
 
         const divLbl = document.createElement('span');
         divLbl.textContent = '/';
-        divLbl.style.cssText = 'font-size:0.72rem;color:var(--text-dim);';
+        divLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-dim);';
 
         const oddsInp = document.createElement('input');
         oddsInp.type = 'text'; oddsInp.placeholder = 'odds';
-        oddsInp.style.cssText = 'width:62px;background:var(--bg-page);border:1px solid var(--border);color:var(--purple);border-radius:var(--radius-sm);padding:0.3rem 0.4rem;font-size:0.82rem;outline:none;font-family:inherit;';
+        oddsInp.style.cssText = 'width:62px;background:var(--bg-page);border:1px solid var(--border);color:var(--purple);border-radius:var(--radius-sm);padding:0.3rem 0.4rem;font-size:var(--text-sm);outline:none;font-family:inherit;';
 
         // Cross-sync: % ↔ American odds
         probInp.oninput = () => {
@@ -948,7 +948,7 @@
           delBtn.className = 'delete-btn';
           delBtn.dataset.icon = 'x';
           delBtn.textContent = 'Delete bet';
-          delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:0.72rem;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:0';
+          delBtn.style.cssText = 'display:block;margin-top:0.5rem;font-size:var(--text-xs);color:var(--text-dim);background:none;border:none;cursor:pointer;padding:0';
           delBtn.onclick = async () => {
             if (!await confirmDialog({
               title: `Delete "${bet.title}"?`,
@@ -1015,7 +1015,7 @@
       let selectEl = null;
       if (locked) {
         const lockLabel = document.createElement('span');
-        lockLabel.style.cssText = 'font-size:0.78rem;color:var(--text-muted)';
+        lockLabel.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted)';
         lockLabel.innerHTML = `on <strong style="color:var(--text-secondary)">${optMap[myWager.option_id]}</strong> (add more)`;
         form.append(amtIn, lockLabel);
       } else {
@@ -1030,7 +1030,7 @@
         selectEl.value = chosenOptionId;
         selectEl.onchange = () => { chosenOptionId = selectEl.value; updatePayoutPreview(); };
         const onLbl = document.createElement('span');
-        onLbl.style.cssText = 'font-size:0.78rem;color:var(--text-muted)';
+        onLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted)';
         onLbl.textContent = 'on';
         form.append(amtIn, onLbl, selectEl);
       }
@@ -1140,7 +1140,7 @@
       cbWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem';
       bet.options.forEach(opt => {
         const lbl = document.createElement('label');
-        lbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;font-size:0.82rem;color:var(--text-secondary);cursor:pointer';
+        lbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;font-size:var(--text-sm);color:var(--text-secondary);cursor:pointer';
         const cb = document.createElement('input');
         cb.type = 'checkbox'; cb.value = opt.id; cb.style.cursor = 'pointer';
         lbl.append(cb, document.createTextNode(opt.label));
@@ -1154,7 +1154,7 @@
       confirmBtn.textContent = 'Confirm';
 
       const closeErr = document.createElement('span');
-      closeErr.style.cssText = 'font-size:0.72rem;color:var(--danger)';
+      closeErr.style.cssText = 'font-size:var(--text-xs);color:var(--danger)';
 
       confirmBtn.onclick = async () => {
         const selectedIds = winCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
@@ -1263,7 +1263,7 @@
         const myWager  = bet.wagers?.[currentUser.name]?.amount || 0;
         const myProfit = myPayout - myWager;
         const myRow = document.createElement('div');
-        myRow.style.cssText = 'margin-top:0.4rem;font-size:0.75rem;color:var(--market-positive);font-weight:600';
+        myRow.style.cssText = 'margin-top:0.4rem;font-size:var(--text-xs);color:var(--market-positive);font-weight:600';
         myRow.dataset.icon = 'check';
         myRow.textContent = `You won ${nby(myPayout)} (+${nby(myProfit)} profit)`;
         sec.appendChild(myRow);

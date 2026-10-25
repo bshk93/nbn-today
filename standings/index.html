@@ -36,7 +36,7 @@
       margin-bottom: 1.25rem;
     }
 
-    .controls label { font-size: 0.85rem; color: var(--text-muted); }
+    .controls label { font-size: var(--text-sm); color: var(--text-muted); }
     .post-status { font-size: var(--text-xs); color: var(--text-muted); }
 
     select {
@@ -45,7 +45,7 @@
       color: var(--text-primary);
       padding: 0.4rem 0.75rem;
       border-radius: var(--radius-sm);
-      font-size: 0.875rem;
+      font-size: var(--text-base);
       cursor: pointer;
     }
 
@@ -67,14 +67,14 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       white-space: nowrap;
     }
 
     thead th {
       padding: 0.6rem 0.75rem;
       text-align: left;
-      font-size: 0.68rem;
+      font-size: var(--text-xs);
       font-weight: 600;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -87,7 +87,7 @@
     tbody tr:hover { background: var(--bg-hover); }
 
     td { padding: 0.55rem 0.75rem; color: var(--text-secondary); }
-    td.seed { color: var(--text-muted); font-size: 0.78rem; width: 2rem; }
+    td.seed { color: var(--text-muted); font-size: var(--text-xs); width: 2rem; }
     td.team { font-weight: 600; color: var(--text-primary); }
     td.team a { display: inline-flex; align-items: center; gap: 0.4rem; }
     .team-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
@@ -95,15 +95,15 @@
     td.muted { color: var(--text-muted); }
     td.result { padding-right: 0.75rem; }
     /* Clinch marks (/clinch.js). Lower-case and small, as the NBA prints them. */
-    .clinch { margin-left: 0.4rem; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); cursor: help; }
+    .clinch { margin-left: 0.4rem; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); cursor: help; }
     .clinch-z, .clinch-x { color: var(--success, var(--accent)); }
     .clinch-e { color: var(--text-dim, var(--text-muted)); }
-    .clinch-key { margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted); }
+    .clinch-key { margin-top: 0.75rem; font-size: var(--text-xs); color: var(--text-muted); }
     .clinch-key .clinch { margin-left: 0; cursor: default; }
 
     .result-badge {
       display: inline-block;
-      font-size: 0.7rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       padding: 0.15rem 0.45rem;
       border-radius: var(--radius-sm);
@@ -125,7 +125,7 @@
       font-weight: 700; color: var(--text-primary);
       background: color-mix(in srgb, var(--accent) calc(var(--odds) * 28%), transparent);
     }
-    .odds-move { margin-left: 0.35rem; font-size: 0.68rem; font-weight: 600; font-family: var(--font-mono); }
+    .odds-move { margin-left: 0.35rem; font-size: var(--text-xs); font-weight: 600; font-family: var(--font-mono); }
     .odds-move.up { color: var(--market-positive); }
     .odds-move.down { color: var(--danger); }
     td.strong { color: var(--text-primary); font-weight: 600; }
@@ -133,7 +133,7 @@
     .odds-chart { position: relative; max-width: 640px; }
     .odds-chart svg { width: 100%; height: auto; display: block; }
     .odds-grid { stroke: var(--border-subtle); stroke-width: 1; }
-    .odds-axis { fill: var(--text-muted); font-size: 10px; }
+    .odds-axis { fill: var(--text-muted); font-size: var(--text-xs); }
     .odds-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
     .odds-dot { fill: var(--accent); stroke: var(--bg-hover); stroke-width: 2; }
     .odds-hair { stroke: var(--text-muted); stroke-width: 1; }
@@ -153,7 +153,7 @@
     .odds-race-line { fill: none; stroke: var(--text-muted); stroke-opacity: 0.35; stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
     .odds-race-line.on { stroke: var(--accent); stroke-opacity: 1; stroke-width: 2.5; }
     .odds-race .odds-dot { stroke: var(--bg-page, var(--bg-card)); }
-    .odds-race-label { fill: var(--text-primary); font-size: 11px; font-weight: 600; }
+    .odds-race-label { fill: var(--text-primary); font-size: var(--text-xs); font-weight: 600; }
     .odds-how { margin-top: var(--space-5); font-size: var(--text-sm); color: var(--text-secondary); max-width: 46rem; }
     .odds-how summary { cursor: pointer; color: var(--link); }
     .odds-how p { margin: var(--space-2) 0 0; line-height: 1.55; }
@@ -168,7 +168,7 @@
     }
 
     .bracket-round-label {
-      font-size: 0.68rem;
+      font-size: var(--text-xs);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -211,7 +211,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.4rem 0.65rem;
-      font-size: 0.82rem;
+      font-size: var(--text-sm);
       color: var(--text-muted);
       border-bottom: 1px solid var(--border-subtle);
     }
@@ -229,7 +229,7 @@
     .series-team .team-name { flex: 1; }
 
     .series-team .seed-badge {
-      font-size: 0.68rem;
+      font-size: var(--text-xs);
       color: var(--text-dim);
       margin-right: 0.3rem;
     }
@@ -240,7 +240,7 @@
     .series-team.winner .seed-badge { color: var(--text-muted); }
 
     .series-team .wins {
-      font-size: 0.78rem;
+      font-size: var(--text-xs);
       font-variant-numeric: tabular-nums;
       color: var(--text-dim);
       min-width: 1.2rem;
@@ -252,7 +252,7 @@
     .finals-card { border-color: var(--text-dim); }
     .finals-card .series-team.champion .wins { color: var(--gold); }
 
-    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
   </style>
 </head>
 <body>

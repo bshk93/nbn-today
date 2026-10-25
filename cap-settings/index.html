@@ -32,7 +32,7 @@
       padding: 1.25rem 1.5rem;
     }
     .season-card h2 {
-      font-size: 1rem; font-weight: 700; margin-bottom: 1rem;
+      font-size: var(--text-base); font-weight: 700; margin-bottom: 1rem;
       color: var(--link); font-family: var(--font-mono);
     }
     .fields {
@@ -45,16 +45,16 @@
     }
     .field input {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
       padding: 0.35rem 0.5rem; outline: none; width: 100%;
     }
     .field input:focus { border-color: var(--accent); }
-    .field .hint { font-size: 0.72rem; color: var(--text-dim); }
+    .field .hint { font-size: var(--text-xs); color: var(--text-dim); }
 
     .card-footer {
       display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem;
     }
-    .status { font-size: 0.78rem; }
+    .status { font-size: var(--text-xs); }
     .status.ok  { color: var(--success-alt); }
     .status.err { color: var(--danger); }
 
@@ -63,26 +63,26 @@
       padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;
     }
     .ly-card h2 {
-      font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem;
+      font-size: var(--text-base); font-weight: 700; margin-bottom: 0.25rem;
     }
     .ly-current {
-      font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;
+      font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem;
     }
     .ly-current b {
       color: var(--link); font-family: var(--font-mono); font-weight: 700;
     }
     .ly-row {
       display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-      padding: 0.5rem 0; border-top: 1px solid var(--border-dark); font-size: 0.85rem;
+      padding: 0.5rem 0; border-top: 1px solid var(--border-dark); font-size: var(--text-sm);
     }
     .ly-row .ly-season {
       font-family: var(--font-mono); font-weight: 700;
       color: var(--text-primary); width: 3.5rem;
     }
-    .ly-row .ly-note { color: var(--text-muted); font-size: 0.75rem; }
+    .ly-row .ly-note { color: var(--text-muted); font-size: var(--text-xs); }
     .ly-row input[type="date"] {
       background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-primary); font-size: 0.82rem; font-family: inherit;
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
       padding: 0.3rem 0.45rem; outline: none;
     }
     .ly-row input[type="date"]:focus { border-color: var(--accent); }
@@ -145,7 +145,7 @@
       <div id="league-year"></div>
 
       <div class="seasons" id="seasons">
-        <p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>
+        <p style="color:var(--text-muted);font-size:var(--text-base);">Loading…</p>
       </div>
     </div>
 
@@ -382,7 +382,7 @@
         addBtn.className = 'btn';
         addBtn.textContent = '+ Add season';
         const addNote = document.createElement('span');
-        addNote.style.cssText = 'color:var(--text-muted);font-size:0.8rem';
+        addNote.style.cssText = 'color:var(--text-muted);font-size:var(--text-sm)';
         const latest = seasons[0];   // sorted newest-first just above
         addNote.textContent = `Adds ${nextSeason(latest)}. Unsaved until you fill it in and hit Save.`;
         addBtn.addEventListener('click', () => {
@@ -414,7 +414,7 @@
         // treating this season as final and flags any extension that was
         // priced against the estimate for review.
         const estLabel = document.createElement('label');
-        estLabel.style.cssText = 'font-size:0.75rem;font-weight:normal;color:var(--text-muted);display:flex;align-items:center;gap:0.3rem;';
+        estLabel.style.cssText = 'font-size:var(--text-xs);font-weight:normal;color:var(--text-muted);display:flex;align-items:center;gap:0.3rem;';
         const estCheckbox = document.createElement('input');
         estCheckbox.type = 'checkbox';
         estCheckbox.checked = !!data.is_estimate;
@@ -451,7 +451,7 @@
         card.appendChild(fieldsDiv);
 
         const scaleHeading = document.createElement('h2');
-        scaleHeading.style.cssText = 'font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;';
+        scaleHeading.style.cssText = 'font-size:var(--text-sm);color:var(--text-muted);margin-bottom:0.75rem;';
         scaleHeading.textContent = 'Minimum Salary Scale (§ 3.12)';
         card.appendChild(scaleHeading);
 
@@ -485,7 +485,7 @@
         // not its own manually-tracked number. Read-only, recomputed live from
         // the Salary Cap field above.
         const maxHeading = document.createElement('h2');
-        maxHeading.style.cssText = 'font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;';
+        maxHeading.style.cssText = 'font-size:var(--text-sm);color:var(--text-muted);margin-bottom:0.75rem;';
         maxHeading.textContent = 'Maximum Salary (§ 3.11) — derived from Salary Cap, not stored';
         card.appendChild(maxHeading);
 
@@ -504,7 +504,7 @@
           lbl.textContent = `${label} (${Math.round(pct * 100)}%)`;
           const hint = document.createElement('div');
           hint.className = 'hint';
-          hint.style.cssText = 'font-size:1rem;color:var(--text);margin-top:0.25rem;';
+          hint.style.cssText = 'font-size:var(--text-base);color:var(--text);margin-top:0.25rem;';
           wrap.appendChild(lbl);
           wrap.appendChild(hint);
           maxFieldsDiv.appendChild(wrap);

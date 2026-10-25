@@ -27,20 +27,20 @@
                 
     .auth-bar {
       display: flex; align-items: center; gap: 0.75rem;
-      margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);
+      margin-bottom: 1.25rem; font-size: var(--text-sm); color: var(--text-muted);
     }
     .auth-bar button {
       background: var(--border); border: 1px solid var(--text-dim); color: var(--text-primary);
       border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer;
-      font-size: 0.8rem; font-family: inherit;
+      font-size: var(--text-sm); font-family: inherit;
     }
     .auth-bar button:hover { background: var(--text-dim); }
 
     .gate {
       text-align: center; color: var(--text-muted); padding: 4rem 1rem;
-      font-size: 0.9rem;
+      font-size: var(--text-base);
     }
-    .gate .lock { font-size: 2rem; margin-bottom: 0.75rem; color: var(--text-muted); }
+    .gate .lock { font-size: var(--text-xl); margin-bottom: 0.75rem; color: var(--text-muted); }
 
     .members-grid {
       display: grid;
@@ -58,18 +58,18 @@
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
     }
     .card-name {
-      font-weight: 700; font-size: 0.95rem;
+      font-weight: 700; font-size: var(--text-base);
       display: flex; align-items: center; gap: 0.45rem;
     }
     .card-name a { color: inherit; }
     .strike-count {
       display: inline-flex; align-items: center; justify-content: center;
       background: var(--danger-border); color: var(--danger-light);
-      font-size: 0.65rem; font-weight: 700; border-radius: var(--radius-sm);
+      font-size: var(--text-xs); font-weight: 700; border-radius: var(--radius-sm);
       min-width: 1.3rem; height: 1.3rem; padding: 0 0.35rem;
     }
     .team-badge {
-      display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+      display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em;
       text-transform: uppercase; padding: 0.12rem 0.45rem; border-radius: var(--radius-sm);
       background: var(--success-bg); color: var(--success-light); white-space: nowrap;
     }
@@ -78,26 +78,26 @@
     .strike-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .strike-row {
       display: flex; align-items: flex-start; gap: 0.5rem;
-      font-size: 0.8rem; background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem;
+      font-size: var(--text-sm); background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem;
     }
     .strike-dot { color: var(--danger); margin-top: 0.1rem; flex-shrink: 0; }
     .strike-body { flex: 1; min-width: 0; }
-    .strike-date { font-size: 0.7rem; color: var(--text-muted); }
+    .strike-date { font-size: var(--text-xs); color: var(--text-muted); }
     .strike-reason { color: var(--text-secondary); line-height: 1.35; word-break: break-word; }
-    .strike-issuer { font-size: 0.68rem; color: var(--text-dim); margin-top: 0.1rem; }
+    .strike-issuer { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.1rem; }
     .btn-del-strike {
       background: none; border: none; color: var(--text-dim); cursor: pointer;
-      font-size: 0.75rem; padding: 0; line-height: 1; flex-shrink: 0;
+      font-size: var(--text-xs); padding: 0; line-height: 1; flex-shrink: 0;
       margin-top: 0.1rem;
     }
     .btn-del-strike:hover { color: var(--danger); }
 
-    .no-strikes { font-size: 0.8rem; color: var(--text-dim); }
+    .no-strikes { font-size: var(--text-sm); color: var(--text-dim); }
 
     .add-strike-btn {
       align-self: flex-start; background: transparent; border: 1px solid var(--border);
       color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.25rem 0.65rem;
-      font-size: 0.75rem; cursor: pointer; font-family: inherit;
+      font-size: var(--text-xs); cursor: pointer; font-family: inherit;
     }
     .add-strike-btn:hover { border-color: var(--danger); color: var(--danger); }
 
@@ -108,7 +108,7 @@
     .add-form.open { display: flex; }
     .add-form input, .add-form textarea {
       background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: var(--radius-sm); padding: 0.4rem 0.6rem; font-size: 0.8rem;
+      border-radius: var(--radius-sm); padding: 0.4rem 0.6rem; font-size: var(--text-sm);
       font-family: inherit; width: 100%; box-sizing: border-box;
     }
     .add-form input:focus, .add-form textarea:focus { outline: none; border-color: var(--link); }
@@ -116,18 +116,18 @@
     .form-row { display: flex; gap: 0.4rem; justify-content: flex-end; }
     .btn-form-cancel {
       background: transparent; border: 1px solid var(--border); color: var(--text-muted);
-      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: var(--text-xs);
       cursor: pointer; font-family: inherit;
     }
     .btn-form-cancel:hover { border-color: var(--text-muted); color: var(--text-secondary); }
     .btn-form-save {
       background: var(--danger-border); border: 1px solid var(--danger-border-strong); color: var(--danger-light);
-      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: 0.75rem;
+      border-radius: var(--radius-sm); padding: 0.25rem 0.6rem; font-size: var(--text-xs);
       cursor: pointer; font-family: inherit;
     }
     .btn-form-save:hover { background: var(--danger-border-strong); }
     .btn-form-save:disabled { opacity: 0.5; cursor: not-allowed; }
-    .form-error { font-size: 0.75rem; color: var(--danger-light); }
+    .form-error { font-size: var(--text-xs); color: var(--danger-light); }
 
     @media (max-width: 540px) {
       .members-grid { grid-template-columns: 1fr; }
@@ -161,12 +161,12 @@
 <!-- Sign-in modal -->
 <div class="modal-backdrop" id="signin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding-top:5vh">
   <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:1rem">
-    <h3 style="font-size:1rem;font-weight:600">Sign In</h3>
+    <h3 style="font-size:var(--text-base);font-weight:600">Sign In</h3>
     <input type="password" id="signin-input" placeholder="Paste your token…"
-      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;font-size:0.875rem;font-family:inherit;width:100%;box-sizing:border-box">
+      style="background:var(--bg-page);border:1px solid var(--border);color:var(--text-primary);border-radius:var(--radius-sm);padding:0.5rem 0.75rem;font-size:var(--text-base);font-family:inherit;width:100%;box-sizing:border-box">
     <div style="display:flex;gap:0.5rem;justify-content:flex-end">
-      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Cancel</button>
-      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:0.8rem;font-family:inherit">Sign in</button>
+      <button id="signin-cancel" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:var(--text-sm);font-family:inherit">Cancel</button>
+      <button id="signin-save" style="background:var(--accent-dark);border:1px solid var(--accent);color:var(--text-on-accent);border-radius:var(--radius-sm);padding:0.4rem 0.9rem;cursor:pointer;font-size:var(--text-sm);font-family:inherit">Sign in</button>
     </div>
   </div>
 </div>

@@ -55,7 +55,7 @@
       align-items: flex-start;
       gap: 0.6rem;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: var(--text-base);
       color: var(--text-secondary);
       font-weight: 400;
       line-height: 1.4;
@@ -72,7 +72,7 @@
 
     label {
       display: block;
-      font-size: 0.85rem;
+      font-size: var(--text-sm);
       font-weight: 600;
       color: var(--text-secondary);
       margin-bottom: 0.4rem;
@@ -87,7 +87,7 @@ input[type="text"],
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       color: var(--text-primary);
-      font-size: 0.95rem;
+      font-size: var(--text-base);
       padding: 0.6rem 0.75rem;
       outline: none;
       transition: border-color 0.15s;
@@ -124,7 +124,7 @@ input[type="text"],
     }
 
     .hint {
-      font-size: 0.78rem;
+      font-size: var(--text-xs);
       color: var(--text-muted);
       margin-top: 0.35rem;
     }
@@ -135,7 +135,7 @@ input[type="text"],
       background: var(--accent-dark);
       color: var(--text-on-accent);
       border: none;
-      font-size: 1rem;
+      font-size: var(--text-base);
       font-weight: 600;
       padding: 0.75rem 2rem;
       border-radius: var(--radius-sm);
@@ -148,7 +148,7 @@ input[type="text"],
 
     .status {
       margin-top: 1rem;
-      font-size: 0.9rem;
+      font-size: var(--text-base);
       text-align: center;
       min-height: 1.2em;
     }
@@ -163,12 +163,12 @@ input[type="text"],
       gap: 0.75rem;
     }
 
-    .success-state .check { font-size: 2.5rem; }
+    .success-state .check { font-size: var(--text-2xl); }
 
     .success-state p {
       color: var(--text-muted);
       max-width: 380px;
-      font-size: 0.95rem;
+      font-size: var(--text-base);
       line-height: 1.6;
       margin: 0;
     }
@@ -309,7 +309,7 @@ input[type="text"],
 
   <div class="success-state" id="success-state">
     <div class="check">&#10003;</div>
-    <h2 style="margin:0;font-size:1.3rem;">We got you!</h2>
+    <h2 style="margin:0;font-size:var(--text-lg);">We got you!</h2>
     <p>Thanks for your interest. We'll review your application and reach out on Discord soon.</p>
   </div>
 

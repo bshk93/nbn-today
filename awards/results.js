@@ -33,17 +33,17 @@
     .award-section-full { margin-bottom: 1.5rem; }
 
     .award-heading {
-      font-size: 0.75rem; font-weight: 700;
+      font-size: var(--text-xs); font-weight: 700;
       letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: 0.5rem;
     }
 
 
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-base); white-space: nowrap; }
 
     thead th {
       padding: 0.65rem 1rem; text-align: left;
-      font-size: 0.7rem; font-weight: 600;
+      font-size: var(--text-xs); font-weight: 600;
       letter-spacing: 0.06em; text-transform: uppercase;
       color: var(--text-muted); border-bottom: 1px solid var(--border);
     }
@@ -59,9 +59,9 @@
     td.muted { color: var(--text-muted); }
     td.pts { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-primary); }
 
-    .no-data { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.875rem; }
+    .no-data { padding: 2rem; text-align: center; color: var(--text-muted); font-size: var(--text-base); }
 
-    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 0.9rem; }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
 
     /* Podium display for major awards */
     .podium { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
@@ -74,18 +74,18 @@
     .podium-slot.rank-3 { border-color: var(--gold-chip-border); background: var(--bg-card); }
     .podium-slot.empty  { border-style: dashed; border-color: var(--border-subtle); background: transparent; }
     .podium-rank {
-      font-size: 0.6rem; font-weight: 700;
+      font-size: var(--text-xs); font-weight: 700;
       letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.2rem;
     }
     .rank-1 .podium-rank { color: var(--warning); }
     .rank-2 .podium-rank { color: var(--text-muted); }
     .rank-3 .podium-rank { color: var(--gold-dim); }
     .podium-name {
-      font-size: 0.85rem; font-weight: 700; color: var(--text-primary);
+      font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .podium-slot.empty .podium-name { color: var(--border); font-style: italic; font-weight: 400; }
-    .podium-pts { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .podium-pts { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.15rem; }
 
     /* Tier row coloring for team award tables */
     tbody tr.tier-gold   td { background: var(--bg-page); }
@@ -98,13 +98,13 @@
     /* Ballot tracker */
     .ballot-tracker { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--bg-card); }
     .ballot-tracker-heading {
-      font-size: 0.75rem; font-weight: 700;
+      font-size: var(--text-xs); font-weight: 700;
       letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--text-muted); margin-bottom: 0.75rem;
     }
     .ballot-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .ballot-chip {
-      font-size: 0.72rem; font-weight: 600;
+      font-size: var(--text-xs); font-weight: 600;
       letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: var(--radius-sm);
       cursor: default;
     }
@@ -117,7 +117,7 @@
       position: fixed; z-index: 100; pointer-events: none;
       background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
       padding: 0.45rem 0.65rem;
-      font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
+      font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.5;
       white-space: pre; box-shadow: var(--shadow-overlay);
       opacity: 0; transition: opacity 0.1s;
     }
@@ -130,19 +130,19 @@
       border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
     }
     .btt-team { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .btt-state { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); flex-shrink: 0; }
+    .btt-state { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); flex-shrink: 0; }
     .btt-state-in      { background: var(--accent-panel-bg); color: var(--accent-light); }
     .btt-state-partial { background: var(--gold-bg); color: var(--warning); border: 1px solid var(--gold-chip-border); }
     .btt-state-out     { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border); }
     .btt-awards { display: flex; flex-direction: column; gap: 0.3rem; }
     .btt-award { display: flex; gap: 0.5rem; align-items: flex-start; }
-    .btt-label { font-size: 0.63rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); min-width: 64px; padding-top: 0.07rem; flex-shrink: 0; }
-    .btt-picks { color: var(--text-secondary); font-size: 0.75rem; line-height: 1.4; }
+    .btt-label { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); min-width: 64px; padding-top: 0.07rem; flex-shrink: 0; }
+    .btt-picks { color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.4; }
     .btt-picks em { color: var(--text-dim); font-style: normal; }
     .btt-tiers { display: flex; flex-direction: column; gap: 0.15rem; }
-    .btt-tier { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
-    .btt-tier-label { font-size: 0.63rem; font-weight: 600; color: var(--text-muted); min-width: 28px; display: inline-block; }
-    .btt-empty { color: var(--text-dim); font-style: italic; font-size: 0.78rem; margin-top: 0.25rem; }
+    .btt-tier { font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.4; }
+    .btt-tier-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); min-width: 28px; display: inline-block; }
+    .btt-empty { color: var(--text-dim); font-style: italic; font-size: var(--text-xs); margin-top: 0.25rem; }
   `; document.head.appendChild(_s); }
 
   document.body.innerHTML = `
