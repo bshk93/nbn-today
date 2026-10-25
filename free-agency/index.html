@@ -468,7 +468,7 @@
       years.forEach(yr => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'ui-chip ui-chip--sm year-chip';
+        btn.className = 'ui-chip year-chip';
         btn.setAttribute('aria-pressed', String(yr === activeYear));
         btn.textContent = yr;
         btn.addEventListener('click', () => {
@@ -488,7 +488,7 @@
       FILTER_DEFS.forEach(def => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'ui-chip ui-chip--sm';
+        btn.className = 'ui-chip';
         btn.setAttribute('aria-pressed', 'false');
         btn.textContent = def.id;
         btn.addEventListener('click', () => {
