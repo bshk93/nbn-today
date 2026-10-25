@@ -53,7 +53,7 @@
 //   enableRangeSum               Sheets-style drag/shift/ctrl-click column sum + floating bar
 //   copyTableToClipboard         copies a table as TSV + HTML for pasting into Sheets
 //   attachCopyBtn                adds the "Copy" button next to a section title
-//   computeStartingFive          best PG/SG/SF/PF/C lineup for the Rosters mode
+//   computeStartingFive          best PG/SG/SF/PF/C lineup for the Overview mode
 //                                     — lives in teams/lineup.js, loaded above
 //   buildRosterTable             renders the Roster section with salary/cap data
 //   buildPicksTable              renders the Draft Picks section (future picks only, no player yet)
@@ -165,7 +165,7 @@ const namesReady = new Promise(resolve => {
   document.head.appendChild(_nm);
 });
 
-// DEPTH_SLOTS / computeStartingFive — the Rosters mode's starting five. Unlike
+// DEPTH_SLOTS / computeStartingFive — the Overview mode's starting five. Unlike
 // the popup above this is a hard dependency, not a nicety: the 'depth' branch of
 // buildRosterTable calls it directly, so the render awaits this and a failure is
 // logged rather than swallowed. Same file is loaded by anything else that needs
@@ -180,7 +180,7 @@ const lineupReady = new Promise(resolve => {
 
 // CONTRACT_TAGS / summarizeContract / the cap-hold vocabulary, shared with
 // /pdc and /transactions so one deal reads the same everywhere. Hard dependency
-// like lineup.js: the Rosters mode calls summarizeContract on every row.
+// like lineup.js: the Overview mode calls summarizeContract on every row.
 const contractReady = new Promise(resolve => {
   const _ct = document.createElement('script');
   _ct.src = '/contract.js';
@@ -462,6 +462,7 @@ const coachingConfigReady = new Promise(resolve => {
   }
   td.right { text-align: right; font-variant-numeric: tabular-nums; }
   td.muted { color: var(--text-muted); }
+  .stat-line-season { color: var(--text-muted); font-size: var(--text-xs); }
   td.bold { font-weight: 600; color: var(--text-primary); }
   td a { color: var(--link); text-decoration: none; }
   td a:hover { text-decoration: underline; }
@@ -1091,7 +1092,7 @@ document.body.innerHTML = `
         <div class="roster-header-row">
           <h2 class="section-title" id="roster-title">Roster</h2>
           <div class="mode-tabs ui-segmented" role="group" id="roster-mode-tabs">
-            <button class="mode-tab active" data-mode="depth" type="button">Rosters</button>
+            <button class="mode-tab active" data-mode="depth" type="button">Overview</button>
             <button class="mode-tab" data-mode="contracts" type="button">Contracts</button>
             <button class="mode-tab" data-mode="stats" type="button">Stats</button>
             <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
@@ -2447,7 +2448,7 @@ function computeAttrTotals(rows, biosData, attributesData, currentOvr, season) {
 
 function computeStatFields(seasonRow) {
   if (!seasonRow) {
-    return { _statSeason: '—', _statG: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _stat3pmpg: '—', _statGmscpg: '—' };
+    return { _statSeason: '—', _statG: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _stat3pmpg: '—', _statGmscpg: '—', _statLine: null };
   }
   const g = Math.max(1, parseInt(seasonRow.G) || 1);
   const pg = k => Math.round((parseFloat(seasonRow[k]) || 0) / g * 10) / 10;
@@ -2462,6 +2463,8 @@ function computeStatFields(seasonRow) {
     _statBpg:    pg('BLK'),
     _stat3pmpg:  pg('3PM'),
     _statGmscpg: pg('GMSC'),
+    // The Overview mode's one-cell summary of the Stats mode.
+    _statLine:   { pts: pg('PTS'), reb: pg('REB'), ast: pg('AST'), season: seasonRow.SEASON || '', g: seasonRow.G ?? '0' },
   };
 }
 
@@ -2710,7 +2713,12 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       key: `_attr_${c.key}`, label: c.abbr, full: c.full, cls: 'right' + (c.catStart ? ' div-left' : ''),
     }));
   } else if (mode === 'depth') {
-    modeCols = [{ key: '_contract', label: 'Contract', cls: 'right nosum div-left' }];
+    // Overview: one column summing up each of the other modes — OVR (above)
+    // for Ratings, the stat line for Stats, the shorthand for Contracts.
+    modeCols = [
+      { key: '_statLine', label: 'Stats', full: 'Points / rebounds / assists per game, latest season played', cls: 'right nosum div-left' },
+      { key: '_contract', label: 'Contract', cls: 'right nosum div-left' },
+    ];
   } else {
     modeCols = salaryKeys.map((k, i) => ({
       key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
@@ -2833,6 +2841,25 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
 
       if (col.key === '_slot') {
         td.textContent = row._slot || '';
+      } else if (col.key === '_statLine') {
+        const sl = row._statLine;
+        if (row._emptySlot) {
+          td.textContent = '';
+        } else if (!sl) {
+          td.textContent = '—';
+          td.classList.add('muted');
+        } else {
+          const fmt = n => n.toFixed(1);
+          td.textContent = `${fmt(sl.pts)} / ${fmt(sl.reb)} / ${fmt(sl.ast)}`;
+          // A line from an earlier season is labelled, so it isn't read as this year's.
+          if (sl.season && sl.season !== curYr) {
+            const tag = document.createElement('span');
+            tag.className = 'stat-line-season';
+            tag.textContent = ` ${sl.season}`;
+            td.appendChild(tag);
+          }
+          attachTooltip(td, `${sl.season} · ${sl.g} G`);
+        }
       } else if (col.key === '_contract') {
         td.textContent = row._emptySlot ? ''
           : summarizeContract({ salaries: row._salaries, cap_holds: row._cap_holds }, curYr);
@@ -8309,7 +8336,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const coachingRecord = (coachr.status === 'fulfilled' && coachr.value && typeof coachr.value === 'object')
     ? coachr.value[abbr] : undefined;
   // The public half of that record: who holds each depth-chart slot, never
-  // the minutes. Drives the Rosters tab's starting five for every visitor.
+  // the minutes. Drives the Overview tab's starting five for every visitor.
   const rotation = (rotr.status === 'fulfilled' && rotr.value && rotr.value[abbr]) || null;
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
@@ -8679,14 +8706,14 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const rosterRows = currentRosterRowsParsed;
     const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
 
-    // Rosters / Contracts / Stats / Ratings mode switch. `liveRosterRows` tracks the
+    // Overview / Contracts / Stats / Ratings mode switch. `liveRosterRows` tracks the
     // freshest row set (updated after a contracts-mode save) so switching
-    // modes afterwards doesn't fall back to stale data. Rosters (the depth
+    // modes afterwards doesn't fall back to stale data. Overview (the depth
     // chart) is the default view; it must match the .active mode-tab above.
     let rosterMode = 'depth';
     let liveRosterRows = rosterRows;
     // Per-player move menu, only for a viewer who actually has a move available.
-    // Offered on both roster views: Rosters is the default tab, so gating it to
+    // Offered on both roster views: Overview is the default tab, so gating it to
     // Contracts alone made the feature invisible to the owners it exists for.
     // Stats and Ratings are analytical views where an actions column is noise.
     const moveActions = makeRosterMoveActions(abbr, biosData, myBlockEntries, poextEligible);
