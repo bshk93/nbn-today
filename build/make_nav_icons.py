@@ -56,6 +56,7 @@ def gear(cx, cy, outer, inner, teeth=8):
 
 DOC = '<path d="M5 2h10l5 5v15H5z"/>'
 DOC_FOLD = '<path d="M15 2v5h5z"/>'
+CONTROLLER = ('<path d="M7.5 6h9a5 5 0 0 1 4.85 3.8l1.2 5.1a3 3 0 0 1-5.1 2.75L15.4 15.5H8.6l-2.05 2.15a3 3 0 0 1-5.1-2.75l1.2-5.1A5 5 0 0 1 7.5 6z"/>')
 CLIPBOARD = [('a', '<rect x="4" y="4" width="16" height="18" rx="2"/>'),
              ('a', '<rect x="8" y="2" width="8" height="4" rx="1"/>')]
 
@@ -157,11 +158,9 @@ ICONS = {
     'trophy': [
         ('a', '<path d="M6 3h12v5a6 6 0 0 1-12 0z"/><rect x="11" y="13" width="2" height="5"/><rect x="7" y="18" width="10" height="3" rx="1"/>'),
         ('as', '<path d="M6 5H3.5v1.5A3.5 3.5 0 0 0 7 10M18 5h2.5v1.5A3.5 3.5 0 0 1 17 10"/>', 1.6),
-        ('b', star(12, 7.6, 2.8)),
     ],
     'star': [
         ('a', star(12, 12.5, 10.5, 0.45)),
-        ('b', star(12, 13, 4.5, 0.45)),
     ],
     'medal': [
         ('a', '<polygon points="6,2 10.5,2 13,9.5 8.5,9.5"/><polygon points="13.5,2 18,2 15.5,9.5 11,9.5"/><circle cx="12" cy="15" r="6.5"/>'),
@@ -268,6 +267,11 @@ ICONS = {
         ('bs', '<rect x="9" y="5.5" width="6" height="4.5"/>', 1.4),
         ('as', '<path d="M8 14l1.6 7M16 14l-1.6 7M11 14l.4 7M13 14l-.4 7M9 17.5h6"/>', 1.3),
     ],
+    'controller': [
+        ('a', CONTROLLER),
+        ('b', '<rect x="6.5" y="8.75" width="1.6" height="5"/><rect x="4.8" y="10.45" width="5" height="1.6"/>'
+              '<circle cx="16.4" cy="12.6" r="1.1"/><circle cx="18.3" cy="10.3" r="1.1"/>'),
+    ],
     'silhouette': [
         ('a', '<circle cx="9.5" cy="7.5" r="4"/><path d="M2 21a7.5 7.5 0 0 1 15 0z"/>'),
         ('cs', '<path d="M17 4.6a2.6 2.6 0 1 1 3.5 2.4c-.7.3-1 .8-1 1.5v.6"/>', 2),
@@ -324,6 +328,10 @@ ICONS = {
         ('a', '<path d="M3 3h8.5L21 12.5 12.5 21 3 11.5z"/>'),
         ('b', '<circle cx="7.5" cy="7.5" r="1.8"/>'),
     ],
+    'home': [
+        ('a', '<path d="M2.5 10.5L12 2.75l9.5 7.75v9.75a1.75 1.75 0 0 1-1.75 1.75H4.25a1.75 1.75 0 0 1-1.75-1.75z"/>'),
+        ('b', '<rect x="9.5" y="14" width="5" height="8" rx="1"/>'),
+    ],
     'inbox': [
         ('a', '<path d="M2 13l3-9h14l3 9v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/>'),
         ('bs', '<path d="M3 13h5l1.5 2.5h5L16 13h5"/>', 1.6),
@@ -372,10 +380,101 @@ ICONS = {
         ('b', '<circle cx="10.8" cy="12" r="1.1"/>'),
         ('cs', '<path d="M15.5 12H21M18.2 9l3 3-3 3"/>', 2.2),
     ],
-    'gavel': [
-        ('as', '<path d="M12 11l8.5 8.5"/>', 3),
-        ('a', '<rect x="5" y="4.5" width="11" height="6.5" rx="1.2" transform="rotate(45 10.5 7.75)"/><rect x="3" y="19" width="10" height="3" rx="1"/>'),
-        ('b', '<rect x="9.8" y="4.5" width="1.4" height="6.5" transform="rotate(45 10.5 7.75)"/>'),
+    'briefcase': [
+        ('as', '<path d="M8.5 7V5a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 15.5 5v2"/>', 1.8),
+        ('a', '<rect x="2.5" y="7" width="19" height="13.5" rx="2"/>'),
+        ('b', '<rect x="2.5" y="12" width="19" height="1.4"/><rect x="10.25" y="10.75" width="3.5" height="3.9" rx=".7"/>'),
+    ],
+}
+
+# The sidebar's outline set, written as `<symbol id="{name}-o">`. A section
+# header (and Home, Teams, Inbox, Pinned) draws its icon in outline, and switches to
+# its `-on` icon (below: the filled one, or its ACTIVE override) when you are
+# in that section, so the section you are
+# in is the one solid icon in the sidebar. Only those icons need an outline;
+# search results and the account menu always draw the filled set. Drawn by
+# hand, not traced from the filled shapes (a trace doubles every line where two
+# shapes overlap): one colour, 'as' strokes at 1.6 and 'a' fills for dots.
+OUTLINES = {
+    'calendar': [
+        ('as', '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 2.75v4M16 2.75v4M3.5 9.75h17"/>', 1.6),
+        ('a', '<circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/>'
+              '<circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/>'),
+    ],
+    'swap': [('as', '<path d="M3 7.5h16M15 3.5l4 4-4 4M21 16.5H5M9 12.5l-4 4 4 4"/>', 1.6)],
+    'trophy': [
+        ('as', '<path d="M6.5 3.5h11V8a5.5 5.5 0 0 1-11 0z"/><path d="M12 13.5v4.5"/>'
+               '<rect x="7.5" y="18" width="9" height="3" rx="1"/>'
+               '<path d="M6.5 5.5H4v1A3.5 3.5 0 0 0 7 10M17.5 5.5H20v1A3.5 3.5 0 0 1 17 10"/>', 1.6),
+    ],
+    'bar-chart': [
+        ('as', '<path d="M3 21h18"/><rect x="4.5" y="12" width="3.5" height="6.5" rx="1"/>'
+               '<rect x="10.25" y="4.5" width="3.5" height="14" rx="1"/><rect x="16" y="8.5" width="3.5" height="10" rx="1"/>', 1.6),
+    ],
+    'yen': [('as', '<path d="M5.5 3.5L12 12.5l6.5-9M12 12.5V21M7.5 13.5h9M7.5 17h9"/>', 1.6)],
+    'controller': [
+        ('as', CONTROLLER + '<path d="M7.3 9.25v4M5.3 11.25h4"/>', 1.6),
+        ('a', '<circle cx="16.4" cy="12.6" r="1.05"/><circle cx="18.3" cy="10.3" r="1.05"/>'),
+    ],
+    'tv': [
+        ('as', '<path d="M8 2.5l4 3.5 4-3.5"/><rect x="2.5" y="6" width="19" height="14" rx="2"/>'
+               '<rect x="5" y="8.75" width="10" height="8.5" rx="1"/>', 1.6),
+        ('a', '<circle cx="18.25" cy="10.5" r="1"/><circle cx="18.25" cy="14" r="1"/>'),
+    ],
+    'columns': [
+        ('as', '<path d="M12 2.5l9.5 4.75h-19z"/><path d="M2.5 20.5h19M5.5 10v7.5M12 10v7.5M18.5 10v7.5"/>', 1.6),
+    ],
+    'people': [
+        ('as', '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0"/>'
+               '<circle cx="16.75" cy="8.5" r="2.75"/><path d="M17.5 14a5 5 0 0 1 4.5 5"/>', 1.6),
+    ],
+    'briefcase': [
+        ('as', '<path d="M8.5 7V5a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 15.5 5v2"/><rect x="2.75" y="7" width="18.5" height="13.5" rx="2"/>'
+               '<path d="M2.75 12.75h7.5M13.75 12.75h7.5"/><rect x="10.25" y="11" width="3.5" height="3.5" rx=".6"/>', 1.6),
+    ],
+    'basketball': [
+        ('as', '<circle cx="12" cy="12" r="9.5"/>', 1.6),
+        ('as', '<path d="M2.5 12h19M12 2.5v19M5.5 4.8c2.4 2 3.8 4.4 3.8 7.2s-1.4 5.2-3.8 7.2M18.5 4.8c-2.4 2-3.8 4.4-3.8 7.2s1.4 5.2 3.8 7.2"/>', 1.2),
+    ],
+    'home': [
+        ('as', '<path d="M3 10.75L12 3.5l9 7.25v9.25a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20z"/>'
+               '<path d="M9.5 21.5v-5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v5.5"/>', 1.6),
+    ],
+    'inbox': [
+        ('as', '<path d="M2.5 13l3-8.5h13l3 8.5v5.5a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z"/><path d="M2.5 13h5.5l1.5 2.5h5L16 13h5.5"/>', 1.6),
+    ],
+    'star': [('as', star(12, 12.5, 9.5, 0.45), 1.6)],
+}
+
+# What a header draws while you are in its section: `<symbol id="{name}-on">`,
+# the filled icon unless overridden here. The overrides are the bare glyphs,
+# whose filled form is only a thicker line and barely differs from the
+# outline; they stand on a solid accent shape instead (Instagram's Reels icon
+# does the same), so the section you are in is unmistakable.
+ACTIVE = {
+    # The filled ball's seams are too heavy on a dark sidebar; thinner here.
+    'basketball': [
+        ('a', '<circle cx="12" cy="12" r="10"/>'),
+        ('bs', '<path d="M2.5 12h19M12 2.5v19M5.5 4.8c2.4 2 3.8 4.4 3.8 7.2s-1.4 5.2-3.8 7.2M18.5 4.8c-2.4 2-3.8 4.4-3.8 7.2s1.4 5.2 3.8 7.2"/>', 0.9),
+    ],
+    'yen': [
+        ('a', '<circle cx="12" cy="12" r="10.5"/>'),
+        ('bs', '<path d="M7.5 5.5L12 12l4.5-6.5M12 12v6.5M8.5 12.75h7M8.5 15.75h7"/>', 1.9),
+    ],
+    'swap': [
+        ('a', '<rect x="1.5" y="1.5" width="21" height="21" rx="5"/>'),
+        ('bs', '<path d="M6 9h11M14 6l3 3-3 3M18 15H7M10 12l-3 3 3 3"/>', 1.9),
+    ],
+    'bar-chart': [
+        ('a', '<rect x="1.5" y="1.5" width="21" height="21" rx="5"/>'),
+        ('b', '<rect x="6" y="12" width="3" height="6" rx=".8"/><rect x="10.5" y="6" width="3" height="12" rx=".8"/>'
+              '<rect x="15" y="9" width="3" height="9" rx=".8"/>'),
+    ],
+    'columns': [
+        ('a', '<polygon points="12,1.5 22.5,7 1.5,7"/><rect x="2.5" y="8" width="19" height="10.5"/>'
+              '<rect x="1.5" y="19.5" width="21" height="3" rx=".5"/>'),
+        ('b', '<rect x="7.25" y="10" width="1.5" height="6.5" rx=".5"/><rect x="11.25" y="10" width="1.5" height="6.5" rx=".5"/>'
+              '<rect x="15.25" y="10" width="1.5" height="6.5" rx=".5"/><circle cx="12" cy="4.6" r="1"/>'),
     ],
 }
 
@@ -398,9 +497,15 @@ def main():
     for name, layers in ICONS.items():
         body = ''.join(layer(*l) for l in layers)
         out.append(f'<symbol id="{name}" viewBox="0 0 24 24">{body}</symbol>')
+    for name, layers in OUTLINES.items():
+        assert name in ICONS, f'outline for {name} has no filled icon'
+        body = ''.join(layer(*l) for l in layers)
+        out.append(f'<symbol id="{name}-o" viewBox="0 0 24 24">{body}</symbol>')
+        body = ''.join(layer(*l) for l in ACTIVE.get(name, ICONS[name]))
+        out.append(f'<symbol id="{name}-on" viewBox="0 0 24 24">{body}</symbol>')
     out.append('</svg>')
     OUT.write_text('\n'.join(out) + '\n')
-    print(f'wrote {OUT.relative_to(ROOT)} — {len(ICONS)} icons')
+    print(f'wrote {OUT.relative_to(ROOT)} — {len(ICONS)} icons, {len(OUTLINES)} outlines')
 
 
 if __name__ == '__main__':
