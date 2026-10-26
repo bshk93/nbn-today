@@ -526,7 +526,7 @@ function _initNav() {
 //   drawer — below 900px it is never docked; the menu button in .nav slides it over
 //            the page instead, and open/rail don't apply.
 // With a mouse, rail is the default and the sidebar expands over the page while
-// the pointer is on it (<html class="sb-peek">, Instagram-style), so the page
+// the pointer is on it (<html class="sb-peek">), so the page
 // never reflows; the button beside the logo keeps it open (SIDEBAR_KEEP_KEY).
 // A touch screen has no hover to expand it, so there open/rail stays a plain
 // toggle, defaulting to open (SIDEBAR_KEY), as it was before hover existed.
