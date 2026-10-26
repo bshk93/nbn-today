@@ -1419,28 +1419,53 @@
           href: `/news/view/?id=${encodeURIComponent(a.id)}`,
         })));
 
-    // Final scores, from the latest night with any entered (`latestNight`).
-    // One row for the whole night: a row per game was 10-15 rows on a full
-    // slate and pushed every transaction behind "Show more".
-    const feedFromScores = () => latestNight.then(night => {
-      if (!night || !night.games.length) return [];
+    // Final scores, one row per night, for each of the season's recent nights
+    // (FEED_SCORE_NIGHTS). One row for the whole night: a row per game was
+    // 10-15 rows on a full slate and pushed every transaction behind "Show
+    // more". Every night stays in the feed, not just the latest: showing only
+    // `latestNight` made the previous nights' finals vanish from the card as
+    // soon as the next night's were entered.
+    //
+    // The scores come from the season's game index (/api/boxscores/games),
+    // one request for every night, rather than a /api/boxscores call per date.
+    // If that index can't be had, the latest night alone still shows.
+    const FEED_SCORE_NIGHTS = 14;
+    const scoreRow = (date, nightGames) => {
       // A ticker cell: away over home, the winner bright.
       const side = (team, score, won) =>
         `<span class="dash-feed-side${won ? ' win' : ''}" data-team="${esc(team)}">${esc(team)} <b>${esc(String(score))}</b></span>`;
-      const games = night.games.map(g => {
+      const games = nightGames.map(g => {
         const awayWon = g.away_score > g.home_score;
         return '<span class="dash-feed-score">'
           + side(g.away_team, g.away_score, awayWon) + ' '
           + side(g.home_team, g.home_score, !awayWon) + '</span>';
       });
-      return [{
-        ts: night.date + 'T23:59:59Z',   // after that day's transactions
-        date: night.date,
+      return {
+        ts: date + 'T23:59:59Z',   // after that day's transactions
+        date,
         type: 'score',
-        html: plural(night.games.length, 'game')
+        html: plural(nightGames.length, 'game')
           + `<span class="dash-feed-scores">${games.join(' ')}</span>`,
-        href: `/boxscores/?date=${encodeURIComponent(night.date)}`,
-      }];
+        href: `/boxscores/?date=${encodeURIComponent(date)}`,
+      };
+    };
+    const feedFromLatestNight = () => latestNight.then(night =>
+      (night && night.games.length ? [scoreRow(night.date, night.games)] : []));
+    const feedFromScores = () => schedulePromise.then(sched => {
+      const season = asof ? nbnSeasonForDate(asof) : (sched && sched.season) || '';
+      if (!season) return feedFromLatestNight();
+      const until = asof || today;
+      return jget(`/api/boxscores/games?season=${encodeURIComponent(season)}`).then(index => {
+        if (!Array.isArray(index)) return feedFromLatestNight();
+        const byDate = new Map();
+        for (const g of index) {
+          if (!g.date || g.date > until) continue;
+          if (!byDate.has(g.date)) byDate.set(g.date, []);
+          byDate.get(g.date).push(g);
+        }
+        return [...byDate.keys()].sort().reverse().slice(0, FEED_SCORE_NIGHTS)
+          .map(date => scoreRow(date, byDate.get(date)));
+      }, feedFromLatestNight);
     });
 
     const SOURCES = [feedFromTransactions, feedFromNews, feedFromScores];
