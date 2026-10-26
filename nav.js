@@ -301,8 +301,8 @@ function _rebuildThemeMenu() {
 
 // ── Inbox button ─────────────────────────────────────────────────────────────
 // Only on a page that opts out of the sidebar (`<html data-no-sidebar>`):
-// everywhere else the inbox is in the sidebar's account menu, and its unread
-// count rides on the avatar there and on the menu button. The unread count is only
+// everywhere else the inbox is its own sidebar entry (_buildInboxEntry), which
+// carries the unread count, as does the phone menu button. The unread count is only
 // fetched when a token is on hand; a signed-out visitor still gets the button
 // (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
 function _buildInboxButton() {
@@ -501,7 +501,7 @@ function _initNav() {
     actions.className = 'nav-actions';
 
     // Search and the inbox live in the sidebar (its search box, Ctrl+K, and
-    // the account menu), so the nav carries them only on a page without one.
+    // the Inbox entry), so the nav carries them only on a page without one.
     // What's left here is token-badge.js's Sign in, on phones.
     if (!_sidebarEnabled() && !nav.hasAttribute('data-no-search')) {
       const btn = document.createElement('button');
@@ -776,11 +776,12 @@ function _sidebarGroup(label, key, rows, active, open, icon) {
   hdr.className = 'sb-group-hdr';
   hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
   hdr.title = label;
-  hdr.innerHTML = `<span class="sb-icon">${_navIcon(icon)}</span><span class="sb-group-label sb-label"></span>`
+  const holdsActive = rows.some(p => p.href === active);
+  hdr.innerHTML = `<span class="sb-icon">${_headerIcon(icon, holdsActive)}</span><span class="sb-group-label sb-label"></span>`
     + `<span class="sb-group-live" hidden title="Live now"></span>`
     + `<span class="sb-group-badge" hidden></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
   hdr.querySelector('.sb-group-label').textContent = label;
-  if (rows.some(p => p.href === active)) group.classList.add('holds-active');
+  if (holdsActive) group.classList.add('holds-active');
   hdr.addEventListener('click', () => {
     // In the rail the rows are hidden, so a header opens the sidebar on its
     // section rather than folding something you can't see.
@@ -1110,7 +1111,7 @@ function _buildTeamsEntry() {
   btn.title = 'Teams';
   btn.setAttribute('aria-expanded', 'false');
   btn.setAttribute('aria-controls', 'sb-teams-panel');
-  btn.innerHTML = `<span class="sb-icon">${_navIcon('basketball')}</span><span class="sb-group-label sb-label">Teams</span>`
+  btn.innerHTML = `<span class="sb-icon">${_headerIcon('basketball', onTeams)}</span><span class="sb-group-label sb-label">Teams</span>`
     + `<span class="sb-group-chev sb-teams-chev">${_ICON_CHEVRON}</span>`;
 
   const panel = document.createElement('div');
@@ -1188,6 +1189,19 @@ function _buildTeamsEntry() {
 }
 let _closeTeamsPanel = () => {};
 
+// Home: the first top-level entry, above Teams. The logo also goes home, but
+// it isn't a sidebar entry and can't show that you are there.
+function _buildHomeEntry() {
+  const a = document.createElement('a');
+  a.className = 'sb-group-hdr sb-top-link';
+  a.href = '/';
+  a.title = 'Home';
+  const here = /^\/(index\.html)?$/.test(location.pathname);
+  if (here) a.setAttribute('aria-current', 'page');
+  a.innerHTML = `<span class="sb-icon">${_headerIcon('home', here)}</span><span class="sb-group-label sb-label">Home</span>`;
+  return a;
+}
+
 // Inbox: a top-level entry under Teams, carrying the unread count. A link,
 // not a section — signed out, /inbox/ asks you to sign in itself.
 function _buildInboxEntry() {
@@ -1196,14 +1210,15 @@ function _buildInboxEntry() {
   a.href = '/inbox/';
   a.dataset.href = '/inbox/';
   a.title = 'Inbox';
-  if (/^\/inbox(\/|$)/.test(location.pathname)) a.setAttribute('aria-current', 'page');
-  a.innerHTML = `<span class="sb-icon">${_navIcon('inbox')}</span><span class="sb-group-label sb-label">Inbox</span>`;
+  const here = /^\/inbox(\/|$)/.test(location.pathname);
+  if (here) a.setAttribute('aria-current', 'page');
+  a.innerHTML = `<span class="sb-icon">${_headerIcon('inbox', here)}</span><span class="sb-group-label sb-label">Inbox</span>`;
   return a;
 }
 
 // ── Account ──
 // Bottom left: who you are (avatar or initials, name, team) and, on click, a
-// menu with everything that's yours — profile, team, inbox, NB¥, the theme
+// menu with everything that's yours — profile, team, NB¥, the theme
 // picker, sign out. It replaces the profile and theme buttons the nav used to
 // carry. Signed out, it's a Sign in button whose menu still offers themes.
 function _teamRecord(abbr) {
@@ -1325,24 +1340,14 @@ function _buildAccount() {
     const headSub = head.querySelector('.sb-acct-head-sub');
 
     const profile = _acctItem('a', 'My profile', 'owner', `/members/${encodeURIComponent(me.name)}/`);
-    const inbox = _acctItem('a', 'Inbox', 'inbox', '/inbox/');
     const nby = _acctItem('a', 'NB¥ history', 'yen', `/nbyen/?m=${encodeURIComponent(me.name)}`);
     const signOut = _acctItem('button', 'Sign out', 'exit');
     signOut.classList.add('sb-acct-signout');
     signOut.addEventListener('click', nbnSignOut);
     const teamSlot = document.createElement('div');
-    menu.replaceChildren(head, profile, teamSlot, inbox, nby, divider(), themeRow, themeList, changelog, divider(), signOut);
+    menu.replaceChildren(head, profile, teamSlot, nby, divider(), themeRow, themeList, changelog, divider(), signOut);
     _refreshThemeMenu();
 
-    // Unread mail shows on the avatar too — the inbox used to be its own
-    // button in the nav, and its count shouldn't go out of sight with it.
-    _unreadCount().then(n => {
-      if (!n) return;
-      const count = n > 99 ? '99+' : String(n);
-      inbox.insertAdjacentHTML('beforeend', `<span class="sb-badge">${count}</span>`);
-      wrap.querySelector('.sb-avatar-wrap').insertAdjacentHTML('beforeend',
-        `<span class="sb-avatar-badge" title="${count} unread">${count}</span>`);
-    });
     _fetchBalance().then(b => { if (b != null) headSub.textContent = 'NB¥ ' + b.toLocaleString('en-US', { maximumFractionDigits: 0 }); });
     _fetchProfile().then(p => {
       if (p?.cosmetics?.name_color) nameEl.style.color = p.cosmetics.name_color;
@@ -1407,6 +1412,7 @@ function _buildSidebar() {
 
   const nav = document.createElement('nav');
   nav.className = 'sb-sections';
+  nav.appendChild(_buildHomeEntry());
   nav.appendChild(_buildTeamsEntry());
   nav.appendChild(_buildInboxEntry());
   const personal = document.createElement('div');
@@ -1494,7 +1500,7 @@ function _buildMenuButton() {
   btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = _ICON_MENU;
   btn.addEventListener('click', () => (_drawerOpen() ? _closeDrawer() : _openDrawer()));
-  // On a phone the drawer hides the account menu, so unread mail marks the menu button.
+  // On a phone the drawer hides the sidebar's Inbox entry, so unread mail marks the menu button.
   _unreadCount().then(n => {
     if (!n) return;
     btn.classList.add('has-unread');
@@ -1579,7 +1585,7 @@ const NAV_SECTIONS = [
     { title: 'Wall Street', href: '/invest', icon: 'candles' },
     { title: 'Donations', href: '/donations/', icon: 'heart' },
   ] },
-  { label: 'Games', icon: 'hoop', items: [
+  { label: 'Games', icon: 'controller', items: [
     { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop' },
     { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette' },
     { title: 'Trivia', href: '/trivia', icon: 'question' },
@@ -1614,7 +1620,7 @@ const NAV_SECTIONS = [
     { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
     { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
   ] },
-  { label: 'League Office', icon: 'gavel', items: [
+  { label: 'League Office', icon: 'briefcase', items: [
     { title: 'Proposals', href: '/proposals/', icon: 'vote' },
     { title: 'Suggestions', href: '/suggestions/', icon: 'bulb' },
     { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope' },
@@ -1636,8 +1642,14 @@ const ROLE_PAGES = _NAV_ITEMS.filter(p => p.roles && !p.noSearch);
 // One icon from the nav set. Two colours, both from the theme (`.ni` in
 // css/sidebar.css), so a team theme tints the set in its own accent. The sprite
 // is one file, fetched once and cached however many icons a page draws.
-function _navIcon(id) {
-  return `<svg class="ni" aria-hidden="true"><use href="/icons/nav-icons.svg#${id}"></use></svg>`;
+function _navIcon(id, cls = '') {
+  return `<svg class="ni${cls}" aria-hidden="true"><use href="/icons/nav-icons.svg#${id}"></use></svg>`;
+}
+
+// A sidebar header's icon: outlined (OUTLINES in the script), and solid (its
+// `-on` symbol) only while you are in its section.
+function _headerIcon(id, active) {
+  return active ? _navIcon(`${id}-on`) : _navIcon(`${id}-o`, ' ni-o');
 }
 
 function _qualifies(page, roles) {
