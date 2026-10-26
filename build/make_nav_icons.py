@@ -324,6 +324,10 @@ ICONS = {
         ('a', '<path d="M3 3h8.5L21 12.5 12.5 21 3 11.5z"/>'),
         ('b', '<circle cx="7.5" cy="7.5" r="1.8"/>'),
     ],
+    'home': [
+        ('a', '<path d="M2.5 10.5L12 2.75l9.5 7.75v9.75a1.75 1.75 0 0 1-1.75 1.75H4.25a1.75 1.75 0 0 1-1.75-1.75z"/>'),
+        ('b', '<rect x="9.5" y="14" width="5" height="8" rx="1"/>'),
+    ],
     'inbox': [
         ('a', '<path d="M2 13l3-9h14l3 9v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/>'),
         ('bs', '<path d="M3 13h5l1.5 2.5h5L16 13h5"/>', 1.6),
@@ -380,7 +384,7 @@ ICONS = {
 }
 
 # The sidebar's outline set, written as `<symbol id="{name}-o">`. A section
-# header (and Teams, Inbox, Pinned) draws its icon in outline, and switches to
+# header (and Home, Teams, Inbox, Pinned) draws its icon in outline, and switches to
 # its `-on` icon (below: the filled one, or its ACTIVE override) when you are
 # in that section, so the section you are
 # in is the one solid icon in the sidebar. Only those icons need an outline;
@@ -428,6 +432,10 @@ OUTLINES = {
     'basketball': [
         ('as', '<circle cx="12" cy="12" r="9.5"/>', 1.6),
         ('as', '<path d="M2.5 12h19M12 2.5v19M5.5 4.8c2.4 2 3.8 4.4 3.8 7.2s-1.4 5.2-3.8 7.2M18.5 4.8c-2.4 2-3.8 4.4-3.8 7.2s1.4 5.2 3.8 7.2"/>', 1.2),
+    ],
+    'home': [
+        ('as', '<path d="M3 10.75L12 3.5l9 7.25v9.25a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20z"/>'
+               '<path d="M9.5 21.5v-5.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v5.5"/>', 1.6),
     ],
     'inbox': [
         ('as', '<path d="M2.5 13l3-8.5h13l3 8.5v5.5a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z"/><path d="M2.5 13h5.5l1.5 2.5h5L16 13h5.5"/>', 1.6),

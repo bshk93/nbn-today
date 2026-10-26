@@ -117,7 +117,7 @@
 .sb-link:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
 .sb-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
 
-/* Inbox: a top-level link styled as a header, with its unread count. */
+/* Home and Inbox: top-level links styled as headers; Inbox carries its unread count. */
 a.sb-top-link { text-decoration: none; margin-bottom: 0.15rem; }
 a.sb-top-link:hover { text-decoration: none; }
 a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--text-primary); box-shadow: inset 2px 0 0 var(--accent); }

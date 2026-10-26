@@ -1058,6 +1058,19 @@ function _buildTeamsEntry() {
 }
 let _closeTeamsPanel = () => {};
 
+// Home: the first top-level entry, above Teams. The logo also goes home, but
+// it isn't a sidebar entry and can't show that you are there.
+function _buildHomeEntry() {
+  const a = document.createElement('a');
+  a.className = 'sb-group-hdr sb-top-link';
+  a.href = '/';
+  a.title = 'Home';
+  const here = /^\/(index\.html)?$/.test(location.pathname);
+  if (here) a.setAttribute('aria-current', 'page');
+  a.innerHTML = `<span class="sb-icon">${_headerIcon('home', here)}</span><span class="sb-group-label sb-label">Home</span>`;
+  return a;
+}
+
 // Inbox: a top-level entry under Teams, carrying the unread count. A link,
 // not a section — signed out, /inbox/ asks you to sign in itself.
 function _buildInboxEntry() {
@@ -1268,6 +1281,7 @@ function _buildSidebar() {
 
   const nav = document.createElement('nav');
   nav.className = 'sb-sections';
+  nav.appendChild(_buildHomeEntry());
   nav.appendChild(_buildTeamsEntry());
   nav.appendChild(_buildInboxEntry());
   const personal = document.createElement('div');
