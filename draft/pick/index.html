@@ -660,7 +660,7 @@
         if (isUp) {
           const btn = document.createElement('button');
           btn.className = 'btn btn-primary btn-sm';
-          btn.textContent = nextUp ? `Submit →` : 'No queue';
+          btn.textContent = nextUp ? 'Submit' : 'No queue';
           btn.disabled = !nextUp;
           btn.addEventListener('click', async () => {
             btn.disabled = true; btn.textContent = '…';
@@ -669,7 +669,7 @@
             else {
               const err = await res.json().catch(() => ({}));
               toast(err.detail || `Error ${res.status}`, true);
-              btn.disabled = false; btn.textContent = 'Submit →';
+              btn.disabled = false; btn.textContent = 'Submit';
             }
           });
           actions.appendChild(btn);

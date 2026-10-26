@@ -153,7 +153,7 @@ function render() {
   // publish too — where it is the only route to editing the piece.
   if (isEditor()) {
     bits.push(`<a href="/news/new/?id=${encodeURIComponent(state.id)}">`
-      + `Edit intro &amp; cover →</a>`);
+      + `Edit intro &amp; cover</a>`);
   }
   $('pr-sub').innerHTML = bits.join('<span class="sep">·</span>');
 
@@ -226,7 +226,7 @@ function renderAuthorPanel() {
       </div>
       <div class="row-actions">${controls}
         <a class="btn-secondary" href="/news/view/?id=${encodeURIComponent(state.id)}" target="_blank"
-           title="Opens the published page as it stands — same renderer, nothing hidden">Preview →</a>
+           title="Opens the published page as it stands — same renderer, nothing hidden">Preview</a>
         <span class="status-msg" id="author-status"></span></div>
       <div class="panel-note" style="margin-top:0.6rem;">${note}</div>
     </div>`;
