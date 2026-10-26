@@ -170,7 +170,7 @@ already in the code on the new scale.
 | 4 | Committee salaries | 250 / 750 / 1,250 a year | Not built. See the appendix, § 1b. |
 | 5 | Poeltl | 5 per solve | Nothing. The server owns the answer. |
 | 6 | Bio fills, Perry | 1 per field; 10 / 5 / 2.5 | Nothing. |
-| 7 | Themes, avatar, name colour | 500, 500, 50 | Nothing. |
+| 7 | Themes, avatar, name colour | **On since 2026-10-26**, at 500, 500, 50 | Nothing. They only spend NB¥. |
 | 8 | Trivia | — | **The server must track the streak.** Today the browser reports its own streak, so the endpoint pays whatever it's told. |
 | 9 | The market (`/invest`) | — | **On since 2026-10-23**, under § 3's rules. Playoff games aren't in the schedule, so the pending-box-score lock can't see them: lock the market by hand for the postseason. |
 
