@@ -194,7 +194,7 @@
       if (played) {
         const w = won(played, AWAY) ? AWAY : HOME;
         html += `<a class="pv-final" href="${boxHref(played)}">Final: ${esc(played.away_team)} ${played.away_score}`
-          + ` · ${esc(played.home_team)} ${played.home_score} — ${esc(w)} wins. Box score →</a>`;
+          + ` · ${esc(played.home_team)} ${played.home_score} — ${esc(w)} wins. Box score</a>`;
       }
 
       html += '<div class="pv-grid">';

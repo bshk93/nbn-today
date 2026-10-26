@@ -551,9 +551,9 @@
           pagination.style.display = '';
           const end = Math.min(start + PAGE_SIZE, entries.length);
           pagination.innerHTML = `
-            <button class="txn-page-btn" id="ph-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>&larr; Prev</button>
+            <button class="txn-page-btn" id="ph-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>Prev</button>
             <span>${start + 1}&ndash;${end} of ${entries.length}</span>
-            <button class="txn-page-btn" id="ph-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next &rarr;</button>
+            <button class="txn-page-btn" id="ph-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next</button>
           `;
           pagination.querySelector('#ph-prev-btn').addEventListener('click', () => { currentPage--; renderPage(); });
           pagination.querySelector('#ph-next-btn').addEventListener('click', () => { currentPage++; renderPage(); });

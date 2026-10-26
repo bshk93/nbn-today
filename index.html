@@ -639,9 +639,6 @@
     }
 
     /* A header that is itself the link to the card's full page. */
-    :root a.dash-card-link { display: inline-flex; align-items: baseline; text-decoration: none; }
-    :root .dash-card-title > a.dash-card-link { color: inherit; }
-    :root a.dash-card-link:hover, :root a.dash-card-link:focus-visible { color: var(--link); }
 
     /* Your team is boxed like every other section now (above). */
     :root .dash-team-name { font-size: var(--text-xl); }
@@ -841,7 +838,7 @@
 
   <p class="visitor-intro" id="visitor-intro" hidden>
     A fantasy NBA GM league, played out in NBA 2K since 2020.
-    <a href="/join/">What it is and how to join →</a>
+    <a href="/join/">What it is and how to join</a>
   </p>
 
   <section class="dash" id="dash">
@@ -1206,7 +1203,7 @@
 
       // Only the title text is the link: a night's box-score video link is added
       // beside it later, and a link can't sit inside another.
-      card.innerHTML = `<div class="dash-card-title"><a class="dash-card-link" href="/calendar">${esc(title)}</a></div>${head}`
+      card.innerHTML = `<div class="dash-card-title"><a class="ui-title-link" href="/calendar">${esc(title)}</a></div>${head}`
         // Grouped under a date heading rather than a date column: the card is
         // too narrow for date + two team chips + time on one line, and the
         // times were spilling out past its edge.
@@ -1667,8 +1664,8 @@
       const d = new Date(data.last_report.date + 'T12:00:00');
       const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-      card.innerHTML = '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/injuries/">Injury Report'
-        + `<span class="dash-inj-date">${esc(when)}</span></a></div>`
+      card.innerHTML = '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/injuries/">Injury Report'
+        + `<span class="dash-inj-date">${esc(when)}</span></a></div></div>`
         + (rows.length ? '<div class="dash-feed-filters">'
           + '<div class="ui-segmented dash-feed-kinds" role="group" aria-label="Status">'
           + statuses.map(s => `<button type="button" data-status="${s.key}" aria-pressed="${s.key === state.status}">${esc(s.label)}</button>`).join('')
@@ -1767,7 +1764,7 @@
         const when = String(latest.published_at).slice(0, 10);
         $('dash-ranks').innerHTML =
           `<div class="dash-ranks-head">`
-          + `<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/news/view/?id=${encodeURIComponent(latest.id)}">Power Rankings</a></div>`
+          + `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/news/view/?id=${encodeURIComponent(latest.id)}">Power Rankings</a></div></div>`
           + `<span class="dash-ranks-edition">${esc(latest.title || 'Latest edition')} · ${esc(shortDate(when))}</span></div>`
           + '<div class="dash-ranks-row">' + top.map(r =>
               `<a class="dash-rank-team" href="/teams/${esc(String(r.team).toLowerCase())}/" `
@@ -1892,7 +1889,7 @@
       const items = finals.join('')
         + (top.length ? '<span class="ticker-head">Top performers</span>' + top.join('') : '')
         + (injuries.length ? '<a class="ticker-head" href="/injuries/">New injuries'
-          + (hurt.length > INJ_MAX ? ` <span class="ticker-more">${hurt.length} · all →</span>` : '')
+          + (hurt.length > INJ_MAX ? ` <span class="ticker-more">${hurt.length} total</span>` : '')
           + '</a>' + injuries.join('') : '');
       const label = finals.length
         ? `${night.date === today ? 'Tonight' : night.date === dayBefore(today) ? 'Last night' : 'Latest'}`
@@ -1993,14 +1990,12 @@
     // back of its 1 seed. The seeds are the build's own (tiebreaks included),
     // so this agrees with /standings by construction.
     //
-    // The playoff odds (GET /api/playoff-odds) aren't shown here — the header
-    // links to them — but the payload still supplies unplayed teams and the
-    // clinch marks.
+    // The playoff odds (GET /api/playoff-odds) aren't shown here, but the
+    // payload still supplies unplayed teams and the clinch marks.
     const oddsPromise = jget('/api/playoff-odds').catch(() => null);
     Promise.all([liveStandingsPromise, oddsPromise, liveSeasonPromise]).then(([rows, odds, season]) => {
       const seeded = rows.filter(r => /^(East|West)-/.test(r.SEED || ''));
       if (!seeded.length) return;
-      const hasOdds = !!(odds && odds.teams && odds.teams.length);
       // The odds payload knows every team's conference and season length,
       // which the standings file can't (it lists only teams that have played):
       // the same fill-in and clinch marks /standings makes.
@@ -2038,7 +2033,7 @@
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span><span class="dash-stand-gb" title="Games back">${gb(list[0], r)}</span></a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
-        `<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="${hasOdds ? '/standings/#odds' : '/standings'}">Standings</a></div>`
+        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings">Standings</a></div></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
     }).catch(() => {});
@@ -2077,8 +2072,8 @@
           + list.map(row).join('') + '</div>' : '';
 
       $('dash-movers').innerHTML =
-        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/ratings-changes/">Ratings Movers'
-        + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></a></div>`
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/ratings-changes/">Ratings Movers'
+        + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></a></div></div>`
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
     }).catch(() => {});
@@ -2108,7 +2103,7 @@
            ['MIP', 'MIP', p => `+${(p.gmscPg - p.prevGmscPg).toFixed(1)} GmSc`]]
           .map(([key, label, num]) => { const top = lad(key)[0]; return top ? row(label, top, num(top)) : ''; }).join('');
       $('dash-race').innerHTML =
-        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/awards/race/">Award Race</a></div>' + html;
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/awards/race/">Award Race</a></div></div>' + html;
       $('dash-race').hidden = false;
     }).catch(() => {});
 
@@ -2128,7 +2123,7 @@
       const slot = p => (p.draftPick && p.draftPick !== 'NA' ? `Pick #${p.draftPick}` : 'Undrafted');
       const pg = (p, f) => (p[f] / p.G).toFixed(1);
       $('dash-rookies').innerHTML =
-        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/awards/race/">Rookie Watch</a></div>'
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/awards/race/">Rookie Watch</a></div></div>'
         + list.map(p => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(p.slug)}">`
           + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(p.name))}</span>`
@@ -2150,7 +2145,7 @@
         .slice(0, MS_SHOWN);
       if (!list.length) return;
       $('dash-milestones').innerHTML =
-        '<div class="dash-standings-head"><a class="dash-card-title dash-card-link" href="/stats/totals">Milestone Watch</a></div>'
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/stats/totals">Milestone Watch</a></div></div>'
         + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(m.slug)}">`
           + `<img src="/logos/sm/logo-${esc(m.team.toLowerCase())}.webp" alt="" title="${esc(m.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`

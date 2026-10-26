@@ -4161,9 +4161,9 @@ function renderPagination(pagination, totalCount, start, totalPages) {
   pagination.style.display = '';
   const end = Math.min(start + TXN_PAGE_SIZE, totalCount);
   pagination.innerHTML = `
-    <button class="txn-page-btn" id="txn-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>&larr; Prev</button>
+    <button class="txn-page-btn" id="txn-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>Prev</button>
     <span>${start + 1}&ndash;${end} of ${totalCount}</span>
-    <button class="txn-page-btn" id="txn-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next &rarr;</button>
+    <button class="txn-page-btn" id="txn-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next</button>
   `;
   document.getElementById('txn-prev-btn').addEventListener('click', () => { currentPage--; renderTable(); });
   document.getElementById('txn-next-btn').addEventListener('click', () => { currentPage++; renderTable(); });

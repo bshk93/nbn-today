@@ -710,7 +710,7 @@ function renderRankings(a) {
     const link = document.createElement('a');
     link.href = `/news/rankings/?id=${a.id}`;
     link.className = 'btn-ghost';
-    link.textContent = a.phase === 'voting' ? 'Open the ballot →' : 'Ballot & blurbs →';
+    link.textContent = a.phase === 'voting' ? 'Open the ballot' : 'Ballot & blurbs';
     document.getElementById('header-actions').appendChild(link);
   }
 
@@ -924,7 +924,7 @@ function rosterListHtml(team, roster, five) {
       <span class="pag">${p.age == null ? '—' : escHtml(p.age)}</span>
       <span class="povr">${escHtml(p.ovr)}</span>
     </div>`).join('')}</div>
-    <a class="panel-link" href="/teams/${team}/">${escHtml(TEAM_NAMES[team] || team)} team page →</a>`;
+    <a class="panel-link" href="/teams/${team}/">${escHtml(TEAM_NAMES[team] || team)} team page</a>`;
 }
 
 function fullName(p) { return p.first ? `${p.first} ${p.name}` : p.name; }
