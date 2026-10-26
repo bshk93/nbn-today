@@ -1453,7 +1453,7 @@ const NAV_SECTIONS = [
     { title: 'Wall Street', href: '/invest', icon: 'candles' },
     { title: 'Donations', href: '/donations/', icon: 'heart' },
   ] },
-  { label: 'Games', icon: 'hoop', items: [
+  { label: 'Games', icon: 'controller', items: [
     { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop' },
     { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette' },
     { title: 'Trivia', href: '/trivia', icon: 'question' },

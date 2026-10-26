@@ -56,6 +56,7 @@ def gear(cx, cy, outer, inner, teeth=8):
 
 DOC = '<path d="M5 2h10l5 5v15H5z"/>'
 DOC_FOLD = '<path d="M15 2v5h5z"/>'
+CONTROLLER = ('<path d="M7.5 6h9a5 5 0 0 1 4.85 3.8l1.2 5.1a3 3 0 0 1-5.1 2.75L15.4 15.5H8.6l-2.05 2.15a3 3 0 0 1-5.1-2.75l1.2-5.1A5 5 0 0 1 7.5 6z"/>')
 CLIPBOARD = [('a', '<rect x="4" y="4" width="16" height="18" rx="2"/>'),
              ('a', '<rect x="8" y="2" width="8" height="4" rx="1"/>')]
 
@@ -267,6 +268,11 @@ ICONS = {
         ('bs', '<rect x="9" y="5.5" width="6" height="4.5"/>', 1.4),
         ('as', '<path d="M8 14l1.6 7M16 14l-1.6 7M11 14l.4 7M13 14l-.4 7M9 17.5h6"/>', 1.3),
     ],
+    'controller': [
+        ('a', CONTROLLER),
+        ('b', '<rect x="6.5" y="8.75" width="1.6" height="5"/><rect x="4.8" y="10.45" width="5" height="1.6"/>'
+              '<circle cx="16.4" cy="12.6" r="1.1"/><circle cx="18.3" cy="10.3" r="1.1"/>'),
+    ],
     'silhouette': [
         ('a', '<circle cx="9.5" cy="7.5" r="4"/><path d="M2 21a7.5 7.5 0 0 1 15 0z"/>'),
         ('cs', '<path d="M17 4.6a2.6 2.6 0 1 1 3.5 2.4c-.7.3-1 .8-1 1.5v.6"/>', 2),
@@ -407,10 +413,9 @@ OUTLINES = {
                '<rect x="10.25" y="4.5" width="3.5" height="14" rx="1"/><rect x="16" y="8.5" width="3.5" height="10" rx="1"/>', 1.6),
     ],
     'yen': [('as', '<path d="M5.5 3.5L12 12.5l6.5-9M12 12.5V21M7.5 13.5h9M7.5 17h9"/>', 1.6)],
-    'hoop': [
-        ('as', '<rect x="4" y="2.5" width="16" height="10" rx="1.5"/><rect x="9" y="5.5" width="6" height="4" rx=".5"/>'
-               '<path d="M6 13.5h12"/>', 1.6),
-        ('as', '<path d="M8 13.5l1.6 7M16 13.5l-1.6 7M12 13.5v7M9 17h6"/>', 1.2),
+    'controller': [
+        ('as', CONTROLLER + '<path d="M7.3 9.25v4M5.3 11.25h4"/>', 1.6),
+        ('a', '<circle cx="16.4" cy="12.6" r="1.05"/><circle cx="18.3" cy="10.3" r="1.05"/>'),
     ],
     'tv': [
         ('as', '<path d="M8 2.5l4 3.5 4-3.5"/><rect x="2.5" y="6" width="19" height="14" rx="2"/>'
