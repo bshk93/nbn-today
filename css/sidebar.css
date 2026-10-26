@@ -312,10 +312,11 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
    centred in the rail, in both states. */
 @media (min-width: 900px) and (hover: hover) {
   .sidebar { transition: width 0.15s ease, box-shadow 0.15s ease; }
-  .sidebar .sb-label { transition: opacity 0.15s ease; }
+  /* One line, always: squeezed — in the rail, or mid-expand — they'd wrap and
+     the rows below would jump down and back. */
+  .sidebar .sb-label { transition: opacity 0.15s ease; white-space: nowrap; }
   html[data-sidebar="rail"]:not(.sb-peek) .sidebar .sb-label {
     visibility: hidden; opacity: 0; transition: opacity 0.1s ease, visibility 0s linear 0.1s;
-    white-space: nowrap; /* squeezed, they'd wrap and grow taller than the open rows */
   }
   html[data-sidebar="rail"]:not(.sb-peek) .sb-collapse { display: none; }
   /* Search is just its icon until the box has room. */
