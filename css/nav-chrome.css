@@ -25,7 +25,8 @@
   letter-spacing: 0.06em; text-transform: uppercase;
 }
 .nav :is(.nav-actions, .nav-menu-btn) { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; text-transform: none; }
-.nav-kicker { color: var(--accent-light); }
+.nav-kicker, .nav a.nav-kicker { color: var(--accent-light); }
+.nav a.nav-kicker:hover { color: var(--text-primary); }
 /* The site's mark, beside the menu button on a phone (nav.js _initNav): the
    docked sidebar carries it at 900px and up, so it shows only below that. */
 .nav-brand { display: none; align-items: center; gap: 0.4rem; color: var(--text-primary); font-weight: 700; letter-spacing: 0.04em; text-decoration: none; }

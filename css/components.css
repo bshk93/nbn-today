@@ -293,6 +293,23 @@
   padding: var(--space-4) var(--space-5);
 }
 
+/* ── Hub ────────────────────────────────────────────────────────────────── */
+/* A page of cards, one per page in a sidebar hub section (hub.js fills
+   <div class="ui-hub"></div> from NAV_SECTIONS). Stat Lab's look. */
+.ui-hub { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+.ui-hub-card {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1.75rem; color: inherit; text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.ui-hub-card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); text-decoration: none; }
+.ui-hub-card[hidden] { display: none; }
+.ui-hub-icon .ni { width: 1.6rem; height: 1.6rem; }
+.ui-hub-title { font-size: var(--text-md); font-weight: 600; }
+.ui-hub-desc { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; }
+@media (max-width: 480px) { .ui-hub { grid-template-columns: 1fr; } }
+
 /* ── Table ──────────────────────────────────────────────────────────────── */
 /*   <div class="ui-table-wrap"><table class="ui-table">…</table></div>
    Cells: .num for figures (right-aligned, tabular), .muted, .strong.
