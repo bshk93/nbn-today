@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Member - NBN</title>
+  <title>NBN | Member</title>
   <!-- NBN:og -->
   <meta name="description" content="An NBN member’s tenures, achievements and league history.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Member - NBN">
+  <meta property="og:title" content="NBN | Member">
   <meta property="og:description" content="An NBN member’s tenures, achievements and league history.">
   <meta property="og:url" content="https://nbn.today/members/profile/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -345,7 +345,7 @@ async function init() {
     document.getElementById('root').innerHTML = '<p class="error-state">Invalid URL.</p>';
     return;
   }
-  document.title = `${memberName} - NBN`;
+  document.title = `NBN | ${memberName}`;
 
   const req1 = [
     fetch('/api/members/public').then(r => r.json()).catch(() => []),

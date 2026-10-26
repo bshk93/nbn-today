@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Box Scores - NBN</title>
+  <title>NBN | Box Scores</title>
   <!-- NBN:og -->
   <meta name="description" content="Every NBN box score, searchable by game, team and player.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Box Scores - NBN">
+  <meta property="og:title" content="NBN | Box Scores">
   <meta property="og:description" content="Every NBN box score, searchable by game, team and player.">
   <meta property="og:url" content="https://nbn.today/boxscores/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -237,7 +237,7 @@
         if (focus) {
           focus.classList.add('open', 'focus');
           const g = games.find(x => gameKey(x) === focus.dataset.key);
-          document.title = `${g.away_team} ${g.away_score}, ${g.home_team} ${g.home_score} - Box Score - NBN`;
+          document.title = `NBN | ${g.away_team} ${g.away_score}, ${g.home_team} ${g.home_score} | Box Score`;
           focus.scrollIntoView({ block: 'start', behavior: 'smooth' });
         }
       } catch(e) { setMessage(e.message, true); }

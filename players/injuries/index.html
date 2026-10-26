@@ -6,12 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/players/subpage.css">
-  <title>Player Injuries - NBN</title>
+  <title>NBN | Player Injuries</title>
   <!-- NBN:og -->
   <meta name="description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Player Injuries - NBN">
+  <meta property="og:title" content="NBN | Player Injuries">
   <meta property="og:description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
   <meta property="og:url" content="https://nbn.today/players/injuries/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -189,7 +189,7 @@
     const bio = (bios || {})[slug];
     const name = bio && bio.name ? nbnPlayerName(bio.name) : slug;
     const team = (teamMap || {})[slug] || '';
-    document.title = `${name} Injuries - NBN`;
+    document.title = `NBN | ${name} Injuries`;
     document.getElementById('page-title').textContent = name;
     document.getElementById('page-sub').innerHTML = `Injury history${team ? ` · <a href="/teams/${esc(team)}/">${esc(team)}</a>` : ''}`;
     // The same team band as the profile (components.css § Player pages).

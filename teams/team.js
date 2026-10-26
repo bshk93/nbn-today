@@ -141,7 +141,7 @@ document.documentElement.dataset.team = abbr;
 
 // The shell already ships this as a static <title> (and matching OG tags) so
 // crawlers see it; keep the two in step rather than downgrading to the abbr.
-document.title = `${name} - NBN`;
+document.title = `NBN | ${name}`;
 
 // Team pages are 11-line shells that load only this file, so shared modules are
 // pulled in from here. Starts now, in parallel with the data fetches; the render

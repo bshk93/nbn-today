@@ -2,7 +2,7 @@
   // Infer season from URL: /awards/25-26/results/ → '25-26'
   const SEASON = location.pathname.split('/').filter(Boolean)[1];
 
-  document.title = SEASON + ' Awards - NBN';
+  document.title = 'NBN | ' + SEASON + ' Awards';
   const fullSeason = `20${SEASON.replace('-', '–')}`;   // '25-26' → '2025–26'
 
   // theme.css and nav-chrome.css are <link>ed from the page's <head>: a

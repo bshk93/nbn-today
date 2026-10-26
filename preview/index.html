@@ -5,12 +5,12 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>Game Preview - NBN</title>
+  <title>NBN | Game Preview</title>
   <!-- NBN:og -->
   <meta name="description" content="One NBN game ahead of tip-off: form, head-to-head, projected starters and career milestones in reach.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Game Preview - NBN">
+  <meta property="og:title" content="NBN | Game Preview">
   <meta property="og:description" content="One NBN game ahead of tip-off: form, head-to-head, projected starters and career milestones in reach.">
   <meta property="og:url" content="https://nbn.today/preview/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
@@ -148,7 +148,7 @@
 
     $('pv-title').innerHTML = `<span class="pv-teams"><img src="${logo(AWAY)}" alt="">${esc(AWAY)}`
       + ` <span class="pv-at">@</span> <img src="${logo(HOME)}" alt="">${esc(HOME)}</span>`;
-    document.title = `${AWAY} @ ${HOME}, ${shortDate(DATE)} - NBN`;
+    document.title = `NBN | ${AWAY} @ ${HOME}, ${shortDate(DATE)}`;
 
     Promise.allSettled([
       jget('/api/schedule'),                                    // 0

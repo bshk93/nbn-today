@@ -60,7 +60,7 @@ PAGES = {
  '/games/': (None, 'NBN games — the daily Perry and Poeltl, trivia and Tetris.'),
  '/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
  '/bet/': (None, 'Put NB¥ on NBN: open bets, the daily Pick\'em and futures markets, all in one place.'),
- '/nbyen/': ('NB¥ Balances - NBN', 'Every NB¥ balance, and every NB¥ that has moved since the restart.'),
+ '/nbyen/': ('NBN | NB¥ Balances', 'Every NB¥ balance, and every NB¥ that has moved since the restart.'),
  '/boxscores/': (None, 'Every NBN box score, searchable by game, team and player.'),
  '/boxscores/submit/': (None, 'Submit a box score to the NBN stats database.'),
  '/calendar/': (None, 'Key dates in the NBN league year — free agency, the draft, deadlines and windows.'),
@@ -100,10 +100,10 @@ PAGES = {
  '/nbnfl/': ('NBNFL — Bengals', 'Game log and player stats for the Bengals in NBN’s sister American-football league, plus their players’ real-world NFL stats.'),
  '/nbnfl/CIN/': ('Moved - NBNFL', 'Moved — the Bengals log is now /nbnfl.'),
  '/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
- '/nbyen-economy/': ('Moved - NB¥ Balances - NBN', 'Retired — the NB¥ economy proposal was superseded by the restart. Balances are at /nbyen.'),
+ '/nbyen-economy/': ('NBN | Moved | NB¥ Balances', 'Retired — the NB¥ economy proposal was superseded by the restart. Balances are at /nbyen.'),
  '/news/': (None, 'League news, written by NBN members.'),
  '/news/new/': (None, 'Write an article for NBN News.'),
- '/news/rankings/': ('Power Rankings Ballot - NBN', 'Rank all 30 teams and write the blurbs for an NBN power-rankings edition.'),
+ '/news/rankings/': ('NBN | Power Rankings Ballot', 'Rank all 30 teams and write the blurbs for an NBN power-rankings edition.'),
  '/news/view/': (None, 'An article from NBN News.'),
  '/memos/': (None, 'Memos from the NBN league office to the league.'),
  '/memos/2026-01-sac-2028-first/': (None, "League office ruling: how six 2028 firsts tied together by swap rights resolve. Trades execute in the order they were made."),
@@ -164,9 +164,9 @@ PAGES = {
 for _d in sorted((ROOT / 'awards').glob('[0-9][0-9]-[0-9][0-9]')):
     _s = _d.name
     _y = f'20{_s[:2]}-{_s[3:]}'
-    PAGES[f'/awards/{_s}/'] = (f'{_y} Awards - NBN', f'The {_y} NBN awards ballot and results.')
-    PAGES[f'/awards/{_s}/results/'] = (f'{_y} Award Results - NBN', f'Full voting results for the {_y} NBN awards.')
-    PAGES[f'/awards/{_s}/vote/'] = (f'{_y} Award Voting - NBN', f'Cast your ballot in the {_y} NBN awards.')
+    PAGES[f'/awards/{_s}/'] = (f'NBN | {_y} Awards', f'The {_y} NBN awards ballot and results.')
+    PAGES[f'/awards/{_s}/results/'] = (f'NBN | {_y} Award Results', f'Full voting results for the {_y} NBN awards.')
+    PAGES[f'/awards/{_s}/vote/'] = (f'NBN | {_y} Award Voting', f'Cast your ballot in the {_y} NBN awards.')
 
 
 def url_for(p: pathlib.Path) -> str:
@@ -216,7 +216,7 @@ for p in sorted(ROOT.rglob('*.html')):
     if m:
         ab = m.group(1)
         name = TEAMS[ab]
-        title = f'{name} - NBN'
+        title = f'NBN | {name}'
         desc = f'{name} on NBN: current roster, salary cap situation, draft picks, franchise records and season history.'
         image = f'/og/team-{ab.lower()}.png'
         alt = f'{name} — Nothing But Net'
