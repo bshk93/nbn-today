@@ -227,6 +227,7 @@
         const [name, d] = drivers[0];
         const dw = x.proj_w - p.proj_w;
         let note = `${name} ${signedYen(d)}`;
+        if (b.backfill) note += ' · rebuilt';
         if (Math.abs(dw) >= 0.1) note += ` · proj W ${dw > 0 ? '+' : ''}${dw.toFixed(1)}`;
         if (x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
         teams[t][b.date] = { pct: (x.price / p.price - 1) * 100, note };
@@ -237,12 +238,14 @@
 
   function renderHow() {
     const L = run.league;
+    const rebuilt = history.filter(d => d.backfill).map(d => d.date);
     document.getElementById('how').innerHTML = `
       <p>Each franchise is priced as what its owner gets out of it: <b>profit</b> for the rest of this season and the next two, plus what the team would <b>sell for</b> at the end of the third. Both are discounted at ${(L.discount_rate * 100).toFixed(0)}% a season. The price is that value divided by ${(L.shares / 1e6).toFixed(0)}M shares.</p>
       <p><b>Revenue</b> uses the Front Office Ledger's own formulas (gate, playoff gate, merch, media, title bonus) on projected inputs: wins and playoff odds from the playoff odds simulator, and stars from the league's top 15 OVRs. This season's projection always gives the current roster at least half the weight, so a trade moves the price even late in the season.</p>
       <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
       <p>As the season goes by, every price drifts up a little from discounting alone, so “vs league” is the cleaner comparison. A day's move is labelled with the piece that moved most: revenue, costs or sale.</p>
+      ${rebuilt.length ? `<p>The model started on 2026-10-24. Earlier days (${esc(rebuilt[0])} to ${esc(rebuilt[rebuilt.length - 1])}) were rebuilt afterwards from the box scores committed by each day, with today's rosters and contracts. Nothing bigger than a depth signing changed in that window.</p>` : ''}
       <p><b>The columns</b></p>
       <dl class="fv-cols">${COLS.filter(c => c.tip).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.tip)}</dd>`).join('')}</dl>
       <p class="muted">Model ${esc(run.model)}, computed ${esc(new Date(run.computed_at).toLocaleString())}.</p>`;
