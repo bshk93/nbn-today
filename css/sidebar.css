@@ -328,7 +328,8 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
      (.peek-open, from the saved set) — not the current page's, which would
      push everything below it down on every hover. */
   html.sb-peek .sb-group:not(.peek-open) .sb-items { display: none; }
-  html.sb-peek .sb-group.peek-open .sb-items { display: block; }
+  html.sb-peek .sb-group.peek-open .sb-items,
+  html.sb-unpeeking .sb-group.peek-open .sb-items { display: block; overflow: hidden; }
   html.sb-peek .sb-group:not(.peek-open) .sb-group-chev { transform: rotate(0deg); }
   html.sb-peek .sb-group.peek-open .sb-group-chev { transform: rotate(-90deg); }
   html.sb-peek .sb-group:not(.peek-open) .sb-group-badge,

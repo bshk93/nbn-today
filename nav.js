@@ -594,23 +594,56 @@ function _peeking() { return document.documentElement.classList.contains('sb-pee
 // unfolded it — the same saved set the kept-open sidebar uses. Unlike there,
 // the section holding this page isn't forced open: every row it added would
 // push the icons below it down on every hover.
+//
+// The rail shows no rows, so an unfolded section's rows grow in as it widens
+// and shrink away as it narrows (_slideRows), in step with the width
+// transition in css/sidebar.css — not all at once, which made every icon
+// below them jump while the sidebar was still mid-animation.
+const _PEEK_MS = 150;
+let _unpeekTimer = null;
+function _slideRows(groups, show) {
+  const ms = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : _PEEK_MS;
+  groups.forEach(g => {
+    const items = g.querySelector(':scope > .sb-items');
+    const h = items.scrollHeight + 'px';
+    items.getAnimations().forEach(a => a.cancel());
+    items.animate(show ? [{ height: '0px', opacity: 0 }, { height: h, opacity: 1 }]
+                       : [{ height: h, opacity: 1 }, { height: '0px', opacity: 0 }],
+                  { duration: ms, easing: 'ease' });
+  });
+}
 function _startPeek() {
   if (_peeking()) return;
-  document.documentElement.classList.add('sb-peek');
+  const root = document.documentElement;
+  // Back before the close finished: the rows already showing stay as they are.
+  const wasClosing = root.classList.contains('sb-unpeeking');
+  clearTimeout(_unpeekTimer);
+  root.classList.remove('sb-unpeeking');
+  root.classList.add('sb-peek');
   const open = _openGroups();
   document.querySelectorAll('.sidebar .sb-group').forEach(g => {
     const on = open.has(g.dataset.key);
     g.classList.toggle('peek-open', on);
     g.querySelector(':scope > .sb-group-hdr').setAttribute('aria-expanded', on ? 'true' : 'false');
   });
+  if (!wasClosing) _slideRows(document.querySelectorAll('.sidebar .sb-group.peek-open'), true);
+  else document.querySelectorAll('.sidebar .sb-items').forEach(i => i.getAnimations().forEach(a => a.cancel()));
 }
 function _endPeek() {
   if (!_peeking()) return;
-  document.documentElement.classList.remove('sb-peek');
-  document.querySelectorAll('.sidebar .sb-group').forEach(g => {
-    g.classList.remove('peek-open');
-    g.querySelector(':scope > .sb-group-hdr').setAttribute('aria-expanded', g.classList.contains('folded') ? 'false' : 'true');
-  });
+  const root = document.documentElement;
+  const groups = document.querySelectorAll('.sidebar .sb-group.peek-open');
+  // sb-unpeeking keeps those rows drawn (css/sidebar.css) while they shrink.
+  root.classList.add('sb-unpeeking');
+  root.classList.remove('sb-peek');
+  _slideRows(groups, false);
+  _unpeekTimer = setTimeout(() => {
+    root.classList.remove('sb-unpeeking');
+    document.querySelectorAll('.sidebar .sb-group').forEach(g => {
+      g.classList.remove('peek-open');
+      g.querySelector(':scope > .sb-group-hdr').setAttribute('aria-expanded', g.classList.contains('folded') ? 'false' : 'true');
+    });
+  }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : _PEEK_MS);
 }
 
 // Hover mode: expand over the page while the pointer (or keyboard focus) is on
