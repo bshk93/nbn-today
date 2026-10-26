@@ -1417,7 +1417,7 @@
           const label = circle.getAttribute('data-label') || '';
           const slug = circle.getAttribute('data-slug');
           readoutEl.innerHTML = `<span>${label}</span>` +
-            (slug ? ` <a href="/players/?p=${slug}">View player →</a>` : '');
+            (slug ? ` <a href="/players/?p=${slug}">View player</a>` : '');
         }
 
         function highlight(circle) {
@@ -2130,7 +2130,7 @@
           readoutEl.innerHTML = HINT;
         }
         function showInfo(g) {
-          readoutEl.innerHTML = `<span>${qEsc(g.dataset.label)}</span> <a href="/players/?p=${encodeURIComponent(g.dataset.slug)}">View player →</a>`;
+          readoutEl.innerHTML = `<span>${qEsc(g.dataset.label)}</span> <a href="/players/?p=${encodeURIComponent(g.dataset.slug)}">View player</a>`;
         }
         chartEl.addEventListener('mousemove', e => {
           const g = e.target.closest('g[data-label]');

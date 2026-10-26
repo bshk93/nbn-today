@@ -5,6 +5,10 @@
      data-sidebar="open" | "rail"  — docked, at >= 900px. theme-boot.js sets it
                                      in <head>, so the body's margin is
                                      reserved before the sidebar is drawn.
+     .sb-peek                      — a rail expanded over the page while the
+                                     mouse is on it (hover screens only). It
+                                     draws as open but keeps the rail's margin,
+                                     so the page doesn't move.
      .sb-drawer-open               — below 900px the sidebar is an overlay
                                      drawer, hidden until the menu button opens it.
      data-no-sidebar               — a page that opts out (no data-sidebar). */
@@ -66,7 +70,7 @@
 
 .sb-search {
   display: flex; align-items: center; gap: 0.55rem;
-  margin: 0.35rem 0.75rem 0.5rem; padding: 0.45rem 0.6rem;
+  margin: 0.35rem 0.5rem 0.5rem; padding: 0.45rem 0.5rem 0.45rem calc(0.625rem - 1px);
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
   color: var(--text-muted); font: inherit; cursor: pointer; text-align: left;
 }
@@ -75,14 +79,16 @@
 .sb-search kbd { font: inherit; font-size: var(--text-xs); color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 0.3rem; }
 .sb-search .sb-icon { display: flex; }
 
-.sb-sections { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 0 1rem; }
+.sb-sections { flex: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 0 1rem; }
 
 /* A section header is the parent item: its icon, its name, a fold chevron.
    The rows under it are plain text, indented to line up with the name. */
 .sb-group + .sb-group, .sb-teams + .sb-personal .sb-group:first-child, .sb-teams + .sb-group { margin-top: 0.15rem; }
 .sb-group-hdr {
   display: flex; align-items: center; gap: 0.6rem; width: calc(100% - 1rem);
-  margin: 0 0.5rem; padding: 0.42rem 0.5rem; border: none; border-radius: var(--radius-sm);
+  /* 0.625rem in: the icon's centre lands on the rail's (1.75rem), like the
+     logo, the search icon and the avatar, so none of them move on expand. */
+  margin: 0 0.5rem; padding: 0.42rem 0.5rem 0.42rem 0.625rem; border: none; border-radius: var(--radius-sm);
   background: none; cursor: pointer; font: inherit; font-size: var(--text-base); font-weight: 600;
   color: var(--text-secondary); text-align: left;
   /* Section names (and Teams, Inbox) in the display face, like the line above
@@ -111,7 +117,7 @@
 .sb-link {
   position: relative;
   display: flex; align-items: center; gap: 0.6rem;
-  margin: 0 0.5rem; padding: 0.32rem 1.9rem 0.32rem 2.35rem; border-radius: var(--radius-sm);
+  margin: 0 0.5rem; padding: 0.32rem 1.9rem 0.32rem 2.475rem; border-radius: var(--radius-sm);
   color: var(--text-muted); font-size: var(--text-sm); text-decoration: none; white-space: nowrap;
 }
 .sb-link:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
@@ -210,7 +216,7 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
 .sb-account { position: relative; flex: 1; min-width: 0; }
 .sb-acct-btn {
   display: flex; align-items: center; gap: 0.65rem; width: 100%;
-  padding: 0.35rem 0.4rem; border: none; border-radius: var(--radius-sm);
+  padding: 0.35rem 0.2rem; border: none; border-radius: var(--radius-sm);
   background: none; cursor: pointer; font: inherit; color: var(--text-primary); text-align: left;
 }
 .sb-acct-btn:hover, .sb-acct-btn[aria-expanded="true"] { background: var(--bg-hover); }
@@ -281,29 +287,68 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   html[data-sidebar="open"] body { margin-left: var(--sb-w); }
   html[data-sidebar="rail"] body { margin-left: var(--sb-rail-w); }
 
-  /* Rail: icons only — the header icons; labels go. */
-  html[data-sidebar="rail"] .sidebar { width: var(--sb-rail-w); }
+  /* Rail: icons only, the rows hidden. Each section is its header icon, with
+     its rows' total on the corner. */
+  html[data-sidebar="rail"]:not(.sb-peek) .sidebar { width: var(--sb-rail-w); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-items { display: none; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group-hdr { position: relative; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group-chev { display: none; }
+  /* The filled icon (nav.js _headerIcon) is what marks your section here, so
+     the active header, Home and Inbox get no background or bar of their own. */
+  html[data-sidebar="rail"]:not(.sb-peek) a.sb-top-link[aria-current="page"] { background: none; box-shadow: none; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group .sb-group-live:not([hidden]) { display: block; position: absolute; top: 0.2rem; left: 0.45rem; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
+  /* The account menu opens to the right, past the rail's edge. */
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
+}
+
+/* Rail with a mouse: the open sidebar's own layout, narrower, with the words
+   hidden but still taking their space. Peeking (nav.js _initSidebarPeek)
+   widens it over the page and fades the words in beside icons that don't
+   move — the logo, search, every header and the avatar sit on one column,
+   centred in the rail, in both states. */
+@media (min-width: 900px) and (hover: hover) {
+  .sidebar { transition: width 0.15s ease, box-shadow 0.15s ease; }
+  /* One line, always: squeezed — in the rail, or mid-expand — they'd wrap and
+     the rows below would jump down and back. */
+  .sidebar .sb-label { transition: opacity 0.15s ease; white-space: nowrap; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sidebar .sb-label {
+    visibility: hidden; opacity: 0; transition: opacity 0.1s ease, visibility 0s linear 0.1s;
+  }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-collapse { display: none; }
+  /* Search is just its icon until the box has room. */
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-search { border-color: transparent; background: none; }
+  html[data-sidebar="rail"]:not(.sb-peek) .sb-search:hover { background: var(--bg-hover); }
+  html.sb-peek .sidebar { box-shadow: var(--shadow-overlay); }
+
+  /* Peeking, a section is unfolded only if the visitor unfolded it
+     (.peek-open, from the saved set) — not the current page's, which would
+     push everything below it down on every hover. */
+  html.sb-peek .sb-group:not(.peek-open) .sb-items { display: none; }
+  html.sb-peek .sb-group.peek-open .sb-items,
+  html.sb-unpeeking .sb-group.peek-open .sb-items { display: block; overflow: hidden; }
+  html.sb-peek .sb-group:not(.peek-open) .sb-group-chev { transform: rotate(0deg); }
+  html.sb-peek .sb-group.peek-open .sb-group-chev { transform: rotate(-90deg); }
+  html.sb-peek .sb-group:not(.peek-open) .sb-group-badge,
+  html.sb-peek .sb-group:not(.peek-open) .sb-group-live { display: block; }
+  html.sb-peek .sb-group.peek-open .sb-group-badge,
+  html.sb-peek .sb-group.peek-open .sb-group-live { display: none; }
+  html.sb-peek .sb-group.holds-active:not(.peek-open) > .sb-group-hdr { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
+}
+
+/* Rail on a touch screen, as before hover existed: labels gone, everything
+   centred, the logo over the expand button. */
+@media (min-width: 900px) and (hover: none) {
   html[data-sidebar="rail"] .sidebar .sb-label { display: none; }
-  /* Rail: the logo sits over the expand button, both centred. */
   html[data-sidebar="rail"] .sb-head { flex-direction: column; gap: 0.35rem; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-head .sb-collapse { margin-left: 0; }
   html[data-sidebar="rail"] .sb-search { justify-content: center; margin-inline: 0.5rem; padding-inline: 0; }
-  /* Rail: each section is its header icon (click opens the sidebar on it), with
-     its rows' total on the corner; the rows themselves are hidden. */
-  html[data-sidebar="rail"] .sb-items { display: none; }
-  html[data-sidebar="rail"] .sb-group-hdr { position: relative; justify-content: center; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-group-chev { display: none; }
+  html[data-sidebar="rail"] .sb-group-hdr { justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-group-hdr .ni { width: 1.35rem; height: 1.35rem; }
-  /* The filled icon is what marks your section in the rail, Inbox included. */
-  html[data-sidebar="rail"] a.sb-top-link[aria-current="page"] { background: none; box-shadow: none; }
-  html[data-sidebar="rail"] .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
-  html[data-sidebar="rail"] .sb-group .sb-group-live:not([hidden]) { display: block; position: absolute; top: 0.2rem; left: 0.45rem; }
-  html[data-sidebar="rail"] .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
-  html[data-sidebar="rail"] .sb-teams-panel { left: calc(var(--sb-rail-w) + 0.5rem); width: min(44rem, calc(100vw - var(--sb-rail-w) - 1.5rem)); }
-  /* The account block shrinks to its avatar and its menu opens to the right. */
   html[data-sidebar="rail"] .sb-foot { padding-inline: 0.35rem; }
   html[data-sidebar="rail"] .sb-acct-btn { justify-content: center; padding-inline: 0; }
-  html[data-sidebar="rail"] .sb-acct-menu { left: calc(100% + 0.9rem); right: auto; bottom: 0; width: 15rem; }
 }
 
 /* ── Drawer ─────────────────────────────────────────────────────────────── */
@@ -333,5 +378,5 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar, .sb-group-chev { transition: none !important; }
+  .sidebar, .sidebar .sb-label, .sb-group-chev { transition: none !important; }
 }

@@ -3247,12 +3247,12 @@
       pg.className = 'gamelog-pagination';
       const prevBtn = document.createElement('button');
       prevBtn.className = 'gl-page-btn';
-      prevBtn.textContent = '← Prev';
+      prevBtn.textContent = 'Prev';
       prevBtn.disabled = gameLogPage === 0;
       prevBtn.addEventListener('click', () => { gameLogPage--; renderGameLogSection(); });
       const nextBtn = document.createElement('button');
       nextBtn.className = 'gl-page-btn';
-      nextBtn.textContent = 'Next →';
+      nextBtn.textContent = 'Next';
       nextBtn.disabled = gameLogPage >= totalPages - 1;
       nextBtn.addEventListener('click', () => { gameLogPage++; renderGameLogSection(); });
       const info = document.createElement('span');

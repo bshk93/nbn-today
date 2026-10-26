@@ -89,7 +89,13 @@
   const name = raw => (typeof nbnPlayerName === 'function' ? nbnPlayerName(raw) : raw);
 
   let ctx = null, root = null, cssDone = false;
-  let view = 'day';        // 'day' | 'standings' | 'leaders'
+  // The view is in the URL (?view=standings), so a link can open on it.
+  const VIEWS = ['day', 'standings', 'leaders'];
+  const viewFromUrl = () => {
+    const v = new URLSearchParams(location.search).get('view');
+    return VIEWS.includes(v) ? v : 'day';
+  };
+  let view = viewFromUrl();
   let leaders = null;      // GET /api/pickem/leaders
   const lead = { pos: '', q: '', minGp: null, today: false, sort: 'fp_avg' };
   let date = null;
@@ -159,7 +165,7 @@
         Scores fill in as box scores are uploaded.
         Prizes: NB¥100 to each day's winner once all its box scores are in, and NB¥1,000 to the season's winner. Tied winners each get the full prize.
       </p>`;
-    root.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; render(root, ctx); });
+    root.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { view = b.dataset.view; viewToUrl(); render(root, ctx); });
     $('#pk-prev').onclick = () => stepDay(-1);
     $('#pk-next').onclick = () => stepDay(1);
     if (view === 'standings') return loadStandings();
@@ -173,9 +179,18 @@
     setDate(later || shiftDate(date, n));
   }
 
+  // Replaced, not pushed, like a filter: switching views shouldn't take
+  // three Backs to leave the page.
+  function viewToUrl() {
+    const q = new URLSearchParams(location.search);
+    if (view === 'day') q.delete('view'); else q.set('view', view);
+    history.replaceState(null, '', location.pathname + (q.toString() ? `?${q}` : '') + location.hash);
+  }
+
   // Pushed, so Back steps back through the days you looked at.
   function dateToUrl(d) {
     const q = new URLSearchParams(location.search);
+    if (view === 'day') q.delete('view');
     if (d === nbnToday()) q.delete('date'); else q.set('date', d);
     const url = location.pathname + (q.toString() ? `?${q}` : '') + location.hash;
     if (url !== location.pathname + location.search + location.hash) history.pushState(null, '', url);
@@ -499,5 +514,5 @@
 
   // Back/forward: the page re-renders the tab, and the day comes from ?date=
   // (none means today, or the next game day).
-  window.Pickem = { render, today, showDate: d => { date = d || null; view = 'day'; } };
+  window.Pickem = { render, today, showDate: d => { date = d || null; view = viewFromUrl(); } };
 })();
