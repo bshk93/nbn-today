@@ -1,6 +1,7 @@
 # Front Office Ledger — franchise finances spec
 
-**Status:** v1 built 2026-10-24. Model: `nbn-api/stats_build/finances.py`
+**Status:** v1 built 2026-10-24; v2 (tax brackets, tax share, concessions,
+unique jersey patches) 2026-10-26. Model: `nbn-api/stats_build/finances.py`
 (pinned by `nbn-api/tests/test_finances.py`); page: `finances/index.html`.
 This file is the design record; where it and the code disagree, the code's
 constants are current.
@@ -115,12 +116,27 @@ small.
 
 One-time ¥100M in the title season.
 
+### 6. Concessions (v2)
+
+¥40 a head on every crowd: the regular-season attendance (projected to 41
+home games for a season in progress, like the gate) plus 19,000 at every
+playoff home game. Attendance exists for every season, so this one does feed
+valuation. It makes a full arena worth more than its tickets.
+
+### 7. Tax share (v2)
+
+The NBA pays its tax out to the teams that didn't pay any, and so does this:
+the season's whole tax bill, split evenly among every team with no bill.
+Only for a season where all 30 teams have payroll on record, so it is
+payroll-era only and, like payroll, counts toward profit and never valuation.
+Shown as "Tax check from the big spenders".
+
 ## Expenses (26-27 on)
 
 | Line | Source | Label |
 |---|---|---|
 | Payroll | mean of `payroll` over the season's in-season days in `cap-history.jsonl` | "Payroll" |
-| "Luxury tax" | a fake bill off `apron_position`: none / over the tax / first apron / second apron, rising steeply | "Luxury tax (allegedly)" |
+| "Luxury tax" | NBA-style brackets over the first apron (NBN has no separate tax line): 1.5×, 1.75×, 2.5×, 3.25×, then +0.5× a bracket. A bracket is 3.5% of the season's cap, so it grows with it. Before v2 it was a flat 1.5× over each apron | "Luxury tax (allegedly)" |
 | Dead money | the team's deadcap for that season | "Paid to not employ him" |
 | Arena ops | ¥0.8M per home game | "Hot dogs, mostly" |
 
@@ -216,10 +232,18 @@ Pinned as a test once built:
   pit (KVL, ATL), because the title leaves the revenue window on their watch.
   Shown on `/finances` as Best stewards / Money pits.
 - **Jersey patches** (v1.1): `JERSEY_PATCH`, a seeded sponsor per team-season
-  from `SPONSORS`, renewed 60% of the time.
+  from `SPONSORS`, renewed 60% of the time. Since v2 no sponsor is on two
+  teams in one season, and a team that doesn't renew signs someone new.
 - **Team page**: a Front Office section on the Franchise tab (value and rank,
   crowds, profit, jersey patch, link to `/finances`), at the end of
   `teams/team.js`.
+- **Arenas** (v2): every game's `ARENA` is the name in force that day. The
+  default is the team's real arena, as the schedule names most of its home
+  games; a neutral-site game keeps its own. Members can buy a name with NB¥
+  (`nbn-api/routers/arenas.py`, the Arena naming rights table on
+  `/finances`), which takes over from the UTC day it is bought. The one place
+  this ledger touches real NB¥, and it is still cosmetic: no revenue line
+  reads it.
 - **Not built yet**: headlines, a recap Business section.
 
 ## Fair value (shadow DCF, 2026-10-24)

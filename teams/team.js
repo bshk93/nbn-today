@@ -9054,8 +9054,17 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         last ? item(`${done} crowds`, `<span class="ui-statline"><b>${(+last.AVG_ATTENDANCE).toLocaleString()}</b><small>a night</small></span>`, `${last.SELLOUTS} sellouts`) : '',
         profit ? item(`${profit.SEASON} profit`, `<span class="ui-statline"><b>${signed(+profit.PROFIT)}</b></span>`, profit.IN_PROGRESS === 'TRUE' ? 'projected' : '') : '',
         now.JERSEY_PATCH && now.JERSEY_PATCH !== 'NA' ? item('Jersey patch', `<span class="fo-patch">${esc(now.JERSEY_PATCH)}</span>`) : '',
+        '<div class="fo-item" id="fo-arena" hidden></div>',
       ].join('');
       document.getElementById('frontoffice-section').style.display = '';
+      // Arena naming rights: bought with NB¥ by any member (GET /api/arenas/{team}).
+      fetch(`/api/arenas/${abbr}`).then(r => r.ok ? r.json() : Promise.reject()).then(a => {
+        const el = document.getElementById('fo-arena');
+        if (!el || !a.name) return;
+        el.innerHTML = `<span class="fo-label">Arena</span><a class="fo-patch" href="/finances/?team=${abbr}#arenas">${esc(a.name)}</a>`
+          + `<span class="fo-sub">${a.by ? `named by ${esc(a.by)} · ` : ''}NB¥${a.to_beat.toLocaleString()} to rename</span>`;
+        el.hidden = false;
+      }).catch(() => {});
     })
     .catch(() => {});
 })();
