@@ -660,11 +660,12 @@ function _sidebarGroup(label, key, rows, active, open, icon) {
   hdr.className = 'sb-group-hdr';
   hdr.setAttribute('aria-expanded', group.classList.contains('folded') ? 'false' : 'true');
   hdr.title = label;
-  hdr.innerHTML = `<span class="sb-icon">${_navIcon(icon)}</span><span class="sb-group-label sb-label"></span>`
+  const holdsActive = rows.some(p => p.href === active);
+  hdr.innerHTML = `<span class="sb-icon">${_navIcon(icon, !holdsActive)}</span><span class="sb-group-label sb-label"></span>`
     + `<span class="sb-group-live" hidden title="Live now"></span>`
     + `<span class="sb-group-badge" hidden></span><span class="sb-group-chev">${_ICON_CHEVRON}</span>`;
   hdr.querySelector('.sb-group-label').textContent = label;
-  if (rows.some(p => p.href === active)) group.classList.add('holds-active');
+  if (holdsActive) group.classList.add('holds-active');
   hdr.addEventListener('click', () => {
     // In the rail the rows are hidden, so a header opens the sidebar on its
     // section rather than folding something you can't see.
@@ -979,7 +980,7 @@ function _buildTeamsEntry() {
   btn.title = 'Teams';
   btn.setAttribute('aria-expanded', 'false');
   btn.setAttribute('aria-controls', 'sb-teams-panel');
-  btn.innerHTML = `<span class="sb-icon">${_navIcon('basketball')}</span><span class="sb-group-label sb-label">Teams</span>`
+  btn.innerHTML = `<span class="sb-icon">${_navIcon('basketball', !onTeams)}</span><span class="sb-group-label sb-label">Teams</span>`
     + `<span class="sb-group-chev sb-teams-chev">${_ICON_CHEVRON}</span>`;
 
   const panel = document.createElement('div');
@@ -1065,8 +1066,9 @@ function _buildInboxEntry() {
   a.href = '/inbox/';
   a.dataset.href = '/inbox/';
   a.title = 'Inbox';
-  if (/^\/inbox(\/|$)/.test(location.pathname)) a.setAttribute('aria-current', 'page');
-  a.innerHTML = `<span class="sb-icon">${_navIcon('inbox')}</span><span class="sb-group-label sb-label">Inbox</span>`;
+  const here = /^\/inbox(\/|$)/.test(location.pathname);
+  if (here) a.setAttribute('aria-current', 'page');
+  a.innerHTML = `<span class="sb-icon">${_navIcon('inbox', !here)}</span><span class="sb-group-label sb-label">Inbox</span>`;
   return a;
 }
 
@@ -1494,8 +1496,12 @@ const ROLE_PAGES = _NAV_ITEMS.filter(p => p.roles && !p.noSearch);
 // One icon from the nav set. Two colours, both from the theme (`.ni` in
 // css/sidebar.css), so a team theme tints the set in its own accent. The sprite
 // is one file, fetched once and cached however many icons a page draws.
-function _navIcon(id) {
-  return `<svg class="ni" aria-hidden="true"><use href="/icons/nav-icons.svg#${id}"></use></svg>`;
+// `outline` draws the sidebar's outline version (OUTLINES in the script): a
+// header is outlined, and solid only while you are in its section.
+function _navIcon(id, outline = false) {
+  return outline
+    ? `<svg class="ni ni-o" aria-hidden="true"><use href="/icons/nav-icons.svg#${id}-o"></use></svg>`
+    : `<svg class="ni" aria-hidden="true"><use href="/icons/nav-icons.svg#${id}"></use></svg>`;
 }
 
 function _qualifies(page, roles) {

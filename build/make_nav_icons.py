@@ -379,6 +379,61 @@ ICONS = {
     ],
 }
 
+# The sidebar's outline set, written as `<symbol id="{name}-o">`. A section
+# header (and Teams, Inbox, Pinned) draws its icon in outline, and switches to
+# the filled icon above when you are in that section, so the section you are
+# in is the one solid icon in the sidebar. Only those icons need an outline;
+# search results and the account menu always draw the filled set. Drawn by
+# hand, not traced from the filled shapes (a trace doubles every line where two
+# shapes overlap): one colour, 'as' strokes at 1.6 and 'a' fills for dots.
+OUTLINES = {
+    'calendar': [
+        ('as', '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 2.75v4M16 2.75v4M3.5 9.75h17"/>', 1.6),
+        ('a', '<circle cx="8" cy="13.5" r="1"/><circle cx="12" cy="13.5" r="1"/><circle cx="16" cy="13.5" r="1"/>'
+              '<circle cx="8" cy="17" r="1"/><circle cx="12" cy="17" r="1"/>'),
+    ],
+    'swap': [('as', '<path d="M3 7.5h16M15 3.5l4 4-4 4M21 16.5H5M9 12.5l-4 4 4 4"/>', 1.6)],
+    'trophy': [
+        ('as', '<path d="M6.5 3.5h11V8a5.5 5.5 0 0 1-11 0z"/><path d="M12 13.5v4.5"/>'
+               '<rect x="7.5" y="18" width="9" height="3" rx="1"/>'
+               '<path d="M6.5 5.5H4v1A3.5 3.5 0 0 0 7 10M17.5 5.5H20v1A3.5 3.5 0 0 1 17 10"/>', 1.6),
+    ],
+    'bar-chart': [
+        ('as', '<path d="M3 21h18"/><rect x="4.5" y="12" width="3.5" height="6.5" rx="1"/>'
+               '<rect x="10.25" y="4.5" width="3.5" height="14" rx="1"/><rect x="16" y="8.5" width="3.5" height="10" rx="1"/>', 1.6),
+    ],
+    'yen': [('as', '<path d="M5.5 3.5L12 12.5l6.5-9M12 12.5V21M7.5 13.5h9M7.5 17h9"/>', 1.6)],
+    'hoop': [
+        ('as', '<rect x="4" y="2.5" width="16" height="10" rx="1.5"/><rect x="9" y="5.5" width="6" height="4" rx=".5"/>'
+               '<path d="M6 13.5h12"/>', 1.6),
+        ('as', '<path d="M8 13.5l1.6 7M16 13.5l-1.6 7M12 13.5v7M9 17h6"/>', 1.2),
+    ],
+    'tv': [
+        ('as', '<path d="M8 2.5l4 3.5 4-3.5"/><rect x="2.5" y="6" width="19" height="14" rx="2"/>'
+               '<rect x="5" y="8.75" width="10" height="8.5" rx="1"/>', 1.6),
+        ('a', '<circle cx="18.25" cy="10.5" r="1"/><circle cx="18.25" cy="14" r="1"/>'),
+    ],
+    'columns': [
+        ('as', '<path d="M12 2.5l9.5 4.75h-19z"/><path d="M2.5 20.5h19M5.5 10v7.5M12 10v7.5M18.5 10v7.5"/>', 1.6),
+    ],
+    'people': [
+        ('as', '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0"/>'
+               '<circle cx="16.75" cy="8.5" r="2.75"/><path d="M17.5 14a5 5 0 0 1 4.5 5"/>', 1.6),
+    ],
+    'gavel': [
+        ('as', '<rect x="5" y="4.5" width="11" height="6.5" rx="1.2" transform="rotate(45 10.5 7.75)"/>'
+               '<path d="M13.6 12.6l6.9 6.9"/><rect x="3" y="19" width="10" height="2.5" rx="1"/>', 1.6),
+    ],
+    'basketball': [
+        ('as', '<circle cx="12" cy="12" r="9.5"/>', 1.6),
+        ('as', '<path d="M2.5 12h19M12 2.5v19M5.5 4.8c2.4 2 3.8 4.4 3.8 7.2s-1.4 5.2-3.8 7.2M18.5 4.8c-2.4 2-3.8 4.4-3.8 7.2s1.4 5.2 3.8 7.2"/>', 1.2),
+    ],
+    'inbox': [
+        ('as', '<path d="M2.5 13l3-8.5h13l3 8.5v5.5a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2z"/><path d="M2.5 13h5.5l1.5 2.5h5L16 13h5.5"/>', 1.6),
+    ],
+    'star': [('as', star(12, 12.5, 9.5, 0.45), 1.6)],
+}
+
 FILL = {'a': 'fill="currentColor"', 'b': 'style="fill:var(--ni-b,#fff)"',
         'c': 'style="fill:var(--ni-c,#8db6e6)"'}
 STROKE = {'as': 'stroke:currentColor', 'bs': 'stroke:var(--ni-b,#fff)',
@@ -398,9 +453,13 @@ def main():
     for name, layers in ICONS.items():
         body = ''.join(layer(*l) for l in layers)
         out.append(f'<symbol id="{name}" viewBox="0 0 24 24">{body}</symbol>')
+    for name, layers in OUTLINES.items():
+        assert name in ICONS, f'outline for {name} has no filled icon'
+        body = ''.join(layer(*l) for l in layers)
+        out.append(f'<symbol id="{name}-o" viewBox="0 0 24 24">{body}</symbol>')
     out.append('</svg>')
     OUT.write_text('\n'.join(out) + '\n')
-    print(f'wrote {OUT.relative_to(ROOT)} — {len(ICONS)} icons')
+    print(f'wrote {OUT.relative_to(ROOT)} — {len(ICONS)} icons, {len(OUTLINES)} outlines')
 
 
 if __name__ == '__main__':

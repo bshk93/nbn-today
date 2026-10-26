@@ -44,6 +44,10 @@
   --ni-c: color-mix(in srgb, var(--accent) 55%, white);
   filter: drop-shadow(0 1px 1.2px var(--shadow-color-strong));
 }
+/* A sidebar header's outline icon (nav.js _navIcon): thin strokes in the
+   accent, no shadow, which would only blur them. The section you are in draws
+   the filled icon instead, and that is the whole "you are here" in the rail. */
+.ni-o { filter: none; }
 .search-result-icon .ni { width: 1.2rem; height: 1.2rem; }
 
 .sb-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.9rem 0.75rem 0.5rem; }
@@ -290,8 +294,8 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   html[data-sidebar="rail"] .sb-group-hdr { position: relative; justify-content: center; padding-inline: 0; }
   html[data-sidebar="rail"] .sb-group-chev { display: none; }
   html[data-sidebar="rail"] .sb-group-hdr .ni { width: 1.35rem; height: 1.35rem; }
-  html[data-sidebar="rail"] .sb-group.holds-active > .sb-group-hdr,
-  html[data-sidebar="rail"] .sb-teams-btn.holds-active { background: var(--bg-hover); box-shadow: inset 2px 0 0 var(--accent); }
+  /* The filled icon is what marks your section in the rail, Inbox included. */
+  html[data-sidebar="rail"] a.sb-top-link[aria-current="page"] { background: none; box-shadow: none; }
   html[data-sidebar="rail"] .sb-top-link .sb-badge { position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
   html[data-sidebar="rail"] .sb-group .sb-group-live:not([hidden]) { display: block; position: absolute; top: 0.2rem; left: 0.45rem; }
   html[data-sidebar="rail"] .sb-group .sb-group-badge { display: block; position: absolute; top: 0; right: 0.3rem; min-width: 0; padding: 0 0.25rem; font-size: var(--text-xs); }
