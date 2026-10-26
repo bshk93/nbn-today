@@ -58,6 +58,34 @@ When there are several screenshots they are the same list scrolled: take each
 player once. If two screenshots overlap on a player, the rows must agree — if
 not, ask.
 
+#### 3a′. A "New Injury" popup instead of the list
+
+Sometimes the upload is 2K's **New Injury** popup rather than the Injury
+History screen: a "New Injury" title, `INJURY NOTICE - The <Team> have injury
+issues to manage:`, one line per player — `Dylan Harper (PG | 85) - Twisted
+Right Ankle (1-2 weeks). It is a new injury.` — and then a list of rotation
+buttons. Streamers are asked to upload the full list instead, but parse a popup
+when that's all there is:
+
+- **Status comes from the buttons.** If **LEAVE ROTATION AS-IS** is one of
+  the options, the player can still play: `Hurt`. If it isn't (the buttons
+  start at ADJUST ROTATION MANUALLY), he can't: `Out`. Which button is
+  highlighted means nothing. If the buttons are cut off, ask; don't guess.
+- `player` is the full name shown. `team_shown` is the team named in the
+  notice, as its abbreviation. `injury` and `duration` exactly as shown.
+- `ovr` and `ovr_delta` are `null`. The number after the position is not the
+  injured rating with its drop that the list shows.
+- **A popup is not the whole list**, so don't commit it on its own: everyone
+  missing from a report is healed. Take the rows from
+  `GET /api/injuries` (`players`: each one's `slug`, `team` as `team_shown`,
+  `status`, `injury`, `duration`, `ovr`, `ovr_delta`) and add the popup's
+  players. Where a popup player is already on the list, the popup's row
+  replaces his. That way the commit only adds or updates; nobody is healed.
+  Skip 3c for a report made only of popups, and when you report back, say that
+  heals can't be read from a popup and the next full list will catch them.
+- If a report has both popups and Injury History screenshots, the list is the
+  report and the popups add nothing. If the two disagree on a player, ask.
+
 #### 3b. Transcribe to a file
 
 Write `<scratchpad>/nbn-injuries-<id>.json` with the Write tool (this session's
