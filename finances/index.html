@@ -55,7 +55,7 @@
     .fo-table tbody tr[aria-selected="true"] td { background: var(--accent-panel-bg); }
     .fo-ledger th:first-child, .fo-ledger td:first-child { text-align: left; white-space: nowrap; }
     .fo-ledger tr.fo-total td { font-weight: 600; color: var(--text-primary); border-top: 1px solid var(--border); }
-    .fo-ledger td.fo-fire { color: var(--text-muted); font-style: italic; text-align: center; }
+    .fo-ledger td.fo-norecords { color: var(--text-muted); font-style: italic; text-align: center; }
     .fo-ledger .fo-sub td:first-child { padding-left: var(--space-5); color: var(--text-muted); }
     .fo-ledger tr.fo-head td { font-family: var(--font-display); text-transform: uppercase; color: var(--text-muted); padding-top: var(--space-3); }
     .fo-patch { font-size: var(--text-xs); color: var(--text-secondary); white-space: normal; display: inline-block; max-width: 9rem; text-align: right; }
@@ -81,7 +81,7 @@
       </div>
     </header>
 
-    <div id="status">Opening the books…</div>
+    <div id="status">Loading…</div>
     <div id="content" hidden>
       <h2 class="ui-section-title">Franchise value</h2>
       <div class="fo-legend" id="legend"></div>
@@ -92,8 +92,9 @@
 
       <h2 class="ui-section-title" id="ledger-title">Team ledger</h2>
       <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first fo-ledger" id="ledger"></table></div>
-      <p class="fo-note">Franchise figures, in NB¥ for flavor. Not spendable, not a balance, and not the
-        <a href="/invest">Wall Street</a> share price. Every number is made up from real results.</p>
+      <p class="fo-note">These numbers are for fun. They are not NB¥ you can spend, and they are not the
+        <a href="/invest">Wall Street</a> share price. They are worked out from real game results.
+        Dead money is pay still owed to players the team released. It is part of payroll, not on top of it.</p>
 
       <h2 class="ui-section-title" id="arenas">Arena naming rights</h2>
       <div class="ui-table-wrap"><table class="ui-table" id="arena-table"></table></div>
@@ -112,13 +113,13 @@
         <h2 class="ui-section-title">Owners</h2>
         <div class="ui-header-actions fo-controls">
           <div class="ui-segmented" role="group" id="f-owners">
-            <button data-v="best" aria-pressed="true">Best stewards</button>
-            <button data-v="worst" aria-pressed="false">Money pits</button>
+            <button data-v="best" aria-pressed="true">Best owners</button>
+            <button data-v="worst" aria-pressed="false">Worst owners</button>
           </div>
         </div>
       </div>
       <div class="ui-table-wrap"><table class="ui-table" id="owners"></table></div>
-      <p class="fo-note">Each season goes to whoever owned the team on January 1. "Beat the league" is how much more (or less) the franchise gained than the league average did over the same seasons, so it adds up to zero across every owner and a long run isn't rewarded just for lasting. Inheriting a champion is a tough act to follow.</p>
+      <p class="fo-note">Each season counts for whoever owned the team on January 1. "Beat the league by" is how much more (or less) the franchise's value grew than the league average grew over the same seasons. Owning a team for a long time doesn't score points on its own.</p>
     </div>
   </div>
 
@@ -193,9 +194,9 @@
       const a = avg[r.SEASON];
       const cand = [
         ['Championship', (r.TITLE_BONUS || 0) - a.TITLE_BONUS, () => 'won the title'],
-        ['Playoff gate', (r.PLAYOFF_GATE || 0) - a.PLAYOFF_GATE, () => `${r.PLAYOFF_HOME_GAMES} home playoff games`],
+        ['Playoff ticket sales', (r.PLAYOFF_GATE || 0) - a.PLAYOFF_GATE, () => `${r.PLAYOFF_HOME_GAMES} home playoff games`],
         ['Ticket sales', (r.GATE || 0) - a.GATE, () => r.HOME_GAMES ? `${r.AVG_ATTENDANCE.toLocaleString()} a night` : 'no home games yet'],
-        ['Merch', (r.MERCH || 0) - a.MERCH, () => r.STARS ? `${r.STARS} All-NBN` : 'nobody on an All-NBN team'],
+        ['Merchandise', (r.MERCH || 0) - a.MERCH, () => r.STARS ? `${r.STARS} All-NBN` : 'nobody on an All-NBN team'],
       ];
       const best = cand.reduce((m, c) => Math.abs(c[1]) > Math.abs(m[1]) ? c : m);
       return `${best[0]}: ${best[2]()} (${best[1] >= 0 ? '+' : ''}${money(best[1])} vs league)`;
@@ -292,7 +293,7 @@
         cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.setAttribute('visibility', 'visible');
         ring.setAttribute('cx', x); ring.setAttribute('cy', Y(v)); ring.setAttribute('visibility', 'visible');
         if (i === 0) {
-          tip.innerHTML = `<div class="fo-tip-head">20-21 opening</div><div>Every franchise opens at <b>${money(START_VALUE)}</b>. Equal markets: from here on, only results move a number.</div>`;
+          tip.innerHTML = `<div class="fo-tip-head">20-21 opening</div><div>Every franchise starts at <b>${money(START_VALUE)}</b>. Market size doesn't count, so only results move the value.</div>`;
         } else {
           const s = seasons[i - 1], r = row(s, sel);
           const rank = rows.filter(o => o.SEASON === s).sort((a, b) => b.VALUE - a.VALUE).findIndex(o => o.TEAM === sel) + 1;
@@ -351,10 +352,10 @@
       const rs = seasons.map(s => row(s, t));
       const cell = (f, cls) => rs.map(r => `<td class="num ${cls || ''}">${f(r)}</td>`).join('');
       const line = (label, f, cls) => `<tr class="${cls || ''}"><td>${label}</td>${cell(f)}</tr>`;
-      const fire = (label, f, cls) => {
-        const known = rs.filter(r => r.PAYROLL != null).length;
-        const lost = rs.length - known;
-        const cells = (lost ? `<td class="fo-fire" colspan="${lost}">${label === 'Payroll' ? 'Records lost in the 2025 Front Office Fire' : ''}</td>` : '')
+      const payrollEra = (label, f, cls) => {
+        const known = rs.filter(r => r.PAYROLL != null);
+        const lost = rs.length - known.length;
+        const cells = (lost ? `<td class="fo-norecords" colspan="${lost}">${label === 'Payroll' ? `No payroll records before ${esc(known[0]?.SEASON || 'now')}` : ''}</td>` : '')
           + rs.filter(r => r.PAYROLL != null).map(r => `<td class="num">${f(r)}</td>`).join('');
         return `<tr class="${cls || ''}"><td>${label}</td>${cells}</tr>`;
       };
@@ -368,20 +369,20 @@
           ${line('Sellouts', r => r.HOME_GAMES ? r.SELLOUTS : '—')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Revenue</td></tr>
           ${line('Ticket sales', r => money(r.GATE))}
-          ${line('Playoff gate', r => r.PLAYOFF_GATE ? money(r.PLAYOFF_GATE) : '—')}
-          ${line('Nachos, parking, foam fingers', r => money(r.CONCESSIONS))}
-          ${line('Jersey sales', r => money(r.MERCH))}
+          ${line('Playoff ticket sales', r => r.PLAYOFF_GATE ? money(r.PLAYOFF_GATE) : '—')}
+          ${line('Concessions and parking', r => money(r.CONCESSIONS))}
+          ${line('Merchandise', r => money(r.MERCH))}
           ${line('TV money', r => money(r.MEDIA))}
-          ${line('NBNTV bonus', r => r.NBNTV ? money(r.NBNTV, 1) : '—')}
+          ${line('NBNTV stream bonus', r => r.NBNTV ? money(r.NBNTV, 1) : '—')}
           ${line('Championship bonus', r => r.TITLE_BONUS ? money(r.TITLE_BONUS) : '—')}
-          ${fire('Tax check from the big spenders', r => r.TAX_SHARE ? money(r.TAX_SHARE, 1) : '—')}
+          ${payrollEra('Share of other teams\' luxury tax', r => r.TAX_SHARE ? money(r.TAX_SHARE, 1) : '—')}
           ${line('Total revenue', r => money(r.REVENUE), 'fo-total')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Expenses</td></tr>
-          ${fire('Payroll', r => money(r.PAYROLL))}
-          ${fire('Paid to not employ him', r => r.DEAD_MONEY ? money(r.DEAD_MONEY, 1) : '—', 'fo-sub')}
-          ${fire('Luxury tax (allegedly)', r => r.LUXURY_TAX ? money(r.LUXURY_TAX) : '—')}
-          ${fire('Hot dogs, mostly', r => money(r.ARENA_OPS))}
-          ${fire('Profit', r => signed(r.PROFIT), 'fo-total')}
+          ${payrollEra('Payroll', r => money(r.PAYROLL))}
+          ${payrollEra('Dead money (released players)', r => r.DEAD_MONEY ? money(r.DEAD_MONEY, 1) : '—', 'fo-sub')}
+          ${payrollEra('Luxury tax', r => r.LUXURY_TAX ? money(r.LUXURY_TAX) : '—')}
+          ${payrollEra('Arena costs', r => money(r.ARENA_OPS))}
+          ${payrollEra('Profit', r => signed(r.PROFIT), 'fo-total')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Franchise</td></tr>
           ${line('Value', r => money(r.VALUE), 'fo-total')}
           ${line('Change', r => signed(r.VALUE_CHANGE))}
@@ -401,13 +402,13 @@
             <td class="num strong">${money(r.VALUE)}</td>
             <td class="num">${signed(r.VALUE_CHANGE)}</td>
             <td class="num">${money(r.REVENUE)}</td>
-            <td class="num">${r.PROFIT == null ? '<span class="muted">Lost in the fire</span>' : signed(r.PROFIT)}</td>
+            <td class="num">${r.PROFIT == null ? '<span class="muted">No records</span>' : signed(r.PROFIT)}</td>
             <td>${esc(r.IN_PROGRESS ? 'In progress' : (FINISH[r.PLAYOFF_RESULT] || ''))}</td>
           </tr>`).join('')}</tbody>`;
       document.querySelectorAll('#board tbody tr').forEach(tr =>
         tr.addEventListener('click', () => pickTeam(tr.dataset.team)));
       document.getElementById('model-note').textContent =
-        `Model ${model}. Equal markets: every franchise opened 20-21 at ${money(START_VALUE)}, and value is a league-wide multiple of three seasons' revenue plus a bump for recent titles. Payroll only counts toward profit, never value.`;
+        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)}, and market size doesn't count. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll affects profit only, not value.`;
     }
 
     // ── Owners: best stewards and money pits ───────────────────────────────
@@ -569,7 +570,7 @@
           if (now !== w) { w = now; drawChart(); }
         }).observe(document.getElementById('chart'));
       })
-      .catch(() => { document.getElementById('status').textContent = 'The books are closed right now. Try again after the next build.'; });
+      .catch(() => { document.getElementById('status').textContent = 'The finance data didn\'t load. It should be back after the next stats build.'; });
   })();
   </script>
   <script src="/nav.js"></script>

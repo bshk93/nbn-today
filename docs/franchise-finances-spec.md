@@ -129,16 +129,16 @@ The NBA pays its tax out to the teams that didn't pay any, and so does this:
 the season's whole tax bill, split evenly among every team with no bill.
 Only for a season where all 30 teams have payroll on record, so it is
 payroll-era only and, like payroll, counts toward profit and never valuation.
-Shown as "Tax check from the big spenders".
+Shown as "Share of other teams' luxury tax".
 
 ## Expenses (26-27 on)
 
 | Line | Source | Label |
 |---|---|---|
 | Payroll | mean of `payroll` over the season's in-season days in `cap-history.jsonl` | "Payroll" |
-| "Luxury tax" | NBA-style brackets over the first apron (NBN has no separate tax line): 1.5×, 1.75×, 2.5×, 3.25×, then +0.5× a bracket. A bracket is 3.5% of the season's cap, so it grows with it. Before v2 it was a flat 1.5× over each apron | "Luxury tax (allegedly)" |
-| Dead money | the team's deadcap for that season | "Paid to not employ him" |
-| Arena ops | ¥0.8M per home game | "Hot dogs, mostly" |
+| "Luxury tax" | NBA-style brackets over the first apron (NBN has no separate tax line): 1.5×, 1.75×, 2.5×, 3.25×, then +0.5× a bracket. A bracket is 3.5% of the season's cap, so it grows with it. Before v2 it was a flat 1.5× over each apron | "Luxury tax" |
+| Dead money | the team's deadcap for that season | "Dead money (released players)" |
+| Arena ops | ¥0.8M per home game | "Arena costs" |
 
 **Payroll is money, not cap.** `salary` and `salary_ex_holds` are cap
 figures and carry placeholders nobody is paid: UFA/RFA holds, draft-rights
@@ -150,8 +150,11 @@ empty_roster_charge`, which matched `payroll` for all 30 teams on the day it
 was added. Never read `salary`. Dead money is part of payroll and shown as a
 breakdown line, not a second expense.
 
-Seasons before payroll data show expenses as **"Records lost in the 2025 Front
-Office Fire."** Profit is blank for those seasons, not zero.
+Seasons before payroll data show expenses as **"No payroll records before
+{first season with payroll}"**. Profit is blank for those seasons, not zero.
+
+The ledger labels are plain on purpose (2026-10-26). An earlier round of joke
+labels ("Paid to not employ him", "Hot dogs, mostly") read as broken English.
 
 ## Valuation
 
