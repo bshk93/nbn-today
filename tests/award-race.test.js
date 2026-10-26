@@ -1,5 +1,5 @@
 // Unit tests for AwardRace.ladder in /award-race.js — the formula ladders on
-// /awards/race.
+// /history/awards/race.
 //
 // Pure: no browser, no network. Runs from the pre-commit hook.
 //

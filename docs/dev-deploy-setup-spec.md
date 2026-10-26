@@ -25,7 +25,7 @@ simultaneously the working copy, the docroot, and part of the data write
 path — which is why a dev/live split can't be done cleanly without
 touching storage first.
 
-(The 30 `teams/atl -> ATL` symlinks are lowercase-URL aliases, not data.
+(The 30 `stats/teams/atl -> ATL` symlinks are lowercase-URL aliases, not data.
 They stay.)
 
 ## Goal
@@ -106,7 +106,7 @@ So:
 /var/lib/nothing-but-stats/
   allstats-*.csv                                — STAY PUT (`raw/` dropped)
   derived/    R build output, mirroring URL paths:  — MOVED (1 line in job.R)
-                data/  players/  standings/  nbntv-classics/
+                data/  stats/players/  season/standings/  media/nbntv-classics/
   public/     symlink view for nginx (below)        — new, generated, untracked
   *.json      65 state files                        — STAY PUT, tracked in git
   *-roster.csv, *-picks.csv, *-deadcap.csv          — STAY PUT, tracked in git
@@ -124,7 +124,7 @@ purposes at zero risk.
 
 `avatars/` (user-uploaded, not regenerable), `rules/`, and the
 `discord-*-raw/` scrape corpora are state and get tracked. `pending-
-boxscores/` and `build-status.json` are transient and don't.
+stats/boxscores/` and `build-status.json` are transient and don't.
 
 **Do not use compatibility symlinks** if a later pass does move the state
 files. `storage.py`'s atomic write is `os.replace(tmp, path)`, which
@@ -570,7 +570,7 @@ This is part of the split — the first dev commit is where it bites.
 `python3 -m http.server` can't serve the dev site usefully: it doesn't
 proxy `/api`, so relative fetches 404, and the session cookie is
 `Domain=.nbn.today; Secure; HttpOnly`, so a `localhost` origin can never
-carry it — `/pdc`, `/free-agency`, team edit mode and every authenticated
+carry it — `/pdc`, `/fo/free-agency`, team edit mode and every authenticated
 page are untestable.
 
 - `dev.nbn.today`, docroot `/home/skim/projects/nbn-today-dev`.
@@ -807,7 +807,7 @@ deleted."
     minted on `nbn.today` was sent to `dev.nbn.today` and
     `GET /api/auth/me` returned the member with their roles. That is the whole
     reason this is a subdomain rather than a localhost port — `/pdc`,
-    `/free-agency` and team edit mode are now testable on dev.
+    `/fo/free-agency` and team edit mode are now testable on dev.
 
     **One trap, fixed before it could bite:** `auth_basic` covers the whole
     host, which would have 401'd the ACME HTTP-01 challenge and failed **every

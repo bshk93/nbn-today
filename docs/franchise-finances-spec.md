@@ -2,7 +2,7 @@
 
 **Status:** v1 built 2026-10-24; v2 (tax brackets, tax share, concessions,
 unique jersey patches) 2026-10-26. Model: `nbn-api/stats_build/finances.py`
-(pinned by `nbn-api/tests/test_finances.py`); page: `finances/index.html`.
+(pinned by `nbn-api/tests/test_finances.py`); page: `fo/finances/index.html`.
 This file is the design record; where it and the code disagree, the code's
 constants are current.
 
@@ -177,7 +177,7 @@ Office Fire."** Profit is blank for those seasons, not zero.
 
 ## Outputs
 
-1. **`/finances` league page**
+1. **`/fo/finances` league page**
    - **Valuation over time**: one line per franchise, 20-21 to now, with a
      league-average line. Hover or pick a team to highlight it; title seasons
      carry a 🏆 marker. This is the main sanity-check tool.
@@ -217,7 +217,7 @@ Pinned as a test once built:
   per team per season) and `data/franchise-attendance.csv` (one row per game),
   under `derived/`. `python3 -m stats_build.finances --dry-run` prints the
   valuations and spread.
-- **Page**: `finances/index.html`, in the Front Office nav section.
+- **Page**: `fo/finances/index.html`, in the Front Office nav section.
 - **Box scores**: `GET /api/boxscores` attaches each game's `attendance`
   (count, sellout, arena) from the attendance CSV, cached on its mtime
   (`_with_attendance` in `routers/boxscores.py`); the page shows it under the
@@ -230,18 +230,18 @@ Pinned as a test once built:
   count twice. `VS_LEAGUE` is the change beyond the league average over the
   same seasons, zero-sum across owners. Inheriting a champion reads as a money
   pit (KVL, ATL), because the title leaves the revenue window on their watch.
-  Shown on `/finances` as Best stewards / Money pits.
+  Shown on `/fo/finances` as Best stewards / Money pits.
 - **Jersey patches** (v1.1): `JERSEY_PATCH`, a seeded sponsor per team-season
   from `SPONSORS`, renewed 60% of the time. Since v2 no sponsor is on two
   teams in one season, and a team that doesn't renew signs someone new.
 - **Team page**: a Front Office section on the Franchise tab (value and rank,
-  crowds, profit, jersey patch, link to `/finances`), at the end of
-  `teams/team.js`.
+  crowds, profit, jersey patch, link to `/fo/finances`), at the end of
+  `stats/teams/team.js`.
 - **Arenas** (v2): every game's `ARENA` is the name in force that day. The
   default is the team's real arena, as the schedule names most of its home
   games; a neutral-site game keeps its own. Members can buy a name with NB¥
   (`nbn-api/routers/arenas.py`, the Arena naming rights table on
-  `/finances`), which takes over from the UTC day it is bought. The one place
+  `/fo/finances`), which takes over from the UTC day it is bought. The one place
   this ledger touches real NB¥, and it is still cosmetic: no revenue line
   reads it.
 - **Not built yet**: headlines, a recap Business section.
@@ -249,7 +249,7 @@ Pinned as a test once built:
 ## Fair value (shadow DCF, 2026-10-24)
 
 A share price per franchise built on this ledger, at the hidden
-`/invest/fair/` ("Wall Street 2"). The model is the docstring of
+`/nbyen/invest/fair/` ("Wall Street 2"). The model is the docstring of
 `nbn-api/routers/fair_value.py`, pinned by `tests/test_fair_value.py`. It
 runs hourly after the playoff odds (`snapshot_playoff_odds.py`) and keeps one
 row per team per day in `fair-value-history.jsonl`. It is not in the nav and

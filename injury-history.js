@@ -1,5 +1,5 @@
 // A player's injury history, folded out of GET /api/injuries/history's change
-// log — the Health tile on /players and the /players/injuries sub-page.
+// log — the Health tile on /stats/players and the /stats/players/injuries sub-page.
 //
 // The log is one event per change: `new` opens an injury, `changed` updates
 // it, `healed` closes it. A `healed` with no `new` before it is an injury the

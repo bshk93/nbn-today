@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-RULEBOOK = REPO / "rulebook" / "index.html"
+RULEBOOK = REPO / "about" / "rulebook" / "index.html"
 
 # The API repo sits beside this one. Overridable so a checkout elsewhere still
 # works; absent, this is a skip rather than a failure — the site must stay

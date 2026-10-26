@@ -1,4 +1,4 @@
-// A hub page: one card per page in a NAV_SECTIONS section that has a `hub`
+// A hub page: one card per page in a NAV_SECTIONS section that has a `hub` or `landing`
 // (nav.js), so the sidebar's one row and this page are drawn from the same list.
 // The page is a shell holding <div class="ui-hub"></div>; load this after nav.js.
 // Role-gated pages stay hidden until this member is known to qualify, as in
@@ -7,7 +7,7 @@
   const el = document.querySelector('.ui-hub');
   if (!el || typeof NAV_SECTIONS === 'undefined') return;
   const here = _normPath(location.pathname);
-  const sec = NAV_SECTIONS.find(s => s.hub && _normPath(s.hub) === here);
+  const sec = NAV_SECTIONS.find(s => (s.hub || s.landing) && _normPath(s.hub || s.landing) === here);
   if (!sec) return;
 
   const gated = [];

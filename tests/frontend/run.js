@@ -58,37 +58,37 @@ const SELECTOR_WAIT_MS = 10000;
 // One row per page. `min` is a floor, not an exact count — these assertions
 // should survive the league playing more games, not need editing every season.
 const PAGES = [
-  { path: '/standings/',              selector: 'table tbody tr',  min: 30, what: 'a row per team' },
-  { path: '/owners/',                 selector: 'table tbody tr',  min: 20, what: 'a row per owner' },
-  { path: '/players/',                selector: 'table tbody tr',  min: 500, what: 'the player index' },
-  { path: '/players/?p=curry-stephen', selector: 'table tbody tr', min: 5,  what: 'a profile with season rows' },
-  { path: '/players/injuries/?p=wagner-franz', selector: 'tr.stint', min: 1, what: 'a player\'s injury log' },
-  { path: '/players/ratings/?p=curry-stephen', selector: '.attr-categories-grid', min: 1, what: 'a player\'s 2K ratings' },
-  { path: '/players/contract/?p=curry-stephen', selector: '.salary-table tbody tr', min: 2, what: 'a player\'s salary by season' },
-  { path: '/players/history/?p=curry-stephen', selector: '.txn-history-table tbody tr', min: 3, what: 'a player\'s history' },
-  { path: '/teams/UTA/',              selector: 'table tbody tr',  min: 10, what: 'roster, picks and history tables' },
+  { path: '/season/standings/',              selector: 'table tbody tr',  min: 30, what: 'a row per team' },
+  { path: '/stats/owners/',                 selector: 'table tbody tr',  min: 20, what: 'a row per owner' },
+  { path: '/stats/players/',                selector: 'table tbody tr',  min: 500, what: 'the player index' },
+  { path: '/stats/players/?p=curry-stephen', selector: 'table tbody tr', min: 5,  what: 'a profile with season rows' },
+  { path: '/stats/players/injuries/?p=wagner-franz', selector: 'tr.stint', min: 1, what: 'a player\'s injury log' },
+  { path: '/stats/players/ratings/?p=curry-stephen', selector: '.attr-categories-grid', min: 1, what: 'a player\'s 2K ratings' },
+  { path: '/stats/players/contract/?p=curry-stephen', selector: '.salary-table tbody tr', min: 2, what: 'a player\'s salary by season' },
+  { path: '/stats/players/history/?p=curry-stephen', selector: '.txn-history-table tbody tr', min: 3, what: 'a player\'s history' },
+  { path: '/stats/teams/UTA/',              selector: 'table tbody tr',  min: 10, what: 'roster, picks and history tables' },
   // The Cap Health card is built from an API call and a rules module loaded
   // separately from team.js, so a page that renders its tables fine can still
   // come up with no card at all.
-  { path: '/teams/UTA/',              selector: '#cap-health-section .ch-row', min: 5, what: 'the cap health standing rows' },
-  { path: '/h2h/',                    selector: 'table tbody tr',  min: 30, what: 'the head-to-head matrix' },
-  { path: '/hof/',                    selector: 'table tbody tr',  min: 100, what: 'the HOF board' },
+  { path: '/stats/teams/UTA/',              selector: '#cap-health-section .ch-row', min: 5, what: 'the cap health standing rows' },
+  { path: '/stats/h2h/',                    selector: 'table tbody tr',  min: 30, what: 'the head-to-head matrix' },
+  { path: '/history/hof/',                    selector: 'table tbody tr',  min: 100, what: 'the HOF board' },
   { path: '/stats/highs/',            selector: 'table tbody tr',  min: 50, what: 'single-game points highs' },
   { path: '/stats/highs/?stat=TD&type=po&team=DEN', selector: 'table tbody tr', min: 1, what: 'a filtered feat board' },
   { path: '/stats/totals/',           selector: 'table tbody tr',  min: 50, what: 'career points leaders' },
   { path: '/stats/totals/?stat=AST&type=po&per=pg', selector: 'table tbody tr', min: 20, what: 'a filtered career board' },
-  { path: '/season-summary/',         selector: '.ss-season',      min: 5,  what: 'a card per season' },
-  { path: '/nbntv-classics/',         selector: '.classic-entry',  min: 10, what: 'the classics list' },
-  { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
-  { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
-  { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
+  { path: '/history/season-summary/',         selector: '.ss-season',      min: 5,  what: 'a card per season' },
+  { path: '/media/nbntv-classics/',         selector: '.classic-entry',  min: 10, what: 'the classics list' },
+  { path: '/fo/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
+  { path: '/history/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
+  { path: '/stats/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
   // The sidebar is drawn by nav.js, which team.js injects late — the second
   // row is the one that catches nav.js running before its page list exists.
-  { path: '/rulebook/',               selector: '.sidebar .sb-link', min: 30, what: 'the site sidebar' },
-  { path: '/teams/UTA/',              selector: '.sidebar .sb-teams-btn.holds-active', min: 1, what: 'the sidebar, with Teams highlighted' },
-  { path: '/boxscores/?date=2026-10-20&game=BOS-DET', selector: '.game.focus.open', min: 1, what: 'a linked game, opened' },
-  { path: '/teams/BOS/#schedule',     selector: '.sched-table tr', min: 80, what: 'the team schedule' },
-  // The game list, which lives on /calendar — /schedule is a 38-line redirect
+  { path: '/about/rulebook/',               selector: '.sidebar .sb-link', min: 30, what: 'the site sidebar' },
+  { path: '/stats/teams/UTA/',              selector: '.sidebar .sb-teams-btn.holds-active', min: 1, what: 'the sidebar, with Teams highlighted' },
+  { path: '/stats/boxscores/?date=2026-10-20&game=BOS-DET', selector: '.game.focus.open', min: 1, what: 'a linked game, opened' },
+  { path: '/stats/teams/BOS/#schedule',     selector: '.sched-table tr', min: 80, what: 'the team schedule' },
+  // The game list, which lives on /season/calendar — /schedule is a 38-line redirect
   // stub with no games in it, and this row went on asserting against the old
   // page for however long after the move. It only surfaced now because this
   // suite is run by hand and nothing had run it since.
@@ -97,11 +97,11 @@ const PAGES = [
   // (`.sched-game`): the played rows legitimately empty out in the offseason,
   // and this should outlive a season the way the old scope=all row was meant
   // to. The whole season's schedule is on file, so this stays populated.
-  { path: '/calendar/',               selector: '.sched-schd-game', min: 20, what: 'scheduled games' },
+  { path: '/season/calendar/',               selector: '.sched-schd-game', min: 20, what: 'scheduled games' },
   // A fixed, already-played game, so the row never depends on this season's
   // schedule. Checks the head-to-head, the section every game has.
   { path: '/preview/?away=ORL&home=PHX&date=2026-06-18', selector: '.pv-h2h dd', min: 3, what: 'the game preview head-to-head' },
-  { path: '/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
+  { path: '/fo/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
   { path: '/committees/',             selector: '.cmte',           min: 4,  what: 'a card per committee' },
   // Hub pages draw their cards from NAV_SECTIONS (hub.js); gated cards don't count.
   { path: '/office/',                 selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per League Office page' },
@@ -136,58 +136,58 @@ const PAGES = [
   //
   // `min` is chosen to survive the league *growing*, and where a count can
   // legitimately shrink the row says so.
-  { path: '/teams/',                  selector: '.team-link',      min: 30, what: 'the 30 team links' },
-  { path: '/champions/',              selector: 'table tbody tr',  min: 15, what: 'a row per title' },
+  { path: '/stats/teams/',                  selector: '.team-link',      min: 30, what: 'the 30 team links' },
+  { path: '/history/champions/',              selector: 'table tbody tr',  min: 15, what: 'a row per title' },
   { path: '/members/',                selector: '.member-name',    min: 40, what: 'the member directory' },
-  { path: '/roles/',                  selector: '.role-card',      min: 8,  what: 'a card per role' },
-  { path: '/memos/',                  selector: '.memo-item',      min: 1,  what: 'a card per memo' },
-  { path: '/rulebook/',               selector: '.doc-section',    min: 35, what: 'the numbered sections' },
+  { path: '/about/roles/',                  selector: '.role-card',      min: 8,  what: 'a card per role' },
+  { path: '/office/memos/',                  selector: '.memo-item',      min: 1,  what: 'a card per memo' },
+  { path: '/about/rulebook/',               selector: '.doc-section',    min: 35, what: 'the numbered sections' },
   // The 🔒 badges are generated from nbn-api's validators
   // (build/check_rulebook_badges.py). smoke_test.py already fails when the HTML
   // disagrees with the manifest; this catches the other half — the page
   // rendering with no badges at all.
-  { path: '/rulebook/',               selector: '.badge-enforced', min: 25, what: 'the system-enforced badges' },
-  { path: '/changelog/',              selector: '.entry',          min: 100, what: 'release entries' },
-  { path: '/cap-settings/',           selector: '.season-card',    min: 3,  what: 'a card per season on file' },
-  { path: '/bet/',                    selector: '.act-title', min: 3, what: "the Action view's three sections" },
-  { path: '/bet/#pickem',             selector: '.pk-bar', min: 1, what: "the Pick'em tab" },
-  { path: '/cap-settings/#rookie-scale', selector: '#years table tbody tr', min: 30, what: 'the § 7.1 scale' },
+  { path: '/about/rulebook/',               selector: '.badge-enforced', min: 25, what: 'the system-enforced badges' },
+  { path: '/about/changelog/',              selector: '.entry',          min: 100, what: 'release entries' },
+  { path: '/office/cap-settings/',           selector: '.season-card',    min: 3,  what: 'a card per season on file' },
+  { path: '/nbyen/bet/',                    selector: '.act-title', min: 3, what: "the Action view's three sections" },
+  { path: '/nbyen/bet/#pickem',             selector: '.pk-bar', min: 1, what: "the Pick'em tab" },
+  { path: '/office/cap-settings/#rookie-scale', selector: '#years table tbody tr', min: 30, what: 'the § 7.1 scale' },
   { path: '/stats/seasons/',          selector: 'table tbody tr',  min: 100, what: 'per-season player lines' },
   { path: '/stats/highs/',            selector: '.ui-leader',       min: 25, what: 'a top-5 card per category and feat' },
   { path: '/stats/totals/',           selector: '.ui-leader',       min: 15, what: 'a top-5 card per category' },
-  { path: '/donations/',              selector: 'table tbody tr',  min: 10, what: 'the donations list' },
-  { path: '/draft/guide/',            selector: '.step',           min: 8,  what: 'the walkthrough steps' },
-  { path: '/frivolities/',            selector: '.team-card',      min: 30, what: 'the default tab\'s per-team charts' },
-  { path: '/awards/',                 selector: '.season-card',    min: 2,  what: 'a card per season with awards' },
-  { path: '/awards/25-26/results/',   selector: 'table tbody tr',  min: 50, what: 'the full ballot' },
+  { path: '/nbyen/donations/',              selector: 'table tbody tr',  min: 10, what: 'the donations list' },
+  { path: '/history/draft/guide/',            selector: '.step',           min: 8,  what: 'the walkthrough steps' },
+  { path: '/stats/frivolities/',            selector: '.team-card',      min: 30, what: 'the default tab\'s per-team charts' },
+  { path: '/history/awards/',                 selector: '.season-card',    min: 2,  what: 'a card per season with awards' },
+  { path: '/history/awards/25-26/results/',   selector: 'table tbody tr',  min: 50, what: 'the full ballot' },
   { path: '/news/',                   selector: '.article-card',   min: 3,  what: 'published articles' },
   { path: '/proposals/',              selector: '.proposal-card',  min: 3,  what: 'open proposals' },
   // Diffs between consecutive 2K scrape snapshots. This one *can* legitimately
   // fall — a scrape that changes nothing produces nothing — so the floor is far
   // below the ~490 rows it carries today.
-  { path: '/ratings-changes/',        selector: '.player-name',    min: 20, what: 'per-player rating diffs' },
+  { path: '/stats/ratings-changes/',        selector: '.player-name',    min: 20, what: 'per-player rating diffs' },
   // An empty list is a real state (nobody injured, or no report yet), so the
   // assertion is that either the table or the empty notice drew, not a row floor.
-  { path: '/injuries/',               selector: '#content .ui-table, #content .ui-empty', min: 1, what: 'the injury list, or its empty notice' },
+  { path: '/season/injuries/',               selector: '#content .ui-table, #content .ui-empty', min: 1, what: 'the injury list, or its empty notice' },
   // Two players by slug, since the page renders nothing without both params.
   // Retired players, deliberately: their career and attributes are frozen, so
   // this row cannot start failing because someone got traded.
-  { path: '/compare/?a=curry-stephen&b=durant-kevin',
+  { path: '/stats/compare/?a=curry-stephen&b=durant-kevin',
                                       selector: '.attr-row',       min: 40, what: 'the two-player attribute comparison' },
 ];
 
 // ── What is deliberately not here ──────────────────────────────────────────
 //
-// **Authenticated pages** — /committees/pdc, /free-agency, /extensions, /strikes,
-// /committees/stream, /transactions, /inbox, /bet, /invest. Signed out they correctly
+// **Authenticated pages** — /committees/pdc, /fo/free-agency, /fo/extensions, /office/strikes,
+// /committees/stream, /fo/transactions, /about/inbox, /nbyen/bet, /invest. Signed out they correctly
 // render a sign-in prompt, so a row asserting content would only ever assert
 // the prompt. Covering them for real needs a session cookie minted against the
 // live API, and a write path exercised from a page is a real write — that is a
 // decision, not just effort (see BACKLOG.md).
 //
-// **/suggestions/, and the rosters dashboard's three reconciliation tabs** —
+// **/office/suggestions/, and the rosters dashboard's three reconciliation tabs** —
 // all public and all render fine, but none has a stable signed-out assertion.
-// Their content is a *worklist*: /suggestions shows 1 open item, Cap & Salaries
+// Their content is a *worklist*: /office/suggestions shows 1 open item, Cap & Salaries
 // shows the open cap-sheet diffs. A `min` on either fails the day the list is
 // cleared, which is the day the league did the right thing. A test that goes
 // red on success is worse than no test. The Compliance tab is different and is
@@ -198,7 +198,7 @@ const PAGES = [
 // caught up. Same "red on success" problem.
 //
 // **/trade-retros/, /schedule/, /pdc/ and /stream/** — redirect stubs.
-// /calendar, /frivolities and /committees carry what they used to.
+// /season/calendar, /stats/frivolities and /committees carry what they used to.
 
 function findChrome() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
@@ -224,7 +224,7 @@ async function checkPage(browser, spec) {
   // layouts into a state no real visitor sees.
   await page.setViewport({ width: 1280, height: 900 });
   // Every check does its own fetch. Tabs share one browser cache, so a path
-  // listed twice — /teams/UTA/ is, deliberately, once for its tables and once
+  // listed twice — /stats/teams/UTA/ is, deliberately, once for its tables and once
   // for the Cap Health card — had its second load answered 304 from cache.
   // That failed the `expected 200` assertion below, and worse, it meant the
   // second check never exercised the fetch it was there to exercise.

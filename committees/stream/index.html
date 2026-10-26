@@ -1057,7 +1057,7 @@
 
     // ── Stream requests ─────────────────────────────────────────────────
     //
-    // A member asks for a game to be streamed from /calendar; any streamer
+    // A member asks for a game to be streamed from /season/calendar; any streamer
     // accepts or declines it here. Accepting is the purchase: the member's
     // NB¥1,000 is spent then, not when they asked. There's no daily limit.
 
@@ -1303,7 +1303,7 @@
 
     function teamLink(abbr) {
       const a = document.createElement('a');
-      a.href = `/teams/${abbr.toLowerCase()}/`;
+      a.href = `/stats/teams/${abbr.toLowerCase()}/`;
       a.textContent = abbr;
       a.title = TEAMS[abbr] || abbr;
       return a;
@@ -1336,7 +1336,7 @@
         : "Sign in on nbn.today in this browser and you're signed in here automatically, or paste your member token via the profile menu.";
       wrap.appendChild(p);
       const a = document.createElement('a');
-      a.href = '/calendar';
+      a.href = '/season/calendar';
       a.textContent = '← Back to the calendar';
       wrap.appendChild(a);
       g.appendChild(wrap);
@@ -1647,7 +1647,7 @@
       if (res) {
         const link = document.createElement('a');
         link.className = 'g-score';
-        link.href = `/boxscores/?date=${g.date}&game=${g.away_team}-${g.home_team}`;
+        link.href = `/stats/boxscores/?date=${g.date}&game=${g.away_team}-${g.home_team}`;
         if (teamFilter) {
           // The row already reads from this team's side ("vs OPP"), so an
           // away–home score beside it would be ambiguous. Score it their way.

@@ -1,4 +1,4 @@
-// The award race on /awards/race — a formula ladder for MVP, DPOY, ROTY, MIP
+// The award race on /season/award-race — a formula ladder for MVP, DPOY, ROTY, MIP
 // and 6MOY from the season's stats so far. Not a vote and not a prediction of
 // one: a transparent formula, which the page checks against every past winner
 // it can and prints the score.

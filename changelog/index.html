@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/css/shared.css">
-  <title>NBN | Changelog</title>
+  <title>NBN | Moved</title>
   <!-- NBN:og -->
   <meta name="description" content="What changed on nbn.today, release by release.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="NBN | Changelog">
   <meta property="og:description" content="What changed on nbn.today, release by release.">
-  <meta property="og:url" content="https://nbn.today/changelog/">
+  <meta property="og:url" content="https://nbn.today/about/changelog/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -23,89 +21,18 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
-  <style>
-    .entries { display: flex; flex-direction: column; gap: 1.5rem; }
-    .entry {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem 1.5rem;
-    }
-    .entry-header {
-      display: flex;
-      align-items: baseline;
-      gap: 0.75rem;
-      margin-bottom: 0.875rem;
-    }
-    .version {
-      font-size: var(--text-base);
-      font-weight: 700;
-      color: var(--link);
-      font-family: var(--font-mono);
-    }
-    .date {
-      font-size: var(--text-sm);
-      color: var(--text-muted);
-    }
-    .changes {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .changes li {
-      font-size: var(--text-base);
-      color: var(--text-secondary);
-      padding-left: 1rem;
-      position: relative;
-      overflow-wrap: anywhere;   /* file paths in entries would otherwise widen the page on a phone */
-    }
-    .changes li::before {
-      content: '–';
-      position: absolute;
-      left: 0;
-      color: var(--text-dim);
-    }
-  </style>
+  <meta name="nbn-moved" content="/about/changelog/">
+  <!-- This page moved to /about/changelog/ when every page was nested under its sidebar
+       section (docs/route-migration.md). Old links live on in Discord, so the
+       old path forwards, keeping its query string and #tab. -->
+  <script>
+    location.replace('/about/changelog/' + location.search + location.hash);
+  </script>
+  <meta http-equiv="refresh" content="0; url=/about/changelog/">
 </head>
 <body>
-  <div class="page ui-page">
-    <nav class="nav"></nav>
-    <header class="ui-header">
-      <div>
-        <h1 class="ui-title">Changelog</h1>
-        <p class="ui-subtitle" id="current-version"></p>
-      </div>
-    </header>
-    <div class="entries" id="entries">
-      <p style="color:var(--text-muted);font-size:var(--text-base);">Loading…</p>
-    </div>
-  </div>
-
-  <script>
-    fetch('/changelog.json')
-      .then(r => r.json())
-      .then(entries => {
-        const container = document.getElementById('entries');
-        container.innerHTML = entries.map(e => `
-          <div class="entry">
-            <div class="entry-header">
-              <span class="version">v${e.version}</span>
-              <span class="date">${e.date}</span>
-            </div>
-            <ul class="changes">
-              ${e.changes.map(c => `<li>${c}</li>`).join('')}
-            </ul>
-          </div>
-        `).join('');
-        const latest = entries[0];
-        document.getElementById('current-version').textContent = `Current version: v${latest.version}`;
-      })
-      .catch(() => {
-        document.getElementById('entries').innerHTML =
-          '<p style="color:var(--danger);">Failed to load changelog.</p>';
-      });
-  </script>
-  <script src="/nav.js"></script>
+  <p style="font-family:system-ui,sans-serif;padding:2rem">
+    This page has moved to <a href="/about/changelog/">/about/changelog/</a>.
+  </p>
 </body>
 </html>

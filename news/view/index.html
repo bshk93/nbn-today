@@ -353,7 +353,7 @@
 
 <script src="/league-time.js"></script>
 <!-- computeStartingFive, for the projected lineup in an expanded team panel. -->
-<script src="/teams/lineup.js"></script>
+<script src="/stats/teams/lineup.js"></script>
 <script>
 const API = '/api';
 const params = new URLSearchParams(location.search);
@@ -535,7 +535,7 @@ function buildAutoLinkMatchers(playersBySlug) {
     const first = bio.name.slice(comma + 1).trim();
     if (!first || !last) continue;
     const full = `${titleCaseNamePart(first)} ${titleCaseNamePart(last)}`;
-    playerByLower.set(full.toLowerCase(), `/players/?p=${encodeURIComponent(slug)}`);
+    playerByLower.set(full.toLowerCase(), `/stats/players/?p=${encodeURIComponent(slug)}`);
   }
 
   const cityCounts = new Map();
@@ -548,7 +548,7 @@ function buildAutoLinkMatchers(playersBySlug) {
   const nicknameByExact = new Map();
   const abbrByExact = new Map();
   for (const [abbr, [cities, nickname]] of Object.entries(TEAM_META)) {
-    const href = `/teams/${abbr}/`;
+    const href = `/stats/teams/${abbr}/`;
     for (const city of cities) {
       teamFullByLower.set(`${city} ${nickname}`.toLowerCase(), href);
       if (cityCounts.get(city) === 1) cityByLower.set(city.toLowerCase(), href);
@@ -918,13 +918,13 @@ function rosterListHtml(team, roster, five) {
   return `<div class="plist">${rest.map((p, i) => `<div class="prow">
       <span class="seq">${i + from}</span>
       ${avatarHtml(p.photo)}
-      <span class="pname"><a href="/players/?p=${encodeURIComponent(p.slug)}">${escHtml(fullName(p))}</a>${
+      <span class="pname"><a href="/stats/players/?p=${encodeURIComponent(p.slug)}">${escHtml(fullName(p))}</a>${
         p.type === 'two-way' ? '<span class="tw">TW</span>' : ''}</span>
       <span class="ppos">${escHtml((p.pos || []).join('/'))}</span>
       <span class="pag">${p.age == null ? '—' : escHtml(p.age)}</span>
       <span class="povr">${escHtml(p.ovr)}</span>
     </div>`).join('')}</div>
-    <a class="panel-link" href="/teams/${team}/">${escHtml(TEAM_NAMES[team] || team)} team page</a>`;
+    <a class="panel-link" href="/stats/teams/${team}/">${escHtml(TEAM_NAMES[team] || team)} team page</a>`;
 }
 
 function fullName(p) { return p.first ? `${p.first} ${p.name}` : p.name; }

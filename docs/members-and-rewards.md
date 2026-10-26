@@ -56,7 +56,7 @@ The old `/api/tokens/*` endpoints remain as compatibility shims backed by member
 
 ## Suggestions board
 
-`/suggestions` is the member-facing idea board (`routers/suggestions.py`,
+`/office/suggestions` is the member-facing idea board (`routers/suggestions.py`,
 `suggestions.json`). `BACKLOG.md` is the internal list; this is the one members
 can write to. Suggestion **numbers come from a monotonic `seq`**, never from
 `max(existing)`, so a number is a permanent reference even after deletions.

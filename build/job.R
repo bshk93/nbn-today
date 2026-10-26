@@ -45,7 +45,7 @@ if (through == "") {
 # Build Phase ----
 reg_csv <- file.path(DATA_DIR, glue("allstats-{season_code}.csv"))
 if (!file.exists(reg_csv)) {
-  abort(glue("Regular season CSV not found: {reg_csv}. Submit box scores via /boxscores/submit first."))
+  abort(glue("Regular season CSV not found: {reg_csv}. Submit box scores via /stats/boxscores/submit first."))
 }
 inform(glue("Loading current season from {reg_csv}"))
 current_reg_raw <- data.table::fread(reg_csv, header = TRUE) %>%

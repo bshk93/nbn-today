@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/stats/players/subpage.css">
+  <title>NBN | History</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN player’s history: every transaction, a recap of each season, and the edit log.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | History">
+  <meta property="og:description" content="One NBN player’s history: every transaction, a recap of each season, and the edit log.">
+  <meta property="og:url" content="https://nbn.today/stats/players/history/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .txn-badge { display: inline-block; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm);
+      font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .txn-badge-sign    { background: var(--market-positive-bg); color: var(--market-positive); }
+    .txn-badge-pick    { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .txn-badge-option  { background: var(--danger-alt-bg); color: var(--danger-alt); }
+    .txn-badge-release { background: var(--danger-bg); color: var(--danger); }
+    .txn-badge-convert_twoway { background: var(--bg-card); color: var(--text-secondary); }
+    .txn-badge-trade   { background: var(--purple-light-bg); color: var(--accent-light); }
+    .txn-badge-offer_sheet { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
+    .txn-badge-recap   { background: var(--gold-bg); color: var(--gold); }
+    .txn-badge-retired { background: var(--bg-card); color: var(--text-secondary); }
+    .txn-row-retired td { font-weight: 600; color: var(--text-primary); }
+    .txn-table-details { color: var(--text-muted); font-size: var(--text-sm); white-space: normal; overflow-wrap: break-word; word-break: break-word; }
+    .txn-table-details a { color: var(--accent-light); text-decoration: none; }
+    .txn-table-details a:hover { text-decoration: underline; }
+    .txn-history-wrap { overflow-x: auto; }
+    .txn-history-table { table-layout: fixed; min-width: 480px; }
+    .txn-history-table td { vertical-align: top; }
+    .edit-history { margin-top: 0.75rem; }
+    .edit-history summary { cursor: pointer; color: var(--text-muted); font-size: var(--text-sm); font-weight: 600; user-select: none; }
+    .edit-history summary:hover { color: var(--text-secondary); }
+    .edit-history .txn-history-wrap { margin-top: 0.5rem; }
+    .edit-history-table { min-width: 420px; }
+    .edit-added { color: var(--market-positive); }
+    .edit-removed { color: var(--danger); }
+    .txn-note-cell { text-align: center; vertical-align: middle !important; }
+    .txn-note-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 20px; height: 20px; color: var(--accent-light); cursor: pointer;
+      filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent-light) 85%, transparent));
+      transition: filter 0.15s;
+    }
+    .txn-note-icon:hover { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-light) 100%, transparent)); }
+    .tt-anchor { cursor: pointer; }
+    .tt-popup {
+      position: absolute; z-index: 500; max-width: 260px;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+      padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: var(--text-xs);
+      white-space: pre-line; line-height: 1.5; text-align: left;
+      pointer-events: none; box-shadow: var(--shadow-overlay);
+    }
+    .txn-pagination { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0 0.25rem; font-size: var(--text-sm); color: var(--text-muted); }
+    .txn-page-btn { padding: 0.28rem 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, color 0.12s; }
+    .txn-page-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-secondary); }
+    .txn-page-btn:disabled { opacity: 0.35; cursor: default; }
+  </style>
+</head>
+<body>
+<div class="page ui-page ui-page--wide">
+  <nav class="nav" id="nav"></nav>
+  <header class="ui-header">
+    <div class="psub-head">
+      <img class="psub-photo" id="photo" alt="" hidden>
+      <div>
+        <h1 class="ui-title" id="page-title">History</h1>
+        <p class="ui-subtitle" id="page-sub"></p>
+      </div>
+    </div>
+  </header>
+  <nav id="player-tabs" style="display:none"></nav>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script src="/names.js"></script>
+<script src="/stats/players/subpage.js"></script>
+<script>
+(function () {
+  const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+  // "CURRY, STEPHEN" → "Stephen Curry". Shared with every page via /names.js.
+  function displayName(canonical) {
+    return nbnPlayerName(canonical);
+  }
+
+  let biosData = {};
+
+  // Mobile-friendly tooltip: hover-to-show on pointer devices, tap-to-toggle on touch.
+  let _ttEl = null, _ttAnchor = null;
+  function _ttHide() { if (_ttEl) { _ttEl.remove(); _ttEl = null; _ttAnchor = null; } }
+  function _ttShow(anchor, text) {
+    _ttHide();
+    const tip = document.createElement('div');
+    tip.className = 'tt-popup';
+    tip.textContent = text;
+    document.body.appendChild(tip);
+    const r = anchor.getBoundingClientRect();
+    let left = r.left + r.width / 2 - tip.offsetWidth / 2;
+    left = Math.max(6, Math.min(left, window.innerWidth - tip.offsetWidth - 6));
+    let top = r.top - tip.offsetHeight - 8;
+    if (top < 4) top = r.bottom + 8;
+    tip.style.left = `${left + window.scrollX}px`;
+    tip.style.top = `${top + window.scrollY}px`;
+    _ttEl = tip;
+    _ttAnchor = anchor;
+  }
+  const _ttIsTouch = window.matchMedia('(hover: none)').matches;
+  document.addEventListener('click', e => { if (_ttEl && !e.target.closest('.tt-anchor')) _ttHide(); });
+  function attachTooltip(el, textOrFn) {
+    el.classList.add('tt-anchor');
+    const getText = () => (typeof textOrFn === 'function' ? textOrFn() : textOrFn);
+    if (_ttIsTouch) {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        const text = getText();
+        if (!text) return;
+        if (_ttAnchor === el) _ttHide(); else _ttShow(el, text);
+      });
+    } else {
+      el.addEventListener('mouseenter', () => { const text = getText(); if (text) _ttShow(el, text); });
+      el.addEventListener('mouseleave', _ttHide);
+    }
+  }
+
+  const LEADER_STATS = ['PTS', 'REB', 'AST', 'STL', 'BLK', '3PM', 'GMSC'];
+
+  function buildSeasonLeaders(allRows) {
+    const bySlugSeason = new Map();
+    allRows.forEach(r => {
+      if (!r.SLUG || !r.SEASON || r.SEASON.includes('Playoffs')) return;
+      const key = r.SLUG + '|' + r.SEASON;
+      if (!bySlugSeason.has(key)) {
+        bySlugSeason.set(key, { SLUG: r.SLUG, SEASON: r.SEASON, PTS: 0, REB: 0, AST: 0, STL: 0, BLK: 0, '3PM': 0, GMSC: 0 });
+      }
+      const s = bySlugSeason.get(key);
+      LEADER_STATS.forEach(f => { s[f] += +r[f] || 0; });
+    });
+    const leaders = {};
+    for (const row of bySlugSeason.values()) {
+      const season = row.SEASON;
+      if (!leaders[season]) leaders[season] = {};
+      LEADER_STATS.forEach(f => {
+        const v = row[f];
+        if (!leaders[season][f] || v > leaders[season][f].val) {
+          leaders[season][f] = { slug: row.SLUG, val: v };
+        }
+      });
+    }
+    return leaders;
+  }
+
+
+  function renderTransactionHistory(container, playerSlug, playerAwards = [], seasonLeaders = {}, seasonRows = [], bio = {}) {
+    let currentPicks = [];
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-').map(Number);
+      return `${MONTHS[m - 1]} ${d}, ${y}`;
+    }
+    function fmtSeason(season) {
+      const m = /^(\d{2})-(\d{2})$/.exec(season || '');
+      return m ? `20${m[1]}-${m[2]}` : (season || '—');
+    }
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function fmtEditTs(ts) {
+      if (!ts) return '—';
+      const datePart = fmtDate((ts.split('T')[0]) || '');
+      const d = new Date(ts);
+      if (isNaN(d)) return datePart;
+      const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      return `${datePart}, ${timePart}`;
+    }
+    function fmtEditFile(file) {
+      if (file === 'player-bios.json') return 'Bio';
+      const m = /^([a-z]{2,4})-(roster|deadcap|picks)\.csv$/.exec(file || '');
+      if (m) {
+        const label = { roster: 'Roster', deadcap: 'Dead Cap', picks: 'Picks' }[m[2]];
+        return `${label} (${m[1].toUpperCase()})`;
+      }
+      return file || '—';
+    }
+    function fmtEditField(key, slug) {
+      let s = (key || '').startsWith(slug) ? key.slice(slug.length) : (key || '');
+      s = s.replace(/^\.+/, '');
+      return s || '(row)';
+    }
+    function fmtEditChange(from, to) {
+      const has = v => v !== undefined && v !== null;
+      const fromStr = has(from) ? esc(String(from)) : '<span class="edit-added">(new)</span>';
+      const toStr = has(to) ? esc(String(to)) : '<span class="edit-removed">(removed)</span>';
+      return `${fromStr} &rarr; ${toStr}`;
+    }
+    function playerLink(slug) {
+      if (!slug) return '';
+      const bio = biosData[slug];
+      const name = bio ? displayName(bio.name) : slug;
+      return `<a href="/stats/players/?p=${esc(slug)}">${esc(name)}</a>`;
+    }
+    function fmtContract(c) {
+      if (!c) return '';
+      const yrs = Object.keys(c.salaries || {}).length;
+      const total = Object.values(c.salaries || {}).reduce((s, v) => s + (parseInt(String(v).replace(/\D/g,''), 10) || 0), 0);
+      if (!yrs) return c.type === 'two-way' ? 'Two-Way' : '';
+      return `${yrs}yr / $${(total / 1e6).toFixed(1)}M`;
+    }
+    const METHOD = { bird_rights:'Bird Rights', ntmle:'NTMLE', tmle:'TMLE',
+      room_exception:'Room Exc.', bae:'BAE', sign_and_trade:'S&T' };
+    const TYPE_LABEL = { sign:'Signing', pick:'Draft Pick', option:'Option',
+      release:'Release', trade:'Trade', convert_twoway:'Two-Way Conv.', offer_sheet:'Offer Sheet' };
+
+    function detailsHtml(t) {
+      const d = t.details || {};
+      if (t.type === 'sign' || t.type === 'pick') {
+        let s = fmtContract(d.contract);
+        if (d.signing_method && d.signing_method !== 'cap_space')
+          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
+        if (t.type === 'pick' && d.pick) {
+          const p = d.pick;
+          const ps = `${p.year} R${p.round} ${p.orig}${p.pick_number ? ' #'+p.pick_number : ''}`;
+          s = esc(ps) + (s ? ' · ' + esc(s) : '');
+        } else { s = esc(s); }
+        return s;
+      }
+      if (t.type === 'option') {
+        const ol = d.option_type === 'PLAYER_OPT' ? 'Player Opt' : 'Team Opt';
+        return d.decision === 'accept'
+          ? esc(`${d.year || ''} ${ol} — accepted`)
+          : esc(`${d.year || ''} ${ol} — declined → ${d.cap_hold_type || 'UFA'} hold`);
+      }
+      if (t.type === 'offer_sheet') {
+        const [offeringTeam, retainingTeam] = d.teams || [];
+        const outcomeStr = d.outcome === 'matched'
+          ? `${retainingTeam || 'Retaining team'} matched`
+          : `Not matched — signs with ${offeringTeam || 'offering team'}`;
+        let s = fmtContract(d.contract);
+        if (d.signing_method && d.signing_method !== 'cap_space')
+          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
+        return esc(outcomeStr) + (s ? ' · ' + esc(s) : '');
+      }
+      if (t.type === 'convert_twoway') {
+        let s = fmtContract(d.contract);
+        if (d.signing_method && d.signing_method !== 'cap_space')
+          s += (s ? ' · ' : '') + (METHOD[d.signing_method] || d.signing_method);
+        return esc(s);
+      }
+      if (t.type === 'release') {
+        const dc = d.dead_cap || {};
+        const entries = Object.entries(dc);
+        if (!entries.length) return 'No dead cap';
+        const total = entries.reduce((s, [,v]) => s + (parseInt(String(v).replace(/\D/g,''), 10) || 0), 0);
+        return esc(`Dead cap: $${(total / 1e6).toFixed(1)}M (${entries.map(([yr]) => yr).join(', ')})`);
+      }
+      if (t.type === 'trade') {
+        const transfers = d.transfers || [];
+        // Find the leg this player is in, to identify "their side" of the trade
+        const myLeg = transfers.find(tr =>
+          (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
+        const myTeam = myLeg ? myLeg.from_team : null;
+
+        const assetLabel = (a, toTeam) => {
+          if (a.type === 'player') return playerLink(a.slug);
+          if (a.type === 'pick') {
+            let s = `${a.year} R${a.round} ${a.orig}`;
+            const mods = [];
+            if (a.protection) mods.push(`top-${a.protection} prot.`);
+            if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
+            if (a.ladder_fallback && a.ladder_fallback.length) {
+              const fb = a.ladder_fallback.map(f => `${f.year} R${f.round} ${f.orig}`).join(' / ');
+              mods.push(`if protected → ${fb}`);
+            }
+            // Nothing set by this transaction itself (e.g. a plain retrade of a
+            // pick that already carries a contingent claim) — fall back to the
+            // pick's current conveyance state so an existing band/swap doesn't
+            // just disappear from the player's history.
+            if (!mods.length) {
+              const cur = currentPicks.find(p => p.year === a.year && p.round === a.round && p.orig === a.orig);
+              const leaf = cur?.leaves?.find(l => l.team === toTeam);
+              if (leaf) mods.push(leaf.description);
+              else if (cur?.protected != null) mods.push(`top-${cur.protected} prot.`);
+              else if (cur?.swap_owner) mods.push(`swap w/ ${cur.swap_owner}`);
+            }
+            if (mods.length) s += ` (${mods.join(', ')})`;
+            return esc(s);
+          }
+          return '';
+        };
+
+        // Group by "their team" gave / got, rather than raw leg text — same
+        // give/get convention used in the main transactions log.
+        const sent = [];
+        const received = [];
+        const otherLegStrs = [];
+        transfers.forEach(tr => {
+          if (tr.from_team === myTeam) {
+            (tr.assets || []).forEach(a => {
+              if (a.type === 'player' && a.slug === playerSlug) return; // this player themself
+              const label = assetLabel(a, tr.to_team);
+              if (label) sent.push(label);
+            });
+          } else if (tr.to_team === myTeam) {
+            (tr.assets || []).forEach(a => {
+              const label = assetLabel(a, tr.to_team);
+              if (label) received.push(label);
+            });
+          } else {
+            const assetStrs = (tr.assets || []).map(a => assetLabel(a, tr.to_team)).filter(Boolean);
+            otherLegStrs.push(esc(`${tr.from_team}→${tr.to_team}`) + (assetStrs.length ? ': ' + assetStrs.join(', ') : ''));
+          }
+        });
+
+        const parts = [];
+        if (sent.length) parts.push(`<span style="color:var(--danger-light)">Also sent: ${sent.join(', ')}</span>`);
+        if (received.length) parts.push(`<span style="color:var(--success-light)">Received: ${received.join(', ')}</span>`);
+        parts.push(...otherLegStrs);
+        return parts.join(' · ') || '—';
+      }
+      return '';
+    }
+
+    const LEADER_LABELS = { PTS: 'scoring', REB: 'rebounding', AST: 'assists', STL: 'steals', BLK: 'blocks', '3PM': '3-pointers made', GMSC: 'game score' };
+    const HIGH_FIELDS = [
+      { key: 'HIGH_P',   label: 'PTS', threshold: 40 },
+      { key: 'HIGH_R',   label: 'REB', threshold: 20 },
+      { key: 'HIGH_A',   label: 'AST', threshold: 15 },
+      { key: 'HIGH_S',   label: 'STL', threshold: 8 },
+      { key: 'HIGH_B',   label: 'BLK', threshold: 8 },
+      { key: 'HIGH_3PM', label: '3PM', threshold: 8 },
+    ];
+
+    // One recap row per season played: a baseline per-game stat line, plus
+    // awards, league-leader finishes, and notable/career-high games when
+    // applicable — not transactions, but part of the same story.
+    function buildSeasonRecaps() {
+      const asc = seasonRows
+        .filter(r => r.SEASON && r.SEASON !== 'NA' && r.LAST_DATE && r.LAST_DATE !== 'NA')
+        .sort((a, b) => parseFloat(a.SEASON) - parseFloat(b.SEASON));
+      const careerBest = {};
+      const recaps = [];
+      asc.forEach(row => {
+        const bullets = [];
+        const g = +row.G || 0;
+        if (g > 0) {
+          const ppg = (+row.PTS / g).toFixed(1);
+          const rpg = (+row.REB / g).toFixed(1);
+          const apg = (+row.AST / g).toFixed(1);
+          bullets.push(`${ppg} PPG, ${rpg} RPG, ${apg} APG (${g} GP)`);
+        }
+
+        const seasonAwards = playerAwards.filter(a => a.SEASON === row.SEASON || a.SEASON === row.SEASON + ' Playoffs');
+        const awardCounts = {};
+        seasonAwards.forEach(a => { awardCounts[a.AWARD] = (awardCounts[a.AWARD] || 0) + 1; });
+        Object.keys(awardCounts).forEach(award => bullets.push(award));
+
+        const leaders = seasonLeaders[row.SEASON] || {};
+        Object.entries(leaders).forEach(([stat, info]) => {
+          if (info.slug === playerSlug && LEADER_LABELS[stat]) bullets.push(`Led the league in ${LEADER_LABELS[stat]}`);
+        });
+
+        HIGH_FIELDS.forEach(({ key, label, threshold }) => {
+          const val = +row[key];
+          if (!val) return;
+          const hadPrior = Object.prototype.hasOwnProperty.call(careerBest, key);
+          const prevBest = careerBest[key] || 0;
+          if (hadPrior && val > prevBest) bullets.push(`New career high: ${val} ${label}`);
+          else if (val >= threshold) bullets.push(`${val}-${label} game`);
+          careerBest[key] = Math.max(prevBest, val);
+        });
+
+        recaps.push({ kind: 'recap', date: row.LAST_DATE, season: row.SEASON, team: row.TEAM, bullets });
+      });
+      return recaps;
+    }
+
+    // Final line in a retired player's history: name + headline career stats.
+    // Always the most recent entry, regardless of the last season/transaction date.
+    function buildRetirementEntry() {
+      if (!bio.retired) return null;
+      const name = bio.name ? displayName(bio.name) : playerSlug;
+      const totalG = seasonRows.reduce((s, r) => s + (+r.G || 0), 0);
+      const bullets = [];
+      if (totalG > 0) {
+        const sum = f => seasonRows.reduce((s, r) => s + (+r[f] || 0), 0);
+        const seasons = new Set(seasonRows.map(r => r.SEASON)).size;
+        bullets.push(`${seasons} season${seasons !== 1 ? 's' : ''}, ${totalG} games`);
+        bullets.push(`${(sum('PTS') / totalG).toFixed(1)} PPG, ${(sum('REB') / totalG).toFixed(1)} RPG, ${(sum('AST') / totalG).toFixed(1)} APG career`);
+      }
+      return { kind: 'retired', name, bullets };
+    }
+
+    function teamHtml(t) {
+      const d = t.details || {};
+      if (t.type === 'trade') {
+        const transfers = d.transfers || [];
+        const myLeg = transfers.find(tr =>
+          (tr.assets || []).some(a => a.type === 'player' && a.slug === playerSlug));
+        if (!myLeg) return (d.teams || []).map(esc).join(' · ') || '—';
+        return `<a href="/stats/teams/${esc(myLeg.from_team)}">${esc(myLeg.from_team)}</a> → <a href="/stats/teams/${esc(myLeg.to_team)}">${esc(myLeg.to_team)}</a>`;
+      }
+      if (t.type === 'offer_sheet') {
+        const teams = d.teams || [];
+        return teams.length ? teams.map(tm => `<a href="/stats/teams/${esc(tm)}">${esc(tm)}</a>`).join(' → ') : '—';
+      }
+      return d.team ? `<a href="/stats/teams/${esc(d.team)}">${esc(d.team)}</a>` : '—';
+    }
+
+    return Promise.all([
+      fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}`).then(r => r.ok ? r.json() : { transactions: [] }),
+      fetch('/api/picks').then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`/api/edits?key=${encodeURIComponent(playerSlug)}&limit=500`).then(r => r.ok ? r.json() : { entries: [] }).catch(() => ({ entries: [] })),
+    ])
+      .then(([{ transactions }, picks, { entries: edits }]) => {
+        currentPicks = picks;
+        const entries = [
+          ...transactions.map(t => ({ kind: 'txn', date: t.date, t })),
+          ...buildSeasonRecaps(),
+        ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+        const retirementEntry = buildRetirementEntry();
+        if (retirementEntry) entries.unshift(retirementEntry);
+
+        // Flatten to one row per diff line — an edit entry can touch several
+        // fields (or several players, on a roster/deadcap CSV write) at once,
+        // and only the lines actually naming this player belong here.
+        const editRows = [];
+        (edits || []).forEach(e => {
+          (e.diff || []).forEach(d => {
+            if ((d.key || '').includes(playerSlug)) {
+              editRows.push({ ts: e.ts, actor: e.actor, file: e.file, key: d.key, from: d.from, to: d.to });
+            }
+          });
+        });
+
+        if (!entries.length && !editRows.length) return;
+
+        const h2 = document.createElement('h2');
+        h2.className = 'section-heading';
+        h2.textContent = 'Player History';
+        container.appendChild(h2);
+
+        if (!entries.length) {
+          renderEditHistory();
+          return;
+        }
+
+        const table = document.createElement('table'); table.className = 'ui-table';
+        table.className = 'salary-table txn-history-table';
+        table.style.cssText = 'font-size:var(--text-sm)';
+
+        // Fixed pixel widths for the nowrap columns so they always have enough
+        // room for their content; Details is left unset so it gets whatever
+        // space remains (and wraps within it) at any table width.
+        const colgroup = document.createElement('colgroup');
+        ['104px', '112px', '92px', null, '40px'].forEach(w => {
+          const col = document.createElement('col');
+          if (w) col.style.width = w;
+          colgroup.appendChild(col);
+        });
+        table.appendChild(colgroup);
+
+        const thead = table.createTHead();
+        const hr = thead.insertRow();
+        ['Date', 'Type', 'Team', 'Details', ''].forEach(h => {
+          const th = document.createElement('th');
+          th.textContent = h;
+          hr.appendChild(th);
+        });
+        const tbody = table.createTBody();
+        const tableWrap = document.createElement('div');
+        tableWrap.className = 'txn-history-wrap';
+        tableWrap.appendChild(table);
+        container.appendChild(tableWrap);
+
+        const pagination = document.createElement('div');
+        pagination.className = 'txn-pagination';
+        container.appendChild(pagination);
+
+        const PAGE_SIZE = 15;
+        let currentPage = 0;
+
+        function renderEntryRow(entry) {
+          const tr = tbody.insertRow();
+          if (entry.kind === 'retired') {
+            tr.className = 'txn-row-retired';
+            tr.innerHTML = `
+              <td style="white-space:nowrap;color:var(--text-muted)">—</td>
+              <td><span class="txn-badge txn-badge-retired">Retired</span></td>
+              <td style="white-space:nowrap" class="txn-table-details">—</td>
+              <td class="txn-table-details">${esc(entry.name)} retired${entry.bullets.length ? ' &middot; ' + entry.bullets.map(esc).join(' &middot; ') : ''}</td>
+              <td class="txn-note-cell"></td>
+            `;
+            return;
+          }
+          if (entry.kind === 'recap') {
+            tr.innerHTML = `
+              <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtSeason(entry.season))}</td>
+              <td><span class="txn-badge txn-badge-recap">Season Recap</span></td>
+              <td style="white-space:nowrap" class="txn-table-details">${entry.team ? `<a href="/stats/teams/${esc(entry.team)}">${esc(entry.team)}</a>` : '—'}</td>
+              <td class="txn-table-details">${entry.bullets.map(esc).join(' &middot; ')}</td>
+              <td class="txn-note-cell"></td>
+            `;
+            return;
+          }
+          const t = entry.t;
+          const label = TYPE_LABEL[t.type] || t.type;
+          tr.innerHTML = `
+            <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtDate(t.date))}</td>
+            <td><span class="txn-badge txn-badge-${esc(t.type)}">${esc(label)}</span></td>
+            <td style="white-space:nowrap" class="txn-table-details">${teamHtml(t)}</td>
+            <td class="txn-table-details">${detailsHtml(t)}</td>
+            <td class="txn-note-cell"></td>
+          `;
+          const note = (t.description || '').trim();
+          if (note) {
+            const icon = document.createElement('span');
+            icon.className = 'txn-note-icon';
+            icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+            attachTooltip(icon, note);
+            tr.querySelector('.txn-note-cell').appendChild(icon);
+          }
+        }
+
+        function renderPage() {
+          tbody.innerHTML = '';
+          const totalPages = Math.ceil(entries.length / PAGE_SIZE);
+          currentPage = Math.max(0, Math.min(currentPage, totalPages - 1));
+          const start = currentPage * PAGE_SIZE;
+          entries.slice(start, start + PAGE_SIZE).forEach(renderEntryRow);
+
+          if (totalPages <= 1) { pagination.style.display = 'none'; return; }
+          pagination.style.display = '';
+          const end = Math.min(start + PAGE_SIZE, entries.length);
+          pagination.innerHTML = `
+            <button class="txn-page-btn" id="ph-prev-btn" ${currentPage === 0 ? 'disabled' : ''}>Prev</button>
+            <span>${start + 1}&ndash;${end} of ${entries.length}</span>
+            <button class="txn-page-btn" id="ph-next-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>Next</button>
+          `;
+          pagination.querySelector('#ph-prev-btn').addEventListener('click', () => { currentPage--; renderPage(); });
+          pagination.querySelector('#ph-next-btn').addEventListener('click', () => { currentPage++; renderPage(); });
+        }
+
+        function renderEditHistory() {
+          if (!editRows.length) return;
+          const det = document.createElement('details');
+          det.className = 'edit-history';
+          const summary = document.createElement('summary');
+          summary.textContent = `Edit history (${editRows.length})`;
+          det.appendChild(summary);
+
+          const editTable = document.createElement('table'); editTable.className = 'ui-table';
+          editTable.className = 'salary-table edit-history-table';
+          editTable.style.cssText = 'font-size:var(--text-xs)';
+          const ethead = editTable.createTHead();
+          const ehr = ethead.insertRow();
+          ['Date', 'Source', 'Field', 'Change', 'By'].forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            ehr.appendChild(th);
+          });
+          const etbody = editTable.createTBody();
+          editRows
+            .slice()
+            .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
+            .forEach(row => {
+              const tr = etbody.insertRow();
+              tr.innerHTML = `
+                <td style="white-space:nowrap;color:var(--text-muted)">${esc(fmtEditTs(row.ts))}</td>
+                <td style="white-space:nowrap" class="txn-table-details">${esc(fmtEditFile(row.file))}</td>
+                <td style="white-space:nowrap" class="txn-table-details">${esc(fmtEditField(row.key, playerSlug))}</td>
+                <td class="txn-table-details">${fmtEditChange(row.from, row.to)}</td>
+                <td style="white-space:nowrap;color:var(--text-muted)">${esc(row.actor || 'system')}</td>
+              `;
+            });
+
+          const wrap = document.createElement('div');
+          wrap.className = 'txn-history-wrap';
+          wrap.appendChild(editTable);
+          det.appendChild(wrap);
+          container.appendChild(det);
+        }
+
+        renderPage();
+        renderEditHistory();
+      })
+      .catch(() => {});
+  }
+
+  PlayerSubpage.mount('history').then(ctx => {
+    if (!ctx) return;
+    const { slug, bio, bios, content } = ctx;
+    biosData = bios;
+    Promise.all([
+      fetch('/players/player_seasons.csv').then(r => (r.ok ? r.text() : '')).catch(() => ''),
+      fetch('/players/player_awards.csv').then(r => (r.ok ? r.text() : '')).catch(() => ''),
+    ]).then(([seasonsText, awardsText]) => {
+      const rows = seasonsText ? parseCSV(seasonsText) : [];
+      const awards = awardsText ? parseCSV(awardsText).filter(a => a.SLUG === slug) : [];
+      const seasonRows = rows.filter(r => r.SLUG === slug && +r.G > 0);
+      content.innerHTML = '';
+      return renderTransactionHistory(content, slug, awards, buildSeasonLeaders(rows), seasonRows, bio);
+    }).then(() => {
+      if (!content.children.length) content.innerHTML = '<div class="ui-empty">Nothing on record for this player yet.</div>';
+    });
+  });
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

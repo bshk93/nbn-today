@@ -2,7 +2,7 @@ Interpret a freeform description of a league transaction, resolve it into the AP
 
 $ARGUMENTS format: `YYYY-MM-DD <freeform description>` — the transaction date is the first token; everything after is the raw description to interpret (e.g. `2026-07-10 HOU trades their 2027 1st and Fred VanVleet to LAL for Austin Reaves and a 2028 2nd`).
 
-This replaces manually using the `/transactions` page. Nothing is ever submitted without an explicit confirmation step — freeform text is ambiguous and this mutates live roster/pick/cap data.
+This replaces manually using the `/fo/transactions` page. Nothing is ever submitted without an explicit confirmation step — freeform text is ambiguous and this mutates live roster/pick/cap data.
 
 ## Steps
 
@@ -30,7 +30,7 @@ Read `TEXT` and decide which of the 12 types it describes:
 
 | Type | Cues in freeform text |
 |---|---|
-| `trade` | Two or more teams exchanging players/picks ("trades X for Y", "sends ... to ... for ...") |
+| `trade` | Two or more teams exchanging stats/players/picks ("trades X for Y", "sends ... to ... for ...") |
 | `sign` + `trade` (sign-and-trade) | "sign-and-trades X to Y", or a pending free agent being re-signed by their own team and immediately moved elsewhere. Not a distinct API type — see the note under step 5's shape reference. |
 | `offer_sheet` (RFA offer sheet, § 3.15) | A team extends an offer sheet to another team's restricted free agent ("X offers Y a 2-year offer sheet"). Nobody is signed by this call. |
 | `offer_sheet_decision` (§ 3.15) | The incumbent's answer to an open offer sheet ("Z matches the offer sheet", "Z declines to match / lets Y walk"). **This** is the call that signs the player. See step 5. |
@@ -168,7 +168,7 @@ print(json.dumps(team['diffs'], indent=2))
 
 Show the user, plainly:
 - What type you've classified this as, and why, if it wasn't obvious
-- The resolved players/teams/picks (flag anything fuzzy-matched or reconstructed rather than directly stated)
+- The resolved stats/players/teams/picks (flag anything fuzzy-matched or reconstructed rather than directly stated)
 - The full `details` JSON you're about to submit
 - Any rulebook concerns from step 6
 
@@ -212,7 +212,7 @@ curl -s http://localhost:8001/api/players    # re-check the touched slugs' bio f
 
 ### 11. Check the site form could have done this
 
-The owner wants every transaction enterable from `/transactions` (`transactions/index.html`) without help. This skill is a convenience on top of that form, not a replacement for it. So after every submit, check that the form could have produced the **same `details` payload** you sent, and that it would have **shown the same checks before submit**:
+The owner wants every transaction enterable from `/fo/transactions` (`fo/transactions/index.html`) without help. This skill is a convenience on top of that form, not a replacement for it. So after every submit, check that the form could have produced the **same `details` payload** you sent, and that it would have **shown the same checks before submit**:
 
 - **Reachable:** the type is in `#f-type`, and every field you set (contract shape, `signing_method`, `bird_rights_type`, `eaps_assumption`, trailing hold, pick `leaf_id`, trade `exceptions`, etc.) has a form control that writes it. Find the builder for the type in the submit handler (e.g. `buildTwowayContract` for two-ways, `collectSalaries` for salary rows) and compare its output to your payload. Differences that don't matter, like an extra `guaranteed: {"$0"}` map, are fine. Say why.
 - **Previewed:** `collectSignValidationBody` (the live rubric) returns a request for this type and contract shape, not `null`. A form that submits without showing the checks is a gap even when the submit itself works.

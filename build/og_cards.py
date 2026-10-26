@@ -112,7 +112,7 @@ def default_card():
 
 
 def team_cards():
-    src = (ROOT / 'teams/team.js').read_text()
+    src = (ROOT / 'stats/teams/team.js').read_text()
     block = re.search(r'const TEAMS = \{(.*?)\n\};', src, re.S).group(1)
     teams = dict(re.findall(r'(\w{3}):\s*"([^"]+)"', block))
     assert len(teams) == 30, f'expected 30 teams, parsed {len(teams)}'

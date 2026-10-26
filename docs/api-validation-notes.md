@@ -7,7 +7,7 @@ contract a `/api/validate/*` endpoint returns.
 
 ## Validation endpoints — the two bugs the endpoint layer hid
 
-`_require_validatable` rejects unknown teams/players with a 400 instead of
+`_require_validatable` rejects unknown stats/teams/players with a 400 instead of
 scoring them — a validator handed an unknown team reads its salary as $0 and
 every check passes vacuously, which would print a confident "LEGAL" for a
 transaction that was never evaluated. `_require_trade_validatable` is the same
@@ -33,7 +33,7 @@ unknown subjects refused with 400, junk bodies 422).
 explicit promise to block "any signing, trade, draft pick signing, or two-way
 conversion" that breaches a ceiling. It now checks the hard cap, the roster
 ceiling, that the player actually holds draft rights, and § 7.1 scale conformity.
-It is wired into `/transactions`' live rubric (not the simulator, which doesn't
+It is wired into `/fo/transactions`' live rubric (not the simulator, which doesn't
 offer the type). Note it is deliberately **not** run through
 `_check_contract_raises`: the scale's own Year 1 → Year 2 step lands either side
 of exactly 5% (pick 1 of 2026 rises 5.0024%), so the § 3.9 ladder rejects about
@@ -42,7 +42,7 @@ half the contracts § 7.1 prescribes.
 `convert_twoway` had the same gap `sign_pick` did, but on the fact-sheet side
 rather than the checks: `_validate_convert_twoway` was always in `_VALIDATORS`,
 so a two-way conversion was never unchecked — but with no `/api/validate/*`
-endpoint, `/transactions`' live rubric had no fact sheet to read `needs_eaps`
+endpoint, `/fo/transactions`' live rubric had no fact sheet to read `needs_eaps`
 off of, so `f-eaps-field` never appeared even though `_apply_convert_twoway`
 prices the trailing § 3.10 hold through the same `_autofill_fa_hold_amounts` a
 signing does, and a Full Bird hold with no EAPS on file rejects at submit with
@@ -60,15 +60,15 @@ reported a team $18.9M *cheaper* for extending a player). Contract start is
 derived by reusing `_bird_tenure`'s ledger walk verbatim, including its
 synthetic draft-event seed, rather than the separate ledger backfill the
 pipeline doc originally sized — see the `[P3]` backlog item. Wired into both
-`/transaction-sim` (its own "Extension" tab, not a variant of the signing one)
-and the `/transactions` office form (2026-08-21) the same way
+`/fo/transaction-sim` (its own "Extension" tab, not a variant of the signing one)
+and the `/fo/transactions` office form (2026-08-21) the same way
 `sign_pick`/`convert_twoway` were — team derived from the roster, since § 6.2
 means only the incumbent may extend.
 
 ## The § 7.1 rookie scale
 
 `rookie-scale.json` in NBS_DATA_DIR, keyed by draft year, 30 rows of **five**
-figures. Served by `GET /api/rookie-scale`; the Rookie Scale tab of `/cap-settings` renders it
+figures. Served by `GET /api/rookie-scale`; the Rookie Scale tab of `/office/cap-settings` renders it
 (public read, editing gated on `rosters`; `/rookie-scale` redirects there) and `GET /api/rookie-scale/contract/{slug}`
 returns one player's prescribed deal ready to load into a contract form.
 
@@ -184,7 +184,7 @@ the split safe, and removing any one of them reintroduces the bug:
    total isn't the figure § 3.15 means. Counted against the Cap but not hard
    cap/apron, exactly like the UFA/RFA holds it sits beside (§ 3.10).
 3. **Pending is loud.** `GET /api/offer-sheets/open` backs a banner on both teams'
-   pages and a panel at the top of `/transactions`, flagged `overdue` past the
+   pages and a panel at the top of `/fo/transactions`, flagged `overdue` past the
    48-hour deadline. Nothing auto-resolves — silently moving a real player on a
    timer is worse than a late decision.
 

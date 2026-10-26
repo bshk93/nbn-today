@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/stats/players/subpage.css">
+  <title>NBN | Contract</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN player’s contract: the deal at a glance and every season’s salary.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Contract">
+  <meta property="og:description" content="One NBN player’s contract: the deal at a glance and every season’s salary.">
+  <meta property="og:url" content="https://nbn.today/stats/players/contract/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .cap-non-gtd    td { background: var(--bg-subtle); }
+    :is(.cap-ufa, .cap-rfa, .cap-player-opt, .cap-team-opt) td { background: color-mix(in srgb, var(--cap-c) 10%, transparent); }
+    .dead-cap-row   td { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
+    .dead-cap-row td.hold-label { color: var(--danger); opacity: 0.7; }
+
+    /* Contract timeline */
+    .ctl-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 0.75rem 0.5rem; margin-bottom: 0.5rem; position: relative; }
+    .ctl-svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .ctl-seg { transition: filter 0.1s; }
+    .ctl-seg.ctl-hovered { filter: brightness(1.2); }
+    .ctl-hit { fill: transparent; cursor: pointer; outline: none; }
+    .ctl-legend { display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .ctl-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+    .ctl-legend-swatch { width: 10px; height: 10px; border-radius: var(--radius-sm); flex: none; }
+    .ctl-tooltip {
+      position: absolute; pointer-events: none; z-index: 5;
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0.4rem 0.6rem; font-size: var(--text-xs); line-height: 1.45; color: var(--text-secondary);
+      box-shadow: var(--shadow-overlay); white-space: nowrap; display: none;
+    }
+    .ctl-tooltip .ctl-tt-season { color: var(--text-primary); font-weight: 700; }
+    .ctl-tooltip .ctl-tt-val { color: var(--text-primary); font-weight: 700; font-size: var(--text-sm); }
+    .ctl-tooltip .ctl-tt-sub { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="page ui-page ui-page--wide">
+  <nav class="nav" id="nav"></nav>
+  <header class="ui-header">
+    <div class="psub-head">
+      <img class="psub-photo" id="photo" alt="" hidden>
+      <div>
+        <h1 class="ui-title" id="page-title">Contract</h1>
+        <p class="ui-subtitle" id="page-sub"></p>
+      </div>
+    </div>
+  </header>
+  <nav id="player-tabs" style="display:none"></nav>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script src="/names.js"></script>
+<script src="/league-time.js"></script>
+<script src="/stats/players/subpage.js"></script>
+<script>
+(function () {
+  const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+  // "CURRY, STEPHEN" → "Stephen Curry". Shared with every page via /names.js.
+  function displayName(canonical) {
+    return nbnPlayerName(canonical);
+  }
+
+  function formatSalary(v) {
+    if (!v && v !== 0) return '—';
+    const s = String(v).trim();
+    if (!s || s === '—') return '—';
+    const n = parseFloat(s.replace(/[$,\s]/g, ''));
+    if (isNaN(n)) return s;
+    return '$' + Math.round(n).toLocaleString('en-US');
+  }
+
+  function fmtGuaranteeDate(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${months[m - 1]} ${d}, ${y}`;
+  }
+
+  const CAP_HOLD_LABELS = {
+    UFA:        'UFA Hold',
+    RFA:        'RFA Hold',
+    PLAYER_OPT: 'Player Option',
+    TEAM_OPT:   'Team Option',
+    NON_GTD:    'Non-Guaranteed',
+  };
+
+  const CAP_HOLD_CSS = {
+    UFA:        'cap-ufa',
+    RFA:        'cap-rfa',
+    PLAYER_OPT: 'cap-player-opt',
+    TEAM_OPT:   'cap-team-opt',
+    NON_GTD:    'cap-non-gtd',
+  };
+
+  function renderSalaryTable(container, bio) {
+    const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
+    const rawDeadCap = bio.dead_cap && typeof bio.dead_cap === 'object' ? bio.dead_cap : {};
+    // Backward compat: old dead players stored dead cap in salaries with no dead_cap field
+    const deadCapData = Object.keys(rawDeadCap).length
+      ? rawDeadCap
+      : (bio.type === 'dead' ? salaries : {});
+    const salaryData = (bio.type === 'dead' && !Object.keys(rawDeadCap).length) ? {} : salaries;
+
+    if (!Object.keys(salaryData).length && !Object.keys(deadCapData).length) return;
+
+    const capMap = bio.cap_holds || {};
+    const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
+    const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
+    const guarantee_schedule = bio.guarantee_schedule && typeof bio.guarantee_schedule === 'object' ? bio.guarantee_schedule : {};
+
+    // Merge all seasons, tagging each entry
+    const allEntries = [];
+    Object.keys(salaryData).sort().forEach(season => {
+      allEntries.push({ season, amount: salaryData[season], isDeadCap: false });
+    });
+    Object.keys(deadCapData).sort().forEach(season => {
+      allEntries.push({ season, amount: deadCapData[season], isDeadCap: true });
+    });
+    allEntries.sort((a, b) => a.season < b.season ? -1 : a.season > b.season ? 1 : a.isDeadCap ? 1 : -1);
+
+    if (!allEntries.length) return;
+
+    const table = document.createElement('table'); table.className = 'ui-table';
+    table.className = 'salary-table';
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    ['Season', 'Salary', ''].forEach((h, i) => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      if (i === 1) th.className = 'right';
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    let total = 0;
+
+    allEntries.forEach(({ season, amount, isDeadCap }) => {
+      const holdType = capMap[season];
+      const tr = tbody.insertRow();
+
+      if (isDeadCap) {
+        tr.className = 'dead-cap-row';
+      } else if (holdType && CAP_HOLD_CSS[holdType]) {
+        tr.className = CAP_HOLD_CSS[holdType];
+      }
+
+      const tdSeason = tr.insertCell(); tdSeason.textContent = season;
+      const tdAmt    = tr.insertCell(); tdAmt.className = 'right'; tdAmt.textContent = formatSalary(amount);
+      const tdLabel  = tr.insertCell(); tdLabel.className = 'hold-label';
+
+      if (isDeadCap) {
+        tdLabel.textContent = 'Dead cap';
+      } else if (holdType === 'NON_GTD') {
+        const schedule = guarantee_schedule[season];
+        let label = 'Non-Guaranteed';
+        if (schedule && schedule.length) {
+          // Multi-step schedule
+          const parts = schedule.map(step => {
+            const amt  = step.amount ? formatSalary(step.amount) : null;
+            const dt   = step.date   ? fmtGuaranteeDate(step.date) : null;
+            if (!amt && dt)  return `fully gtd ${dt}`;
+            if (!amt && !dt) return 'fully gtd';
+            if (!dt)         return `${amt} gtd`;
+            return `+${amt} on ${dt}`;
+          });
+          label = `Non-Gtd (${parts.join(' · ')})`;
+        } else {
+          // Legacy single-step display
+          const gtd = guaranteed[season];
+          const gDate = guarantee_dates[season];
+          if (gtd || gDate) {
+            const parts = [];
+            if (gtd) parts.push(`${formatSalary(gtd)} gtd`);
+            if (gDate) parts.push(`fully gtd ${fmtGuaranteeDate(gDate)}`);
+            label = `Non-Gtd (${parts.join(' · ')})`;
+          }
+        }
+        tdLabel.textContent = label;
+      } else if (holdType && CAP_HOLD_LABELS[holdType]) {
+        tdLabel.textContent = CAP_HOLD_LABELS[holdType];
+      }
+
+      if (isDeadCap || !holdType) {
+        const n = parseFloat(String(amount).replace(/[$,\s]/g, ''));
+        if (!isNaN(n)) total += n;
+      }
+    });
+
+    if (total > 0) {
+      const tr = tbody.insertRow();
+      tr.className = 'total-row';
+      const tdL = tr.insertCell(); tdL.textContent = 'Career Earnings';
+      const tdV = tr.insertCell(); tdV.className = 'right'; tdV.textContent = formatSalary(total);
+      tr.insertCell();
+    }
+
+    container.appendChild(table);
+  }
+
+  // ── Contract Timeline ───────────────────────────────────────────────────
+  // A column chart over the same salaries/cap_holds/guarantees the Career
+  // Earnings table already shows in full — this is the "read the shape of
+  // the deal at a glance" view, not a new data source. Column height is the
+  // magnitude (a $2M year never looks like a $40M year); fill color is
+  // status (guaranteed / non-guaranteed / option / dead cap); contiguous
+  // seasons that are part of one signing render as one unbroken block, with
+  // a visible seam only where a new contract actually starts.
+  const CTL_COLORS = {
+    guaranteed: 'var(--success)',
+    nonGuaranteed: 'var(--warning)',
+    option: 'var(--cat-violet)',
+    deadCap: 'var(--danger)',
+  };
+  // Contract-creating transaction types — each stamps its own `contract`
+  // object with the season(s) it covers, so the *earliest* salary key in
+  // that contract is a hard seam. offer_sheet (the open offer) is skipped in
+  // favor of offer_sheet_decision, which fires once regardless of outcome
+  // and carries the contract that actually resulted.
+  const CTL_BOUNDARY_TYPES = new Set(['sign', 'pick', 'sign_pick', 'extension', 'convert_twoway', 'offer_sheet_decision']);
+
+  function ctlDollar(v) {
+    if (!v) return 0;
+    return parseFloat(String(v).replace(/[$,\s]/g, '')) || 0;
+  }
+
+  function ctlCompact(n) {
+    if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K';
+    return '$' + Math.round(n);
+  }
+
+  function renderContractTimeline(container, bio, playerSlug) {
+    const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
+    const rawDeadCap = bio.dead_cap && typeof bio.dead_cap === 'object' ? bio.dead_cap : {};
+    const deadCapData = Object.keys(rawDeadCap).length
+      ? rawDeadCap
+      : (bio.type === 'dead' ? salaries : {});
+    const salaryData = (bio.type === 'dead' && !Object.keys(rawDeadCap).length) ? {} : salaries;
+    const capMap = bio.cap_holds || {};
+
+    const seasons = Array.from(new Set([
+      ...Object.keys(salaryData), ...Object.keys(deadCapData), ...Object.keys(capMap),
+    ])).sort();
+    if (!seasons.length) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'Contract Timeline';
+    container.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ctl-wrap';
+    wrap.innerHTML = '<div class="status">Loading…</div>';
+    container.appendChild(wrap);
+
+    fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}&limit=500`)
+      .then(r => r.ok ? r.json() : { transactions: [] })
+      .catch(() => ({ transactions: [] }))
+      .then(data => {
+        const txns = data.transactions || [];
+        const boundarySeasons = new Set();
+        txns.forEach(t => {
+          if (!CTL_BOUNDARY_TYPES.has(t.type)) return;
+          const c = (t.details || {}).contract;
+          const keys = c && c.salaries ? Object.keys(c.salaries).sort() : [];
+          if (keys.length) boundarySeasons.add(keys[0]);
+        });
+
+        const guaranteed = bio.guaranteed && typeof bio.guaranteed === 'object' ? bio.guaranteed : {};
+        const guarantee_dates = bio.guarantee_dates && typeof bio.guarantee_dates === 'object' ? bio.guarantee_dates : {};
+        const guarantee_schedule = bio.guarantee_schedule && typeof bio.guarantee_schedule === 'object' ? bio.guarantee_schedule : {};
+        const today = nbnToday();
+
+        // Mirrors deadCapFromSchedule (transactions/index.html): walk the
+        // vesting steps in order; a step with no amount means "everything
+        // left becomes guaranteed on this date". Evaluated against today, so
+        // a still-future step shows as the "next vest" date on the chart.
+        function vestState(season, total) {
+          const schedule = guarantee_schedule[season];
+          if (schedule && schedule.length) {
+            let cumulative = 0, fullyGtd = false, nextDate = null;
+            for (const step of schedule) {
+              const stepDate = step.date || '';
+              if (stepDate && today < stepDate) { if (!nextDate) nextDate = stepDate; continue; }
+              if (!step.amount) { fullyGtd = true; break; }
+              cumulative += ctlDollar(step.amount);
+            }
+            return { guaranteedNow: fullyGtd ? total : Math.min(cumulative, total), nextDate: fullyGtd ? null : nextDate };
+          }
+          const gtd = guaranteed[season], gDate = guarantee_dates[season];
+          if (gtd || gDate) {
+            const fullyGtd = gDate && today >= gDate;
+            return { guaranteedNow: fullyGtd ? total : Math.min(ctlDollar(gtd), total), nextDate: fullyGtd ? null : (gDate || null) };
+          }
+          // NON_GTD with no schedule and no legacy guarantee fields at all —
+          // nothing has actually vested (same reading renderSalaryTable gives:
+          // a bare "Non-Guaranteed" label, never a guaranteed dollar amount).
+          return { guaranteedNow: 0, nextDate: null };
+        }
+
+        const bars = seasons.map((season, i) => {
+          const holdType = capMap[season];
+          const hasSalary = Object.prototype.hasOwnProperty.call(salaryData, season);
+          const isDeadCap = Object.prototype.hasOwnProperty.call(deadCapData, season);
+          const seam = i > 0 && boundarySeasons.has(season);
+
+          if (!hasSalary && !isDeadCap) {
+            return { season, kind: 'hold', holdType, seam, total: 0 };
+          }
+          const total = ctlDollar(hasSalary ? salaryData[season] : deadCapData[season]);
+          if (isDeadCap) return { season, kind: 'deadCap', total, seam };
+          if (holdType === 'PLAYER_OPT' || holdType === 'TEAM_OPT') {
+            return { season, kind: 'option', holdType, total, seam };
+          }
+          if (holdType === 'NON_GTD') {
+            const { guaranteedNow, nextDate } = vestState(season, total);
+            return { season, kind: 'split', total, guaranteedNow: Math.max(0, Math.min(guaranteedNow, total)), nextDate, seam };
+          }
+          if (holdType === 'UFA' || holdType === 'RFA') {
+            // The dollar figure here (when present) is the cap-hold placeholder
+            // amount teams carry on the books for an unrenounced FA, not a signed
+            // salary — never render it as guaranteed money.
+            return { season, kind: 'hold', holdType, total, seam };
+          }
+          return { season, kind: 'guaranteed', total, seam };
+        });
+
+        wrap.innerHTML = '';
+        buildContractTimelineChart(bars, wrap);
+      });
+  }
+
+  function ctlRoundedTopPath(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h));
+    return `M${x},${y + h} L${x},${y + r} Q${x},${y} ${x + r},${y} `
+         + `L${x + w - r},${y} Q${x + w},${y} ${x + w},${y + r} L${x + w},${y + h} Z`;
+  }
+
+  function buildContractTimelineChart(bars, wrapEl) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const COL_W = 48, BAR_W = 34, GAP_SAME = 3, GAP_SEAM = 15, HOLD_PILL_H = 18;
+    const MAX_BAR_PX = 128;
+    const PAD = { top: 24, bottom: 22, left: 10, right: 10 };
+    const baselineY = PAD.top + MAX_BAR_PX;
+    const maxTotal = Math.max(1, ...bars.map(b => b.total));
+
+    const xs = [];
+    let x = PAD.left;
+    bars.forEach((b, i) => {
+      if (i > 0) x += b.seam ? GAP_SEAM : GAP_SAME;
+      xs.push(x);
+      x += COL_W;
+    });
+    const totalW = x + PAD.right; // x already sits one COL_W past the last column
+    const W = Math.max(totalW, PAD.left + COL_W + PAD.right);
+    const H = PAD.top + MAX_BAR_PX + PAD.bottom;
+
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('class', 'ctl-svg');
+    svg.style.height = `${H}px`;
+
+    // Baseline
+    const base = document.createElementNS(ns, 'line');
+    base.setAttribute('x1', PAD.left - 4); base.setAttribute('x2', W - PAD.right + 4);
+    base.setAttribute('y1', baselineY); base.setAttribute('y2', baselineY);
+    base.setAttribute('stroke', 'var(--border)');
+    base.setAttribute('stroke-width', '1');
+    svg.appendChild(base);
+
+    const present = { guaranteed: false, nonGuaranteed: false, option: false, deadCap: false, hold: false };
+
+    bars.forEach((b, i) => {
+      const colX = xs[i];
+      const barX = colX + (COL_W - BAR_W) / 2;
+      const cx = colX + COL_W / 2;
+
+      // Seam divider — a coarser structural cue than the mark gap, marking
+      // where one signing ends and the next begins.
+      if (b.seam) {
+        const seamX = colX - (GAP_SEAM / 2);
+        const div = document.createElementNS(ns, 'line');
+        div.setAttribute('x1', seamX); div.setAttribute('x2', seamX);
+        div.setAttribute('y1', PAD.top - 8); div.setAttribute('y2', baselineY);
+        div.setAttribute('stroke', 'var(--border)');
+        div.setAttribute('stroke-width', '1');
+        div.setAttribute('stroke-dasharray', '2,2');
+        svg.appendChild(div);
+      }
+
+      const g = document.createElementNS(ns, 'g');
+      let stackTopY = baselineY;
+      let tooltipLines = [];
+      const segEls = [];
+
+      if (b.kind === 'hold') {
+        present.hold = true;
+        // A hold's dollar figure (when present) is the cap-hold placeholder
+        // amount, not a signed salary — still worth scaling by magnitude (a
+        // $70M UFA hold and a $2M one are very different), but always drawn
+        // outlined/unfilled so it never reads as guaranteed money.
+        const h = b.total > 0 ? Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)) : HOLD_PILL_H;
+        const y = baselineY - h;
+        const rect = document.createElementNS(ns, 'rect');
+        rect.setAttribute('x', barX); rect.setAttribute('y', y);
+        rect.setAttribute('width', BAR_W); rect.setAttribute('height', h);
+        rect.setAttribute('rx', 4);
+        rect.setAttribute('fill', 'none');
+        rect.setAttribute('stroke', 'var(--text-dim)');
+        rect.setAttribute('stroke-width', '1.5');
+        rect.setAttribute('stroke-dasharray', '3,2');
+        rect.setAttribute('class', 'ctl-seg');
+        g.appendChild(rect);
+        segEls.push(rect);
+        stackTopY = y;
+        const holdLabel = CAP_HOLD_LABELS[b.holdType] || b.holdType || 'Hold';
+        tooltipLines = b.total > 0 ? [ctlCompact(b.total) + ' cap hold', holdLabel] : [null, holdLabel];
+      } else {
+        const segments = [];
+        if (b.kind === 'split') {
+          present.guaranteed = present.guaranteed || b.guaranteedNow > 0;
+          present.nonGuaranteed = present.nonGuaranteed || (b.total - b.guaranteedNow) > 0;
+          segments.push({ h: Math.round((b.guaranteedNow / maxTotal) * MAX_BAR_PX), color: CTL_COLORS.guaranteed });
+          segments.push({ h: Math.round(((b.total - b.guaranteedNow) / maxTotal) * MAX_BAR_PX), color: CTL_COLORS.nonGuaranteed });
+        } else if (b.kind === 'option') {
+          present.option = true;
+          segments.push({ h: Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)), color: CTL_COLORS.option });
+        } else if (b.kind === 'deadCap') {
+          present.deadCap = true;
+          segments.push({ h: Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)), color: CTL_COLORS.deadCap });
+        } else {
+          present.guaranteed = true;
+          segments.push({ h: Math.max(4, Math.round((b.total / maxTotal) * MAX_BAR_PX)), color: CTL_COLORS.guaranteed });
+        }
+
+        const visible = segments.filter(s => s.h > 0);
+        let yCursor = baselineY;
+        visible.forEach((seg, idx) => {
+          const isTop = idx === visible.length - 1;
+          const yTop = yCursor - seg.h;
+          if (isTop) {
+            const path = document.createElementNS(ns, 'path');
+            path.setAttribute('d', ctlRoundedTopPath(barX, yTop, BAR_W, seg.h, 4));
+            path.setAttribute('fill', seg.color);
+            path.setAttribute('class', 'ctl-seg');
+            g.appendChild(path);
+            segEls.push(path);
+          } else {
+            const rect = document.createElementNS(ns, 'rect');
+            rect.setAttribute('x', barX); rect.setAttribute('y', yTop);
+            rect.setAttribute('width', BAR_W); rect.setAttribute('height', seg.h);
+            rect.setAttribute('fill', seg.color);
+            rect.setAttribute('class', 'ctl-seg');
+            g.appendChild(rect);
+            segEls.push(rect);
+          }
+          yCursor = yTop - 2; // 2px surface gap between stacked segments
+        });
+        if (visible.length) stackTopY = yCursor + 2;
+
+        if (b.kind === 'split') {
+          tooltipLines = [
+            ctlCompact(b.total),
+            b.guaranteedNow >= b.total
+              ? 'Fully guaranteed'
+              : `${formatSalary(b.guaranteedNow)} guaranteed`
+                + (b.nextDate ? ` · vests ${fmtGuaranteeDate(b.nextDate)}` : '')
+                + ` · ${formatSalary(b.total - b.guaranteedNow)} at risk`,
+          ];
+        } else if (b.kind === 'option') {
+          tooltipLines = [ctlCompact(b.total), CAP_HOLD_LABELS[b.holdType] || b.holdType];
+        } else if (b.kind === 'deadCap') {
+          tooltipLines = [ctlCompact(b.total), 'Dead cap — no player on this money'];
+        } else {
+          tooltipLines = [ctlCompact(b.total), 'Guaranteed'];
+        }
+      }
+
+      // Value label at the tip. A hold with no dollar figure at all labels
+      // its hold type instead, since there's no magnitude to show.
+      const val = document.createElementNS(ns, 'text');
+      val.setAttribute('x', cx); val.setAttribute('y', stackTopY - 6);
+      val.setAttribute('text-anchor', 'middle');
+      val.setAttribute('font-weight', '600');
+      if (b.kind === 'hold' && b.total <= 0) {
+        val.setAttribute('font-size', '8');
+        val.setAttribute('fill', 'var(--text-dim)');
+        val.textContent = CAP_HOLD_LABELS[b.holdType] || b.holdType || '';
+      } else {
+        val.setAttribute('font-size', '9');
+        val.setAttribute('fill', 'var(--text-muted)');
+        val.textContent = ctlCompact(b.total);
+      }
+      g.appendChild(val);
+
+      // Season tick
+      const tick = document.createElementNS(ns, 'text');
+      tick.setAttribute('x', cx); tick.setAttribute('y', baselineY + 14);
+      tick.setAttribute('text-anchor', 'middle');
+      tick.setAttribute('font-size', '8');
+      tick.setAttribute('fill', 'var(--text-muted)');
+      tick.textContent = b.season;
+      g.appendChild(tick);
+
+      // Hit target — bigger than the visual mark, carries hover/focus tooltip.
+      const hit = document.createElementNS(ns, 'rect');
+      hit.setAttribute('x', colX); hit.setAttribute('y', PAD.top - 8);
+      hit.setAttribute('width', COL_W); hit.setAttribute('height', baselineY - PAD.top + 8 + 16);
+      hit.setAttribute('class', 'ctl-hit');
+      hit.setAttribute('tabindex', '0');
+      hit.setAttribute('role', 'img');
+      const ariaBits = [b.season, tooltipLines[0], tooltipLines[1]].filter(Boolean);
+      hit.setAttribute('aria-label', ariaBits.join(' — '));
+      g.appendChild(hit);
+      const enter = () => {
+        segEls.forEach(el => el.classList.add('ctl-hovered'));
+        showCtlTooltip(wrapEl, hit, b.season, tooltipLines);
+      };
+      const leave = () => {
+        segEls.forEach(el => el.classList.remove('ctl-hovered'));
+        hideCtlTooltip(wrapEl);
+      };
+      hit.addEventListener('pointerenter', enter);
+      hit.addEventListener('focus', enter);
+      hit.addEventListener('pointerleave', leave);
+      hit.addEventListener('blur', leave);
+
+      svg.appendChild(g);
+    });
+
+    wrapEl.appendChild(svg);
+
+    const legendDefs = [
+      ['guaranteed', 'Guaranteed', CTL_COLORS.guaranteed, false],
+      ['nonGuaranteed', 'Non-Guaranteed', CTL_COLORS.nonGuaranteed, false],
+      ['option', 'Option (Player/Team)', CTL_COLORS.option, false],
+      ['deadCap', 'Dead Cap', CTL_COLORS.deadCap, false],
+      ['hold', 'Free Agent Hold', null, true],
+    ];
+    const legend = document.createElement('div');
+    legend.className = 'ctl-legend';
+    legendDefs.forEach(([key, label, color, outline]) => {
+      if (!present[key]) return;
+      const item = document.createElement('div');
+      item.className = 'ctl-legend-item';
+      const sw = document.createElement('span');
+      sw.className = 'ctl-legend-swatch';
+      if (outline) {
+        sw.style.background = 'none';
+        sw.style.border = '1.5px dashed var(--text-dim)';
+      } else {
+        sw.style.background = color;
+      }
+      item.appendChild(sw);
+      const lbl = document.createElement('span');
+      lbl.textContent = label;
+      item.appendChild(lbl);
+      legend.appendChild(item);
+    });
+    wrapEl.appendChild(legend);
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ctl-tooltip';
+    wrapEl.appendChild(tooltip);
+
+    return wrapEl;
+  }
+
+  function showCtlTooltip(wrapEl, hitEl, season, lines) {
+    const tooltip = wrapEl.querySelector('.ctl-tooltip');
+    if (!tooltip) return;
+    tooltip.innerHTML = '';
+    const seasonEl = document.createElement('div');
+    seasonEl.className = 'ctl-tt-season';
+    seasonEl.textContent = season;
+    tooltip.appendChild(seasonEl);
+    if (lines[0]) {
+      const valEl = document.createElement('div');
+      valEl.className = 'ctl-tt-val';
+      valEl.textContent = lines[0];
+      tooltip.appendChild(valEl);
+    }
+    if (lines[1]) {
+      const subEl = document.createElement('div');
+      subEl.className = 'ctl-tt-sub';
+      subEl.textContent = lines[1];
+      tooltip.appendChild(subEl);
+    }
+    tooltip.style.display = 'block';
+    const wrapRect = wrapEl.getBoundingClientRect();
+    const hitRect = hitEl.getBoundingClientRect();
+    const left = hitRect.left - wrapRect.left + hitRect.width / 2;
+    const top = hitRect.top - wrapRect.top;
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.transform = 'translate(-50%, calc(-100% - 6px))';
+  }
+
+  function hideCtlTooltip(wrapEl) {
+    const tooltip = wrapEl && wrapEl.querySelector('.ctl-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+  }
+
+  PlayerSubpage.mount('contract').then(ctx => {
+    if (!ctx) return;
+    const { slug, bio, content } = ctx;
+    content.innerHTML = '';
+    renderContractTimeline(content, bio, slug);
+    const before = content.children.length;
+    renderSalaryTable(content, bio);
+    if (content.children.length > before) {
+      const h2 = document.createElement('h2');
+      h2.className = 'section-heading';
+      h2.textContent = 'Salary by Season';
+      content.insertBefore(h2, content.children[before]);
+    }
+    if (!content.children.length) content.innerHTML = '<div class="ui-empty">No contract on record for this player.</div>';
+  });
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

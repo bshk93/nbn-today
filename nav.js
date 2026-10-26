@@ -304,14 +304,14 @@ function _rebuildThemeMenu() {
 // everywhere else the inbox is its own sidebar entry (_buildInboxEntry), which
 // carries the unread count, as does the phone menu button. The unread count is only
 // fetched when a token is on hand; a signed-out visitor still gets the button
-// (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
+// (clicking takes them to /about/inbox/, which prompts sign-in itself), just no badge.
 function _buildInboxButton() {
   const btn = document.createElement('button');
   btn.className = 'inbox-btn nav-icon-btn';
   btn.setAttribute('aria-label', 'Inbox');
   btn.setAttribute('title', 'Inbox');
   btn.innerHTML = _ICON_INBOX;
-  btn.addEventListener('click', () => { window.location.href = '/inbox/'; });
+  btn.addEventListener('click', () => { window.location.href = '/about/inbox/'; });
 
   const badge = document.createElement('span');
   badge.className = 'inbox-badge';
@@ -464,10 +464,10 @@ function _initNav() {
   // keeps "← Home".
   if (!nav.children.length && !nav.textContent.trim() && !nav.hasAttribute('data-no-home')) {
     const sec = _activeSection();
-    // On a page a hub lists, the kicker is the way back to the hub.
+    // On a page a hub (or landing page) lists, the kicker is the way back to it.
     nav.innerHTML = !sec ? '<a href="/">← Home</a>'
-      : sec.hub && _normPath(sec.hub) !== _normPath(location.pathname)
-        ? `<a class="nav-kicker" href="${sec.hub}">${sec.label}</a>`
+      : (sec.hub || sec.landing) && _normPath(sec.hub || sec.landing) !== _normPath(location.pathname)
+        ? `<a class="nav-kicker" href="${sec.hub || sec.landing}">${sec.label}</a>`
         : `<span class="nav-kicker">${sec.label}</span>`;
   }
   if (_sidebarEnabled() && !nav.querySelector('.nav-menu-btn')) nav.prepend(_buildMenuButton());
@@ -678,22 +678,25 @@ function _initSidebarPeek(aside) {
   window.addEventListener('resize', () => { if (!applies()) _endPeek(); });
 }
 
-// "/teams/ATL/index.html" and "/teams/ATL" are the same page.
+// "/stats/teams/ATL/index.html" and "/stats/teams/ATL" are the same page.
 function _normPath(p) {
   return (p.replace(/index\.html$/, '').replace(/\/+$/, '') || '/').toLowerCase();
 }
 
 // The row this page belongs to: an exact match, else the longest href this
 // path sits under — a team page is under Teams, a season's awards under Awards.
-// /awards/race/ matches itself before /awards/, being longer.
+// /season/award-race/ matches itself before /history/awards/, being longer.
 function _activeNavHref() {
   const here = _normPath(location.pathname);
   let best = null;
   for (const p of _NAV_ITEMS) {
     if (p.searchOnly || !p.href.startsWith('/') || p.href.includes('#')) continue;
     // `also`: other pages that live under this row (reached from its page, not the sidebar).
+    // `exact`: the row's own href is a section prefix too (/stats/), so only
+    // the page itself counts, not everything under it.
     for (const h of [_normPath(p.href), ...(p.also || []).map(_normPath)]) {
-      if (here === h || (h !== '/' && here.startsWith(h + '/'))) {
+      const prefixOk = !(p.exact && h === _normPath(p.href));
+      if (here === h || (prefixOk && h !== '/' && here.startsWith(h + '/'))) {
         if (!best || h.length > best.len) best = { href: p.href, len: h.length };
       }
     }
@@ -701,10 +704,10 @@ function _activeNavHref() {
   return best && best.href;
 }
 
-// The NAV_SECTIONS section this page sits in, or null. A hub page is in its own.
+// The NAV_SECTIONS section this page sits in, or null. A hub or landing page is in its own.
 function _activeSection() {
   const here = _normPath(location.pathname);
-  const hub = NAV_SECTIONS.find(sec => sec.hub && _normPath(sec.hub) === here);
+  const hub = NAV_SECTIONS.find(sec => (sec.hub || sec.landing) && _normPath(sec.hub || sec.landing) === here);
   if (hub) return hub;
   const href = _activeNavHref();
   return (href && NAV_SECTIONS.find(sec => sec.items.some(p => p.href === href))) || null;
@@ -949,9 +952,9 @@ function _loadCalendarBadge() {
   _gamesToday().then(n => {
     if (!n) return;
     const today = `${n} game${n === 1 ? '' : 's'} today`;
-    _setBadge('/calendar', n, today, 'info', today);
+    _setBadge('/season/calendar', n, today, 'info', today);
     _streamLive().then(live => {
-      if (live) _setBadge('/calendar', n, `Live on Twitch now · ${today}`, 'live', 'LIVE');
+      if (live) _setBadge('/season/calendar', n, `Live on Twitch now · ${today}`, 'live', 'LIVE');
     });
   });
 }
@@ -1107,8 +1110,8 @@ function _loadWorkBadges() {
 // Hover opens it on a pointer device, click on anything; it replaces the strip
 // of 30 logos that used to run across the top of the homepage.
 function _buildTeamsEntry() {
-  const here = location.pathname.match(/^\/teams\/([a-z]{3})\b/i)?.[1]?.toUpperCase() || null;
-  const onTeams = /^\/teams(\/|$)/i.test(location.pathname);
+  const here = location.pathname.match(/^\/stats\/teams\/([a-z]{3})\b/i)?.[1]?.toUpperCase() || null;
+  const onTeams = /^\/stats\/teams(\/|$)/i.test(location.pathname);
 
   const wrap = document.createElement('div');
   wrap.className = 'sb-teams';
@@ -1138,7 +1141,7 @@ function _buildTeamsEntry() {
     for (const t of teams) {
       const a = document.createElement('a');
       a.className = 'sb-team';
-      a.href = `/teams/${t}/`;
+      a.href = `/stats/teams/${t}/`;
       if (t === here) a.setAttribute('aria-current', 'page');
       // Logos load on first open, not with every page: 30 of them is ~116KB.
       a.innerHTML = `<img data-src="/logos/sm/logo-${t.toLowerCase()}.webp" alt=""><span></span>`;
@@ -1148,7 +1151,7 @@ function _buildTeamsEntry() {
     grid.appendChild(col);
   }
   panel.appendChild(grid);
-  panel.insertAdjacentHTML('beforeend', '<a class="sb-teams-all" href="/teams">All teams</a>');
+  panel.insertAdjacentHTML('beforeend', '<a class="sb-teams-all" href="/stats/teams">All teams</a>');
 
   const docked = () => window.matchMedia('(min-width: 900px)').matches;
   const place = () => {
@@ -1211,14 +1214,14 @@ function _buildHomeEntry() {
 }
 
 // Inbox: a top-level entry under Teams, carrying the unread count. A link,
-// not a section — signed out, /inbox/ asks you to sign in itself.
+// not a section — signed out, /about/inbox/ asks you to sign in itself.
 function _buildInboxEntry() {
   const a = document.createElement('a');
   a.className = 'sb-group-hdr sb-top-link';
-  a.href = '/inbox/';
-  a.dataset.href = '/inbox/';
+  a.href = '/about/inbox/';
+  a.dataset.href = '/about/inbox/';
   a.title = 'Inbox';
-  const here = /^\/inbox(\/|$)/.test(location.pathname);
+  const here = /^\/about\/inbox(\/|$)/.test(location.pathname);
   if (here) a.setAttribute('aria-current', 'page');
   a.innerHTML = `<span class="sb-icon">${_headerIcon('inbox', here)}</span><span class="sb-group-label sb-label">Inbox</span>`;
   return a;
@@ -1327,7 +1330,7 @@ function _buildAccount() {
   const divider = () => Object.assign(document.createElement('div'), { className: 'sb-acct-divider' });
 
   // The Change Log, with the version the site is on beside it.
-  const changelog = _acctItem('a', 'Change Log', 'tag', '/changelog');
+  const changelog = _acctItem('a', 'Change Log', 'tag', '/about/changelog');
   fetch('/version.json').then(r => r.json()).then(d => {
     if (d?.version) changelog.insertAdjacentHTML('beforeend', `<span class="sb-acct-item-meta">v${d.version}</span>`);
   }).catch(() => {});
@@ -1383,7 +1386,7 @@ function _buildAccount() {
       if (!team) return;
       const name = TEAM_LIST[team] || team;
       subEl.textContent = name;
-      const link = _acctItem('a', name, 'basketball', `/teams/${team.toLowerCase()}/`);
+      const link = _acctItem('a', name, 'basketball', `/stats/teams/${team.toLowerCase()}/`);
       link.querySelector('.sb-acct-item-icon').innerHTML = `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">`;
       teamSlot.replaceWith(link);
       _teamRecord(team).then(rec => {
@@ -1477,7 +1480,7 @@ function _buildSidebar() {
     });
   });
 
-  _unreadCount().then(n => _setBadge('/inbox/', n, `${n} unread`));
+  _unreadCount().then(n => _setBadge('/about/inbox/', n, `${n} unread`));
   _loadCalendarBadge();
   // Committee queues wait until the page itself has had the network.
   (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(_loadWorkBadges);
@@ -1553,76 +1556,81 @@ function _buildMenuButton() {
 // finding by name in search, but noise as its own sidebar row.
 // `noSearch`: the reverse — a sidebar row that search leaves out.
 const NAV_SECTIONS = [
-  { label: 'Season', icon: 'calendar', items: [
-    { title: 'Calendar', href: '/calendar', icon: 'calendar' },
-    { title: 'Standings & Playoffs', href: '/standings', icon: 'standings' },
-    { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
-    { title: 'Injuries', href: '/injuries/', icon: 'medical', keywords: ['injury report', 'hurt', 'out'] },
-    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
+  { label: 'Season', icon: 'calendar', landing: '/season/', items: [
+    { title: 'Season', href: '/season/', icon: 'calendar', searchOnly: true },
+    { title: 'Calendar', href: '/season/calendar', icon: 'calendar', desc: 'Every game on the schedule, plus free agency, the draft and the deadlines.' },
+    { title: 'Standings & Playoffs', href: '/season/standings', icon: 'standings', desc: 'Standings season by season, playoff odds and every bracket.' },
+    { title: 'Award Race', href: '/season/award-race/', icon: 'flag', desc: 'Who leads the MVP, DPOY, Rookie, Sixth Man and Most Improved races.' },
+    { title: 'Injuries', href: '/season/injuries/', icon: 'medical', keywords: ['injury report', 'hurt', 'out'], desc: 'Who is hurt right now, and every injury since.' },
+    { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart', desc: 'This season\'s leaders, for players and teams.' },
   ] },
-  { label: 'Front Office', icon: 'swap', items: [
-    { title: 'Trade Block', href: '/tradeblock/', icon: 'swap' },
-    { title: 'Free Agency', href: '/free-agency/', icon: 'pen' },
-    { title: 'Extensions', href: '/extensions/', icon: 'doc-plus' },
-    { title: 'Transactions', href: '/transactions', icon: 'doc-lines' },
-    { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
-    { title: 'Cap Summary', href: '/cap-summary/', icon: 'money' },
-    { title: 'Front Office Ledger', href: '/finances/', icon: 'line-chart', keywords: ['finances', 'franchise value', 'attendance', 'profit', 'revenue'] },
+  { label: 'Front Office', icon: 'swap', landing: '/fo/', items: [
+    { title: 'Front Office', href: '/fo/', icon: 'swap', searchOnly: true },
+    { title: 'Trade Block', href: '/fo/tradeblock/', icon: 'swap', desc: 'Every team\'s listed players and picks.' },
+    { title: 'Free Agency', href: '/fo/free-agency/', icon: 'pen', desc: 'The pool, the bidding windows and where your offers stand.' },
+    { title: 'Extensions', href: '/fo/extensions/', icon: 'doc-plus', desc: 'Who is eligible, who has signed and on what terms.' },
+    { title: 'Transactions', href: '/fo/transactions', icon: 'doc-lines', desc: 'Every trade, signing, extension and release.' },
+    { title: 'Transaction Simulator', href: '/fo/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'], desc: 'Model a move and see every cap rule it passes or fails.' },
+    { title: 'Cap Summary', href: '/fo/cap-summary/', icon: 'money', desc: 'Where all 30 teams sit against the cap and the aprons.' },
+    { title: 'Front Office Ledger', href: '/fo/finances/', icon: 'line-chart', keywords: ['finances', 'franchise value', 'attendance', 'profit', 'revenue'], desc: 'Each franchise\'s books: ticket sales, payroll and what it is worth.' },
   ] },
-  { label: 'History', icon: 'trophy', items: [
-    { title: 'Season Summary', href: '/season-summary', icon: 'scroll' },
-    { title: 'Hall of Champions', href: '/champions/', icon: 'trophy' },
-    { title: 'Hall of Fame', href: '/hof', icon: 'star' },
-    { title: 'Awards', href: '/awards/', icon: 'medal' },
-    { title: 'Season Recaps', href: '/recap/', icon: 'tape' },
-    { title: 'Draft', href: '/draft', icon: 'clipboard-list' },
-    // The live draft and the guide matter one week a year; /draft links both.
-    { title: 'Draft Live', href: '/draft/live/', icon: 'live', searchOnly: true },
-    { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide', searchOnly: true },
+  { label: 'History', icon: 'trophy', landing: '/history/', items: [
+    { title: 'History', href: '/history/', icon: 'trophy', searchOnly: true },
+    { title: 'Season Summary', href: '/history/season-summary', icon: 'scroll', desc: 'Every season at a glance: champion, awards and leaders.' },
+    { title: 'Hall of Champions', href: '/history/champions/', icon: 'trophy', desc: 'Every champion, finals matchup and title run.' },
+    { title: 'Hall of Fame', href: '/history/hof', icon: 'star', desc: 'Hall of Fame scores, rings and career totals.' },
+    { title: 'Awards', href: '/history/awards/', icon: 'medal', desc: 'Award winners by season, and the ballots.' },
+    { title: 'Season Recaps', href: '/history/recap/', icon: 'tape', desc: 'One team\'s season on a page.' },
+    { title: 'Draft', href: '/history/draft', icon: 'clipboard-list', desc: 'Every draft, pick by pick.' },
+    // The live draft and the guide matter one week a year; /history/draft links both.
+    { title: 'Draft Live', href: '/history/draft/live/', icon: 'live', searchOnly: true },
+    { title: 'Draft Guide', href: '/history/draft/guide/', icon: 'guide', searchOnly: true },
   ] },
   { label: 'Stats', icon: 'bar-chart', items: [
     // Searchable, but not a row: Teams is its own entry at the top of the
     // sidebar, opening the division panel (_buildTeamsEntry).
-    { title: 'Teams', href: '/teams', icon: 'basketball', searchOnly: true },
+    { title: 'Teams', href: '/stats/teams', icon: 'basketball', searchOnly: true },
     // Players and Stat Lab each stand for a few pages; their own pages link the
-    // rest (tabs on /players, cards on /stats/), which stay searchable here.
-    { title: 'Players', href: '/players', icon: 'jersey', also: ['/compare', '/ratings-changes'] },
-    { title: 'Compare Players', href: '/compare/', icon: 'compare', searchOnly: true },
-    { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars', searchOnly: true },
-    { title: 'Owners', href: '/owners', icon: 'owner' },
-    { title: 'Stat Lab', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
+    // rest (tabs on /stats/players, cards on /stats/), which stay searchable here.
+    { title: 'Players', href: '/stats/players', icon: 'jersey', also: ['/stats/compare', '/stats/ratings-changes'] },
+    { title: 'Compare Players', href: '/stats/compare/', icon: 'compare', searchOnly: true },
+    { title: 'Ratings Changes', href: '/stats/ratings-changes/', icon: 'trend-bars', searchOnly: true },
+    { title: 'Owners', href: '/stats/owners', icon: 'owner' },
+    { title: 'Stat Lab', href: '/stats/', icon: 'list', exact: true, also: ['/stats/totals', '/stats/highs', '/stats/h2h', '/stats/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
     { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
     { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
-    { title: 'Head to Head', href: '/h2h', icon: 'versus', searchOnly: true },
-    { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie', searchOnly: true },
-    { title: 'Box Scores', href: '/boxscores/', icon: 'table' },
+    { title: 'Head to Head', href: '/stats/h2h', icon: 'versus', searchOnly: true },
+    { title: 'Frivolities & Viz', href: '/stats/frivolities', icon: 'pie', searchOnly: true },
+    { title: 'Box Scores', href: '/stats/boxscores/', icon: 'table' },
     // Screenshots go up on /committees/stats; this is the type-it-in fallback.
-    { title: 'Manual Box Score Entry', href: '/boxscores/submit/', icon: 'upload', searchOnly: true,
+    { title: 'Manual Box Score Entry', href: '/stats/boxscores/submit/', icon: 'upload', searchOnly: true,
       keywords: ['box score import', 'submit box score', 'type in box score'] },
-    { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },
+    { title: 'Trade Retrospectives', href: '/stats/frivolities#retros', icon: 'magnifier', searchOnly: true },
   ] },
   { label: 'NB¥ Corner', icon: 'yen', items: [
     { title: 'NB¥ Balances', href: '/nbyen/', icon: 'yen' },
-    { title: 'Betting — bets, Pick\'em, futures', short: 'Betting', href: '/bet/', icon: 'dice' },
-    { title: "Pick'em", href: '/bet/#pickem', icon: 'target', keywords: ['pickem', 'lineup', 'fantasy'] },
-    { title: 'Futures', href: '/bet/#futures', icon: 'line-chart', searchOnly: true },
-    { title: 'Wall Street', href: '/invest', icon: 'candles' },
-    { title: 'Donations', href: '/donations/', icon: 'heart' },
+    { title: 'Betting — bets, Pick\'em, futures', short: 'Betting', href: '/nbyen/bet/', icon: 'dice' },
+    { title: "Pick'em", href: '/nbyen/bet/#pickem', icon: 'target', keywords: ['pickem', 'lineup', 'fantasy'] },
+    { title: 'Futures', href: '/nbyen/bet/#futures', icon: 'line-chart', searchOnly: true },
+    { title: 'Wall Street', href: '/nbyen/invest', icon: 'candles' },
+    { title: 'Donations', href: '/nbyen/donations/', icon: 'heart' },
   ] },
   // A section with a `hub` is one row in the sidebar, opening a page of cards
-  // for its items (hub.js); each item's `desc` is its card's line.
+  // for its items (hub.js); each item's `desc` is its card's line. A `landing`
+  // (Season, Front Office, History) is the same page of cards at the section's
+  // URL prefix, but the section keeps its rows in the sidebar.
   { label: 'Games', icon: 'controller', hub: '/games/', items: [
     { title: 'Games', href: '/games/', icon: 'controller', searchOnly: true },
-    { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop', desc: 'One guess a day at the day\'s Perry.' },
-    { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette', desc: 'Guess the NBN player in eight tries. A new one every day.' },
-    { title: 'Trivia', href: '/trivia', icon: 'question', desc: 'How well do you actually know this league?' },
-    { title: 'Tetris', href: '/tetris/', icon: 'blocks', desc: 'For the wait between games, with a members\' leaderboard.' },
+    { title: 'Daily Perry Game', href: '/games/perry/', icon: 'hoop', desc: 'One guess a day at the day\'s Perry.' },
+    { title: 'Daily Poeltl', href: '/games/poeltl/', icon: 'silhouette', desc: 'Guess the NBN player in eight tries. A new one every day.' },
+    { title: 'Trivia', href: '/games/trivia', icon: 'question', desc: 'How well do you actually know this league?' },
+    { title: 'Tetris', href: '/games/tetris/', icon: 'blocks', desc: 'For the wait between games, with a members\' leaderboard.' },
   ] },
   { label: 'Media', icon: 'tv', hub: '/media/', items: [
     { title: 'Media', href: '/media/', icon: 'tv', searchOnly: true },
     { title: 'News', href: '/news/', icon: 'newspaper', desc: 'League news, power rankings and columns, written by NBN members.' },
-    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv', desc: 'The greatest playoff performances in NBN history, ranked and annotated.' },
-    { title: 'NBNFL', href: '/nbnfl/', icon: 'football', noSearch: true, desc: 'The Bengals in NBN\'s sister football league, and their players\' real NFL stats.' },
+    { title: 'NBNTV Classics', href: '/media/nbntv-classics', icon: 'tv', desc: 'The greatest playoff performances in NBN history, ranked and annotated.' },
+    { title: 'NBNFL', href: '/media/nbnfl/', icon: 'football', noSearch: true, desc: 'The Bengals in NBN\'s sister football league, and their players\' real NFL stats.' },
     { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play', desc: 'Every streamed game, on the NBN channel.' },
   ] },
   { label: 'Committees', icon: 'columns', href: '/committees/', items: [
@@ -1640,26 +1648,26 @@ const NAV_SECTIONS = [
   { label: 'About', icon: 'people', hub: '/about/', items: [
     { title: 'About', href: '/about/', icon: 'people', searchOnly: true },
     { title: 'Members', href: '/members/', icon: 'people', desc: 'Everyone in NBN: tenures, teams, achievements and rings.' },
-    { title: 'Roles & Permissions', href: '/roles', icon: 'key', desc: 'Who can do what: roles, committees and permissions.' },
-    { title: 'Constitution', href: '/constitution/', icon: 'charter', desc: 'The founding document of the league.' },
-    { title: 'Rulebook', href: '/rulebook/', icon: 'book', desc: 'The salary cap, trades, free agency, extensions and the draft.' },
+    { title: 'Roles & Permissions', href: '/about/roles', icon: 'key', desc: 'Who can do what: roles, committees and permissions.' },
+    { title: 'Constitution', href: '/about/constitution/', icon: 'charter', desc: 'The founding document of the league.' },
+    { title: 'Rulebook', href: '/about/rulebook/', icon: 'book', desc: 'The salary cap, trades, free agency, extensions and the draft.' },
     // Searchable, but its own entry in the sidebar's account menu (_buildAccount).
-    { title: 'Change Log', href: '/changelog', icon: 'tag', searchOnly: true },
+    { title: 'Change Log', href: '/about/changelog', icon: 'tag', searchOnly: true },
     // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
-    { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
-    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus', desc: 'What a GM does, and how to get a team.' },
+    { title: 'Inbox', href: '/about/inbox/', icon: 'inbox', searchOnly: true },
+    { title: 'Join NBN', short: 'Join', href: '/about/join/', icon: 'person-plus', desc: 'What a GM does, and how to get a team.' },
   ] },
   { label: 'League Office', icon: 'briefcase', hub: '/office/', items: [
     { title: 'League Office', href: '/office/', icon: 'briefcase', searchOnly: true },
     { title: 'Proposals', href: '/proposals/', icon: 'vote', desc: 'Rule proposals up for a vote.' },
-    { title: 'Suggestions', href: '/suggestions/', icon: 'bulb', desc: 'Suggest a change to NBN, and see what the league thinks of it.' },
-    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope', desc: 'Memos from the league office to the league.' },
-    { title: 'League Settings', href: '/cap-settings/', icon: 'gear',
+    { title: 'Suggestions', href: '/office/suggestions/', icon: 'bulb', desc: 'Suggest a change to NBN, and see what the league thinks of it.' },
+    { title: 'League Office Memos', short: 'Memos', href: '/office/memos/', icon: 'envelope', desc: 'Memos from the league office to the league.' },
+    { title: 'League Settings', href: '/office/cap-settings/', icon: 'gear',
       keywords: ['cap settings', 'salary cap', 'apron', 'minimum salary', 'league year'],
       desc: 'The cap, aprons and minimum salaries by season, and the rookie scale.' },
-    { title: 'Rookie Scale', href: '/cap-settings/#rookie-scale', icon: 'ruler', searchOnly: true },
-    { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'], desc: 'Who has a strike, and what for.' },
-    { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [], desc: 'The working list of what needs doing on the site.' },
+    { title: 'Rookie Scale', href: '/office/cap-settings/#rookie-scale', icon: 'ruler', searchOnly: true },
+    { title: 'Strikes', href: '/office/strikes/', icon: 'warning', roles: ['bod'], desc: 'Who has a strike, and what for.' },
+    { title: 'Backlog', href: '/office/backlog/', icon: 'checklist', roles: [], desc: 'The working list of what needs doing on the site.' },
   ] },
 ];
 
@@ -1807,7 +1815,7 @@ function _filter() {
   const teamMatches = Object.entries(TEAM_LIST)
     .filter(([abbr, name]) => name.toLowerCase().includes(q) || abbr.toLowerCase().includes(q))
     .slice(0, 6)
-    .map(([abbr, name]) => ({ type: 'Team', icon: 'basketball', title: name, meta: abbr, href: `/teams/${abbr}/` }));
+    .map(([abbr, name]) => ({ type: 'Team', icon: 'basketball', title: name, meta: abbr, href: `/stats/teams/${abbr}/` }));
 
   let playerMatches = [];
   if (_playerCache) {
@@ -1822,7 +1830,7 @@ function _filter() {
         const ovr = _ovrCache?.[slug];
         const pos = Array.isArray(p.pos) ? p.pos.join(' · ') : (p.pos || '');
         const meta = pos + (ovr ? `${pos ? ' · ' : ''}${ovr}` : '');
-        return { type: 'Player', icon: 'jersey', title: _displayName(p.name), meta, href: `/players/?p=${slug}` };
+        return { type: 'Player', icon: 'jersey', title: _displayName(p.name), meta, href: `/stats/players/?p=${slug}` };
       });
   }
 
@@ -1904,7 +1912,7 @@ async function _loadPlayerData() {
 // The site's replacements for alert() / confirm() / prompt(). Those render as
 // OS chrome (Chrome prefixes every one with "nbn.today says:"), ignore the
 // theme, can't be laid out, and block the tab — which was actively bad for the
-// forced-override confirms in /transactions, where a rules decision was being
+// forced-override confirms in /fo/transactions, where a rules decision was being
 // made from "\n\n"-joined text in a grey system box, and for the nine separate
 // "Enter your NBN token:" prompts, which collected a credential in an
 // unstyled, unmaskable system field.
@@ -1984,7 +1992,7 @@ function _dialog(o, settle) {
     }
 
     // The flagged-check list. This is the case that most needed real markup:
-    // forced overrides in /transactions were passing "\n\n"-joined rule text
+    // forced overrides in /fo/transactions were passing "\n\n"-joined rule text
     // through confirm(), where it rendered as an undifferentiated blob.
     if (o.details && o.details.length) {
       const ul = document.createElement('ul');

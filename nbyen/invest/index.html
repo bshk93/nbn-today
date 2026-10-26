@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Wall Street</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Buy and sell shares in NBN teams. Prices move with game results.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Wall Street">
+  <meta property="og:description" content="Buy and sell shares in NBN teams. Prices move with game results.">
+  <meta property="og:url" content="https://nbn.today/nbyen/invest/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2/dist/chartjs-plugin-zoom.min.js"></script>
+  <style>
+    
+            
+    .balance-chip { font-size: var(--text-sm); font-weight: 700; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-chip-border); border-radius: var(--radius-sm); padding: 0.25rem 0.75rem; white-space: nowrap; }
+    .market-badge { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; white-space: nowrap; }
+    .market-badge.open   { background: var(--market-positive-bg); color: var(--market-positive); border: 1px solid var(--market-positive-border); }
+    .lb-note { font-size: var(--text-sm); color: var(--text-muted); margin-top: 12px; }
+    .pending-tag { font-size: var(--text-sm); color: var(--warning); cursor: help; white-space: nowrap; }
+    .pending-tag .pending-text { display: none; font-size: var(--text-xs); margin-left: 3px; }
+    .pending-tag.open .pending-text { display: inline; }
+    .market-badge.locked { background: var(--purple-bg); color: var(--danger); border: 1px solid var(--danger-border-strong); }
+
+    /* Tabs */
+                    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* Market lock banner */
+    .lock-banner { background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: var(--radius-sm); padding: 0.65rem 1rem; margin-bottom: 1.25rem; font-size: var(--text-sm); color: var(--danger); display: none; }
+
+    /* Market table */
+    .market-table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    tbody tr { border-bottom: 1px solid var(--bg-card); cursor: pointer; }
+    tbody tr:hover { background: var(--bg-subtle); }
+    tbody tr.expanded { background: var(--bg-subtle); }
+    td { padding: 0.65rem 0.85rem; vertical-align: middle; }
+    td.right { text-align: right; }
+    .team-cell { display: flex; align-items: center; gap: 0.6rem; }
+    .team-logo { width: 24px; height: 24px; object-fit: contain; }
+    .team-abbr { font-weight: 700; font-size: var(--text-base); }
+    .price-val { font-family: var(--font-mono); font-size: var(--text-base); }
+    .chg-pos { color: var(--market-positive); }
+    .chg-neg { color: var(--danger); }
+    .chg-neu { color: var(--text-muted); }
+    .buy-btn { background: var(--market-positive-border); border: 1px solid var(--market-positive-bg); color: var(--market-positive-light); border-radius: var(--radius-sm); padding: 0.2rem 0.65rem; cursor: pointer; font-size: var(--text-xs); font-weight: 600; white-space: nowrap; }
+    .buy-btn:hover { background: color-mix(in srgb, var(--success) 16%, transparent); }
+    .buy-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* Expanded chart row */
+    .chart-row { display: none; }
+    .chart-row.visible { display: table-row; }
+    .chart-row td { padding: 0 0.85rem 1rem; position: sticky; left: 0; }
+    .chart-wrap { position: relative; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; width: min(860px, calc(100vw - 3rem)); }
+    .chart-wrap canvas { max-height: 200px; }
+    .chart-hint { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.3rem; }
+    .chart-reset { position: absolute; top: 0.5rem; right: 0.6rem; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.1rem 0.45rem; font-size: var(--text-xs); cursor: pointer; }
+    .chart-reset:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+
+    /* Holdings / portfolio */
+    .summary-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .summary-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem 1.25rem; flex: 1; min-width: 130px; }
+    .summary-card .label { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
+    .summary-card .val   { font-size: var(--text-md); font-weight: 700; font-family: var(--font-mono); }
+    .summary-card .val.pos { color: var(--market-positive); }
+    .summary-card .val.neg { color: var(--danger); }
+
+    .portfolio-chart-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+    .portfolio-chart-wrap canvas { max-height: 200px; }
+    .chart-title { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+
+    .holdings-table-wrap { overflow-x: auto; }
+
+    /* Login prompt */
+    .auth-prompt { background: var(--bg-subtle); border: 1px solid var(--border-dark); border-radius: var(--radius); padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: var(--text-base); }
+    .auth-prompt strong { color: var(--text-primary); }
+
+    /* Leaderboard */
+    .rank-col { color: var(--text-muted); font-size: var(--text-sm); width: 2rem; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; width: min(420px, 92vw); }
+    .modal-title { font-size: var(--text-md); font-weight: 700; margin-bottom: 1.1rem; }
+    .modal-team { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+    .modal-team img { width: 32px; height: 32px; object-fit: contain; }
+    .modal-team .name { font-size: var(--text-base); font-weight: 700; }
+    .modal-team .price-lbl { color: var(--text-muted); font-size: var(--text-sm); margin-left: auto; }
+    .modal-team .price-val { color: var(--gold); font-weight: 700; }
+
+    .trade-toggle { display: flex; gap: 2px; background: var(--bg-page); border-radius: var(--radius-sm); padding: 2px; margin-bottom: 1rem; }
+    .trade-toggle button { flex: 1; background: none; border: none; color: var(--text-muted); padding: 0.3rem; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-sm); font-weight: 600; }
+    .trade-toggle button.active { background: var(--border); color: var(--text-primary); }
+
+    .modal-field { margin-bottom: 0.85rem; }
+    .modal-field label { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.3rem; }
+    .modal-field input { width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.4rem 0.7rem; font-size: var(--text-base); font-family: inherit; outline: none; }
+    .modal-field input:focus { border-color: var(--text-muted); }
+    .modal-preview { background: var(--bg-page); border-radius: var(--radius-sm); padding: 0.65rem 0.85rem; margin-bottom: 1rem; font-size: var(--text-sm); color: var(--text-muted); }
+    .modal-preview .highlight { color: var(--gold); font-weight: 700; }
+    .modal-preview .warn { color: var(--danger); }
+    .modal-actions { display: flex; gap: 0.5rem; }
+    .btn-confirm { flex: 1; background: var(--success); border: none; color: var(--text-on-accent); border-radius: var(--radius-sm); padding: 0.5rem; cursor: pointer; font-size: var(--text-sm); font-weight: 700; }
+    .btn-confirm:hover { background: color-mix(in srgb, var(--success) 82%, black); }
+    .btn-confirm:disabled { opacity: 0.5; cursor: default; }
+            .modal-err { font-size: var(--text-xs); color: var(--danger); margin-top: 0.5rem; text-align: center; }
+
+    /* Bookie controls */
+    .bookie-panel { background: var(--bg-subtle); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .bookie-panel label { font-size: var(--text-xs); color: var(--accent-light); font-weight: 600; }
+    .lock-input { background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: 0.3rem 0.6rem; font-size: var(--text-sm); flex: 1; min-width: 150px; font-family: inherit; }
+    .btn-lock   { background: var(--danger-border); border: none; color: var(--danger-light); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: var(--text-xs); font-weight: 600; }
+    .btn-unlock { background: var(--market-positive-bg); border: none; color: var(--market-positive-light); border-radius: var(--radius-sm); padding: 0.3rem 0.75rem; cursor: pointer; font-size: var(--text-xs); font-weight: 600; }
+
+    .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; font-size: var(--text-base); }
+
+    /* Market Summary */
+    .mkt-summary { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.1rem; margin-bottom: 1.5rem; }
+    .mkt-summary-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .mkt-summary-title { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+    .win-toggle { display: flex; gap: 2px; background: var(--bg-page); border-radius: var(--radius-sm); padding: 2px; }
+    .win-btn { background: none; border: none; color: var(--text-muted); padding: 0.2rem 0.55rem; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-xs); font-weight: 600; }
+    .win-btn.active { background: var(--border); color: var(--text-primary); }
+    .win-btn:hover:not(.active) { color: var(--text-secondary); }
+    .movers-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem; }
+    .movers-row-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; margin-top: 0.1rem; }
+    .movers-row-label.up { color: var(--market-positive); }
+    .movers-row-label.dn { color: var(--danger); }
+    .mover-card { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.45rem 0.4rem; background: var(--bg-page); border-radius: var(--radius-sm); text-align: center; }
+    .mover-card .team-logo { width: 22px; height: 22px; object-fit: contain; }
+    .mover-card .team-abbr { font-size: var(--text-xs); font-weight: 700; }
+    .mover-card .mover-pct { font-size: var(--text-xs); font-family: var(--font-mono); font-weight: 600; }
+    .mover-card .mover-abs { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); }
+    .mkt-summary-loading { color: var(--text-dim); font-size: var(--text-sm); text-align: center; padding: 0.5rem 0; }
+
+    /* Indexes section */
+    .index-section { margin-top: 1.75rem; }
+    .index-section-title { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.6rem; }
+    .idx-group-row td { background: var(--bg-page); color: var(--text-dim); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.07em; padding: 0.3rem 0.85rem; font-weight: 600; }
+    .idx-badge { font-size: var(--text-xs); font-weight: 700; font-family: var(--font-mono); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.1rem 0.35rem; color: var(--text-muted); margin-left: 0.4rem; }
+    .idx-conf-row .team-abbr { font-weight: 700; color: var(--runnerup-text); }
+    .idx-div-row td:first-child { padding-left: 1.75rem; }
+  </style>
+</head>
+<body>
+<div class="page ui-page">
+  <nav class="nav"><a href="/">← Home</a></nav>
+
+  <header class="ui-header">
+    <h1 class="ui-title">Wall Street</h1>
+    <div class="header-right ui-header-actions">
+      <span class="balance-chip" id="balance-chip" style="display:none"></span>
+      <span class="market-badge" id="market-badge">…</span>
+    </div>
+  </header>
+
+  <!-- Bookie lock panel (hidden until auth confirmed) -->
+  <div class="bookie-panel" id="bookie-panel" style="display:none">
+    <label>Market Control</label>
+    <input class="lock-input" id="lock-reason-input" type="text" placeholder="Reason for locking (optional)">
+    <button class="btn-lock"   id="btn-lock"   onclick="toggleLock(true)">Lock Market</button>
+    <button class="btn-unlock" id="btn-unlock" onclick="toggleLock(false)">Unlock</button>
+  </div>
+
+  <div class="lock-banner" id="lock-banner"></div>
+
+  <!-- ── Market Summary ────────────────────────────────────────────── -->
+  <div class="mkt-summary" id="market-summary">
+    <div class="mkt-summary-loading">Loading market summary…</div>
+  </div>
+
+  <div class="tabs ui-tabs" role="tablist">
+    <button class="tab-btn ui-tab active" onclick="switchTab('market', this)">Market</button>
+    <button class="tab-btn ui-tab" id="tab-portfolio-btn" onclick="switchTab('portfolio', this)">My Portfolio</button>
+    <button class="tab-btn ui-tab" onclick="switchTab('leaderboard', this)">Leaderboard</button>
+  </div>
+
+  <!-- ── Market tab ──────────────────────────────────────────────── -->
+  <div class="tab-pane active" id="tab-market">
+    <div class="market-table-wrap">
+      <table id="market-table">
+        <thead>
+          <tr>
+            <th style="width:180px">Team</th>
+            <th class="right">Price</th>
+            <th class="right">Change</th>
+            <th class="right">Change %</th>
+            <th class="right" style="color:var(--market-positive)">Long Shares</th>
+            <th class="right" style="color:var(--market-positive)">Long Value</th>
+            <th class="right" style="color:var(--danger)">Short Shares</th>
+            <th class="right" style="color:var(--danger)">Short Value</th>
+            <th style="width:100px"></th>
+          </tr>
+        </thead>
+        <tbody id="market-tbody">
+          <tr><td colspan="9" class="empty-state">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="index-section">
+      <div class="index-section-title">Indexes</div>
+      <div class="market-table-wrap">
+        <table id="index-table">
+          <thead>
+            <tr>
+              <th style="width:220px">Index</th>
+              <th class="right">Price</th>
+              <th class="right">Change</th>
+              <th class="right">Change %</th>
+              <th class="right" style="color:var(--market-positive)">Long Shares</th>
+              <th class="right" style="color:var(--market-positive)">Long Value</th>
+              <th class="right" style="color:var(--danger)">Short Shares</th>
+              <th class="right" style="color:var(--danger)">Short Value</th>
+              <th style="width:100px"></th>
+            </tr>
+          </thead>
+          <tbody id="index-tbody">
+            <tr><td colspan="9" class="empty-state">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Portfolio tab ───────────────────────────────────────────── -->
+  <div class="tab-pane" id="tab-portfolio">
+    <div id="portfolio-content">
+      <div class="auth-prompt">
+        <strong>Sign in to view your portfolio.</strong><br>
+        Enter your NBN token in any team page to authenticate.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Leaderboard tab ─────────────────────────────────────────── -->
+  <div class="tab-pane" id="tab-leaderboard">
+    <div id="leaderboard-content">
+      <div class="empty-state">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Buy/Sell modal ─────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">Trade</div>
+    <div class="modal-team">
+      <img id="modal-logo" src="" alt="">
+      <span class="name" id="modal-team-name"></span>
+      <span class="price-lbl">¥&nbsp;<span class="price-val" id="modal-price"></span></span>
+    </div>
+    <div class="trade-toggle">
+      <button class="active" id="btn-mode-buy"   onclick="setMode('buy')">Buy</button>
+      <button               id="btn-mode-sell"  onclick="setMode('sell')">Sell</button>
+      <button               id="btn-mode-short" onclick="setMode('short')" style="color:var(--purple-light)">Short</button>
+      <button               id="btn-mode-cover" onclick="setMode('cover')" style="color:var(--purple-light)">Cover</button>
+    </div>
+    <div class="modal-field" id="field-nbyen">
+      <label id="label-nbyen">¥ to invest</label>
+      <input type="number" id="input-nbyen" min="1" step="1" placeholder="e.g. 200" oninput="updatePreview()">
+    </div>
+    <div class="modal-field" id="field-shares">
+      <label id="label-shares">Shares</label>
+      <input type="number" id="input-shares" min="0.000001" step="0.001" placeholder="e.g. 1.5" oninput="updatePreview()">
+    </div>
+    <div class="modal-preview" id="modal-preview">Enter an amount above.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" id="btn-confirm" onclick="confirmTrade()">Confirm</button>
+    </div>
+    <div class="modal-err" id="modal-err"></div>
+  </div>
+</div>
+
+<script src="/nav.js"></script>
+<script>
+const API = '/api';
+const TOKEN_KEY = 'nbn_token';
+
+// A canvas can't read CSS variables, so chart colours are looked up from the
+// current theme each time a chart is drawn.
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function cssFill(name, alpha) {
+  const v = cssVar(name);
+  const hex = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1].length === 3 ? hex[1].replace(/./g, c => c + c) : hex[1];
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  const rgb = v.match(/^rgba?\(([^,]+),([^,]+),([^,)]+)/);
+  return rgb ? `rgba(${rgb[1]},${rgb[2]},${rgb[3]},${alpha})` : 'transparent';
+}
+
+let me = null;           // current user name (null if not logged in)
+let marketData = null;   // response from /api/invest/market
+let allHoldings = null;  // response from /api/invest/holdings/all
+let myHoldings  = null;  // response from /api/invest/holdings (auth'd)
+let myPortfolio = null;  // response from /api/invest/portfolio (auth'd)
+let myBalance   = 0;
+
+// Market summary state
+const priceHistoriesCache = {};
+let moverWindow   = 1;
+let moversLoading = false;
+
+// Per-team Chart.js instances for market table expansions
+const teamCharts = {};
+// Portfolio chart
+let portfolioChart = null;
+// Current modal state
+let modalTeam      = null;
+let modalMode      = 'buy';  // 'buy' | 'sell' | 'short' | 'cover'
+let modalPrice     = 0;
+let modalHeld      = 0;   // long shares held
+let modalHeldShort = 0;   // short shares held
+let modalAvgOpen   = 0;   // avg open price of short position
+
+function token() { return localStorage.getItem(TOKEN_KEY); }
+function isBookie() {
+  // /api/me returns roles; we stash them after login
+  return window._myRoles && (window._myRoles.includes('bookie') || window._myRoles.includes('admin'));
+}
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+
+function fmtNBY(v, decimals = 2) {
+  return '¥' + Number(v).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtPct(v) {
+  const s = (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%';
+  return s;
+}
+function chgClass(v) {
+  return v > 0 ? 'chg-pos' : v < 0 ? 'chg-neg' : 'chg-neu';
+}
+
+// ── Rules and pending games ──────────────────────────────────────────────────
+
+function rules() {
+  return marketData?.rules || { ticker_cap: 2500, total_cap: 10000, fee_rate: 0.01 };
+}
+function tickerEntry(ticker) {
+  return marketData?.teams?.find(t => t.team === ticker) || marketData?.indexes?.find(i => i.ticker === ticker);
+}
+// A ticker with a played game whose box score isn't in yet can't be traded.
+function pendingText(p) {
+  return p ? `Waiting on the ${p.away_team} @ ${p.home_team} box score (${p.date})` : '';
+}
+function pendingTag(p) {
+  // A small mark; the tooltip says which game, and a tap (no hover on a phone) spells it out.
+  return p ? `<span class="pending-tag" title="${pendingText(p)}" onclick="event.stopPropagation();this.classList.toggle('open')"><span class="ui-icon ui-icon--warning" aria-hidden="true"></span><span class="pending-text">box score pending</span></span>` : '';
+}
+function tradeOff(entry) {
+  return !me || marketData.locked || !!entry?.pending;
+}
+// NB¥ at cost: what's in each ticker, and how much more this one can take.
+function deployed() {
+  const by = {};
+  (myHoldings || []).forEach(h => { by[h.team] = (by[h.team] || 0) + (h.cost || 0); });
+  return by;
+}
+function roomIn(ticker) {
+  const dep = deployed();
+  const total = Object.values(dep).reduce((a, b) => a + b, 0);
+  return Math.max(0, Math.min(rules().ticker_cap - (dep[ticker] || 0), rules().total_cap - total));
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'portfolio' && me) renderPortfolio();
+  if (name === 'leaderboard') renderLeaderboard();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  const tok = token();
+  if (tok) {
+    try {
+      const r = await fetch(`${API}/me`, { headers: { Authorization: `Bearer ${tok}` } });
+      if (r.ok) {
+        const d = await r.json();
+        me = d.name;
+        window._myRoles = d.roles || [];
+      }
+    } catch {}
+  }
+
+  await loadAll();
+}
+
+async function loadAll() {
+  const tok = token();
+  const fetches = [
+    fetch(`${API}/invest/market`).then(r => r.json()),
+    fetch(`${API}/invest/holdings/all`).then(r => r.json()),
+  ];
+  if (me) {
+    fetches.push(fetch(`${API}/invest/holdings`,   { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()));
+    fetches.push(fetch(`${API}/invest/portfolio`,  { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.json()));
+    fetches.push(fetch(`${API}/bets/balance/${me}`).then(r => r.json()));
+  }
+
+  const results = await Promise.allSettled(fetches);
+  marketData  = results[0].status === 'fulfilled' ? results[0].value : null;
+  allHoldings = results[1].status === 'fulfilled' ? results[1].value : [];
+  if (me) {
+    myHoldings  = results[2].status === 'fulfilled' ? results[2].value : [];
+    myPortfolio = results[3].status === 'fulfilled' ? results[3].value : null;
+    const balRes = results[4].status === 'fulfilled' ? results[4].value : null;
+    myBalance = balRes?.balance ?? 0;
+  }
+
+  renderMarketStatus();
+  renderMarketTable();
+
+  // Kick off price history fetch in background; render summary when ready
+  fetchAllPriceHistories().then(() => renderMarketSummary());
+
+  if (me) {
+    document.getElementById('balance-chip').style.display = '';
+    document.getElementById('balance-chip').textContent = fmtNBY(myBalance);
+    if (isBookie()) document.getElementById('bookie-panel').style.display = '';
+  }
+  renderLeaderboard();
+
+  // If portfolio tab is active, render it
+  if (document.getElementById('tab-portfolio').classList.contains('active') && me) {
+    renderPortfolio();
+  }
+}
+
+// ── Market status ─────────────────────────────────────────────────────────────
+
+function renderMarketStatus() {
+  if (!marketData) return;
+  const badge  = document.getElementById('market-badge');
+  const banner = document.getElementById('lock-banner');
+  if (marketData.locked) {
+    badge.className = 'market-badge locked';
+    badge.textContent = 'Market Locked';
+    banner.style.display = '';
+    banner.textContent = marketData.locked_reason || 'Trading is currently paused.';
+  } else {
+    badge.className = 'market-badge open';
+    badge.textContent = 'Market Open';
+    banner.style.display = 'none';
+  }
+}
+
+// ── Index definitions (mirrors API) ──────────────────────────────────────────
+
+const INDEX_GROUPS = [
+  { label: 'Eastern Conference', tickers: ['EAST', 'ATLC', 'CTRL', 'SE'] },
+  { label: 'Western Conference', tickers: ['WEST', 'NW',   'PAC',  'SW'] },
+  { label: 'States',             tickers: ['TX', 'CA'] },
+];
+
+// ── Market table ──────────────────────────────────────────────────────────────
+
+function renderMarketTable() {
+  const tbody = document.getElementById('market-tbody');
+  if (!marketData || !marketData.teams.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No price data available.</td></tr>';
+    return;
+  }
+
+  const teams = [...marketData.teams].sort((a, b) => b.price - a.price);
+  tbody.innerHTML = '';
+
+  teams.forEach((t, idx) => {
+    const held = me ? (myHoldings?.find(h => h.team === t.team)?.shares ?? 0) : 0;
+    const cc   = chgClass(t.change);
+
+    const row = document.createElement('tr');
+    row.id = `row-${t.team}`;
+    row.innerHTML = `
+      <td>
+        <div class="team-cell">
+          <img class="team-logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="${t.team}" onerror="this.style.display='none'">
+          <span class="team-abbr">${t.team}</span>
+          ${held > 0 ? `<span style="font-size:var(--text-xs);color:var(--gold)">${held.toFixed(3)}sh</span>` : ''}
+          ${pendingTag(t.pending)}
+        </div>
+      </td>
+      <td class="right"><span class="price-val">${fmtNBY(t.price)}</span></td>
+      <td class="right"><span class="${cc}">${fmtNBY(t.change)}</span></td>
+      <td class="right"><span class="${cc}">${fmtPct(t.change_pct)}</span></td>
+      <td class="right" style="color:var(--market-positive)">${t.total_shares > 0 ? t.total_shares.toFixed(4) : '—'}</td>
+      <td class="right" style="color:var(--market-positive)">${t.total_shares > 0 ? fmtNBY(t.total_shares * t.price) : '—'}</td>
+      <td class="right" style="color:var(--danger)">${t.total_short > 0 ? t.total_short.toFixed(4) : '—'}</td>
+      <td class="right" style="color:var(--danger)">${t.total_short > 0 ? fmtNBY(t.total_short * t.price) : '—'}</td>
+      <td class="right" style="white-space:nowrap">
+        <button class="buy-btn" onclick="event.stopPropagation();openModal('${t.team}','buy')" ${tradeOff(t) ? 'disabled' : ''}>Buy</button>
+        <button class="buy-btn" style="background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${t.team}','short')" ${tradeOff(t) ? 'disabled' : ''}>Short</button>
+      </td>`;
+    row.addEventListener('click', () => toggleChart(t.team));
+    tbody.appendChild(row);
+
+    // Chart row (hidden until toggled)
+    const cRow = document.createElement('tr');
+    cRow.className = 'chart-row';
+    cRow.id = `chart-row-${t.team}`;
+    cRow.innerHTML = `<td colspan="9"><div class="chart-wrap">
+      <button class="chart-reset" onclick="resetTeamChart('${t.team}')">Reset</button>
+      <canvas id="canvas-${t.team}" onclick="event.stopPropagation()"></canvas>
+      <div class="chart-hint">Scroll to zoom · Drag to select range · Reset to zoom out</div>
+    </div></td>`;
+    tbody.appendChild(cRow);
+  });
+
+  renderIndexTable();
+}
+
+function renderIndexTable() {
+  const tbody = document.getElementById('index-tbody');
+  const indexes = marketData?.indexes;
+  if (!indexes || !indexes.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No index data available.</td></tr>';
+    return;
+  }
+
+  const byTicker = Object.fromEntries(indexes.map(i => [i.ticker, i]));
+  tbody.innerHTML = '';
+
+  for (const group of INDEX_GROUPS) {
+    const grpRow = document.createElement('tr');
+    grpRow.className = 'idx-group-row';
+    grpRow.innerHTML = `<td colspan="9">${group.label}</td>`;
+    tbody.appendChild(grpRow);
+
+    for (const ticker of group.tickers) {
+      const idx = byTicker[ticker];
+      if (!idx) continue;
+      const isDiv = !!idx.div;
+      const held  = me ? (myHoldings?.find(h => h.team === ticker && h.side === 'long')?.shares ?? 0) : 0;
+      const cc    = chgClass(idx.change);
+
+      const row = document.createElement('tr');
+      row.id = `row-${ticker}`;
+      row.className = isDiv ? 'idx-div-row' : 'idx-conf-row';
+      row.innerHTML = `
+        <td>
+          <div class="team-cell">
+            <span class="team-abbr">${idx.name}</span>
+            <span class="idx-badge">${ticker}</span>
+            ${held > 0 ? `<span style="font-size:var(--text-xs);color:var(--gold)">${held.toFixed(3)}sh</span>` : ''}
+            ${pendingTag(idx.pending)}
+          </div>
+        </td>
+        <td class="right"><span class="price-val">${fmtNBY(idx.price)}</span></td>
+        <td class="right"><span class="${cc}">${fmtNBY(idx.change)}</span></td>
+        <td class="right"><span class="${cc}">${fmtPct(idx.change_pct)}</span></td>
+        <td class="right" style="color:var(--market-positive)">${idx.total_shares > 0 ? idx.total_shares.toFixed(4) : '—'}</td>
+        <td class="right" style="color:var(--market-positive)">${idx.total_shares > 0 ? fmtNBY(idx.total_shares * idx.price) : '—'}</td>
+        <td class="right" style="color:var(--danger)">${idx.total_short > 0 ? idx.total_short.toFixed(4) : '—'}</td>
+        <td class="right" style="color:var(--danger)">${idx.total_short > 0 ? fmtNBY(idx.total_short * idx.price) : '—'}</td>
+        <td class="right" style="white-space:nowrap">
+          <button class="buy-btn" onclick="event.stopPropagation();openModal('${ticker}','buy')" ${tradeOff(idx) ? 'disabled' : ''}>Buy</button>
+          <button class="buy-btn" style="background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--purple-light);border-color:var(--purple-border);margin-left:3px" onclick="event.stopPropagation();openModal('${ticker}','short')" ${tradeOff(idx) ? 'disabled' : ''}>Short</button>
+        </td>`;
+      row.addEventListener('click', () => toggleChart(ticker));
+      tbody.appendChild(row);
+
+      const cRow = document.createElement('tr');
+      cRow.className = 'chart-row';
+      cRow.id = `chart-row-${ticker}`;
+      cRow.innerHTML = `<td colspan="9"><div class="chart-wrap">
+        <button class="chart-reset" onclick="resetTeamChart('${ticker}')">Reset</button>
+        <canvas id="canvas-${ticker}" onclick="event.stopPropagation()"></canvas>
+        <div class="chart-hint">Scroll to zoom · Drag to select range · Reset to zoom out</div>
+      </div></td>`;
+      tbody.appendChild(cRow);
+    }
+  }
+}
+
+async function toggleChart(team) {
+  const cRow = document.getElementById(`chart-row-${team}`);
+  const mainRow = document.getElementById(`row-${team}`);
+  if (cRow.classList.contains('visible')) {
+    cRow.classList.remove('visible');
+    mainRow.classList.remove('expanded');
+    if (teamCharts[team]) { teamCharts[team].destroy(); delete teamCharts[team]; }
+    return;
+  }
+  cRow.classList.add('visible');
+  mainRow.classList.add('expanded');
+
+  if (teamCharts[team]) { teamCharts[team].destroy(); delete teamCharts[team]; }
+
+  try {
+    const res = await fetch(`${API}/invest/prices/${team}`);
+    const data = await res.json();
+    let history = data.history || [];
+
+    // Append a synthetic "Now" point using the current market price so the
+    // chart always extends to today regardless of when the last game was played.
+    const cur = tickerEntry(team);
+    if (cur) {
+      history = [...history, { date: 'Now', price: cur.price, is_playoff: false, is_now: true }];
+    }
+
+    drawTeamChart(team, history);
+  } catch (e) {
+    document.getElementById(`canvas-${team}`).parentElement.textContent = 'Failed to load chart.';
+  }
+}
+
+function fitYToVisible(chart, prices) {
+  const xScale = chart.scales.x;
+  const lo = Math.max(0, Math.round(xScale.min));
+  const hi = Math.min(prices.length - 1, Math.round(xScale.max));
+  const slice = prices.slice(lo, hi + 1).filter(v => v != null);
+  if (!slice.length) return;
+  const mn = Math.min(...slice), mx = Math.max(...slice);
+  const pad = (mx - mn) * 0.08 || 2;
+  chart.options.scales.y.min = Math.max(0, mn - pad);
+  chart.options.scales.y.max = mx + pad;
+  chart.update('none');
+}
+
+function resetTeamChart(team) {
+  const chart = teamCharts[team];
+  if (!chart) return;
+  chart.resetZoom();
+  chart.options.scales.y.min = undefined;
+  chart.options.scales.y.max = undefined;
+  chart.update('none');
+}
+
+function drawTeamChart(team, history) {
+  const canvas = document.getElementById(`canvas-${team}`);
+  if (!canvas) return;
+  const labels     = history.map(p => p.date);
+  const prices     = history.map(p => p.price);
+  const playoffIdx = new Set(history.map((p, i) => p.is_playoff ? i : -1).filter(i => i >= 0));
+  const pointRadius = history.map(p => p.is_now ? 5 : 0);
+  const pointStyle  = history.map(p => p.is_now ? 'rectRot' : 'circle');
+  const pointColors = history.map(p => p.is_now ? cssVar('--gold') : 'transparent');
+
+  teamCharts[team] = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: prices,
+        segment: {
+          borderColor: ctx => playoffIdx.has(ctx.p1DataIndex) ? cssVar('--purple') : cssVar('--link'),
+        },
+        backgroundColor: cssFill('--link', 0.12),
+        borderWidth: 1.5,
+        tension: 0.1,
+        fill: true,
+        pointStyle,
+        pointRadius,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors,
+        pointHoverRadius: 5,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const h = history[ctx.dataIndex];
+              let s = `¥${ctx.parsed.y.toFixed(2)}`;
+              if (h.is_now) s += '  ← Now';
+              else if (h.is_playoff) s += '  · Playoff';
+              else if (h.diff != null) s += `  (${h.diff >= 0 ? '+' : ''}${h.diff})`;
+              return s;
+            },
+          },
+        },
+        zoom: {
+          zoom: {
+            wheel: { enabled: true, speed: 0.15 },
+            drag: {
+              enabled: true,
+              backgroundColor: cssFill('--link', 0.12),
+              borderColor: cssVar('--link'),
+              borderWidth: 1,
+            },
+            pinch: { enabled: true },
+            mode: 'x',
+            onZoomComplete: ({ chart }) => fitYToVisible(chart, prices),
+          },
+          pan: { enabled: false },
+        },
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+          grid: { color: cssVar('--border') },
+        },
+      },
+    },
+  });
+}
+
+// ── Portfolio ─────────────────────────────────────────────────────────────────
+
+function renderPortfolio() {
+  const el = document.getElementById('portfolio-content');
+  if (!me) {
+    el.innerHTML = `<div class="auth-prompt"><strong>Sign in to view your portfolio.</strong><br>Enter your NBN token in any team page to authenticate.</div>`;
+    return;
+  }
+
+  const s = myPortfolio?.summary;
+  const equity   = s?.equity   ?? 0;
+  const liquid   = s?.liquid   ?? myBalance;
+  const netWorth = s?.net_worth ?? (equity + liquid);
+  const pl       = s?.pl       ?? netWorth;
+  const plClass  = pl >= 0 ? 'pos' : 'neg';
+  const chart    = myPortfolio?.equity_chart ?? [];
+
+  let html = `
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="label">Holdings</div>
+        <div class="val">${fmtNBY(equity)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Wallet</div>
+        <div class="val">${fmtNBY(liquid)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Net Worth <a href="/nbyen/" style="font-size:var(--text-xs)">all NB¥</a></div>
+        <div class="val">${fmtNBY(netWorth)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Wall Street P/L</div>
+        <div class="val ${plClass}">${pl >= 0 ? '+' : ''}${fmtNBY(pl)}</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Invested</div>
+        <div class="val">${fmtNBY(Object.values(deployed()).reduce((a, b) => a + b, 0), 0)} <span style="font-size:var(--text-xs);color:var(--text-muted)">of ${fmtNBY(rules().total_cap, 0)}</span></div>
+      </div>
+    </div>`;
+
+  if (chart.length > 1) {
+    html += `<div class="portfolio-chart-wrap">
+      <div class="chart-title">Portfolio Equity Over Time</div>
+      <canvas id="portfolio-canvas"></canvas>
+    </div>`;
+  }
+
+  if (!myHoldings || myHoldings.length === 0) {
+    html += `<div class="empty-state">You don't own any shares yet. Browse the Market tab to invest.</div>`;
+  } else {
+    html += `<div class="holdings-table-wrap">
+      <table>
+        <thead><tr>
+          <th>Team</th>
+          <th>Side</th>
+          <th class="right">Shares</th>
+          <th class="right">Avg Price</th>
+          <th class="right">Current</th>
+          <th class="right">Equity</th>
+          <th class="right">P/L</th>
+          <th class="right">P/L %</th>
+          <th style="width:80px"></th>
+        </tr></thead>
+        <tbody>`;
+    myHoldings.forEach(h => {
+      const plC    = chgClass(h.pl);
+      const isLong = h.side === 'long';
+      const idxEntry = marketData?.indexes?.find(i => i.ticker === h.team);
+      const off      = tradeOff(tickerEntry(h.team));
+      const sideLabel = isLong
+        ? `<span style="color:var(--market-positive);font-size:var(--text-xs);font-weight:700">LONG</span>`
+        : `<span style="color:var(--danger);font-size:var(--text-xs);font-weight:700">SHORT</span>`;
+      const closeBtn = isLong
+        ? `<button class="buy-btn" style="background:var(--danger-border);color:var(--danger-light);border-color:var(--danger-border)" onclick="openModal('${h.team}','sell')" ${off ? 'disabled' : ''}>Sell</button>`
+        : `<button class="buy-btn" style="background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--purple-light);border-color:var(--purple-border)" onclick="openModal('${h.team}','cover')" ${off ? 'disabled' : ''}>Cover</button>`;
+      const teamCell = idxEntry
+        ? `<span class="team-abbr">${idxEntry.name}</span><span class="idx-badge">${h.team}</span>`
+        : `<img class="team-logo" src="/logos/sm/logo-${h.team.toLowerCase()}.webp" alt="${h.team}" onerror="this.style.display='none'"><span class="team-abbr">${h.team}</span>`;
+      html += `<tr>
+        <td><div class="team-cell">
+          ${teamCell}
+          ${pendingTag(tickerEntry(h.team)?.pending)}
+        </div></td>
+        <td>${sideLabel}</td>
+        <td class="right">${h.shares.toFixed(4)}</td>
+        <td class="right">${fmtNBY(h.avg_price)}</td>
+        <td class="right">${fmtNBY(h.current_price)}</td>
+        <td class="right">${fmtNBY(h.equity)}</td>
+        <td class="right"><span class="${plC}">${h.pl >= 0 ? '+' : ''}${fmtNBY(h.pl)}</span></td>
+        <td class="right"><span class="${plC}">${fmtPct(h.pl_pct)}</span></td>
+        <td class="right">${closeBtn}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  el.innerHTML = html;
+
+  // Draw portfolio equity chart
+  if (chart.length > 1) {
+    const canvas = document.getElementById('portfolio-canvas');
+    if (portfolioChart) portfolioChart.destroy();
+    portfolioChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: chart.map(p => p.date),
+        datasets: [{
+          data: chart.map(p => p.equity),
+          borderColor: cssVar('--market-positive'),
+          backgroundColor: cssFill('--market-positive', 0.12),
+          borderWidth: 1.5,
+          tension: 0.2,
+          fill: true,
+          pointRadius: 1,
+          pointHoverRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => fmtNBY(ctx.parsed.y) } },
+        },
+        scales: {
+          x: { display: false },
+          y: {
+            ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
+            grid: { color: cssVar('--border') },
+          },
+        },
+      },
+    });
+  }
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+
+function renderLeaderboard() {
+  const el = document.getElementById('leaderboard-content');
+  const link = `<p class="lb-note">P&amp;L is what Wall Street has paid you, less what you put in
+    (fees included), counting what you still hold. Net worth across all of NB¥ is on <a href="/nbyen/">NB¥ Balances</a>.</p>`;
+  if (!allHoldings || !allHoldings.length) {
+    el.innerHTML = '<div class="empty-state">No trades yet.</div>' + link;
+    return;
+  }
+
+  let html = `<div style="overflow-x:auto"><table>
+    <thead><tr>
+      <th class="rank-col">#</th>
+      <th>Member</th>
+      <th class="right">Holdings</th>
+      <th class="right">P/L</th>
+    </tr></thead><tbody>`;
+
+  allHoldings.forEach((row, i) => {
+    const plC = chgClass(row.pnl);
+    const isMe = row.member === me;
+    html += `<tr ${isMe ? 'style="background:var(--bg-subtle)"' : ''}>
+      <td class="rank-col">${i + 1}</td>
+      <td>${row.member}${isMe ? ' <span style="color:var(--link);font-size:var(--text-xs)">(you)</span>' : ''}</td>
+      <td class="right">${row.equity ? fmtNBY(row.equity) : '—'}</td>
+      <td class="right"><span class="${plC}">${row.pnl >= 0 ? '+' : ''}${fmtNBY(row.pnl)}</span></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>' + link;
+  el.innerHTML = html;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
+function openModal(ticker, forceMode) {
+  if (!me) return;
+  const teamEntry = marketData?.teams?.find(t => t.team === ticker);
+  const idxEntry  = marketData?.indexes?.find(i => i.ticker === ticker);
+  const entry     = teamEntry || idxEntry;
+  if (!entry || tradeOff(entry)) return;
+  modalTeam  = ticker;
+  modalPrice = entry.price;
+  // Held shares by side
+  const longPos  = myHoldings?.find(h => h.team === ticker && h.side === 'long');
+  const shortPos = myHoldings?.find(h => h.team === ticker && h.side === 'short');
+  modalHeld      = longPos?.shares  ?? 0;
+  modalHeldShort = shortPos?.shares ?? 0;
+  modalAvgOpen   = shortPos?.avg_price ?? 0;
+
+  const logo = document.getElementById('modal-logo');
+  if (teamEntry) {
+    logo.style.display = '';
+    logo.src = `/logos/logo-${ticker.toLowerCase()}.png`;
+  } else {
+    logo.style.display = 'none';
+  }
+  document.getElementById('modal-team-name').textContent = idxEntry ? idxEntry.name : ticker;
+  document.getElementById('modal-price').textContent = entry.price.toFixed(2);
+  document.getElementById('input-nbyen').value   = '';
+  document.getElementById('input-shares').value  = '';
+  document.getElementById('modal-err').textContent = '';
+
+  setMode(forceMode || 'buy');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function setMode(mode) {
+  modalMode = mode;
+  ['buy','sell','short','cover'].forEach(m =>
+    document.getElementById(`btn-mode-${m}`).classList.toggle('active', m === mode)
+  );
+  const useNbyen  = mode === 'buy' || mode === 'short';
+  const useShares = mode === 'sell' || mode === 'cover';
+  document.getElementById('field-nbyen').style.display  = useNbyen  ? '' : 'none';
+  document.getElementById('field-shares').style.display = useShares ? '' : 'none';
+  document.getElementById('label-nbyen').textContent  = mode === 'short' ? '¥ collateral' : '¥ to invest';
+  document.getElementById('label-shares').textContent = mode === 'cover' ? 'Short shares to cover' : 'Shares to sell';
+  document.getElementById('modal-err').textContent = '';
+  updatePreview();
+}
+
+function updatePreview() {
+  const el = document.getElementById('modal-preview');
+  const feeRate = rules().fee_rate;
+  const feePct  = `${(feeRate * 100).toFixed(0)}%`;
+  if (modalMode === 'buy' || modalMode === 'short') {
+    const room = roomIn(modalTeam);
+    const nby  = parseFloat(document.getElementById('input-nbyen').value) || 0;
+    const roomLine = `You can put up to <span class="highlight">${fmtNBY(room)}</span> into ${modalTeam} `
+      + `(${fmtNBY(rules().ticker_cap, 0)} per ticker, ${fmtNBY(rules().total_cap, 0)} in total).`;
+    if (!nby) {
+      el.innerHTML = modalMode === 'short'
+        ? `Profit if the price falls; you can lose at most your collateral.<br>${roomLine}`
+        : roomLine;
+      return;
+    }
+    const fee       = nby * feeRate;
+    const shares    = nby / modalPrice;
+    const remaining = myBalance - nby - fee;
+    let html = modalMode === 'short'
+      ? `Short <span class="highlight">${shares.toFixed(4)} shares</span> at ¥${modalPrice.toFixed(2)}. `
+        + `Total loss if the price hits <span class="warn">¥${(modalPrice * 2).toFixed(2)}</span>.`
+      : `You'll receive <span class="highlight">${shares.toFixed(4)} shares</span> at ¥${modalPrice.toFixed(2)}.`;
+    html += `<br>Costs ${fmtNBY(nby + fee)} (incl. ${fmtNBY(fee)} ${feePct} fee). `
+      + `Balance after: <span class="${remaining < 0 ? 'warn' : 'highlight'}">${fmtNBY(remaining)}</span>`;
+    if (nby > room + 0.005) html += `<br><span class="warn">That's over your limit by ${fmtNBY(nby - room)}.</span>`;
+    el.innerHTML = html;
+  } else if (modalMode === 'sell') {
+    const sh = parseFloat(document.getElementById('input-shares').value) || 0;
+    if (!sh) { el.textContent = `You hold ${modalHeld.toFixed(4)} long shares. Enter shares to sell.`; return; }
+    const nby      = sh * modalPrice;
+    const fee      = nby * feeRate;
+    const overHeld = sh > modalHeld + 1e-6;
+    let html = `You'll receive <span class="highlight">${fmtNBY(nby - fee)}</span> for ${sh.toFixed(4)} shares `
+      + `(after a ${fmtNBY(fee)} ${feePct} fee).`;
+    if (overHeld) html += `<br><span class="warn">You only hold ${modalHeld.toFixed(4)} shares.</span>`;
+    el.innerHTML = html;
+  } else {
+    // cover
+    const sh = parseFloat(document.getElementById('input-shares').value) || 0;
+    if (!sh) { el.textContent = `You hold ${modalHeldShort.toFixed(4)} short shares. Enter shares to cover.`; return; }
+    const payout   = Math.max(0, sh * (2 * modalAvgOpen - modalPrice));
+    const fee      = payout * feeRate;
+    const overHeld = sh > modalHeldShort + 1e-6;
+    const pl       = payout - sh * modalAvgOpen;
+    let html = `You'll receive <span class="highlight">${fmtNBY(payout - fee)}</span> (after a ${fmtNBY(fee)} ${feePct} fee).`;
+    html += ` P/L: <span class="${pl >= 0 ? 'highlight' : 'warn'}">${pl >= 0 ? '+' : ''}${fmtNBY(pl)}</span>`;
+    if (overHeld) html += `<br><span class="warn">You only hold ${modalHeldShort.toFixed(4)} short shares.</span>`;
+    el.innerHTML = html;
+  }
+}
+
+async function confirmTrade() {
+  const err = document.getElementById('modal-err');
+  err.textContent = '';
+  const tok = token();
+  if (!tok) { err.textContent = 'Not logged in.'; return; }
+
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Processing…';
+
+  try {
+    let body, url;
+    if (modalMode === 'buy') {
+      const nby = parseFloat(document.getElementById('input-nbyen').value);
+      if (!nby || nby <= 0) throw new Error('Enter a positive amount.');
+      url  = `${API}/invest/buy`;
+      body = { team: modalTeam, nbyen: nby };
+    } else if (modalMode === 'short') {
+      const nby = parseFloat(document.getElementById('input-nbyen').value);
+      if (!nby || nby <= 0) throw new Error('Enter a positive collateral amount.');
+      url  = `${API}/invest/short`;
+      body = { team: modalTeam, nbyen: nby };
+    } else if (modalMode === 'sell') {
+      const sh = parseFloat(document.getElementById('input-shares').value);
+      if (!sh || sh <= 0) throw new Error('Enter a positive share count.');
+      url  = `${API}/invest/sell`;
+      body = { team: modalTeam, shares: sh };
+    } else {
+      const sh = parseFloat(document.getElementById('input-shares').value);
+      if (!sh || sh <= 0) throw new Error('Enter a positive share count.');
+      url  = `${API}/invest/cover`;
+      body = { team: modalTeam, shares: sh };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.detail || `Error ${res.status}`);
+    }
+    closeModal();
+    await loadAll();
+    // Re-render portfolio if tab is active
+    if (document.getElementById('tab-portfolio').classList.contains('active')) renderPortfolio();
+  } catch (e) {
+    err.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Confirm';
+  }
+}
+
+// ── Market Summary (movers) ───────────────────────────────────────────────────
+
+async function fetchAllPriceHistories() {
+  if (!marketData) return;
+  moversLoading = true;
+  const teams = marketData.teams.map(t => t.team);
+  const missing = teams.filter(t => !priceHistoriesCache[t]);
+  await Promise.all(missing.map(async t => {
+    try {
+      const res  = await fetch(`${API}/invest/prices/${t}`);
+      const data = await res.json();
+      priceHistoriesCache[t] = (data.history || []).filter(p => !p.is_now);
+    } catch { priceHistoriesCache[t] = []; }
+  }));
+  moversLoading = false;
+}
+
+function computeMovers(win) {
+  if (!marketData) return { risers: [], fallers: [] };
+  const results = marketData.teams.map(t => {
+    const hist = priceHistoriesCache[t.team];
+    if (!hist || hist.length < 2) return { team: t.team, pct: 0, abs: 0, price: t.price };
+    const slice      = hist.slice(-Math.min(win + 1, hist.length));
+    const startPrice = slice[0].price;
+    const endPrice   = slice[slice.length - 1].price;
+    const abs        = endPrice - startPrice;
+    const pct        = startPrice > 0 ? abs / startPrice * 100 : 0;
+    const last       = slice[slice.length - 1];
+    return { team: t.team, pct, abs, price: endPrice, games: slice.length - 1, last };
+  });
+  const sorted  = [...results].sort((a, b) => b.pct - a.pct);
+  return { risers: sorted.slice(0, 5), fallers: sorted.slice(-5).reverse() };
+}
+
+// The result behind a one-game move: "W by 18 v NYK".
+function gameNote(g) {
+  if (g.diff == null || !g.opp) return '';
+  const res = g.diff > 0 ? `W by ${g.diff}` : g.diff < 0 ? `L by ${-g.diff}` : 'tie';
+  return `${res} v ${g.opp}`;
+}
+
+function renderMarketSummary() {
+  const el = document.getElementById('market-summary');
+  if (!el) return;
+
+  if (moversLoading || !marketData) {
+    el.innerHTML = '<div class="mkt-summary-loading">Loading market summary…</div>';
+    return;
+  }
+
+  const { risers, fallers } = computeMovers(moverWindow);
+  const winLabel = moverWindow === 82
+    ? (risers[0]?.games != null ? `last ${risers[0].games}G` : '82G')
+    : `${moverWindow}G`;
+
+  const makeCard = (item, isRiser) => {
+    const sign   = isRiser ? '+' : '';
+    const cls    = isRiser ? 'chg-pos' : 'chg-neg';
+    const absFmt = (isRiser ? '+' : '') + fmtNBY(item.abs);
+    return `<div class="mover-card">
+      <img class="team-logo" src="/logos/sm/logo-${item.team.toLowerCase()}.webp" alt="${item.team}" onerror="this.style.display='none'">
+      <span class="team-abbr">${item.team}</span>
+      <span class="mover-pct ${cls}">${sign}${item.pct.toFixed(1)}%</span>
+      <span class="mover-abs">${absFmt}</span>
+      ${moverWindow === 1 && item.last ? `<span class="mover-abs">${gameNote(item.last)}</span>` : ''}
+    </div>`;
+  };
+
+  const activeWins = [1, 10, 20, 82].map(w =>
+    `<button class="win-btn${moverWindow===w?' active':''}" onclick="setMoverWindow(${w})">${w}G</button>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="mkt-summary-hdr">
+      <span class="mkt-summary-title">Market Summary <span style="color:var(--text-dim);font-weight:400">(${winLabel})</span></span>
+      <div class="win-toggle">${activeWins}</div>
+    </div>
+    <div class="movers-row-label up">▲ Risers</div>
+    <div class="movers-grid">${risers.map(r => makeCard(r, true)).join('')}</div>
+    <div class="movers-row-label dn" style="margin-top:0.55rem">▼ Fallers</div>
+    <div class="movers-grid">${fallers.map(f => makeCard(f, false)).join('')}</div>`;
+}
+
+async function setMoverWindow(w) {
+  moverWindow = w;
+  renderMarketSummary(); // render immediately with cached data (or loading state)
+  await fetchAllPriceHistories();
+  renderMarketSummary();
+}
+
+// ── Bookie controls ───────────────────────────────────────────────────────────
+
+async function toggleLock(lock) {
+  const tok = token();
+  const reason = document.getElementById('lock-reason-input').value.trim();
+  try {
+    const res = await fetch(`${API}/invest/lock`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locked: lock, reason }),
+    });
+    if (!res.ok) throw new Error((await res.json()).detail);
+    await loadAll();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+init();
+</script>
+</body>
+</html>

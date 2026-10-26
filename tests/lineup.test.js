@@ -20,7 +20,7 @@ const vm = require('vm');
 
 const g = { console };
 vm.createContext(g);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'teams', 'lineup.js'), 'utf8')
+vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'stats', 'teams', 'lineup.js'), 'utf8')
   + '\nthis.computeStartingFive = computeStartingFive;', g);
 
 let failed = 0;

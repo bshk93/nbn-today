@@ -57,22 +57,22 @@
     <div class="nf-links">
       <button type="button" class="ui-btn ui-btn--primary" id="nf-search">Search the site</button>
       <a class="ui-btn" href="/">Home</a>
-      <a class="ui-btn" href="/teams/">Teams</a>
-      <a class="ui-btn" href="/players/">Players</a>
-      <a class="ui-btn" href="/standings/">Standings</a>
+      <a class="ui-btn" href="/stats/teams/">Teams</a>
+      <a class="ui-btn" href="/stats/players/">Players</a>
+      <a class="ui-btn" href="/season/standings/">Standings</a>
     </div>
   </main>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
   <script>
     document.getElementById('nf-path').textContent = location.pathname;
-    // Seed the search with the last word of the bad path ("/players/curry" →
+    // Seed the search with the last word of the bad path ("/stats/players/curry" →
     // "curry"), which is usually what the visitor was looking for.
     const guess = decodeURIComponent(location.pathname.split('/').filter(Boolean).pop() || '')
       .replace(/[-_]+/g, ' ').replace(/\.html?$/, '');
     document.getElementById('nf-search').addEventListener('click', () => {
       if (typeof openSearch === 'function') openSearch(guess);
-      else location.href = '/players/';
+      else location.href = '/stats/players/';
     });
   </script>
 </body>

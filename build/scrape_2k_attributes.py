@@ -81,7 +81,7 @@ Writing:
   DIVERGENCE_THRESHOLD or more against the player's last REAL (non-stub)
   snapshot with the attribute average essentially unmoved -- still gets
   appended to player-attributes.json (carrying "ovr_stub": true, so
-  /ratings-changes can call it out as a record rather than a real change),
+  /stats/ratings-changes can call it out as a record rather than a real change),
   but is skipped from the ovr-history.json sync, so it can't clobber the live
   OVR badge/roster tables with a number that isn't real. Both checks are
   re-evaluated on every run, so a player 2K later rates for real syncs on the
@@ -164,7 +164,7 @@ CARRIED_ATTRS = ("intangibles", "potential")
 # at the 2K27 edition switchover: every sub-50 case that run also showed a
 # large mismatch between OVR and the player's own individual attributes,
 # which stayed at plausible real values). Such a snapshot still gets appended
-# to player-attributes.json unconditionally, so /ratings-changes keeps a full
+# to player-attributes.json unconditionally, so /stats/ratings-changes keeps a full
 # dated record -- only the ovr-history.json sync (which drives the live OVR
 # badge/roster tables) skips it. Checked fresh against each run, not a
 # persistent slug list, so a player 2K later rates for real syncs normally.

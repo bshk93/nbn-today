@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <script src="/names.js"></script>
+  <title>NBN | Draft Live</title>
+  <!-- NBN:og -->
+  <meta name="description" content="The NBN draft as it happens, pick by pick.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Draft Live">
+  <meta property="og:description" content="The NBN draft as it happens, pick by pick.">
+  <meta property="og:url" content="https://nbn.today/history/draft/live/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .page { max-width: 960px; margin: 0 auto; }
+
+    /* ── Admin panel ──────────────────────────────────── */
+    #admin-panel, #bod-panel {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.5rem;
+      font-size: var(--text-sm);
+    }
+    #admin-panel summary, #bod-panel summary {
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    #admin-panel summary:hover, #bod-panel summary:hover { color: var(--text-muted); }
+    .admin-form {
+      padding: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: flex-end;
+      border-top: 1px solid var(--bg-card);
+    }
+    .admin-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .admin-field label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .admin-field input[type="text"],
+    .admin-field input[type="date"],
+    .admin-field input[type="number"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: var(--text-sm);
+      padding: 0.3rem 0.5rem;
+      font-family: inherit;
+    }
+    .admin-field input[type="text"] { width: 320px; }
+    .admin-toggle { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.1rem; }
+    .admin-toggle label { font-size: var(--text-sm); color: var(--text-secondary); cursor: pointer; }
+                                        #admin-status { font-size: var(--text-xs); color: var(--text-muted); align-self: center; }
+
+
+    /* ── Status bar ───────────────────────────────────── */
+    .status-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--danger);
+      color: var(--text-on-accent);
+      font-size: var(--text-xs);
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: var(--radius-sm);
+      flex-shrink: 0;
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      background: white;
+      border-radius: 50%;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .status-text { font-size: var(--text-base); font-weight: 600; color: var(--text-primary); flex: 1; }
+    .status-sub { font-size: var(--text-sm); color: var(--text-muted); }
+    .countdown {
+      font-size: var(--text-xl);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      flex-shrink: 0;
+    }
+    .countdown.urgent { color: var(--danger); }
+
+    /* ── Draft board ──────────────────────────────────── */
+    .section { margin-bottom: 2rem; }
+    /* Leave room for the status bar and view tabs above the table */
+    body.pool-view #pool-section .table-wrap { overflow-y: auto; max-height: calc(80vh - 100px); }
+    .pool-draggable { cursor: grab; }
+    .pool-draggable:active { cursor: grabbing; }
+    .pool-dragging { opacity: 0.35; }
+    .pool-drag-over { background: var(--accent-panel-bg) !important; outline: 1px solid var(--accent); }
+    body.pool-view #pool-section thead th { position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
+    .section-title {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.6rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); white-space: nowrap; }
+    thead th {
+      padding: 0.55rem 0.75rem;
+      text-align: left;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid var(--border-subtle); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--bg-hover); }
+    td { padding: 0.5rem 0.75rem; color: var(--text-secondary); }
+    td.num { color: var(--text-muted); font-size: var(--text-xs); width: 3rem; font-variant-numeric: tabular-nums; }
+    td.muted { color: var(--text-muted); }
+    td.team { font-weight: 600; }
+    .player-cell { display: flex; align-items: center; gap: 0.55rem; }
+    .player-photo {
+      width: 30px; height: 30px; border-radius: 50%;
+      object-fit: cover; object-position: top center;
+      background: var(--border); flex-shrink: 0;
+    }
+    .player-ph { width: 30px; height: 30px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+    .player-name { font-weight: 600; color: var(--text-primary); }
+
+    .pick-in-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--gold-alt);
+      font-weight: 700;
+      font-size: var(--text-sm);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    button.pick-in-btn {
+      border: none; background: none; font-family: inherit; cursor: pointer;
+    }
+    .pick-in-btn .pick-in-tap {
+      font-size: var(--text-xs); font-weight: 600; color: var(--warning);
+      letter-spacing: 0.03em; text-transform: none;
+    }
+    .pick-in-btn:active { opacity: 0.65; }
+    .pick-in-dot {
+      width: 7px; height: 7px;
+      background: var(--gold-alt);
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+
+    .empty-state { padding: 2.5rem; text-align: center; color: var(--text-muted); font-size: var(--text-base); }
+
+    .round-separator {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--border);
+      background: var(--bg-card);
+      padding: 0.35rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    select.player-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: var(--text-sm);
+      padding: 0.25rem 0.5rem;
+      font-family: inherit;
+      max-width: 200px;
+    }
+    select.player-select:focus { outline: none; border-color: var(--link); }
+
+    /* ── View tabs ────────────────────────────────────── */
+    .view-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .view-tab-btn {
+      padding: 0.45rem 1.1rem;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+    }
+    .view-tab-btn:hover { color: var(--text-primary); border-color: var(--text-muted); }
+    .view-tab-btn.active { background: var(--bg-card); color: var(--text-primary); border-color: var(--text-muted); }
+
+    /* ── Round sub-tabs ───────────────────────────────── */
+    .round-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.6rem;
+      align-items: center;
+    }
+    .round-tab-btn {
+      padding: 0.28rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+    }
+    .round-tab-btn:hover { color: var(--text-secondary); border-color: var(--text-dim); }
+    .round-tab-btn.active { background: var(--bg-card); color: var(--text-primary); border-color: var(--text-muted); }
+    .round-tab-hint { font-size: var(--text-xs); color: var(--border); margin-left: 0.4rem; }
+    .pick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 6px;
+    }
+    @media (max-width: 600px) {
+      .pick-grid { grid-template-columns: 1fr; }
+    }
+    .pick-card {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.75rem;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .pick-card.on-clock { background: color-mix(in srgb, var(--accent) 16%, transparent); border-color: var(--accent); }
+    .pc-num { font-size: var(--text-xs); color: var(--text-dim); font-variant-numeric: tabular-nums; flex-shrink: 0; width: 1.6rem; }
+    .pc-team-wrap { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; width: 4.2rem; }
+    .pc-team-logo { width: 18px; height: 18px; object-fit: contain; flex-shrink: 0; }
+    .pc-team { font-size: var(--text-sm); font-weight: 700; }
+    .pc-player-wrap { flex: 1; display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; }
+    .pc-name { font-size: var(--text-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc-clock { color: var(--gold-alt); font-weight: 700; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+    .pc-late { color: var(--danger-alt); font-weight: 700; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+    .pc-meta { font-size: var(--text-xs); color: var(--text-muted); flex-shrink: 0; white-space: nowrap; margin-left: auto; }
+
+    /* ── Trade-to-announce banner ─────────────────────── */
+    #trade-banner { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .trade-card {
+      background: color-mix(in srgb, var(--warning) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .trade-card-badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--danger-alt); flex-shrink: 0;
+    }
+    .trade-card-dot { width: 7px; height: 7px; background: var(--danger-alt); border-radius: 50%; animation: pulse 1.2s infinite; }
+    .trade-card-detail { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--warning); }
+    .trade-card-detail .swap { color: var(--warning); font-weight: 600; white-space: nowrap; }
+    .trade-card-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+    .btn-announce { background: var(--warning); color: var(--text-on-accent); }
+    .btn-announce:hover { background: color-mix(in srgb, var(--warning) 82%, black); }
+
+    /* ── Trade builder rows (BOD drawer) ──────────────── */
+    .trade-row { display: flex; gap: 0.4rem; align-items: center; }
+    .trade-row .player-select { flex: 1; max-width: none; }
+    .trade-row-remove {
+      background: none; border: none; color: var(--text-muted); cursor: pointer;
+      font-size: var(--text-base); line-height: 1; padding: 0 0.2rem; flex-shrink: 0;
+    }
+    .trade-row-remove:hover { color: var(--danger); }
+    #trade-text {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); padding: 0.4rem 0.5rem; font-family: inherit;
+      width: 100%; box-sizing: border-box; resize: vertical; min-height: 3rem;
+    }
+
+    /* Trade announce modal */
+    .trade-announce-body { padding: 2rem 1.75rem; }
+    .trade-announce-eyebrow {
+      font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--danger-alt); margin-bottom: 0.6rem;
+    }
+    .trade-announce-text { font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; }
+    .trade-announce-swaps { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .trade-announce-swap { font-size: var(--text-base); color: var(--text-secondary); }
+    .trade-announce-swap .arrow { color: var(--danger-alt); margin: 0 0.4rem; }
+
+    /* ── Show modal overlay ───────────────────────────── */
+    #show-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .show-modal {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 1100px;
+      overflow: hidden;
+    }
+    .show-modal-header {
+      padding: 1.25rem 1.5rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .show-modal-player-photo {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      object-fit: cover; object-position: top center;
+      flex-shrink: 0;
+    }
+    .show-modal-player-ph {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .show-modal-pick-badge {
+      font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--gold-alt);
+      background: var(--gold-bg); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent);
+      border-radius: var(--radius-sm); padding: 0.15rem 0.45rem;
+      display: inline-block; margin-bottom: 0.35rem;
+    }
+    .show-modal-title { font-size: var(--text-lg); font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+    .show-modal-sub { font-size: var(--text-base); color: var(--text-muted); margin-top: 0.15rem; }
+    .show-embed-wrap { position: relative; width: 100%; padding-top: 56.25%; background: var(--bg-page); }
+    .show-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+    .show-no-video {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0.5rem; color: var(--text-dim); font-size: var(--text-sm);
+    }
+    .show-modal-footer {
+      padding: 0.75rem 1.5rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      border-top: 1px solid var(--bg-card);
+    }
+    .show-modal-hint { font-size: var(--text-xs); color: var(--text-dim); flex: 1; }
+    .show-modal-hint kbd {
+      display: inline-block;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0.1rem 0.4rem; font-family: inherit; font-size: var(--text-xs); color: var(--text-muted);
+    }
+    .highlight-url-form {
+      display: flex; gap: 0.5rem;
+      padding: 0.6rem 1.5rem;
+      border-top: 1px solid var(--bg-card);
+      background: var(--bg-deep);
+    }
+    .highlight-url-form input {
+      flex: 1;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); padding: 0.3rem 0.5rem; font-family: inherit;
+    }
+    .highlight-url-label {
+      font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--text-dim); align-self: center; white-space: nowrap;
+    }
+
+    /* ── Depth chart modal ────────────────────────────── */
+    .depth-modal-header {
+      padding: 1.25rem 1.5rem 1rem;
+      display: flex; align-items: center; gap: 0.85rem;
+      border-bottom: 1px solid var(--bg-card);
+    }
+    .depth-team-logo { width: 44px; height: 44px; object-fit: contain; }
+    .depth-team-name { font-size: var(--text-md); font-weight: 800; color: var(--text-primary); }
+    .depth-court-wrap {
+      position: relative; padding: 0.6rem; background: var(--bg-deep); overflow: hidden;
+    }
+    .depth-court-svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      opacity: 0.15; pointer-events: none;
+    }
+    .depth-pos-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1rem 0.45rem;
+    }
+    .depth-pos-group {
+      background: color-mix(in srgb, var(--bg-page) 72%, transparent); border: 1px solid var(--bg-card); border-radius: var(--radius-sm); overflow: hidden;
+    }
+    .depth-pos-group-hdr {
+      font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.09em;
+      text-transform: uppercase; color: var(--text-muted);
+      background: rgba(0,0,0,0.3); padding: 0.2rem 0.55rem;
+      border-bottom: 1px solid var(--accent);
+    }
+    .depth-player-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.2rem 0.55rem; border-bottom: 1px solid var(--border); font-size: var(--text-xs);
+    }
+    .depth-player-row:last-child { border-bottom: none; }
+    .depth-player-name { color: var(--text-primary); font-weight: 600; }
+    .depth-player-ovr { color: var(--text-muted); font-variant-numeric: tabular-nums; font-size: var(--text-xs); margin-left: 0.5rem; flex-shrink: 0; }
+    .cap-hold-tag {
+      display: inline-block; font-size: var(--text-xs); font-weight: 700;
+      letter-spacing: 0.05em; padding: 0.1rem 0.35rem;
+      border-radius: var(--radius-sm); vertical-align: middle; margin-left: 0.4rem;
+    }
+    .ch-ufa   { background: var(--gold-bg); color: var(--gold-alt); }
+    .ch-rfa   { background: var(--danger-alt-bg); color: var(--danger-alt); }
+    .ch-popt  { background: var(--market-positive-bg); color: var(--market-positive-light); }
+    .ch-topt  { background: var(--accent-panel-bg); color: var(--accent-light); }
+    .ch-ngtd  { background: var(--danger-bg); color: var(--danger); }
+
+    /* ── Clickable name buttons ───────────────────────── */
+    .name-btn {
+      background: none; border: none; padding: 0;
+      font-family: inherit; font-size: inherit; font-weight: inherit;
+      color: inherit; cursor: pointer; text-align: left;
+    }
+    .name-btn:hover { text-decoration: underline; }
+    .name-btn-player.has-video { color: var(--accent-light); }
+    .name-btn-player.has-video:hover { color: var(--link); }
+    .name-btn-team { color: var(--text-secondary); }
+    .name-btn-team:hover { color: var(--text-primary); }
+
+    /* ── Control drawer ───────────────────────────────── */
+    #control-toggle {
+      position: fixed;
+      top: 4.5rem; /* below the .nav row's search/theme buttons, which occupy the top-right corner */
+      right: 1rem;
+      z-index: 600;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--bg-page) 85%, transparent);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(6px);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    #control-toggle:hover { color: var(--text-muted); border-color: var(--text-muted); }
+    #control-toggle.has-pending { border-color: var(--gold-alt); color: var(--gold-alt); }
+
+    #drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 610;
+      background: rgba(0,0,0,0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #drawer-backdrop.open { opacity: 1; pointer-events: all; }
+
+    #control-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 360px;
+      max-width: 95vw;
+      background: var(--bg-deep);
+      border-left: 1px solid var(--border);
+      z-index: 620;
+      transform: translateX(100%);
+      transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    #control-drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--bg-card);
+      flex-shrink: 0;
+    }
+    .drawer-header h2 {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .drawer-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: var(--text-md);
+      line-height: 1;
+      padding: 0.1rem 0.3rem;
+    }
+    .drawer-close:hover { color: var(--text-muted); }
+    .drawer-body { padding: 1rem; flex: 1; display: flex; flex-direction: column; gap: 1.25rem; }
+
+    /* Restyle admin panel inside drawer */
+    #control-drawer #admin-panel, #control-drawer #bod-panel {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      margin-bottom: 0;
+    }
+    #control-drawer #admin-panel summary, #control-drawer #bod-panel summary { padding: 0; margin-bottom: 0.5rem; }
+    #control-drawer .admin-form {
+      border-top: none;
+      padding: 0;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    #control-drawer .admin-field input[type="text"],
+    #control-drawer .admin-field input[type="date"],
+    #control-drawer .admin-field input[type="number"] { width: 100%; box-sizing: border-box; }
+    #control-drawer .admin-toggle { margin-top: 0; }
+
+    /* ── Event log ─────────────────────────────── */
+    .log-entry {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid var(--bg-page);
+      font-size: var(--text-sm);
+    }
+    .log-entry:hover { background: var(--bg-page); }
+    .log-time { font-size: var(--text-xs); color: var(--text-dim); flex-shrink: 0; font-variant-numeric: tabular-nums; min-width: 4.5rem; }
+    .log-badge { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.45rem; border-radius: var(--radius-sm); flex-shrink: 0; }
+    .log-badge-pick     { background: var(--accent-panel-bg); color: var(--link); }
+    .log-badge-reassign { background: var(--danger-alt-bg); color: var(--danger-alt); }
+    .log-badge-auto     { background: var(--success-dark-bg); color: var(--success); }
+    .log-desc { flex: 1; color: var(--text-secondary); }
+    .log-empty { padding: 2rem 1rem; text-align: center; color: var(--border); font-size: var(--text-sm); }
+  </style>
+</head>
+<body>
+  <div class="nav"></div>
+
+  <!-- Gear toggle (fixed top-right) -->
+  <button id="control-toggle" title="Controls" onclick="toggleDrawer()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+
+  <!-- Backdrop -->
+  <div id="drawer-backdrop" onclick="closeDrawer()"></div>
+
+  <!-- Control drawer -->
+  <div id="control-drawer">
+    <div class="drawer-header">
+      <h2>Controls</h2>
+      <button class="drawer-close" onclick="closeDrawer()" aria-label="Close"><i class="ui-icon ui-icon--x" aria-hidden="true"></i></button>
+    </div>
+    <div class="drawer-body">
+
+      <!-- BOD controls (inside drawer) — visible to BOD + admin -->
+      <details id="bod-panel" style="display:none" open>
+        <summary>BOD Controls</summary>
+
+        <!-- Submit trade -->
+        <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Submit Trade</div>
+          <div style="font-size:var(--text-xs);color:var(--text-dim)">Ownership flips now (hidden on the board) — shows as “Trade to Announce” until you announce it.</div>
+          <div id="trade-rows"></div>
+          <button class="btn btn-ghost btn-sm" id="trade-add-row" style="align-self:flex-start">+ Add pick</button>
+          <textarea id="trade-text" placeholder="Announcement text (e.g. “Phoenix acquires the 5th pick from New York for…”)"></textarea>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-primary btn-sm" id="trade-submit-btn">Stage Trade</button>
+            <span id="trade-status" style="font-size:var(--text-xs);color:var(--text-muted)"></span>
+          </div>
+        </div>
+      </details>
+
+      <!-- Admin controls (inside drawer) — visible to admin only -->
+      <details id="admin-panel" style="display:none">
+        <summary>Admin Controls</summary>
+
+        <!-- Reassign pick -->
+        <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Reassign Pick</div>
+          <select id="reassign-pick-sel" class="player-select"><option value="">Select pick…</option></select>
+          <select id="reassign-owner-sel" class="player-select">
+            <option value="">New owner…</option>
+            <option>ATL</option><option>BKN</option><option>BOS</option><option>CHA</option><option>CHI</option>
+            <option>CLE</option><option>DAL</option><option>DEN</option><option>DET</option><option>GSW</option>
+            <option>HOU</option><option>IND</option><option>LAC</option><option>LAL</option><option>MEM</option>
+            <option>MIA</option><option>MIL</option><option>MIN</option><option>NOP</option><option>NYK</option>
+            <option>OKC</option><option>ORL</option><option>PHI</option><option>PHX</option><option>POR</option>
+            <option>SAC</option><option>SAS</option><option>TOR</option><option>UTA</option><option>WAS</option>
+          </select>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-primary btn-sm" id="reassign-btn">Reassign</button>
+            <span id="reassign-status" style="font-size:var(--text-xs);color:var(--text-muted)"></span>
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--text-dim)">Silent fix — changes ownership immediately, no announcement.</div>
+        </div>
+
+        <div class="admin-form" style="border-top:1px solid var(--bg-card);margin-top:0.75rem;padding-top:0.75rem">
+          <div class="admin-field">
+            <label>Year</label>
+            <input type="number" id="admin-year" style="width:80px" min="2020" max="2040" />
+          </div>
+          <div class="admin-field">
+            <label>Round 1 Date</label>
+            <input type="date" id="admin-date" />
+          </div>
+          <button class="btn btn-primary btn-sm" id="admin-save">Save</button>
+          <span id="admin-status"></span>
+        </div>
+
+        <!-- Snapshot / restore -->
+        <div style="border-top:1px solid var(--bg-card);margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Dry Run</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted)" id="snapshot-meta">No snapshot saved.</div>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-ghost btn-sm" id="snapshot-save-btn">Save Snapshot</button>
+            <button class="btn btn-danger btn-sm" id="snapshot-restore-btn" disabled>Restore</button>
+          </div>
+          <span id="snapshot-status" style="font-size:var(--text-xs);color:var(--text-muted)"></span>
+        </div>
+
+        <!-- Reset to clean slate -->
+        <div style="border-top:1px solid var(--bg-card);margin-top:0.75rem;padding-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
+          <div style="font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim)">Reset Live Draft</div>
+          <div style="font-size:var(--text-xs);color:var(--text-muted)">Clears rehearsal picks, event log, reveals &amp; queues; re-seeds the board from the permanent draft order. Keeps date, highlights &amp; Best Available order.</div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-danger btn-sm" id="reset-btn">Reset to Clean Slate</button>
+            <span id="reset-status" style="font-size:var(--text-xs);color:var(--text-muted)"></span>
+          </div>
+        </div>
+      </details>
+
+    </div>
+  </div>
+
+  <!-- Invisible focus anchor: focused on init so keyboard events always reach the page -->
+  <span id="focus-anchor" tabindex="-1" style="opacity:0;position:absolute;width:0;height:0;pointer-events:none" aria-hidden="true"></span>
+
+  <div class="page ui-page">
+    <!-- Status bar -->
+    <div class="status-bar" id="status-bar">
+      <div>
+        <div class="status-text" id="status-text">Loading…</div>
+        <div class="status-sub" id="status-sub"></div>
+      </div>
+      <div class="countdown" id="countdown" style="display:none"></div>
+    </div>
+
+    <!-- Trade-to-announce banner -->
+    <div id="trade-banner"></div>
+
+    <!-- View tab bar -->
+    <div class="view-tabs" id="view-tab-bar" style="display:none">
+      <button class="view-tab-btn active" id="tab-fullboard-btn" onclick="switchTab('fullboard')">Draft Board</button>
+      <button class="view-tab-btn" id="tab-pool-btn" onclick="switchTab('pool')">Best Available</button>
+      <button class="view-tab-btn" id="tab-log-btn" onclick="switchTab('log')">Event Log</button>
+      <a href="/history/draft/guide/" style="margin-left:auto;font-size:var(--text-xs);color:var(--text-dim);text-decoration:none;align-self:center;padding:0.3rem 0.5rem;border-radius:var(--radius-sm)" onmouseover="this.style.color='var(--text-muted)'" onmouseout="this.style.color='var(--text-dim)'">Guide</a>
+    </div>
+
+    <!-- Full draft board (Draft Board tab) -->
+    <div class="section" id="fullboard-section">
+      <div class="round-tabs">
+        <button class="round-tab-btn active" id="round-tab-1" onclick="switchRound(1)">Round 1</button>
+        <button class="round-tab-btn" id="round-tab-2" onclick="switchRound(2)">Round 2</button>
+        <span class="round-tab-hint">← → to switch</span>
+      </div>
+      <div id="fullboard-grid" class="pick-grid"></div>
+    </div>
+
+    <!-- Event log tab -->
+    <div class="section" id="log-section" style="display:none">
+      <div id="log-body"></div>
+    </div>
+
+    <!-- Player pool (Pool tab) -->
+    <div class="section" id="pool-section" style="display:none">
+      <div class="ui-table-wrap table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="num">#</th>
+              <th>Player</th>
+              <th>Pos</th>
+              <th class="muted">Age</th>
+              <th class="muted">College / Country</th>
+            </tr>
+          </thead>
+          <tbody id="pool-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reveal / depth chart modal overlay -->
+  <div id="show-overlay" style="display:none" tabindex="-1"></div>
+
+  <script>
+    const TOKEN_KEY = 'nbn_token';
+    const TEAM_ABBRS = new Set([
+      'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+    ]);
+
+    let draftState = null;
+    let allPicks = [];
+    let bios = {};
+    let myRoles = [];
+    let myName = null;
+    let countdownTimer = null;
+    let activeTab = 'fullboard';
+    let activeRound = 1;
+    let revealState = 0;
+    let poolOrder = [];
+    let roundAutoJumped = false;
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+    function bioName(slug) {
+      const bio = bios[slug];
+      return bio ? nbnPlayerName(bio.name) : slug;
+    }
+
+    function calcAge(dob) {
+      if (!dob) return '—';
+      const birth = new Date(dob + 'T00:00:00');
+      const now = new Date();
+      let age = now.getFullYear() - birth.getFullYear();
+      if (now.getMonth() < birth.getMonth() ||
+          (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+      return age;
+    }
+
+    function pickWindowStart(round1Date, roundNum, pickNum) {
+      // round1Date: "YYYY-MM-DD"; noon Eastern (EDT = UTC-4 in June)
+      // pickNum may be globally numbered (31-60 for round 2); normalize to within-round offset
+      const [yr, mo, da] = round1Date.split('-').map(Number);
+      const day = da + (roundNum - 1);
+      const withinRound = (pickNum - 1) % 30;
+      return new Date(`${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}T12:00:00-04:00`)
+        .getTime() + withinRound * 10 * 60 * 1000;
+    }
+
+    function pickWindowEnd(round1Date, roundNum, pickNum) {
+      return pickWindowStart(round1Date, roundNum, pickNum) + 10 * 60 * 1000;
+    }
+
+    function formatET(ms) {
+      return new Date(ms).toLocaleTimeString('en-US', {
+        timeZone: 'America/New_York',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+    }
+
+    function formatDateET(ms) {
+      return new Date(ms).toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'long', month: 'long', day: 'numeric',
+      });
+    }
+
+    function yearPicks(year) {
+      return allPicks.filter(p => p.year === year && p.pick != null)
+        .sort((a, b) => a.round - b.round || a.pick - b.pick);
+    }
+
+    function pickedSlugs(year) {
+      return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
+    }
+
+    // Players whose pick has actually been revealed on-air. The Best Available pool
+    // keys off this (not pickedSlugs) so a submitted-but-unrevealed pick never drops
+    // a prospect from the board before the presenter announces it.
+    function revealedSlugs(year) {
+      const revealed = new Set((draftState && draftState.revealed) || []);
+      return new Set(
+        allPicks
+          .filter(p => p.year === year && p.player && revealed.has(`${p.round}-${p.pick}`))
+          .map(p => p.player)
+      );
+    }
+
+    // Exact same effectiveOwner logic as draft/index.html — rebuilt each render.
+    let _swapTakesFrom = {};
+
+    function buildSwapTakesFrom(picks2026) {
+      const map = {};
+      picks2026.forEach(p => {
+        if (p.swap_conveys === true && p.swap_owner) {
+          map[`${p.round}-${p.swap_owner}`] = p.owner;
+        }
+      });
+      return map;
+    }
+
+    function pickOwners(p) {
+      let raw;
+      if (p.swap_conveys === true) {
+        raw = p.swap_owner;
+      } else {
+        raw = _swapTakesFrom[`${p.round}-${p.orig}`] ?? p.owner;
+      }
+      if (!raw || raw === '?') return [(p.orig || '').toUpperCase()];
+      return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+    }
+
+    // Un-announced trades flip OWNER in the picks file immediately (mechanical-on-entry),
+    // but the board must keep showing the *old* owner until the presenter announces.
+    // This map of "round-orig" → from_owner re-masks those picks at display time.
+    let _tradeMask = {};
+
+    function buildTradeMask(state) {
+      const map = {};
+      ((state && state.trades) || []).forEach(t => {
+        if (t.announced) return;
+        (t.reassignments || []).forEach(r => {
+          map[`${r.round}-${(r.orig || '').toUpperCase()}`] = r.from_owner;
+        });
+      });
+      return map;
+    }
+
+    // Owners as shown on the broadcast board — same as pickOwners, but masked back to
+    // the pre-trade owner for any pick in a not-yet-announced trade.
+    function displayOwners(p) {
+      const masked = _tradeMask[`${p.round}-${(p.orig || '').toUpperCase()}`];
+      if (masked) return masked.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+      return pickOwners(p);
+    }
+
+    function pickTeamHtml(p) {
+      const owners = displayOwners(p);
+      const owner = owners.join('/');
+      const orig = (p.orig || '').toUpperCase();
+      if (orig && !owners.includes(orig)) {
+        return `${owner} <span style="color:var(--text-dim);font-size:var(--text-xs);font-weight:400">(via ${orig})</span>`;
+      }
+      return owner;
+    }
+
+    // The pick the broadcast is currently on — the first one not yet revealed, in
+    // draft order. As the presenter reveals each pick the cursor advances to the
+    // next team immediately, so the banner/board walk the reveal sequence regardless
+    // of the wall clock. Its state drives the label: a staged pick reads "pick is
+    // in", an unmade one "on the clock". `start`/`end` carry that pick's scheduled
+    // window. Returns null once every pick has been revealed.
+    function currentSlot(state) {
+      if (!state.round1_date) return null;
+      const picks = yearPicks(state.year);
+      if (!picks.length) return null;
+      const revealed = state.revealed || [];
+      const p = picks.find(pk => !revealed.includes(`${pk.round}-${pk.pick}`));
+      if (!p) return null;
+      const start = pickWindowStart(state.round1_date, p.round, p.pick);
+      return { pick: p, start, end: start + 10 * 60 * 1000 };
+    }
+
+    // First unsubmitted pick (by schedule order)
+    function nextUnsubmitted(state) {
+      return yearPicks(state.year).find(p => !p.player) || null;
+    }
+
+    // ── Auth ───────────────────────────────────────────────────────────────────
+
+    async function loadAuth() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        myName = data.name;
+        myRoles = data.roles || [];
+      } catch {}
+    }
+
+    function isAdmin() { return myRoles.includes('admin'); }
+    function isBod() { return myRoles.includes('bod') || isAdmin(); }
+
+    // ── Drawer ─────────────────────────────────────────────────────────────────────
+
+    function toggleDrawer() {
+      const open = document.getElementById('control-drawer').classList.contains('open');
+      open ? closeDrawer() : openDrawer();
+    }
+    function openDrawer() {
+      document.getElementById('control-drawer').classList.add('open');
+      document.getElementById('drawer-backdrop').classList.add('open');
+    }
+    function closeDrawer() {
+      document.getElementById('control-drawer').classList.remove('open');
+      document.getElementById('drawer-backdrop').classList.remove('open');
+    }
+
+    async function promptSignIn() {
+      const tok = await promptForToken({ label: 'Access token' });
+      if (tok) loadAuth().then(render);
+    }
+
+    // ── API calls ──────────────────────────────────────────────────────────────
+
+    async function apiPatch(path, body) {
+      const token = getToken();
+      return fetch(path, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function apiPut(path, body) {
+      const token = getToken();
+      return fetch(path, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function apiPost(path, body) {
+      const token = getToken();
+      return fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function savePoolOrder(slugs) {
+      poolOrder = slugs;
+      if (draftState) draftState.pool_order = slugs; // optimistic — prevents interval render from reverting
+      const res = await apiPatch('/api/draft/live', { pool_order: slugs });
+      if (res && res.ok) {
+        const newState = await res.json();
+        if (newState) { draftState = newState; poolOrder = newState.pool_order || slugs; }
+      }
+    }
+
+    // ── Admin panel ────────────────────────────────────────────────────────────
+
+    function initAdminPanel(state) {
+      document.getElementById('admin-year').value = state.year || 2026;
+      document.getElementById('admin-date').value = state.round1_date || '';
+      initReassignPicker(state);
+      initTradeBuilder(state);
+      loadSnapshotMeta();
+    }
+
+    document.getElementById('admin-save').addEventListener('click', async () => {
+      const btn = document.getElementById('admin-save');
+      const statusEl = document.getElementById('admin-status');
+      btn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      const res = await apiPatch('/api/draft/live', {
+        year: parseInt(document.getElementById('admin-year').value) || 2026,
+        round1_date: document.getElementById('admin-date').value || null,
+      });
+      if (res.ok) {
+        draftState = await res.json();
+        statusEl.textContent = 'Saved!';
+        render();
+      } else {
+        statusEl.textContent = `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    // ── Render functions ───────────────────────────────────────────────────────
+
+    function renderStatus(state) {
+      const textEl = document.getElementById('status-text');
+      const subEl = document.getElementById('status-sub');
+      const cdEl = document.getElementById('countdown');
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      cdEl.style.display = 'none';
+
+      if (!state) { textEl.textContent = 'Loading…'; subEl.textContent = ''; return; }
+
+      const picks = yearPicks(state.year);
+      const revealedSet = state.revealed || [];
+      const allRevealed = picks.length > 0 &&
+        picks.every(p => revealedSet.includes(`${p.round}-${p.pick}`));
+
+      if (allRevealed) {
+        textEl.innerHTML = `${state.year} Draft concluded`;
+        subEl.textContent = 'All picks are in.';
+        return;
+      }
+
+      if (!state.round1_date) {
+        textEl.textContent = 'Draft date TBD';
+        subEl.textContent = '';
+        return;
+      }
+
+      const slot = currentSlot(state);
+      const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
+
+      if (!slot) {
+        textEl.innerHTML = `${liveBadge} Draft underway`;
+        subEl.textContent = '';
+        return;
+      }
+
+      const p = slot.pick;
+      const owners = displayOwners(p);
+      const teamDisplay = owners.join(' / ');
+      const now = Date.now();
+      const head = `${liveBadge} Round ${p.round}, Pick ${p.pick} · `;
+
+      if (p.player) {
+        // Staged but not yet revealed — the presenter is up next
+        textEl.innerHTML = `${head}<strong style="color:var(--text-on-accent)">${teamDisplay}</strong> · the pick is in`;
+        subEl.textContent = 'Awaiting reveal…';
+        return;
+      }
+
+      // Not yet submitted — this team is on the clock
+      textEl.innerHTML = `${head}<strong style="color:var(--text-on-accent)">${teamDisplay}</strong> on the clock`;
+      if (now < slot.start) {
+        // On the clock ahead of schedule — no window-end deadline yet
+        subEl.textContent = `On the clock early · scheduled window ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+      } else if (now < slot.end) {
+        subEl.textContent = `Window: ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+        cdEl.style.display = '';
+        function tick() {
+          const rem = slot.end - Date.now();
+          if (rem <= 0) { cdEl.textContent = '0:00'; cdEl.className = 'countdown urgent'; return; }
+          const h = Math.floor(rem / 3600000);
+          const m = Math.floor((rem % 3600000) / 60000);
+          const s = Math.floor((rem % 60000) / 1000);
+          cdEl.textContent = h > 0
+            ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+            : `${m}:${String(s).padStart(2,'0')}`;
+          cdEl.className = rem < 60000 ? 'countdown urgent' : 'countdown';
+        }
+        tick();
+        countdownTimer = setInterval(tick, 1000);
+      } else {
+        subEl.textContent = `Scheduled window passed (${formatET(slot.start)} – ${formatET(slot.end)} ET) · BOD may submit a queued pick`;
+      }
+    }
+
+    const TEAM_NAMES = {
+      ATL:'Atlanta',BKN:'Brooklyn',BOS:'Boston',CHA:'Charlotte',CHI:'Chicago',
+      CLE:'Cleveland',DAL:'Dallas',DEN:'Denver',DET:'Detroit',GSW:'Golden State',
+      HOU:'Houston',IND:'Indiana',LAC:'LA Clippers',LAL:'LA Lakers',MEM:'Memphis',
+      MIA:'Miami',MIL:'Milwaukee',MIN:'Minnesota',NOP:'New Orleans',NYK:'New York',
+      OKC:'Oklahoma City',ORL:'Orlando',PHI:'Philadelphia',PHX:'Phoenix',POR:'Portland',
+      SAC:'Sacramento',SAS:'San Antonio',TOR:'Toronto',UTA:'Utah',WAS:'Washington',
+    };
+    const POS_ORDER = ['PG','SG','SF','PF','C'];
+
+    // ── Tab switching ──────────────────────────────────────────────────────────────
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.body.classList.toggle('pool-view', tab === 'pool');
+      document.getElementById('tab-fullboard-btn').classList.toggle('active', tab === 'fullboard');
+      document.getElementById('tab-pool-btn').classList.toggle('active', tab === 'pool');
+      document.getElementById('tab-log-btn').classList.toggle('active', tab === 'log');
+      document.getElementById('fullboard-section').style.display = tab === 'fullboard' ? 'block' : 'none';
+      document.getElementById('pool-section').style.display = tab === 'pool' ? 'block' : 'none';
+      document.getElementById('log-section').style.display = tab === 'log' ? 'block' : 'none';
+      if (tab === 'fullboard') renderFullBoard(draftState);
+      if (tab === 'pool') renderPool(draftState);
+      if (tab === 'log') renderLog(draftState);
+    }
+
+    function switchRound(round) {
+      activeRound = round;
+      document.getElementById('round-tab-1').classList.toggle('active', round === 1);
+      document.getElementById('round-tab-2').classList.toggle('active', round === 2);
+      renderFullBoard(draftState);
+    }
+
+    // ── Event log ──────────────────────────────────────────────────────────────────
+
+    function renderLog(state) {
+      const body = document.getElementById('log-body');
+      if (!state) { body.innerHTML = ''; return; }
+      const events = (state.events || []).slice().reverse(); // newest first
+      if (!events.length) {
+        body.innerHTML = '<div class="log-empty">No events yet.</div>';
+        return;
+      }
+      body.innerHTML = '';
+      events.forEach(ev => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        const timeStr = new Date(ev.ts).toLocaleTimeString('en-US', {
+          timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true,
+        });
+        let badge, desc;
+        if (ev.type === 'pick') {
+          badge = ev.auto
+            ? '<span class="log-badge log-badge-auto">Auto</span>'
+            : '<span class="log-badge log-badge-pick">Pick</span>';
+          const name = bioName(ev.player) || ev.player;
+          desc = `R${ev.round} · #${ev.pick} · <strong>${ev.owner || ev.orig}</strong> selects <strong>${name}</strong>`;
+        } else if (ev.type === 'reassign') {
+          badge = '<span class="log-badge log-badge-reassign">Trade</span>';
+          desc = `R${ev.round} · #${ev.pick ?? '?'} (${ev.orig}) reassigned <strong>${ev.from_owner}</strong> → <strong>${ev.to_owner}</strong>`;
+        } else if (ev.type === 'trade') {
+          badge = '<span class="log-badge log-badge-reassign">Trade</span>';
+          const swaps = (ev.reassignments || [])
+            .map(r => `<strong>${r.from_owner}</strong> → <strong>${r.to_owner}</strong> (R${r.round}${r.pick != null ? ' #' + r.pick : ''})`)
+            .join(', ');
+          desc = ev.text ? `${ev.text} <span style="color:var(--text-muted)">— ${swaps}</span>` : swaps;
+        } else {
+          badge = `<span class="log-badge log-badge-pick">${ev.type}</span>`;
+          desc = JSON.stringify(ev);
+        }
+        div.innerHTML = `<span class="log-time">${timeStr}</span>${badge}<span class="log-desc">${desc}</span>`;
+        body.appendChild(div);
+      });
+    }
+
+    // ── Reassign pick ──────────────────────────────────────────────────────────────
+
+    function initReassignPicker(state) {
+      const sel = document.getElementById('reassign-pick-sel');
+      if (!state) return;
+      const year = state.year;
+      const picks = yearPicks(year).filter(p => !p.player);
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">Select pick…</option>' +
+        picks.map(p => {
+          const owners = pickOwners(p);
+          const val = `${p.round}|${p.orig}`;
+          return `<option value="${val}">R${p.round} #${p.pick} — ${owners.join('/')}</option>`;
+        }).join('');
+      if (prev) sel.value = prev;
+    }
+
+    document.getElementById('reassign-btn').addEventListener('click', async () => {
+      const pickSel  = document.getElementById('reassign-pick-sel');
+      const ownerSel = document.getElementById('reassign-owner-sel');
+      const statusEl = document.getElementById('reassign-status');
+      const btn      = document.getElementById('reassign-btn');
+      if (!pickSel.value || !ownerSel.value) { statusEl.textContent = 'Select pick and new owner.'; return; }
+      const [round, orig] = pickSel.value.split('|');
+      btn.disabled = true; statusEl.textContent = 'Saving…';
+      const res = await apiPost('/api/draft/pick/reassign', {
+        year: draftState.year, round: parseInt(round), orig, new_owner: ownerSel.value,
+      });
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState(); render();
+        initReassignPicker(draftState);
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    // ── Submit trade (multi-pick) ────────────────────────────────────────────────────
+
+    function pickOptionsHtml(state) {
+      const picks = yearPicks(state.year).filter(p => !p.player);
+      return '<option value="">Select pick…</option>' +
+        picks.map(p => {
+          const owners = pickOwners(p);
+          return `<option value="${p.round}|${p.orig}">R${p.round} #${p.pick} — ${owners.join('/')}</option>`;
+        }).join('');
+    }
+
+    function ownerOptionsHtml() {
+      return '<option value="">New owner…</option>' +
+        [...TEAM_ABBRS].sort().map(t => `<option>${t}</option>`).join('');
+    }
+
+    function addTradeRow(state) {
+      const rows = document.getElementById('trade-rows');
+      const row = document.createElement('div');
+      row.className = 'trade-row';
+      row.innerHTML =
+        `<select class="player-select trade-pick-sel">${pickOptionsHtml(state || draftState || {})}</select>` +
+        `<span style="color:var(--text-dim)">→</span>` +
+        `<select class="player-select trade-owner-sel">${ownerOptionsHtml()}</select>` +
+        `<button class="trade-row-remove" title="Remove" aria-label="Remove"><i class="ui-icon ui-icon--x" aria-hidden="true"></i></button>`;
+      row.querySelector('.trade-row-remove').addEventListener('click', () => {
+        row.remove();
+        if (!document.querySelectorAll('#trade-rows .trade-row').length) addTradeRow(draftState);
+      });
+      rows.appendChild(row);
+    }
+
+    // Ensure at least one row; refresh pick options (preserving selections) on state changes.
+    function initTradeBuilder(state) {
+      const rows = document.getElementById('trade-rows');
+      const existing = rows.querySelectorAll('.trade-row');
+      if (!existing.length) { addTradeRow(state); return; }
+      existing.forEach(row => {
+        const sel = row.querySelector('.trade-pick-sel');
+        const prev = sel.value;
+        sel.innerHTML = pickOptionsHtml(state);
+        if (prev) sel.value = prev;
+      });
+    }
+
+    document.getElementById('trade-add-row').addEventListener('click', () => addTradeRow(draftState));
+
+    document.getElementById('trade-submit-btn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('trade-status');
+      const btn      = document.getElementById('trade-submit-btn');
+      const reassignments = [];
+      document.querySelectorAll('#trade-rows .trade-row').forEach(row => {
+        const pickVal = row.querySelector('.trade-pick-sel').value;
+        const owner   = row.querySelector('.trade-owner-sel').value;
+        if (!pickVal || !owner) return;
+        const [round, orig] = pickVal.split('|');
+        reassignments.push({ round: parseInt(round), orig, new_owner: owner });
+      });
+      if (!reassignments.length) { statusEl.textContent = 'Add at least one pick → owner.'; return; }
+      btn.disabled = true; statusEl.textContent = 'Staging…';
+      const res = await apiPost('/api/draft/trade', {
+        year: draftState.year,
+        text: document.getElementById('trade-text').value.trim(),
+        reassignments,
+      });
+      if (res.ok) {
+        statusEl.textContent = 'Staged — ready to announce.';
+        // Reset the builder
+        document.getElementById('trade-rows').innerHTML = '';
+        document.getElementById('trade-text').value = '';
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 4000);
+    });
+
+    // ── Trade-to-announce banner ─────────────────────────────────────────────────────
+
+    function swapSummary(r) {
+      return `R${r.round}${r.pick != null ? ' #' + r.pick : ''} ${r.from_owner} → ${r.to_owner}`;
+    }
+
+    function renderTradeBanner(state) {
+      const banner = document.getElementById('trade-banner');
+      const pending = ((state && state.trades) || []).filter(t => !t.announced);
+      if (!pending.length) { banner.innerHTML = ''; return; }
+      const bod = isBod();
+      banner.innerHTML = '';
+      pending.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'trade-card';
+        // Audience sees only the teaser; BOD sees the reassignment detail + controls.
+        const detail = bod
+          ? (t.reassignments || []).map(r => `<span class="swap">${swapSummary(r)}</span>`).join('&ensp;·&ensp;')
+          : 'Details to be revealed by the presenter.';
+        card.innerHTML =
+          `<span class="trade-card-badge"><span class="trade-card-dot"></span>Trade to Announce</span>` +
+          `<span class="trade-card-detail">${detail}</span>`;
+        if (bod) {
+          const actions = document.createElement('div');
+          actions.className = 'trade-card-actions';
+          const announceBtn = document.createElement('button');
+          announceBtn.className = 'btn btn-announce btn-sm';
+          announceBtn.textContent = 'Announce Trade';
+          announceBtn.addEventListener('click', () => announceTrade(t));
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn btn-danger btn-sm';
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.addEventListener('click', () => cancelTrade(t.id));
+          actions.appendChild(announceBtn);
+          actions.appendChild(cancelBtn);
+          card.appendChild(actions);
+        }
+        banner.appendChild(card);
+      });
+    }
+
+    async function announceTrade(trade) {
+      const res = await apiPost(`/api/draft/trade/${trade.id}/announce`, {});
+      if (!res.ok) return;
+      await refreshState(); render();
+      renderTradeAnnounceModal(trade);
+    }
+
+    async function cancelTrade(id) {
+      if (!await confirmDialog({
+        title: 'Cancel this trade?',
+        body: 'Pick ownership reverts to the original team.',
+        confirmLabel: 'Cancel trade',
+        danger: true,
+      })) return;
+      const del = await fetch(`/api/draft/trade/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+      });
+      if (del.ok) { await refreshState(); render(); }
+    }
+
+    function renderTradeAnnounceModal(trade) {
+      revealState = 3; // trade-announce modal state
+      const swaps = (trade.reassignments || [])
+        .map(r => `<div class="trade-announce-swap">${r.from_owner}<span class="arrow">→</span>${r.to_owner} <span style="color:var(--text-muted)">(R${r.round}${r.pick != null ? ' #' + r.pick : ''})</span></div>`)
+        .join('');
+      const overlay = document.getElementById('show-overlay');
+      overlay.innerHTML = `
+        <div class="show-modal">
+          <div class="trade-announce-body">
+            <div class="trade-announce-eyebrow">Trade</div>
+            <div class="trade-announce-text">${trade.text ? escapeHtml(trade.text) : 'Trade announced.'}</div>
+            <div class="trade-announce-swaps">${swaps}</div>
+          </div>
+          <div class="show-modal-footer">
+            <div class="show-modal-hint"><kbd>Enter</kbd> or <kbd>Esc</kbd> to close</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+          </div>
+        </div>`;
+      overlay.style.display = 'flex';
+      overlay.focus();
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    function expiredBlankPicks(state) {
+      if (!state || !state.round1_date) return [];
+      const now = Date.now();
+      return yearPicks(state.year).filter(p =>
+        !p.player && now >= pickWindowEnd(state.round1_date, p.round, p.pick));
+    }
+
+    // ── Snapshot / restore ─────────────────────────────────────────────────────────
+
+    async function loadSnapshotMeta() {
+      const res = await fetch('/api/draft/snapshot', {
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+      });
+      const metaEl  = document.getElementById('snapshot-meta');
+      const restBtn = document.getElementById('snapshot-restore-btn');
+      if (res.ok) {
+        const { saved_at } = await res.json();
+        const dt = new Date(saved_at).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+        metaEl.textContent  = `Snapshot: ${dt} ET`;
+        restBtn.disabled    = false;
+      } else {
+        metaEl.textContent  = 'No snapshot saved.';
+        restBtn.disabled    = true;
+      }
+    }
+
+    document.getElementById('snapshot-save-btn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('snapshot-status');
+      const btn      = document.getElementById('snapshot-save-btn');
+      btn.disabled = true; statusEl.textContent = 'Saving…';
+      const res = await apiPost('/api/draft/snapshot', {});
+      if (res.ok) { statusEl.textContent = 'Snapshot saved!'; await loadSnapshotMeta(); }
+      else { const e = await res.json().catch(() => ({})); statusEl.textContent = e.detail || `Error ${res.status}`; }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    document.getElementById('snapshot-restore-btn').addEventListener('click', async () => {
+      if (!await confirmDialog({
+        title: 'Restore this snapshot?',
+        body: 'All picks and draft state revert to the saved point. Anything since is lost.',
+        confirmLabel: 'Restore snapshot',
+        danger: true,
+      })) return;
+      const statusEl = document.getElementById('snapshot-status');
+      const btn      = document.getElementById('snapshot-restore-btn');
+      btn.disabled = true; statusEl.textContent = 'Restoring…';
+      const res = await apiPost('/api/draft/snapshot/restore', {});
+      if (res.ok) {
+        statusEl.textContent = 'Restored!';
+        poolOrder = []; // force re-sync from server
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', async () => {
+      if (!await confirmDialog({
+        title: 'Reset the live draft to a clean slate?',
+        body: 'This clears all picks, the event log, reveals and queues, and re-seeds the board from the permanent draft order. '
+            + 'Date, highlights and Best Available order are kept.',
+        confirmLabel: 'Reset the draft',
+        danger: true,
+        requireText: 'reset',
+      })) return;
+      const statusEl = document.getElementById('reset-status');
+      const btn      = document.getElementById('reset-btn');
+      btn.disabled = true; statusEl.textContent = 'Resetting…';
+      const res = await apiPost('/api/draft/reset', {});
+      if (res.ok) {
+        statusEl.textContent = 'Reset!';
+        poolOrder = []; // force re-sync from server
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+      }
+      btn.disabled = false;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    // ── Enter key reveal sequence ──────────────────────────────────────────────────
+
+    // Capture phase on window — fires before any element processes the event,
+    // ensuring arrow keys and Enter work regardless of what element has focus.
+    window.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (revealState === 0 && activeTab === 'fullboard') {
+          const tag = (e.target.tagName || '').toUpperCase();
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+          const next = e.key === 'ArrowRight' ? Math.min(2, activeRound + 1) : Math.max(1, activeRound - 1);
+          if (next !== activeRound) switchRound(next);
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (revealState === 1 || revealState === 2 || revealState === 3) { closeModal(); e.stopPropagation(); }
+        return;
+      }
+
+      if (e.key !== 'Enter') return;
+
+      if (revealState === 1) { advanceToDepth(); e.stopPropagation(); return; }
+      if (revealState === 2) { closeModal(); e.stopPropagation(); return; }
+      if (revealState === 3) { closeModal(); e.stopPropagation(); return; }
+
+      const tag = (e.target.tagName || '').toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return;
+
+      // State 0 — look for next unrevealed submitted pick (BOD only)
+      if (!isBod() || !draftState) return;
+      const picks = yearPicks(draftState.year);
+      const pending = picks.find(p => p.player && !draftState.revealed.includes(`${p.round}-${p.pick}`));
+      if (pending) doReveal(pending);
+    }, { capture: true });
+
+    async function doReveal(p) {
+      const res = await apiPost('/api/draft/reveal', { round: p.round, pick: p.pick });
+      if (!res.ok) return;
+      await refreshState();
+      render();
+      revealSlug = p.player;
+      revealTeam = pickOwners(p)[0];
+      revealPick = p;
+      revealState = 1;
+      renderPlayerModal();
+    }
+
+    function renderPlayerModal() {
+      const bio = bios[revealSlug] || {};
+      const name = bioName(revealSlug);
+      const pos = Array.isArray(bio.pos) ? bio.pos.join(' / ') : (bio.pos || '—');
+      const school = (bio.college && bio.college !== 'NA') ? bio.college
+                   : (bio.country && bio.country !== 'NA') ? bio.country : '';
+      const embedUrl = highlights[revealSlug];
+      const p = revealPick;
+
+      const pickBadge = p
+        ? `<div class="show-modal-pick-badge">Round ${p.round} · Pick ${p.pick} · ${pickOwners(p).join(' / ')}</div>`
+        : '';
+
+      const photoHtml = bio.photo_url
+        ? `<img class="show-modal-player-photo" src="${bio.photo_url}" alt=""
+             onerror="this.outerHTML='<div class=\\'show-modal-player-ph\\'></div>'">`
+        : `<div class="show-modal-player-ph"></div>`;
+
+      const embedHtml = embedUrl
+        ? `<div class="show-embed-wrap"><iframe src="${embedUrl}?autoplay=1&rel=0&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>`
+        : `<div class="show-embed-wrap"><div class="show-no-video">
+             <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" opacity="0.3">
+               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+             </svg>
+             <span>No highlights configured</span>
+           </div></div>`;
+
+      const urlFormHtml = isBod() ? `
+        <div class="highlight-url-form">
+          <span class="highlight-url-label">Highlights URL</span>
+          <input type="text" id="hl-url-input" placeholder="https://www.youtube.com/embed/…" value="${embedUrl || ''}" />
+          <button class="btn btn-ghost btn-sm" id="hl-url-save">Save</button>
+        </div>` : '';
+
+      const hintText = revealTeam
+        ? `<kbd>Enter</kbd> &rarr; ${revealTeam} depth chart`
+        : `<kbd>Enter</kbd> to close`;
+
+      const overlay = document.getElementById('show-overlay');
+      overlay.innerHTML = `
+        <div class="show-modal">
+          <div class="show-modal-header">
+            ${photoHtml}
+            <div>
+              ${pickBadge}
+              <div class="show-modal-title">${name}</div>
+              <div class="show-modal-sub">${pos}${school ? ' · ' + school : ''}</div>
+            </div>
+          </div>
+          ${embedHtml}
+          ${urlFormHtml}
+          <div class="show-modal-footer">
+            <div class="show-modal-hint">${hintText}</div>
+            <div style="display:flex;gap:0.5rem">
+              <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+              ${revealTeam ? `<button class="btn btn-primary btn-sm" id="modal-advance-btn">${revealTeam} depth chart</button>` : ''}
+            </div>
+          </div>
+        </div>`;
+      overlay.style.display = 'flex';
+      overlay.focus();
+
+      if (revealTeam) {
+        document.getElementById('modal-advance-btn').addEventListener('click', () => advanceToDepth());
+      }
+
+      if (isBod()) {
+        document.getElementById('hl-url-save').addEventListener('click', async () => {
+          const url = document.getElementById('hl-url-input').value.trim();
+          const btn = document.getElementById('hl-url-save');
+          btn.disabled = true; btn.textContent = 'Saving…';
+          const res = await apiPatch('/api/draft/live', { highlights: { [revealSlug]: url } });
+          if (res.ok) {
+            const newState = await res.json();
+            draftState = newState;
+            highlights = newState.highlights || {};
+            btn.textContent = 'Saved!';
+            setTimeout(renderPlayerModal, 500);
+          } else {
+            btn.textContent = 'Error'; btn.disabled = false;
+          }
+        });
+      }
+    }
+
+    async function advanceToDepth() {
+      if (!revealTeam) { closeModal(); return; }
+      revealState = 2;
+      await renderDepthModal(revealTeam);
+    }
+
+    async function renderDepthModal(abbr) {
+      abbr = abbr.toUpperCase();
+      let roster = rosterCache[abbr];
+      if (!roster) {
+        const res = await fetch(`/data/${abbr.toLowerCase()}-roster.csv`);
+        roster = res.ok ? parseRosterCSV(await res.text()) : [];
+        rosterCache[abbr] = roster;
+      }
+
+      const teamName = TEAM_NAMES[abbr] || abbr;
+      const byPos = {};
+      roster.forEach(r => {
+        const p = r.pos[0] || '?';
+        if (!byPos[p]) byPos[p] = [];
+        byPos[p].push(r);
+      });
+
+      function holdBadge(r) {
+        if (!r.capHold) return '';
+        const map = { UFA: ['ch-ufa','UFA'], RFA: ['ch-rfa','RFA'],
+                      PLAYER_OPT: ['ch-popt','P.OPT'], TEAM_OPT: ['ch-topt','T.OPT'],
+                      NON_GTD: ['ch-ngtd','NGD'] };
+        const [cls, label] = map[r.capHold] || ['ch-ufa', r.capHold];
+        return `<span class="cap-hold-tag ${cls}">${label}</span>`;
+      }
+
+      // An OVR on the heat scale (components.css .ui-heat).
+      function ovrHeat(n) {
+        return Math.min(1, Math.max(0, (n - 60) / (99 - 60))).toFixed(3);
+      }
+
+      // 6-col grid: PG/SG each span 2 cols centered (cols 2-3, 4-5); SF/C/PF span 2 cols each (cols 1-2, 3-4, 5-6)
+      function buildGroup(pos, colStart, row) {
+        const players = (byPos[pos] || []).sort((a, b) => b.ovr - a.ovr);
+        const rows = players.length
+          ? players.map(r => {
+              const ovr = r.ovr || '—';
+              const ovrSpan = r.ovr
+                ? `<span class="ui-ovr ui-heat" style="--heat:${ovrHeat(r.ovr)}">${ovr}</span>`
+                : `<span class="depth-player-ovr">—</span>`;
+              return `<div class="depth-player-row">
+              <span class="depth-player-name">${r.name}${holdBadge(r)}</span>
+              ${ovrSpan}
+            </div>`;
+            }).join('')
+          : `<div class="depth-player-row" style="color:var(--border);font-style:italic">—</div>`;
+        const style = `grid-column:${colStart}/${colStart+2};grid-row:${row}`;
+        return `<div class="depth-pos-group" style="${style}"><div class="depth-pos-group-hdr">${pos}</div>${rows}</div>`;
+      }
+
+      const knownPos = new Set(['PG','SG','SF','C','PF']);
+      const extraPos = Object.keys(byPos).filter(p => !knownPos.has(p));
+
+      // Half-court SVG (bird's-eye, basket at bottom; 50ft×47ft at 10px/ft)
+      const courtSvg = `<svg class="depth-court-svg" viewBox="0 0 500 470" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="498" height="468" fill="none" stroke="white" stroke-width="2"/>
+        <rect x="170" y="280" width="160" height="190" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M 190,280 A 60,60 0 0,0 310,280" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M 190,280 A 60,60 0 0,1 310,280" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="6,5"/>
+        <line x1="30" y1="330" x2="30" y2="469" stroke="white" stroke-width="2"/>
+        <line x1="470" y1="330" x2="470" y2="469" stroke="white" stroke-width="2"/>
+        <path d="M 30,330 A 237,237 0 0,0 470,330" fill="none" stroke="white" stroke-width="2"/>
+        <circle cx="250" cy="418" r="10" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M 210,418 A 40,40 0 0,0 290,418" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="4,4"/>
+        <line x1="218" y1="453" x2="282" y2="453" stroke="white" stroke-width="3"/>
+      </svg>`;
+
+      const overlay = document.getElementById('show-overlay');
+      overlay.innerHTML = `
+        <div class="show-modal">
+          <div class="depth-modal-header">
+            <img class="depth-team-logo" src="/logos/sm/logo-${abbr.toLowerCase()}.webp" alt="${abbr}"
+                 onerror="this.style.display='none'">
+            <div class="depth-team-name">${teamName} Depth Chart</div>
+          </div>
+          <div class="depth-court-wrap">
+            ${courtSvg}
+            <div class="depth-pos-grid">
+              ${buildGroup('PG', 2, 1)}
+              ${buildGroup('SG', 4, 1)}
+              ${buildGroup('SF', 1, 2)}
+              ${buildGroup('C',  3, 2)}
+              ${buildGroup('PF', 5, 2)}
+              ${extraPos.map((p,i) => buildGroup(p, 1 + (i%3)*2, 3)).join('')}
+            </div>
+          </div>
+          <div class="show-modal-footer">
+            <div class="show-modal-hint"><kbd>Enter</kbd> to close</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+          </div>
+        </div>`;
+      overlay.style.display = 'flex';
+      overlay.focus();
+    }
+
+    function closeModal() {
+      revealState = 0;
+      revealSlug = null; revealTeam = null; revealPick = null;
+      document.getElementById('show-overlay').style.display = 'none';
+      document.getElementById('focus-anchor').focus();
+    }
+
+    function parseRosterCSV(text) {
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(',').map(h => h.trim());
+      const slugIdx = headers.indexOf('SLUG');
+      const ovrIdx = headers.indexOf('OVR');
+      if (slugIdx === -1) return [];
+      const dy = ((draftState && draftState.year) || 2026) % 100;
+      const holdSeason = `${String(dy).padStart(2, '0')}-${String((dy + 1) % 100).padStart(2, '0')}`;
+      const result = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim());
+        const slug = cols[slugIdx];
+        if (!slug) continue;
+        const bio = bios[slug];
+        if (!bio) continue;
+        const name = nbnPlayerName(bio.name);
+        const csvOvr = ovrIdx !== -1 ? parseInt(cols[ovrIdx]) : NaN;
+        const ovr = isNaN(csvOvr) ? (ovrCurrent[slug] || 0) : csvOvr;
+        // The hold that matters at the draft is the one for the season the
+        // draft opens: the 2026 draft → '26-27'.
+        const capHold = (bio.cap_holds && bio.cap_holds[holdSeason]) || null;
+        result.push({
+          slug, name,
+          pos: Array.isArray(bio.pos) ? bio.pos : [bio.pos || '?'],
+          ovr, capHold,
+        });
+      }
+      return result;
+    }
+
+    // ── Full draft board render ────────────────────────────────────────────────────
+
+    function renderFullBoard(state) {
+      const grid = document.getElementById('fullboard-grid');
+      if (!state || activeTab !== 'fullboard') return;
+      grid.innerHTML = '';
+
+      const year = state.year;
+      const allPicks = yearPicks(year);
+      if (!allPicks.length) return;
+
+      const slot = currentSlot(state);
+      const picks = allPicks.filter(p => p.round === activeRound);
+      if (!picks.length) return;
+
+      picks.forEach(p => {
+        const revealed = p.player && state.revealed.includes(`${p.round}-${p.pick}`);
+        const isOnClock = slot && slot.pick.round === p.round && slot.pick.pick === p.pick;
+        const bio = revealed ? (bios[p.player] || {}) : {};
+        const name = revealed ? bioName(p.player) : '';
+        const pos = revealed ? (Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '')) : '';
+        const owners = displayOwners(p);
+        const primaryTeam = owners[0];
+
+        const card = document.createElement('div');
+        card.className = `pick-card${isOnClock ? ' on-clock' : ''}`;
+
+        // Pick number
+        const numEl = document.createElement('span');
+        numEl.className = 'pc-num';
+        numEl.textContent = `#${p.pick}`;
+        card.appendChild(numEl);
+
+        // Team (logo + abbr)
+        const teamWrap = document.createElement('div');
+        teamWrap.className = 'pc-team-wrap';
+        if (primaryTeam) {
+          const logo = document.createElement('img');
+          logo.className = 'pc-team-logo';
+          logo.src = `/logos/sm/logo-${primaryTeam.toLowerCase()}.webp`;
+          logo.alt = '';
+          logo.onerror = function() { this.style.display = 'none'; };
+          teamWrap.appendChild(logo);
+        }
+        const teamBtn = document.createElement('button');
+        teamBtn.className = 'name-btn name-btn-team pc-team';
+        if (isOnClock) teamBtn.style.color = 'var(--accent-light)';
+        teamBtn.textContent = owners.join('/');
+        teamBtn.addEventListener('click', () => {
+          revealState = 2; revealTeam = primaryTeam;
+          renderDepthModal(primaryTeam);
+        });
+        teamWrap.appendChild(teamBtn);
+        card.appendChild(teamWrap);
+
+        // Player (photo + name, or status)
+        const playerWrap = document.createElement('div');
+        playerWrap.className = 'pc-player-wrap';
+        if (revealed) {
+          if (bio.photo_url) {
+            const img = document.createElement('img');
+            img.className = 'player-photo'; img.src = bio.photo_url; img.alt = '';
+            img.onerror = function() { this.replaceWith(Object.assign(document.createElement('div'), {className:'player-ph'})); };
+            playerWrap.appendChild(img);
+          } else {
+            playerWrap.appendChild(Object.assign(document.createElement('div'), {className:'player-ph'}));
+          }
+          const hasVideo = !!highlights[p.player];
+          const nameBtn = document.createElement('button');
+          nameBtn.className = `name-btn name-btn-player pc-name${hasVideo ? ' has-video' : ''}`;
+          nameBtn.textContent = name;
+          nameBtn.addEventListener('click', () => {
+            revealSlug = p.player; revealTeam = primaryTeam; revealPick = p; revealState = 1;
+            renderPlayerModal();
+          });
+          playerWrap.appendChild(nameBtn);
+        } else if (p.player) {
+          if (isBod()) {
+            // Tap-to-reveal: mobile equivalent of the Enter keystroke.
+            const revealBtn = document.createElement('button');
+            revealBtn.className = 'pick-in-cell pick-in-btn';
+            revealBtn.innerHTML = `<span class="pick-in-dot"></span> The pick is in <span class="pick-in-tap">· tap to reveal</span>`;
+            revealBtn.addEventListener('click', () => doReveal(p));
+            playerWrap.appendChild(revealBtn);
+          } else {
+            playerWrap.innerHTML = `<span class="pick-in-cell"><span class="pick-in-dot"></span> The pick is in</span>`;
+          }
+        } else if (isOnClock) {
+          playerWrap.innerHTML = `<span class="pc-clock">⏱ On the Clock</span>`;
+        } else if (state.round1_date && Date.now() >= pickWindowEnd(state.round1_date, p.round, p.pick)) {
+          playerWrap.innerHTML = `<span class="pc-late"><i class="ui-icon ui-icon--warning" aria-hidden="true"></i> Awaiting pick</span>`;
+        } else {
+          playerWrap.innerHTML = `<span style="color:var(--border)">—</span>`;
+        }
+        card.appendChild(playerWrap);
+
+        // Meta: pos (revealed) or pick window time
+        const metaEl = document.createElement('div');
+        metaEl.className = 'pc-meta';
+        if (revealed) {
+          metaEl.textContent = pos;
+        } else if (state.round1_date) {
+          const sMs = pickWindowStart(state.round1_date, p.round, p.pick);
+          metaEl.textContent = `${formatET(sMs)} ET`;
+        }
+        card.appendChild(metaEl);
+
+        grid.appendChild(card);
+      });
+    }
+
+    // ── Player pool render ─────────────────────────────────────────────────────────
+
+    function renderPool(state) {
+      if (!state || activeTab !== 'pool') return;
+
+      const year = state.year;
+      const drafted = revealedSlugs(year);
+
+      // Sort available players by poolOrder, unknowns appended alphabetically
+      const orderMap = new Map(poolOrder.map((slug, i) => [slug, i]));
+      const available = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === year && !drafted.has(slug))
+        .map(([slug, bio]) => ({ slug, bio }))
+        .sort((a, b) => {
+          const ia = orderMap.has(a.slug) ? orderMap.get(a.slug) : Infinity;
+          const ib = orderMap.has(b.slug) ? orderMap.get(b.slug) : Infinity;
+          if (ia !== ib) return ia - ib;
+          return a.bio.name.localeCompare(b.bio.name);
+        });
+
+      const tbody = document.getElementById('pool-body');
+      tbody.innerHTML = '';
+
+      if (!available.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">All players drafted.</td></tr>`;
+        return;
+      }
+
+      const bod = isBod();
+      let dragSrc = null;
+
+      available.forEach(({ slug, bio }, idx) => {
+        const name = nbnPlayerName(bio.name);
+        const pos = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
+        const school = (bio.college && bio.college !== 'NA') ? bio.college
+                     : (bio.country && bio.country !== 'NA') ? bio.country : '—';
+        const age = calcAge(bio.dob);
+        const hasVideo = !!highlights[slug];
+
+        const tr = document.createElement('tr');
+        tr.dataset.slug = slug;
+
+        if (bod) {
+          tr.draggable = true;
+          tr.classList.add('pool-draggable');
+          tr.addEventListener('dragstart', e => {
+            dragSrc = tr;
+            e.dataTransfer.effectAllowed = 'move';
+            requestAnimationFrame(() => tr.classList.add('pool-dragging'));
+          });
+          tr.addEventListener('dragend', () => {
+            tr.classList.remove('pool-dragging');
+            tbody.querySelectorAll('tr').forEach(r => r.classList.remove('pool-drag-over'));
+            dragSrc = null;
+          });
+          tr.addEventListener('dragover', e => {
+            e.preventDefault();
+            if (tr !== dragSrc) {
+              tbody.querySelectorAll('tr').forEach(r => r.classList.remove('pool-drag-over'));
+              tr.classList.add('pool-drag-over');
+            }
+          });
+          tr.addEventListener('dragleave', e => {
+            if (!tr.contains(e.relatedTarget)) tr.classList.remove('pool-drag-over');
+          });
+          tr.addEventListener('drop', e => {
+            e.preventDefault();
+            tr.classList.remove('pool-drag-over');
+            if (!dragSrc || dragSrc === tr) return;
+            tbody.insertBefore(dragSrc, tr);
+            // Renumber
+            [...tbody.querySelectorAll('tr[data-slug]')].forEach((r, i) => {
+              const cell = r.querySelector('.pc-rank');
+              if (cell) cell.textContent = i + 1;
+            });
+            // Save
+            savePoolOrder([...tbody.querySelectorAll('tr[data-slug]')].map(r => r.dataset.slug));
+          });
+        }
+
+        // Rank
+        const tdRank = document.createElement('td');
+        tdRank.className = 'num pc-rank';
+        tdRank.textContent = idx + 1;
+        tr.appendChild(tdRank);
+
+        // Player name
+        const tdName = document.createElement('td');
+        const btn = document.createElement('button');
+        btn.className = `name-btn name-btn-player${hasVideo ? ' has-video' : ''}`;
+        btn.textContent = name;
+        btn.addEventListener('click', () => {
+          revealSlug = slug; revealTeam = null; revealPick = null; revealState = 1;
+          renderPlayerModal();
+        });
+        tdName.appendChild(btn);
+        tr.appendChild(tdName);
+
+        ['pos', 'age', 'school'].forEach((key, i) => {
+          const td = document.createElement('td');
+          td.className = 'muted';
+          td.textContent = [pos, age, school][i];
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ── Main render ────────────────────────────────────────────────────────────
+
+    function render() {
+      const state = draftState;
+      _swapTakesFrom = buildSwapTakesFrom(state ? yearPicks(state.year) : []);
+      _tradeMask = buildTradeMask(state);
+
+      // Sync highlights from state; pool order only on initial load (not on interval ticks)
+      highlights = (state && state.highlights) || {};
+      if (!poolOrder.length) poolOrder = (state && state.pool_order) || [];
+
+      // Auto-jump to the active pick's round — only once on initial load, never again
+      if (state && !roundAutoJumped) {
+        roundAutoJumped = true;
+        const slot = currentSlot(state);
+        if (slot && slot.pick.round !== activeRound) {
+          activeRound = slot.pick.round;
+          document.getElementById('round-tab-1').classList.toggle('active', activeRound === 1);
+          document.getElementById('round-tab-2').classList.toggle('active', activeRound === 2);
+        }
+      }
+
+      // Show/hide tab bar
+      document.getElementById('view-tab-bar').style.display = state ? '' : 'none';
+
+      // Gear icon: visible for BOD only (live page is presentation-only for everyone else)
+      const toggle = document.getElementById('control-toggle');
+      toggle.style.display = isBod() ? 'flex' : 'none';
+
+      if (isBod()) {
+        document.getElementById('bod-panel').style.display = '';
+        // Admin-only controls (year/date, snapshots, reset, reassign pick) stay hidden for plain BOD.
+        if (isAdmin()) document.getElementById('admin-panel').style.display = '';
+        initAdminPanel(state || {});
+      }
+
+      // Pulse gear icon amber when there's BOD work outstanding: a pick submitted but
+      // not yet revealed, an un-announced trade, or an expired-but-still-blank pick
+      // (no auto-fire safety net, so a dropped pick must stay visible to BOD).
+      const hasPending = state && isBod() && (
+        yearPicks(state.year).some(p => p.player && !state.revealed.includes(`${p.round}-${p.pick}`))
+        || (state.trades || []).some(t => !t.announced)
+        || expiredBlankPicks(state).length > 0
+      );
+      toggle.classList.toggle('has-pending', !!hasPending);
+
+      renderStatus(state);
+      renderTradeBanner(state);
+      renderFullBoard(state);
+      renderPool(state);
+      if (activeTab === 'log') renderLog(state);
+      // Invalidate roster cache whenever state updates (picks may have changed depth charts)
+      rosterCache = {};
+    }
+
+    // ── Data fetching ──────────────────────────────────────────────────────────
+
+    async function refreshState() {
+      const [stateRes, picksRes] = await Promise.all([
+        fetch('/api/draft/live'),
+        fetch('/api/draft/picks'),
+      ]);
+      if (stateRes.ok) draftState = await stateRes.json();
+      if (picksRes.ok) allPicks = await picksRes.json();
+    }
+
+    async function init() {
+      await refreshState();
+      render();
+      switchTab(activeTab);
+
+      const [biosRes, ovrRes] = await Promise.all([
+        fetch('/api/players'),
+        fetch('/api/ovr/current'),
+        loadAuth(),
+      ]);
+      if (biosRes.ok) bios = await biosRes.json();
+      if (ovrRes.ok) ovrCurrent = await ovrRes.json();
+      render();
+
+      // Pull keyboard focus into the page so arrow/enter keys work without a click first
+      document.getElementById('focus-anchor').focus();
+
+      setInterval(async () => {
+        await refreshState();
+        render();
+      }, 10_000);
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

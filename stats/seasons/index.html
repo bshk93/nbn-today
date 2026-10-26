@@ -482,11 +482,11 @@
       const body = list.map(r => '<tr>' + cols.map(c => {
         const cls = c.cls + (c.key === state.sort ? ' ss-primary' : '');
         if (c.key === 'PLAYER') {
-          const href = `/players/?p=${encodeURIComponent(r.SLUG || '')}`;
+          const href = `/stats/players/?p=${encodeURIComponent(r.SLUG || '')}`;
           return `<td class="${cls}">${r.SLUG ? `<a href="${href}">${esc(nbnPlayerName(r.PLAYER))}</a>` : esc(nbnPlayerName(r.PLAYER))}</td>`;
         }
         if (c.key === 'TEAM' && state.view === 'teams') {
-          return `<td class="${cls}"><a href="/teams/${r.TEAM}/">${r.TEAM}</a></td>`;
+          return `<td class="${cls}"><a href="/stats/teams/${r.TEAM}/">${r.TEAM}</a></td>`;
         }
         return `<td class="${cls}">${esc(cellText(c.key, r))}</td>`;
       }).join('') + '</tr>').join('');

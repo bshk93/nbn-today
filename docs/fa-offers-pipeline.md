@@ -7,7 +7,7 @@ the head voids or finalizes it. The design record is
 
 ## Team-facing FA offers
 
-The ⋯ menu and offer form on `/free-agency` (spec § 8.1). **One gate on the whole
+The ⋯ menu and offer form on `/fo/free-agency` (spec § 8.1). **One gate on the whole
 object** (§ 6.0) — any holder of the team's role drafts *and* submits:
 
 | Action | Gate | Endpoint |
@@ -40,7 +40,7 @@ Three rules this page holds and must keep holding:
   is why the board lists closed players too (§ 6.3).
 - **The FA pool is not the offerable set.** `GET /api/fa/pool` returns everyone
   with an actionable cap hold *on file*, keyed by the year it lands — it spans
-  future league years, because `/free-agency`'s year chips are built from it
+  future league years, because `/fo/free-agency`'s year chips are built from it
   (570 entries, 209 of them current, as of 2026-08-09). Each entry carries
   **`current`**, stamped by the same `_is_current_fa` that gates
   `_accepts_offers`. **Read `current`; never re-derive it** — a `class_year`
@@ -115,7 +115,7 @@ Four things that are load-bearing and pinned by `tests/test_fa_offers.py`:
 
 - **A reason is required**, and it is what the team is shown — in the ⋯ menu and
   above the form when they re-bid. Server-composed, like every other refusal
-  string on `/free-agency`.
+  string on `/fo/free-agency`.
 - **Restore returns `void.from_status`, not a guess.** A voided *remand* comes
   back `returned` with its notes still unanswered, or the void would have
   silently answered them. Refused if the team has since bid again (D5).
@@ -125,7 +125,7 @@ Four things that are load-bearing and pinned by `tests/test_fa_offers.py`:
 - **Finalize archives voided offers with the live ones**; `unlock` un-archives
   both. They belong to the round they were bid in.
 
-On `/free-agency`, `MY_VOIDED` is deliberately a second map beside `MY_OFFERS` —
+On `/fo/free-agency`, `MY_VOIDED` is deliberately a second map beside `MY_OFFERS` —
 a void frees the slot, so one player can carry both a void and a fresh live
 offer, and one map would have them fighting over the key.
 
@@ -167,7 +167,7 @@ told it has 48 hours to match), `accept_qo` for the QO, or nothing for
 `NO_SIGNING`. Every bidding team gets an inbox notice of how it came out.
 
 Until 2026-10-04 the dashboard had no button for this and told the head to
-type the signing on `/transactions`, so all 89 rounds locked before then have
+type the signing on `/fo/transactions`, so all 89 rounds locked before then have
 no declared result. They are left that way.
 
 - **What can be declared comes from the server.** `GET …/ballots` carries
@@ -213,7 +213,7 @@ would technically choke on them:
   bites nothing: a slug can't leave the pool until the cap hold that put him in
   free agency resolves, and that only happens after the round that resolved it
   is finalized (finalize records the outcome; the real signing happens after,
-  by hand, on `/transactions`) — but it's a real bound, not a decorative one,
+  by hand, on `/fo/transactions`) — but it's a real bound, not a decorative one,
   since a player could in principle sign through some other path while an
   unrelated round on him was still mid-flight.
 

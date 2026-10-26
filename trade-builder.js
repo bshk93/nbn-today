@@ -10,7 +10,7 @@
 // and returns once initial data (bios, OVRs, league year) has loaded.
 // Depends on two globals the host page must load as plain <script> tags,
 // same as transaction-sim does: /league-time.js (nbnToday/nbnFormatDateTime)
-// and /transaction-sim/xlsx.js (XLSXMini). Mount only one instance per page —
+// and /fo/transaction-sim/xlsx.js (XLSXMini). Mount only one instance per page —
 // like the page this was extracted from, it's a singleton by construction
 // (fixed element ids), not a repeatable component.
 
@@ -1168,7 +1168,7 @@
       const money = n => (n == null ? 'not set' : '$' + n.toLocaleString());
       const rRows = [
         [{ v: `NBN salary-matching rules — ${season}`, s: S.NOTE_HEAD }],
-        [{ v: 'Generated from the league rulebook (nbn.today/rulebook) and the live cap levels. Article/section numbers refer to the rulebook.', s: S.NOTE }],
+        [{ v: 'Generated from the league rulebook (nbn.today/about/rulebook) and the live cap levels. Article/section numbers refer to the rulebook.', s: S.NOTE }],
         [],
         [{ v: 'Cap levels', s: S.COL_HEAD }, { v: 'Amount', s: S.COL_HEAD }],
         [{ v: 'Salary Cap', s: S.TEXT }, { v: money(cl.cap), s: S.TEXT }],

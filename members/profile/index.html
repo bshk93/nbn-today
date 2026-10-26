@@ -409,7 +409,7 @@ async function init() {
   html += `<h1 class="profile-name">${esc(member.name)}</h1>`;
   html += `<div class="profile-meta">`;
   if (cur) {
-    html += `${displayPos(cur.position)} · <span class="team-badge"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
+    html += `${displayPos(cur.position)} · <span class="team-badge"><a href="/stats/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
   } else {
     html += `<span style="color:var(--text-muted)">No active tenure</span>`;
   }
@@ -439,7 +439,7 @@ async function init() {
     for (const t of sortedTenures) {
       const end = t.end ? fmtDate(t.end) : '<span class="ongoing">present</span>';
       html += `<tr>
-        <td><span class="team-badge"><a href="/teams/${t.team.toLowerCase()}/">${t.team}</a></span></td>
+        <td><span class="team-badge"><a href="/stats/teams/${t.team.toLowerCase()}/">${t.team}</a></span></td>
         <td>${displayPos(t.position)}</td>
         <td>${fmtDate(t.start)} – ${end}</td>
       </tr>`;

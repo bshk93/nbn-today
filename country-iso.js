@@ -1,5 +1,5 @@
 // Shared country → ISO-3166 alpha-2 lookup and flag helper.
-// Used by /draft and /players. Keep this the single source of truth —
+// Used by /history/draft and /players. Keep this the single source of truth —
 // add new countries here, not in per-page copies.
 window.COUNTRY_ISO = {
   'Antigua and Barbuda':              'AG',

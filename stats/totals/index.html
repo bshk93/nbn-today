@@ -93,7 +93,7 @@
   (function () {
     // Career lines are summed here from the per-stint season files, so any
     // slice (playoffs, one franchise, per game) is the same arithmetic. These
-    // are the files /players and milestones.js sum too, so a rank here is the
+    // are the files /stats/players and milestones.js sum too, so a rank here is the
     // rank they show.
     const TEAMS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
       'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
@@ -301,7 +301,7 @@
         const yrs = c.seasons.size;
         const sub = `${state.team ? '' : c.teams.join(' · ') + ' · '}${span} (${yrs} season${yrs === 1 ? '' : 's'})`;
         return `<tr><td class="right muted">${e.rank}</td>`
-          + `<td class="cl-player"><a href="/players/?p=${encodeURIComponent(c.slug)}">${esc(nbnPlayerName(c.name))}</a>`
+          + `<td class="cl-player"><a href="/stats/players/?p=${encodeURIComponent(c.slug)}">${esc(nbnPlayerName(c.name))}</a>`
           + (team ? `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="${team}" title="On ${team}'s roster today">` : '')
           + `<span class="cl-sub" title="${esc(sub)}">${esc(sub)}</span></td>`
           + cols.map(k => {
@@ -391,7 +391,7 @@
     Promise.all([
       text('/players/player_seasons.csv'),
       text('/players/player_seasons_playoffs.csv'),
-      // "Active" means on a roster today, as on /players and the homepage.
+      // "Active" means on a roster today, as on /stats/players and the homepage.
       ...TEAMS.map(t => text(`/data/${t.toLowerCase()}-roster.csv`).catch(() => '')),
     ]).then(([reg, po, ...rosters]) => {
       const rosterTeam = {};

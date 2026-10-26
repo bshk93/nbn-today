@@ -1,5 +1,5 @@
-// Unit tests for /injury-history.js — the Health tile on /players and the
-// /players/injuries sub-page.
+// Unit tests for /injury-history.js — the Health tile on /stats/players and the
+// /stats/players/injuries sub-page.
 //
 // Pure: no browser, no network. Runs from the pre-commit hook.
 //

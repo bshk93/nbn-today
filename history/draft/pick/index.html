@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Make a Pick | Draft</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Make your selection in the NBN draft.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Make a Pick | Draft">
+  <meta property="og:description" content="Make your selection in the NBN draft.">
+  <meta property="og:url" content="https://nbn.today/history/draft/pick/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    body { background: var(--bg-deep); color: var(--text-primary); font-family: var(--font-sans); margin: 0; }
+
+    /* ── Page header ─────────────────────────────────────── */
+    .page-header {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--bg-card);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg-page);
+    }
+    /* A toolbar, not the line above a title: keep the body face that the
+       shared .nav rule (display caps) would otherwise give it. It carries
+       .nav only so nav.js adds the menu button and Sign in. */
+    .page-header.nav { font-family: var(--font-sans); font-weight: 400; letter-spacing: 0; text-transform: none; margin-bottom: 0; }
+    .page-header a { color: var(--text-muted); font-size: var(--text-sm); text-decoration: none; }
+    .page-header a:hover { color: var(--text-primary); }
+    .page-header h1 { font-size: var(--text-base); font-weight: 700; margin: 0; color: var(--text-primary); flex: 1; }
+    .signed-in-as { font-size: var(--text-xs); color: var(--text-dim); }
+
+    /* ── Status bar ──────────────────────────────────────── */
+    .status-bar {
+      background: var(--bg-page);
+      border-bottom: 1px solid var(--bg-card);
+      padding: 0.6rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .status-text { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .status-sub  { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.1rem; }
+    .countdown   { font-size: var(--text-md); font-weight: 700; color: var(--gold-alt); font-variant-numeric: tabular-nums; }
+    .live-badge  { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--danger-border); color: var(--danger-light); font-size: var(--text-xs); font-weight: 700; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.4rem; }
+    .live-dot    { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 90px);
+    }
+    .left-panel {
+      border-right: 1px solid var(--bg-card);
+      overflow-y: auto;
+      max-height: calc(100vh - 90px);
+      position: sticky;
+      top: 0;
+    }
+    .right-panel {
+      overflow-y: auto;
+    }
+
+    /* ── Cards / sections ────────────────────────────────── */
+    .panel-section {
+      border-bottom: 1px solid var(--bg-card);
+      padding: 0.9rem 1rem;
+    }
+    .panel-title {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.65rem;
+    }
+
+    /* ── Pick slots ──────────────────────────────────────── */
+    .pick-slot {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--bg-card);
+      background: var(--bg-page);
+      margin-bottom: 0.4rem;
+      font-size: var(--text-sm);
+    }
+    .pick-slot.on-clock { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+    .pick-slot.submitted { opacity: 0.6; }
+    .pick-slot-info { flex: 1; min-width: 0; }
+    .pick-slot-num  { font-weight: 700; color: var(--text-primary); }
+    .pick-slot-time { font-size: var(--text-xs); color: var(--text-muted); }
+    .pick-slot-status { font-size: var(--text-xs); }
+    .pick-slot-queued { color: var(--accent-light); font-weight: 600; }
+    .pick-slot-done   { color: var(--success); }
+    .pick-slot-none   { color: var(--text-dim); font-style: italic; }
+
+    /* ── Queue ───────────────────────────────────────────── */
+    .queue-list { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.5rem; }
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.5rem;
+      background: var(--bg-page);
+      border: 1px solid var(--bg-card);
+      border-radius: var(--radius-sm);
+      font-size: var(--text-sm);
+    }
+    .queue-rank  { color: var(--text-dim); font-size: var(--text-xs); min-width: 1.2rem; font-variant-numeric: tabular-nums; }
+    .queue-name  { flex: 1; color: var(--text-primary); }
+    .queue-empty { color: var(--border); font-size: var(--text-sm); font-style: italic; padding: 0.4rem 0; }
+    .queue-add   { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.4rem; }
+
+    /* ── Make Pick (BOD) ─────────────────────────────────── */
+    .make-pick-form { display: flex; flex-direction: column; gap: 0.5rem; }
+    .make-pick-label { font-size: var(--text-sm); color: var(--text-muted); }
+
+    /* ── Available players table ─────────────────────────── */
+    .available-wrap { padding: 0.9rem 1rem; }
+    .available-title {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 0.65rem;
+    }
+    table.pool-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    table.pool-table thead th {
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--bg-card);
+      background: var(--bg-page);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    table.pool-table td {
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid var(--bg-page);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+    table.pool-table tr:hover td { background: var(--bg-card); }
+    table.pool-table td.muted { color: var(--text-muted); font-size: var(--text-xs); }
+    table.pool-table td.num { color: var(--text-dim); font-variant-numeric: tabular-nums; width: 2rem; }
+    .in-queue-badge {
+      font-size: var(--text-xs);
+      color: var(--link);
+      font-weight: 600;
+      padding: 0.15rem 0.4rem;
+      background: var(--accent-panel-bg);
+      border-radius: var(--radius-sm);
+    }
+    .btn-add-queue {
+      font-size: var(--text-xs);
+      padding: 0.2rem 0.5rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-add-queue:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+    /* ── Shared buttons ──────────────────────────────────── */
+                                    
+    .player-select {
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
+      border-radius: var(--radius-sm); padding: 0.3rem 0.5rem; font-size: var(--text-sm); width: 100%;
+    }
+
+    /* ── Auth / empty states ─────────────────────────────── */
+    .auth-wall {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 0.75rem;
+      color: var(--text-muted);
+      font-size: var(--text-base);
+    }
+    .auth-wall p { margin: 0; }
+
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+      .left-panel { max-height: none; position: static; border-right: none; border-bottom: 1px solid var(--bg-card); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-header nav">
+    <a href="/history/draft/live/">← Draft</a>
+    <h1>Make a Pick</h1>
+    <span class="signed-in-as" id="signed-in-as"></span>
+    <a href="/history/draft/guide/" style="font-size:var(--text-xs);color:var(--text-dim);text-decoration:none" onmouseover="this.style.color='var(--text-muted)'" onmouseout="this.style.color='var(--text-dim)'">Guide</a>
+  </div>
+
+  <div class="status-bar" id="status-bar">
+    <div>
+      <div class="status-text" id="status-text">Loading…</div>
+      <div class="status-sub"  id="status-sub"></div>
+    </div>
+    <div class="countdown" id="countdown" style="display:none"></div>
+  </div>
+
+  <div id="auth-wall" class="auth-wall" style="display:none">
+    <p id="auth-msg">Sign in to manage your picks.</p>
+    <button class="btn btn-ghost" onclick="promptSignIn()">Sign In</button>
+  </div>
+
+  <div id="main-layout" class="layout" style="display:none">
+
+    <!-- ── Left panel ─────────────────────────────────────── -->
+    <div class="left-panel">
+
+      <!-- My Picks -->
+      <div class="panel-section" id="my-picks-section" style="display:none">
+        <div class="panel-title" id="my-picks-title">My Picks</div>
+        <div id="my-picks-body"></div>
+      </div>
+
+      <!-- Queue -->
+      <div class="panel-section" id="queue-section" style="display:none">
+        <div class="panel-title">Player Queue</div>
+        <div id="queue-body"></div>
+      </div>
+
+      <!-- BOD: Make Pick -->
+      <div class="panel-section" id="make-pick-section" style="display:none">
+        <div class="panel-title">Make Pick (BOD)</div>
+        <div class="make-pick-form">
+          <select id="make-pick-slot" class="player-select" style="display:none"></select>
+          <button class="btn btn-primary btn-sm" id="make-pick-queue-btn" style="display:none"></button>
+          <div class="make-pick-label" id="make-pick-or" style="display:none">— or pick a specific player —</div>
+          <select id="make-pick-player" class="player-select" style="display:none"></select>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-ghost btn-sm" id="make-pick-btn" disabled>Submit Pick</button>
+            <span id="make-pick-status" style="font-size:var(--text-xs);color:var(--text-muted)"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Right panel: Available players ─────────────────── -->
+    <div class="right-panel">
+      <div class="available-wrap">
+        <div class="available-title">Available Players</div>
+        <table class="pool-table">
+          <thead>
+            <tr>
+              <th class="num">#</th>
+              <th>Player</th>
+              <th>Pos</th>
+              <th>Age</th>
+              <th>College / Country</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="available-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'nbn_token';
+    const TEAM_ABBRS = new Set([
+      'ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW',
+      'HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK',
+      'OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS',
+    ]);
+
+    let draftState = null;
+    let allPicks   = [];
+    let bios       = {};
+    let myRoles    = [];
+    let myTeams    = [];
+    let myName     = null;
+    let poolOrder  = [];
+    let countdownTimer = null;
+
+    // ── Helpers (mirrors draft/live) ───────────────────────
+
+    function getToken() { return localStorage.getItem(TOKEN_KEY); }
+
+    function bioName(slug) {
+      const bio = bios[slug];
+      if (!bio) return slug;
+      const parts = bio.name.split(',');
+      return parts.length === 2 ? `${parts[1].trim()} ${parts[0].trim()}` : bio.name;
+    }
+
+    function calcAge(dob) {
+      if (!dob) return '—';
+      const birth = new Date(dob + 'T00:00:00');
+      const now = new Date();
+      let age = now.getFullYear() - birth.getFullYear();
+      if (now.getMonth() < birth.getMonth() ||
+          (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+      return age;
+    }
+
+    function yearPicks(year) {
+      return allPicks.filter(p => p.year === year && p.pick != null)
+        .sort((a, b) => a.round - b.round || a.pick - b.pick);
+    }
+
+    function pickedSlugs(year) {
+      return new Set(allPicks.filter(p => p.year === year && p.player).map(p => p.player));
+    }
+
+    // Players whose pick has actually been revealed on-air. The Available Players
+    // pool keys off this (not pickedSlugs) so a submitted-but-unrevealed pick never
+    // drops a prospect from the pool before the presenter announces it. Pick-validity
+    // controls (the make-pick dropdown, queue dedup) still use pickedSlugs.
+    function revealedSlugs(year) {
+      const revealed = new Set((draftState && draftState.revealed) || []);
+      return new Set(
+        allPicks
+          .filter(p => p.year === year && p.player && revealed.has(`${p.round}-${p.pick}`))
+          .map(p => p.player)
+      );
+    }
+
+    let _swapTakesFrom = {};
+
+    function buildSwapTakesFrom(picks) {
+      const map = {};
+      picks.forEach(p => {
+        // Key by round+team: a conveyed swap only moves picks in that same round,
+        // so it must not bleed into a same-team pick in another round.
+        if (p.swap_conveys === true && p.swap_owner) map[`${p.round}-${p.swap_owner}`] = p.owner;
+      });
+      return map;
+    }
+
+    function pickOwners(p) {
+      let raw;
+      if (p.swap_conveys === true) raw = p.swap_owner;
+      else raw = _swapTakesFrom[`${p.round}-${p.orig}`] ?? p.owner;
+      if (!raw || raw === '?') return [(p.orig || '').toUpperCase()];
+      return raw.split('|').map(x => x.trim().toUpperCase()).filter(Boolean);
+    }
+
+    function pickWindowStart(round1Date, roundNum, pickNum) {
+      const [yr, mo, da] = round1Date.split('-').map(Number);
+      const day = da + (roundNum - 1);
+      const withinRound = (pickNum - 1) % 30;
+      return new Date(`${yr}-${String(mo).padStart(2,'0')}-${String(day).padStart(2,'0')}T12:00:00-04:00`)
+        .getTime() + withinRound * 10 * 60 * 1000;
+    }
+
+    function formatET(ms) {
+      return new Date(ms).toLocaleTimeString('en-US', {
+        timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+    }
+
+    // The pick the broadcast is currently on — the first one not yet revealed, in
+    // draft order (matches /history/draft/live). Advances as the presenter reveals each
+    // pick, regardless of the wall clock. A staged pick reads "pick is in", an
+    // unmade one "on the clock". `start`/`end` carry its scheduled window. Null
+    // once every pick has been revealed.
+    function currentSlot(state) {
+      if (!state.round1_date) return null;
+      const picks = yearPicks(state.year);
+      if (!picks.length) return null;
+      const revealed = state.revealed || [];
+      const p = picks.find(pk => !revealed.includes(`${pk.round}-${pk.pick}`));
+      if (!p) return null;
+      const start = pickWindowStart(state.round1_date, p.round, p.pick);
+      return { pick: p, start, end: start + 10 * 60 * 1000 };
+    }
+
+    function isAdmin() { return myRoles.includes('admin'); }
+    function isBod()   { return myRoles.includes('bod') || isAdmin(); }
+    function hasAccess() { return myTeams.length > 0 || isBod(); }
+
+    function getTeamQueue(team) {
+      const q = (draftState && draftState.queue && draftState.queue[team]) || [];
+      return Array.isArray(q) ? [...q] : [q];
+    }
+
+    // ── API calls ──────────────────────────────────────────
+
+    async function apiPost(path, body) {
+      return fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function apiPut(path, body) {
+      return fetch(path, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+        body: JSON.stringify(body),
+      });
+    }
+
+    async function saveQueue(team, players) {
+      const res = await apiPut(`/api/draft/queue/${team}`, { players });
+      if (res.ok) { await refreshState(); render(); return; }
+      const e = await res.json().catch(() => ({}));
+      // A queued player may be one that's been submitted but not yet revealed on-air.
+      // The server rejects it as "already drafted" — surfacing that would spoil the
+      // unrevealed pick. Swallow it silently and just re-sync; the player stays in the
+      // pool until the pick is revealed, at which point it drops off the board.
+      if (res.status === 422 && /already drafted/i.test(e.detail || '')) {
+        await refreshState(); render(); return;
+      }
+      toast(e.detail || `Error ${res.status}`, true);
+    }
+
+    // ── Auth ───────────────────────────────────────────────
+
+    async function loadAuth() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) { if (res.status === 401) localStorage.removeItem(TOKEN_KEY); return; }
+        const data = await res.json();
+        myName  = data.name;
+        myRoles = data.roles || [];
+        myTeams = myRoles.map(r => r.toUpperCase()).filter(r => TEAM_ABBRS.has(r));
+      } catch {}
+    }
+
+    async function promptSignIn() {
+      const tok = await promptForToken({ label: 'Access token' });
+      if (tok) loadAuth().then(render);
+    }
+
+    // ── Data fetching ──────────────────────────────────────
+
+    async function refreshState() {
+      const [stateRes, picksRes] = await Promise.all([
+        fetch('/api/draft/live'),
+        fetch('/api/draft/picks'),
+      ]);
+      if (stateRes.ok) {
+        const newState = await stateRes.json();
+        if (!poolOrder.length) poolOrder = (newState && newState.pool_order) || [];
+        draftState = newState;
+      }
+      if (picksRes.ok) {
+        allPicks = await picksRes.json();
+        if (draftState) _swapTakesFrom = buildSwapTakesFrom(yearPicks(draftState.year));
+      }
+    }
+
+    // ── Render ─────────────────────────────────────────────
+
+    function render() {
+      const hasToken = !!getToken();
+      const wall = document.getElementById('auth-wall');
+      const layout = document.getElementById('main-layout');
+
+      if (!hasToken) {
+        wall.style.display = 'flex';
+        layout.style.display = 'none';
+        document.getElementById('auth-msg').textContent = 'Sign in to manage your picks.';
+        renderStatus();
+        return;
+      }
+
+      if (hasToken && myTeams.length === 0 && !isBod()) {
+        wall.style.display = 'flex';
+        layout.style.display = 'none';
+        document.getElementById('auth-msg').textContent = 'Your account doesn\'t have a team role for this draft.';
+        renderStatus();
+        return;
+      }
+
+      wall.style.display = 'none';
+      layout.style.display = 'grid';
+
+      document.getElementById('signed-in-as').textContent =
+        myName ? `Signed in as ${myName}${myTeams.length ? ` · ${myTeams.join(', ')}` : ''}` : '';
+
+      renderStatus();
+      renderMyPicks();
+      renderQueue();
+      renderMakePick();
+      renderAvailable();
+    }
+
+    function renderStatus() {
+      const textEl = document.getElementById('status-text');
+      const subEl  = document.getElementById('status-sub');
+      const cdEl   = document.getElementById('countdown');
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      cdEl.style.display = 'none';
+
+      if (!draftState) { textEl.textContent = 'Loading…'; subEl.textContent = ''; return; }
+
+      const picks = yearPicks(draftState.year);
+      const revealedSet = draftState.revealed || [];
+      if (picks.length > 0 && picks.every(p => revealedSet.includes(`${p.round}-${p.pick}`))) {
+        textEl.textContent = `${draftState.year} Draft concluded`;
+        subEl.textContent = 'All picks are in.';
+        return;
+      }
+      if (!draftState.round1_date) {
+        textEl.textContent = 'Draft date TBD'; subEl.textContent = ''; return;
+      }
+
+      const slot = currentSlot(draftState);
+      const liveBadge = `<span class="live-badge"><span class="live-dot"></span>Live</span>`;
+
+      if (!slot) {
+        textEl.innerHTML = `${liveBadge} Draft underway`; subEl.textContent = ''; return;
+      }
+
+      const p = slot.pick;
+      const owners = pickOwners(p);
+      const isMyPick = myTeams.some(t => owners.includes(t));
+      const now = Date.now();
+      const youBadge = isMyPick ? ' <span style="color:var(--success)">(You!)</span>' : '';
+
+      if (p.player) {
+        // Staged but not yet revealed — the presenter is up next
+        textEl.innerHTML = `${liveBadge} The pick is in: <strong>${owners.join('/')}</strong>${youBadge}`;
+        subEl.textContent = `R${p.round} · Pick ${p.pick} · awaiting reveal`;
+        return;
+      }
+
+      textEl.innerHTML = `${liveBadge} On the Clock: <strong>${owners.join('/')}</strong>${youBadge}`;
+
+      if (now < slot.start) {
+        // On the clock ahead of schedule — show the scheduled window, no countdown
+        subEl.textContent = `R${p.round} · Pick ${p.pick} · window ${formatET(slot.start)} – ${formatET(slot.end)} ET`;
+      } else {
+        subEl.textContent = `R${p.round} · Pick ${p.pick}`;
+        cdEl.style.display = '';
+        function tick() {
+          const rem = Math.max(0, slot.end - Date.now());
+          const m = Math.floor(rem / 60000);
+          const s = Math.floor((rem % 60000) / 1000);
+          cdEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+          if (rem === 0 && countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        }
+        tick();
+        countdownTimer = setInterval(tick, 1000);
+      }
+    }
+
+    function renderMyPicks() {
+      const section = document.getElementById('my-picks-section');
+      const titleEl = document.getElementById('my-picks-title');
+      const body    = document.getElementById('my-picks-body');
+
+      if (!draftState || myTeams.length === 0) { section.style.display = 'none'; return; }
+
+      const year = draftState.year;
+      const picks = yearPicks(year);
+      const myPicks = picks.filter(p => pickOwners(p).some(t => myTeams.includes(t)));
+      if (!myPicks.length) { section.style.display = 'none'; return; }
+
+      section.style.display = '';
+      titleEl.textContent = `My Picks (${myTeams.join(', ')})`;
+      body.innerHTML = '';
+
+      const draftLive = draftState.round1_date &&
+        Date.now() >= pickWindowStart(draftState.round1_date, 1, 1);
+      const orderOf  = x => x.round * 1000 + x.pick;
+      const revealed = new Set(draftState.revealed || []);
+      const team    = myTeams[0];
+      const rawQueue = getTeamQueue(team);
+      const drafted  = pickedSlugs(year);
+      const queue    = rawQueue.filter(s => !drafted.has(s));
+
+      myPicks.forEach(p => {
+        const owners = pickOwners(p);
+        const isSubmitted = !!p.player;
+        const isRevealed  = revealed.has(`${p.round}-${p.pick}`);
+        const nextUp = queue[0] || null;
+
+        const startMs = draftState.round1_date ? pickWindowStart(draftState.round1_date, p.round, p.pick) : null;
+        const endMs   = startMs ? startMs + 10 * 60 * 1000 : null;
+        const timeStr = startMs ? `${formatET(startMs)} – ${formatET(endMs)}` : 'Time TBD';
+
+        // You're "up" once every pick ahead of you is resolved — either
+        // submitted (running ahead of schedule) or skipped (its 10-min window
+        // elapsed without a pick) — OR your own window has arrived (safety
+        // valve). The skip case lets the on-the-clock team submit even before
+        // their own scheduled window opens. Mirrors the BOD submittable filter.
+        const windowEndOf = q => draftState.round1_date
+          ? pickWindowStart(draftState.round1_date, q.round, q.pick) + 10 * 60 * 1000
+          : Infinity;
+        const windowOpen = startMs !== null && Date.now() >= startMs;
+        const earlierIn  = picks.every(q => orderOf(q) >= orderOf(p) || !!q.player || Date.now() >= windowEndOf(q));
+        const isUp = draftLive && !isSubmitted && (windowOpen || earlierIn);
+        const aheadOfSchedule = isUp && !windowOpen;
+        // An early lock-in (window not yet open, not revealed) can be undone.
+        const canUnstage = isSubmitted && !windowOpen && !isRevealed;
+
+        const div = document.createElement('div');
+        div.className = `pick-slot${isUp ? ' on-clock' : ''}${isSubmitted ? ' submitted' : ''}`;
+
+        let statusHtml;
+        if (isSubmitted) {
+          statusHtml = `<span class="pick-slot-done"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> ${bioName(p.player)}${canUnstage ? ` <span style="color:var(--text-muted);font-weight:400">— locked in early</span>` : ''}</span>`;
+        } else if (isUp && nextUp) {
+          statusHtml = `<span class="pick-slot-queued">You're up${aheadOfSchedule ? ' early' : ''} — press Submit to pick ${bioName(nextUp)}</span>`;
+        } else if (isUp) {
+          statusHtml = `<span class="pick-slot-none">You're up — queue a player to submit</span>`;
+        } else if (nextUp) {
+          statusHtml = `<span class="pick-slot-queued">#1 queued: ${bioName(nextUp)}</span>`;
+        } else {
+          statusHtml = `<span class="pick-slot-none">No player queued</span>`;
+        }
+
+        div.innerHTML = `
+          <div class="pick-slot-info">
+            <div class="pick-slot-num">R${p.round} · Pick ${p.pick}${owners.join('/') !== team ? ` <span style="color:var(--text-dim);font-size:var(--text-xs)">(via ${owners.join('/')})</span>` : ''}</div>
+            <div class="pick-slot-time">${timeStr}</div>
+          </div>
+          <div class="pick-slot-status">${statusHtml}</div>
+          <div class="pick-slot-actions" style="flex-shrink:0"></div>
+        `;
+        const actions = div.querySelector('.pick-slot-actions');
+
+        if (isUp) {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-primary btn-sm';
+          btn.textContent = nextUp ? 'Submit' : 'No queue';
+          btn.disabled = !nextUp;
+          btn.addEventListener('click', async () => {
+            btn.disabled = true; btn.textContent = '…';
+            const res = await apiPost('/api/draft/pick', { year, round: p.round, orig: p.orig, player: nextUp });
+            if (res.ok) { await refreshState(); render(); }
+            else {
+              const err = await res.json().catch(() => ({}));
+              toast(err.detail || `Error ${res.status}`, true);
+              btn.disabled = false; btn.textContent = 'Submit';
+            }
+          });
+          actions.appendChild(btn);
+        } else if (canUnstage) {
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-ghost btn-sm';
+          btn.textContent = 'Unstage';
+          btn.addEventListener('click', async () => {
+            if (!await confirmDialog({
+              title: `Unstage ${bioName(p.player)} from R${p.round} Pick ${p.pick}?`,
+              body: 'They return to the top of your queue and you can re-submit.',
+              confirmLabel: 'Unstage',
+            })) return;
+            btn.disabled = true; btn.textContent = '…';
+            const res = await apiPost('/api/draft/pick/unstage', { year, round: p.round, orig: p.orig });
+            if (res.ok) { await refreshState(); render(); }
+            else {
+              const err = await res.json().catch(() => ({}));
+              toast(err.detail || `Error ${res.status}`, true);
+              btn.disabled = false; btn.textContent = 'Unstage';
+            }
+          });
+          actions.appendChild(btn);
+        }
+
+        body.appendChild(div);
+      });
+    }
+
+    function renderQueue() {
+      const section = document.getElementById('queue-section');
+      const body    = document.getElementById('queue-body');
+
+      if (!draftState || myTeams.length === 0) { section.style.display = 'none'; return; }
+
+      section.style.display = '';
+      body.innerHTML = '';
+
+      const year    = draftState.year;
+      const team    = myTeams[0];
+      const drafted = pickedSlugs(year);
+      const rawQueue = getTeamQueue(team);
+      const queue   = rawQueue.filter(s => !drafted.has(s));
+      const queueSet = new Set(queue);
+
+      const listEl = document.createElement('div');
+      listEl.className = 'queue-list';
+
+      if (!queue.length) {
+        listEl.innerHTML = '<div class="queue-empty">No players queued. Add from the list →</div>';
+      }
+
+      queue.forEach((slug, i) => {
+        const item = document.createElement('div');
+        item.className = 'queue-item';
+
+        const rank = document.createElement('span');
+        rank.className = 'queue-rank';
+        rank.textContent = `${i + 1}.`;
+        item.appendChild(rank);
+
+        const name = document.createElement('span');
+        name.className = 'queue-name';
+        name.textContent = bioName(slug);
+        item.appendChild(name);
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn btn-ghost btn-sm'; upBtn.textContent = '↑'; upBtn.disabled = i === 0;
+        upBtn.addEventListener('click', () => {
+          const q = [...queue]; [q[i-1], q[i]] = [q[i], q[i-1]]; saveQueue(team, q);
+        });
+        item.appendChild(upBtn);
+
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn btn-ghost btn-sm'; downBtn.textContent = '↓'; downBtn.disabled = i === queue.length - 1;
+        downBtn.addEventListener('click', () => {
+          const q = [...queue]; [q[i], q[i+1]] = [q[i+1], q[i]]; saveQueue(team, q);
+        });
+        item.appendChild(downBtn);
+
+        const rmBtn = document.createElement('button');
+        rmBtn.className = 'btn btn-danger btn-sm'; rmBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+        rmBtn.setAttribute('aria-label', 'Remove');
+        rmBtn.addEventListener('click', () => saveQueue(team, queue.filter((_, j) => j !== i)));
+        item.appendChild(rmBtn);
+
+        listEl.appendChild(item);
+      });
+
+      body.appendChild(listEl);
+    }
+
+    function renderMakePick() {
+      const section    = document.getElementById('make-pick-section');
+      if (!isBod()) { section.style.display = 'none'; return; }
+
+      section.style.display = '';
+      const slotSelEl = document.getElementById('make-pick-slot');
+      const selEl     = document.getElementById('make-pick-player');
+      const btn       = document.getElementById('make-pick-btn');
+      const hideExtras = () => {
+        const qb = document.getElementById('make-pick-queue-btn');
+        qb.style.display = 'none'; qb._data = null;
+        document.getElementById('make-pick-or').style.display = 'none';
+      };
+
+      if (!draftState || !draftState.round1_date) {
+        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; hideExtras(); return;
+      }
+
+      // All unsubmitted picks that are "up". A pick is up when its own window has
+      // opened, or every pick ahead of it in draft order is resolved — either
+      // submitted (running ahead of schedule) or skipped (its 10-min window has
+      // elapsed without a pick). The skipped case lets BOD submit for the next
+      // team up even before that team's own window opens.
+      const now = Date.now();
+      const allPicks = yearPicks(draftState.year);
+      const orderOf   = x => x.round * 1000 + x.pick;
+      const windowEnd = pk => pickWindowStart(draftState.round1_date, pk.round, pk.pick) + 10 * 60 * 1000;
+      const submittable = allPicks.filter(pk => {
+        if (pk.player) return false;
+        const start = pickWindowStart(draftState.round1_date, pk.round, pk.pick);
+        if (now >= start) return true;
+        return allPicks.every(q => orderOf(q) >= orderOf(pk) || !!q.player || now >= windowEnd(q));
+      });
+
+      if (!submittable.length) {
+        slotSelEl.style.display = 'none'; selEl.style.display = 'none'; btn.disabled = true; hideExtras(); return;
+      }
+
+      // Repopulate slot selector, preserving selection if still valid
+      const prevVal = slotSelEl.value;
+      slotSelEl.innerHTML = submittable.map(pk => {
+        const owners = pickOwners(pk);
+        const start = pickWindowStart(draftState.round1_date, pk.round, pk.pick);
+        const tag = now >= start + 10 * 60 * 1000 ? ' (missed)'
+                  : now < start ? ' (early)' : '';
+        const label = `R${pk.round} · #${pk.pick} · ${owners.join('/')}${tag}`;
+        return `<option value="${pk.round}|${pk.pick}">${label}</option>`;
+      }).join('');
+
+      if (prevVal && submittable.some(pk => `${pk.round}|${pk.pick}` === prevVal)) {
+        slotSelEl.value = prevVal;
+      } else {
+        slotSelEl.value = `${submittable[0].round}|${submittable[0].pick}`;
+      }
+
+      slotSelEl.style.display = '';
+
+      const queueBtn = document.getElementById('make-pick-queue-btn');
+      const orEl     = document.getElementById('make-pick-or');
+
+      function syncPickData() {
+        const [r, pn] = slotSelEl.value.split('|');
+        const pk = submittable.find(p => p.round === parseInt(r) && p.pick === parseInt(pn));
+        btn._pickData = pk ? { year: draftState.year, round: pk.round, orig: pk.orig } : null;
+        btn.disabled = !pk;
+
+        // Shortcut: submit the top of the owning team's queue. Find the first
+        // owner (swap-aware) with a non-drafted player queued.
+        let queuedSlug = null, queueTeam = null;
+        if (pk) {
+          const drafted = pickedSlugs(draftState.year);
+          for (const t of pickOwners(pk)) {
+            const top = getTeamQueue(t).filter(s => !drafted.has(s))[0];
+            if (top) { queuedSlug = top; queueTeam = t; break; }
+          }
+        }
+        if (queuedSlug) {
+          queueBtn.style.display = '';
+          queueBtn.textContent = `Submit ${queueTeam} queue → ${bioName(queuedSlug)}`;
+          queueBtn._data = { year: draftState.year, round: pk.round, orig: pk.orig, player: queuedSlug };
+          orEl.style.display = '';
+        } else {
+          queueBtn.style.display = 'none';
+          queueBtn._data = null;
+          orEl.style.display = 'none';
+        }
+      }
+
+      slotSelEl.onchange = syncPickData;
+      syncPickData();
+
+      const drafted = pickedSlugs(draftState.year);
+      const available = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === draftState.year && !drafted.has(slug))
+        .map(([slug]) => ({ slug, name: bioName(slug) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      selEl.innerHTML = `<option value="">Select player…</option>` +
+        available.map(({ slug, name }) => `<option value="${slug}">${name}</option>`).join('');
+      selEl.style.display = '';
+    }
+
+    function renderAvailable() {
+      const tbody = document.getElementById('available-body');
+      if (!draftState) { tbody.innerHTML = ''; return; }
+
+      const year    = draftState.year;
+      const drafted  = pickedSlugs(year);   // submitted — for pick-validity (queue dedup)
+      const revealed = revealedSlugs(year); // revealed on-air — for what the pool shows
+      const team    = myTeams[0] || null;
+      const rawQueue = team ? getTeamQueue(team) : [];
+      const queueSet = new Set(rawQueue.filter(s => !drafted.has(s)));
+
+      const orderMap = new Map(poolOrder.map((slug, i) => [slug, i]));
+      const available = Object.entries(bios)
+        .filter(([slug, bio]) => bio.draft_year === year && !revealed.has(slug))
+        .map(([slug, bio]) => ({ slug, bio }))
+        .sort((a, b) => {
+          const ia = orderMap.has(a.slug) ? orderMap.get(a.slug) : Infinity;
+          const ib = orderMap.has(b.slug) ? orderMap.get(b.slug) : Infinity;
+          if (ia !== ib) return ia - ib;
+          return a.bio.name.localeCompare(b.bio.name);
+        });
+
+      tbody.innerHTML = '';
+      if (!available.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text-dim);font-style:italic;padding:1rem">All players drafted.</td></tr>`;
+        return;
+      }
+
+      available.forEach(({ slug, bio }, idx) => {
+        const name   = bioName(slug);
+        const pos    = Array.isArray(bio.pos) ? bio.pos.join('/') : (bio.pos || '—');
+        const age    = calcAge(bio.dob);
+        const school = bio.college || bio.country || '—';
+        const inQueue = queueSet.has(slug);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="num">${idx + 1}</td>
+          <td style="font-weight:600">${name}</td>
+          <td class="muted">${pos}</td>
+          <td class="muted">${age}</td>
+          <td class="muted">${school}</td>
+          <td style="text-align:right"></td>
+        `;
+
+        const actionCell = tr.querySelector('td:last-child');
+        if (team) {
+          if (inQueue) {
+            actionCell.innerHTML = '<span class="in-queue-badge">In Queue</span>';
+          } else {
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn-add-queue';
+            addBtn.textContent = '+ Queue';
+            addBtn.addEventListener('click', () => {
+              const currentQueue = getTeamQueue(team).filter(s => !drafted.has(s));
+              saveQueue(team, [...currentQueue, slug]);
+            });
+            actionCell.appendChild(addBtn);
+          }
+        }
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ── Make Pick button handlers ──────────────────────────
+
+    document.getElementById('make-pick-queue-btn').addEventListener('click', async () => {
+      const btn      = document.getElementById('make-pick-queue-btn');
+      const statusEl = document.getElementById('make-pick-status');
+      const d = btn._data;
+      if (!d) return;
+      btn.disabled = true; statusEl.textContent = 'Submitting…';
+      const res = await apiPost('/api/draft/pick', d);
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+        btn.disabled = false;
+      }
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    document.getElementById('make-pick-btn').addEventListener('click', async () => {
+      const selEl    = document.getElementById('make-pick-player');
+      const statusEl = document.getElementById('make-pick-status');
+      const btn      = document.getElementById('make-pick-btn');
+      if (!selEl.value) return;
+      const pd = btn._pickData;
+      if (!pd) return;
+      btn.disabled = true; statusEl.textContent = 'Submitting…';
+      const res = await apiPost('/api/draft/pick', { ...pd, player: selEl.value });
+      if (res.ok) {
+        statusEl.textContent = 'Done!';
+        await refreshState(); render();
+      } else {
+        const e = await res.json().catch(() => ({}));
+        statusEl.textContent = e.detail || `Error ${res.status}`;
+        btn.disabled = false;
+      }
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    });
+
+    // ── Init ───────────────────────────────────────────────
+
+    async function init() {
+      await Promise.all([refreshState(), loadAuth()]);
+      if (!Object.keys(bios).length) {
+        const biosRes = await fetch('/api/players');
+        if (biosRes.ok) bios = await biosRes.json();
+      }
+      render();
+      setInterval(async () => { await refreshState(); render(); }, 10_000);
+    }
+
+    // Load bios in parallel with state, then render
+    (async () => {
+      const [, , biosRes] = await Promise.all([
+        refreshState(),
+        loadAuth(),
+        fetch('/api/players'),
+      ]);
+      if (biosRes.ok) bios = await biosRes.json();
+      render();
+      setInterval(async () => { await refreshState(); render(); }, 10_000);
+    })();
+  </script>
+  <script src="/nav.js"></script>
+</body>
+</html>

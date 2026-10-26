@@ -2,7 +2,7 @@
 
 **Status: built.** The validator and apply path (Phases A and E, 2026-08-21),
 the `/api/poext/*` committee pipeline (`nbn-api/routers/poext.py`), the
-`/extensions` team page, the PO-EXT panel on `/committees/pdc` and the § 4.5
+`/fo/extensions` team page, the PO-EXT panel on `/committees/pdc` and the § 4.5
 trade freeze are all live. Finalize writes the extension itself through
 `apply_extension`. Written 2026-08-18 as a design, so the body below still
 reads as a plan in places. Companion to `nbn-api/docs/extensions.md`, which
@@ -44,7 +44,7 @@ Fixes (2026-10-04):
   return to the agent. `pdc-alerts` is unchanged.
 - The committee's `review` no longer shows a team's unsubmitted draft.
 
-The office can still enter an extension by hand on `/transactions`, checked
+The office can still enter an extension by hand on `/fo/transactions`, checked
 live against `POST /api/validate/extension`.
 
 The split mirrors free agency: `nbn-api/docs/extensions.md` : `nbn-today/docs/pdc-free-agency-spec.md`
@@ -61,7 +61,7 @@ to disagree with itself.
 | # | Decision | Consequence |
 |---|---|---|
 | D1 | **REVERSED 2026-08-19: the backfill is no longer a prerequisite.** Filed on `BACKLOG.md` as [P3] instead. In its place, a proposal packages the player's known (possibly partial) transaction history, and the submitting team must attest when the contract began. | Phase A is no longer gated on anything (§ 2.3a, § 7). Sizing (97 Discord-recoverable / 59 draft-year-derivable / 5 needing a human) stays useful context for whoever eventually does the backfill, just doesn't block. |
-| D2 | **The read-only validator is the first code deliverable**, once D1 is done. | `POST /api/validate/extension` + a `/transaction-sim` tab. Nothing writes. |
+| D2 | **The read-only validator is the first code deliverable**, once D1 is done. | `POST /api/validate/extension` + a `/fo/transaction-sim` tab. Nothing writes. |
 | D3 | **Extensions use the `agent` stage.** | The full claim/advance/return-to-agent clone is in scope, and `ROLE_IMPLIES` needs `poext_head → agent` or the stage deadlocks (§ 2.9). Overrides this doc's original recommendation against it. |
 | D4 | **A remand is free; a rejection consumes one of § 6.3's three proposals.** | **Corrected 2026-08-19: no standalone `reject` action.** "Reject" is the outcome `finalize` records off a majority-reject committee ballot (D6) — that's the only place the counter moves. Remand/void/restore reuse FA verbatim; nothing new to add (§ 2.5). |
 | D5 | **The cap check reports "cannot evaluate" when the target season's thresholds are unset**, rather than passing, failing, or blocking the feature. | Today that is *every* extension (§ 2.2). Committee sets 27-28 onward when it can; nothing is blocked meanwhile. |
@@ -74,7 +74,7 @@ to disagree with itself.
 | D12 | **Discord: a proposal posts to the private committee channel only (never the public one); the accepted extension posts to both.** | Reverses part of D9 — proposals are no longer silent to the committee, only to the public. Same "one function, one caller" discipline: whatever reaches the public channel must be reachable only from the accept path. |
 | D13 | **Inbox notifications for a proposal are scoped to members holding `poext` — not the whole committee ecosystem, not `fac`.** **Revised 2026-10-04:** scoped to whoever acts next — a new proposal to `agent`/`poext_head`, since `poext` members can't claim (see "Fixes" above). Still never `fac`. | Mirrors D12's channel scoping at the individual level. |
 | D15 | **Submitter attestation replaces the backfill for the indefinite-basis case, per proposal, on demand.** A proposal for a player with no ledger acquisition record must state when the submitting team believes the contract began; the fact sheet shows it beside whatever partial ledger history the player actually has. | **Stays at warn, never promoted to error** — a team has an incentive to shade the date, so it's a claim for the committee to eyeball, not a fact the validator trusts. **Does get promoted to error on contradiction**: if the player has *some* record (a trade, a release) that the attested date is impossible against, that's no longer an unconfirmable gap. **Not persisted or cached anywhere** — deliberately, per hkd 2026-08-19: rare enough in practice that re-asking on the next check is cheaper than a whole second data store for it. The real backfill (BACKLOG [P3]) is the actual fix for scale; this is a per-case bridge, not a replacement for it. |
-| D14 | **`agent` is one role shared across FA and extensions — the agent represents the player, not either committee**, so the same person claims/negotiates on both sides. | **Shipped in code 2026-08-18**: `routers/constants.py` `ROLE_IMPLIES` now has `poext_head: {poext, agent}` alongside the existing `fac_head: {fac, agent}` — each head grant is therefore also a side door into the *other* committee's agent duties, accepted deliberately (§ 2.9 update below). Claim state (`blocked_teams`) must stay on separate per-pipeline objects — sharing the role must never mean sharing a claim record, so a claim in one pipeline can't block or leak into the other for the same player. `roles/index.html` and `members/index.html` now carry cards/badges for `fac`/`fac_head`/`agent`/`poext`/`poext_head`, previously entirely undocumented on the roles page and falling through to the generic team-green badge on the members page. |
+| D14 | **`agent` is one role shared across FA and extensions — the agent represents the player, not either committee**, so the same person claims/negotiates on both sides. | **Shipped in code 2026-08-18**: `routers/constants.py` `ROLE_IMPLIES` now has `poext_head: {poext, agent}` alongside the existing `fac_head: {fac, agent}` — each head grant is therefore also a side door into the *other* committee's agent duties, accepted deliberately (§ 2.9 update below). Claim state (`blocked_teams`) must stay on separate per-pipeline objects — sharing the role must never mean sharing a claim record, so a claim in one pipeline can't block or leak into the other for the same player. `about/roles/index.html` and `members/index.html` now carry cards/badges for `fac`/`fac_head`/`agent`/`poext`/`poext_head`, previously entirely undocumented on the roles page and falling through to the generic team-green badge on the members page. |
 
 Still open and **not** decided: everything in § 8, plus Q3 which needs to be put to the committee rather than inferred.
 
@@ -89,12 +89,12 @@ you end up with the backwards cap figures `extensions.md` § 1 documents.
 |---|---|---|
 | **L1 — rules / validator** | `transactions.py`: `_validate_sign`, `_signing_fact_sheet`, `POST /api/validate/sign` | **Reuse the helpers, never the validator.** `_compute_team_salary`, `_check_contract_raises`, `_min_salary_floor`, `_bird_tenure`, `_autofill_fa_hold_amounts` are all season-parameterised or contract-shaped and transfer directly. `_validate_sign` itself is framed around replacing a current-season figure and cannot be. |
 | **L2 — deliberation** | `free_agency.py`: the offer object, `LIVE_STATUSES`/`_is_live`, remand/void/restore, `versions`, sub-committee assignment, the 1,000-ball ballot, finalize | **The genuinely reusable asset.** Most of it is about *how a committee handles a proposal*, which is identical for an extension. |
-| **L3 — surfaces** | `/free-agency` team form, `/pdc` dashboard, `fa_notify` two-channel feed | **Copy the patterns, build new pages.** The `#poext` stub already exists (§ 6). |
+| **L3 — surfaces** | `/fo/free-agency` team form, `/pdc` dashboard, `fa_notify` two-channel feed | **Copy the patterns, build new pages.** The `#poext` stub already exists (§ 6). |
 
 **The load-bearing fact about L2: it ends in a manual hand-off.** `finalize_player`
 locks ballots, records totals, archives offers and closes the player — it does
 **not** write a transaction. The committee then types the signing into
-`/transactions` by hand. That is why the pipeline can be built ahead of the apply
+`/fo/transactions` by hand. That is why the pipeline can be built ahead of the apply
 path, and it is the single biggest scheduling lever here (§ 7).
 
 ---
@@ -383,7 +383,7 @@ act as agent whichever process a given player is in. Consequences, all shipped:
   claiming a player in FA must not block or leak into that same player's
   extension process, and vice versa. This is an implementation requirement,
   not a nuance to lose when L2 gets built (§ 3).
-- `roles/index.html` and `members/index.html` now document and color all five
+- `about/roles/index.html` and `members/index.html` now document and color all five
   committee roles (`fac`, `fac_head`, `agent`, `poext`, `poext_head`) —
   previously `agent` had no badge case on the members page at all and fell
   through to the same green used for the 30 team-role badges, and none of the
@@ -439,7 +439,7 @@ live negotiations.
 
 | FA | Extension | Verdict |
 |---|---|---|
-| `GET /api/fa/pool` — `_fa_pool`, `_is_current_fa`, every entry carrying `current` + a server-composed `reason` | `GET /api/poext/eligible` | **Copy the pattern wholesale**, new derivation (§ 2.3). The `reason`-on-every-entry contract is the most successful thing about `/free-agency`: it lets the ⋯ menu show moves **disabled with the rule-citing reason** instead of hiding them, and no refusal string is composed client-side. |
+| `GET /api/fa/pool` — `_fa_pool`, `_is_current_fa`, every entry carrying `current` + a server-composed `reason` | `GET /api/poext/eligible` | **Copy the pattern wholesale**, new derivation (§ 2.3). The `reason`-on-every-entry contract is the most successful thing about `/fo/free-agency`: it lets the ⋯ menu show moves **disabled with the rule-citing reason** instead of hiding them, and no refusal string is composed client-side. |
 | offer object: `id`, `number` (monotonic `seq`), `status`, `version`, `versions`, `remands`, `history`, `void`, `created_by`/`submitted_by` | proposal object, same shape | **Reuse near-verbatim.** |
 | `LIVE_STATUSES` / `_is_live` | same + terminal `agreed`, `exhausted` | Extend. Every consequence of voiding falls out of `_is_live` alone; keep that discipline — extend `_is_live`'s callers, never add a parallel rule. |
 | one live offer per team per player | one live proposal per player, **≤ 3 lifetime** (§ 6.3) | **Replace** — different scarce resource (§ 2.5). |
@@ -455,7 +455,7 @@ live negotiations.
 | `_run_validation` → `_validate_sign` | → `_validate_extension` | New (`extensions.md` § 5). |
 | `_pending_offer_hold` — a live offer sheet charges the offering team a hold | **none (D7)** | **Deliberately not cloned.** The FA hold stops a team bidding on five players with one team's worth of room; with exactly one possible proposer and the money in a future league year, that failure mode doesn't exist. Omitted by decision, not by accident. |
 | `fa_notify`, two channels, `_news` choke point | **`poext_notify`: private (`pdc-alerts`) gets proposal + accept traffic; public gets accept only (D9/D12/D13)** | **Adapt, don't clone verbatim.** The private side is a straightforward port of FA's `pdc-alerts` posting (submit / remand / advance / finalize-with-either-outcome / void / restore — no standalone reject event, since finalize's tally is what a rejection *is*); the public side keeps FA's `_news`-style choke point — reachable only from the accept path. Inbox notifications scoped to `poext` holders, not the wider committee (D13). Reuse `discord_transport` for pacing, as every other feed does. |
-| `/free-agency` team-facing form | `/extensions` | Copy, including **no cap math in the page** — every dollar off the validator's fact sheet. |
+| `/fo/free-agency` team-facing form | `/fo/extensions` | Copy, including **no cap math in the page** — every dollar off the validator's fact sheet. |
 | `/pdc` dashboard | fill the existing `#poext` stub | § 6. |
 
 ---
@@ -471,7 +471,7 @@ imported across routers.
 GET    /api/poext/eligible                     public — every rostered player,
                                                `eligible` + server-composed `reason`
 POST   /api/poext/proposals                    team role — draft
-PATCH  /api/poext/proposals/{id}               team role — while draft/returned
+PATCH  /api/poext/proposals/{id}               team role — while history/draft/returned
 DELETE /api/poext/proposals/{id}               team role — while draft
 POST   /api/poext/proposals/{id}/submit        team role — final at team initiative
 POST   /api/poext/proposals/{id}/remand        claiming agent / head — free, pre- or mid-committee (D4)
@@ -556,9 +556,9 @@ final guaranteed year marked; the extended term; the 140% ceiling, which basis
 produced it, and the headroom left; and team salary in that season with whatever
 can be said about the ceiling.
 
-**No page recomputes any of it.** `/extensions` renders the fact sheet, the ⋯ menu
+**No page recomputes any of it.** `/fo/extensions` renders the fact sheet, the ⋯ menu
 renders `reason` strings composed server-side, and the committee's review page
-renders the same object. That rule is the reason `/free-agency` can never show a
+renders the same object. That rule is the reason `/fo/free-agency` can never show a
 team room the validator didn't credit it with, and it is the single most valuable
 thing to copy.
 
@@ -623,7 +623,7 @@ whenever someone picks it up, it just doesn't block anything below.
 
 **Phase A — validator, read-only (D2).** `ExtensionDetails`, `_validate_extension`,
 `_extension_fact_sheet`, `POST /api/validate/extension`, Extension tab in
-`/transaction-sim`. Zero risk to live data; lets the committee run the ~32 real
+`/fo/transaction-sim`. Zero risk to live data; lets the committee run the ~32 real
 eligible players through the rubric before anything writes. Add a case to
 `tests/test_validate_endpoints.py` — it is the only suite that goes through HTTP,
 and both historical endpoint bugs lived exactly there.
@@ -638,11 +638,11 @@ is trustworthy for all but ~5 players.
 remand/void/restore (D4, corrected — no standalone reject), the agent stage (D3),
 assignment, accept/reject vote (D6), finalize. Fill the `#poext` stub. Committee
 works real extensions here;
-the resulting signing is still entered by hand on `/transactions`, exactly as FA
+the resulting signing is still entered by hand on `/fo/transactions`, exactly as FA
 does today.
 
-**Phase D — team-facing `/extensions`.** The ⋯ menu and proposal form, mirroring
-`/free-agency` including the disabled-with-reason discipline and the proposal
+**Phase D — team-facing `/fo/extensions`.** The ⋯ menu and proposal form, mirroring
+`/fo/free-agency` including the disabled-with-reason discipline and the proposal
 counter (§ 2.5).
 
 **Phase E — apply path.** `extension` in `_VALIDATORS`, the `create_transaction`

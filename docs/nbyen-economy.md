@@ -18,7 +18,7 @@ was cut by ten at launch, so every price in it divides by ten.
 | Source | Amount | When |
 |---|---|---|
 | Starting grant | 1,000 | Once. Every member at the reset, and every member added after it (`POST /api/members`). |
-| Donations | 100 per $1 | When the board logs it on `/donations`. Editing a donation moves exactly the difference, to whoever it now names. |
+| Donations | 100 per $1 | When the board logs it on `/nbyen/donations`. Editing a donation moves exactly the difference, to whoever it now names. |
 | Twitch subs | 300 a month for Tier 1 or Prime, 700 for Tier 2, 1,700 for Tier 3 | Once a month, by `nbn-twitch-subs.timer`. |
 | Winning bets | Set by the bookie's odds | When a bet closes. |
 | Futures | 100 per winning share, or a sale at the market price | When you sell, or when the market settles. |
@@ -56,7 +56,7 @@ ones is paused (§ 6).
 - **There is no house wallet.** Bookies price by hand, and odds that add up to
   less than 100% pay out more than was staked, which creates NB¥. That's
   accepted, on two conditions:
-  - **It's visible.** `GET /api/bets/house` and the top of `/bet` show the
+  - **It's visible.** `GET /api/bets/house` and the top of `/nbyen/bet` show the
     house's running result since the reset. Negative means the odds created
     that much NB¥. The bet form also says so while the bookie types the odds.
   - **The per-bet cap is 100.** One badly priced long shot can't pay thousands.
@@ -67,8 +67,8 @@ ones is paused (§ 6).
 
 ## 4a. Futures markets
 
-Added 2026-09-25. The Futures tab on `/bet`; code in
-`nbn-api/routers/markets.py` and `bet/futures.js`.
+Added 2026-09-25. The Futures tab on `/nbyen/bet`; code in
+`nbn-api/routers/markets.py` and `nbyen/bet/futures.js`.
 
 - **A Yes share pays 100 NB¥ if its outcome happens; a No share pays 100 if it
   doesn't.** The price is the market's odds: a Yes at 23 NB¥ is 23%, and the
@@ -140,7 +140,7 @@ Added 2026-09-25. The Futures tab on `/bet`; code in
 ## 5. Buying a stream
 
 - **Any member, any upcoming game, 1,000 NB¥**, in two steps:
-  1. The member requests it from the list view on `/calendar`
+  1. The member requests it from the list view on `/season/calendar`
      (`POST /api/schedule/{id}/stream-request`). Nothing is spent; the balance
      is only checked. The game carries `stream_request` and the streamers get
      an inbox notice. The member can withdraw it (`DELETE`).
@@ -172,7 +172,7 @@ already in the code on the new scale.
 | 6 | Bio fills, Perry | 1 per field; 10 / 5 / 2.5 | Nothing. |
 | 7 | Themes, avatar, name colour | 500, 500, 50 | Nothing. |
 | 8 | Trivia | — | **The server must track the streak.** Today the browser reports its own streak, so the endpoint pays whatever it's told. |
-| 9 | The market (`/invest`) | — | **On since 2026-10-23**, under § 3's rules. Playoff games aren't in the schedule, so the pending-box-score lock can't see them: lock the market by hand for the postseason. |
+| 9 | The market (`/nbyen/invest`) | — | **On since 2026-10-23**, under § 3's rules. Playoff games aren't in the schedule, so the pending-box-score lock can't see them: lock the market by hand for the postseason. |
 
 When the first of 2, 3, 5 or 6 comes back, add the shared monthly cap on free
 earning from the appendix (§ 1c) at the same time.
@@ -203,11 +203,11 @@ paying it. So switching them back on pays unlocks from then on, not a backlog.
   (`invest.open_holdings()` and `markets.open_holdings()` at current prices,
   `bets.open_stakes()` at the stake), because a buy or a wager takes NB¥ out of
   the wallet long before anything comes back. Without that, someone holding
-  thousands looked broke. `/nbyen`, the `/invest` portfolio card and Discord
+  thousands looked broke. `/nbyen`, the `/nbyen/invest` portfolio card and Discord
   `/nbyen-leaders` all read it; until 2026-10-23 each counted a different subset.
 - **P&L per game comes from the ledger.** A game's P&L is the sum of its kinds'
   ledger lines (`nbyen.GAMES`) plus what is still held in it. Fees and refunds
-  are in, and no trade log is replayed. The `/invest` leaderboard is Wall
+  are in, and no trade log is replayed. The `/nbyen/invest` leaderboard is Wall
   Street's slice of the same sum.
 - **Every NB¥ has a source, and a member's sources sum to their net worth.**
   `nbyen.SOURCES` puts every ledger kind in exactly one bucket (starting grant,
@@ -351,7 +351,7 @@ The two systems where NB¥ moves in volume. Both are currently **net-positive to
 the money supply** when they should be net-negative, and both need more than a
 price — so they are here rather than in the table above.
 
-#### Betting — `/bet`
+#### Betting — `/nbyen/bet`
 
 **Decided 2026-09-06: one bet type — fixed odds, with a mandatory 105% book,
 backed by a House Bank. Pool bets are removed.**
@@ -405,7 +405,7 @@ circulation — which replaces the pool rake at about the same size. It is a sin
 on average rather than a guaranteed one; a bad season for the house releases some
 of it back.
 
-**It should be visible.** `🏦 The House — NB¥ 12,400` at the top of `/bet`, moving
+**It should be visible.** `🏦 The House — NB¥ 12,400` at the top of `/nbyen/bet`, moving
 as bets settle, is a scoreboard people will enjoy rooting against.
 
 ##### The rest
@@ -448,9 +448,9 @@ much harder than pricing a two-way game. The bank's coverage check handles this
 without the bookie needing to be right — a mispriced long shot simply cannot
 attract more money than the bank can pay on it.
 
-#### The stock market — `/invest`
+#### The stock market — `/nbyen/invest`
 
-**Decided 2026-09-06: `/invest` is a league-subsidised game tied to real game
+**Decided 2026-09-06: `/nbyen/invest` is a league-subsidised game tied to real game
 results, not a market.** It keeps the results-driven price and stops pretending
 to be an exchange. Everything below follows from that one choice.
 
@@ -532,7 +532,7 @@ the payouts.
   longer have anything to do with basketball.** It becomes a popularity contest
   where you profit by being early rather than right, and at 13 traders it is hot
   potato with a known bag-holder.
-- **Closing `/invest` at the reset** was the earlier recommendation here and is
+- **Closing `/nbyen/invest` at the reset** was the earlier recommendation here and is
   superseded: with sentiment gone and the caps in place, there is nothing left
   that mints without bound, so there is no reason to keep it shut.
 
@@ -770,7 +770,7 @@ direct donations:
 |---|---|---|
 | Subs + donations | **576,000** | against $537 actually received |
 | Salaries | 260,000 | |
-| `/invest` subsidy | 40,000 | § 3 — bounded by the position caps |
+| `/nbyen/invest` subsidy | 40,000 | § 3 — bounded by the position caps |
 | Contributions (bio, box scores) | 36,000 | cleanup retired 2026-09-19 |
 | Achievement drip | 18,000 | |
 | Minigames | 0 | suspended |

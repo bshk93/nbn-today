@@ -11,7 +11,7 @@ actually get pasted — and none of them run our JavaScript.
 Four pages are not fully covered by this map, for that same reason. Each is one
 shell serving many items:
 
-    /news/view/?id=    /players/?p=    /proposals/view/?id=    /members/{name}
+    /news/view/?id=    /stats/players/?p=    /proposals/view/?id=    /members/{name}
 
 so the entries below are placeholders and every item unfurled as the same card.
 nginx routes those four to nbn-api's routers/og.py when the User-Agent is a
@@ -51,24 +51,27 @@ TAGLINE = 'Nothing But Net — fantasy basketball GM simulation league'
 PAGES = {
  '/': (None, 'Owner history, team pages, standings, player profiles, draft history and stats leaderboards for the NBN fantasy basketball GM simulation league.'),
  '/404.html': (None, 'That page does not exist on NBN.'),
- '/awards/': (None, 'NBN award winners by season — MVP, DPOY, All-NBN teams and the rest of the ballot.'),
- '/recap/': (None, 'One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.'),
- '/awards/race/': (None, 'Who leads the MVP, DPOY, Rookie, Sixth Man and Most Improved races, by formula — and how often that formula has named the real winner.'),
+ '/history/awards/': (None, 'NBN award winners by season — MVP, DPOY, All-NBN teams and the rest of the ballot.'),
+ '/history/recap/': (None, 'One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.'),
+ '/season/award-race/': (None, 'Who leads the MVP, DPOY, Rookie, Sixth Man and Most Improved races, by formula — and how often that formula has named the real winner.'),
  '/about/': (None, 'About NBN — the members, the roles, the constitution, the rulebook and how to join.'),
  '/office/': (None, 'The NBN league office — proposals, suggestions, memos and league settings.'),
  '/media/': (None, 'NBN media — league news, NBNTV Classics, the NBNFL and the YouTube channel.'),
+ '/season/': (None, 'The NBN season — the calendar, standings and playoffs, the award race, injuries and season stats.'),
+ '/fo/': (None, 'The NBN front office — the trade block, free agency, extensions, transactions, the transaction simulator and the cap.'),
+ '/history/': (None, 'NBN history — season summaries, champions, the Hall of Fame, awards, season recaps and every draft.'),
  '/games/': (None, 'NBN games — the daily Perry and Poeltl, trivia and Tetris.'),
- '/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
- '/bet/': (None, 'Put NB¥ on NBN: open bets, the daily Pick\'em and futures markets, all in one place.'),
+ '/office/backlog/': (None, 'Internal working list of what needs doing on the NBN site.'),
+ '/nbyen/bet/': (None, 'Put NB¥ on NBN: open bets, the daily Pick\'em and futures markets, all in one place.'),
  '/nbyen/': ('NBN | NB¥ Balances', 'Every NB¥ balance, and every NB¥ that has moved since the restart.'),
- '/boxscores/': (None, 'Every NBN box score, searchable by game, team and player.'),
- '/boxscores/submit/': (None, 'Submit a box score to the NBN stats database.'),
- '/calendar/': (None, 'Key dates in the NBN league year — free agency, the draft, deadlines and windows.'),
- '/cap-settings/': (None, 'League-wide cap, apron and minimum-salary settings by season, and the § 7.1 rookie scale.'),
- '/cap-summary/': (None, 'Where all 30 NBN teams sit against the cap, the aprons and the roster floor.'),
- '/champions/': (None, 'Every NBN champion, finals matchup and title run.'),
- '/changelog/': (None, 'What changed on nbn.today, release by release.'),
- '/compare/': (None, 'Put any two NBN players side by side, career or season.'),
+ '/stats/boxscores/': (None, 'Every NBN box score, searchable by game, team and player.'),
+ '/stats/boxscores/submit/': (None, 'Submit a box score to the NBN stats database.'),
+ '/season/calendar/': (None, 'Key dates in the NBN league year — free agency, the draft, deadlines and windows.'),
+ '/office/cap-settings/': (None, 'League-wide cap, apron and minimum-salary settings by season, and the § 7.1 rookie scale.'),
+ '/fo/cap-summary/': (None, 'Where all 30 NBN teams sit against the cap, the aprons and the roster floor.'),
+ '/history/champions/': (None, 'Every NBN champion, finals matchup and title run.'),
+ '/about/changelog/': (None, 'What changed on nbn.today, release by release.'),
+ '/stats/compare/': (None, 'Put any two NBN players side by side, career or season.'),
  '/committees/': (None, 'The five NBN committees — who runs what, which roles sit on each, and the dashboard each one works from.'),
  '/committees/pdc/': (None, 'The Player Decision Committee dashboard — free-agency review, ballots and rulings.'),
  '/committees/rosters/': (None, 'The rosters committee dashboard — who is out of compliance with the rulebook, and where the site and the league cap sheet disagree.'),
@@ -76,58 +79,58 @@ PAGES = {
  '/committees/stats/': (None, 'The stats committee dashboard — each day\'s games, their box score screenshots, and which still need entering.'),
  '/committees/stream/': (None, 'The streamer dashboard — claim games to broadcast and enter team coaching settings into the game.'),
  '/committees/trc/': (None, 'The Trade Request Committee dashboard — proposed trades, team consent, votes and finalized deals.'),
- '/constitution/': (None, 'The founding document of the NBN sim league.'),
+ '/about/constitution/': (None, 'The founding document of the NBN sim league.'),
  '/context/': (None, 'Project context for the nbn.today codebase.'),
- '/draft/': (None, 'Every NBN draft, pick by pick, with who took whom and where they landed.'),
- '/draft/guide/': (None, 'How the NBN draft works — order, rounds, rookie scale and signing rights.'),
- '/draft/live/': (None, 'The NBN draft as it happens, pick by pick.'),
- '/draft/pick/': (None, 'Make your selection in the NBN draft.'),
- '/extensions/': (None, 'Contract extensions across NBN — who is eligible, who has signed and on what terms.'),
- '/free-agency/': (None, 'NBN free agency: the pool, open bidding windows and where your team’s offers stand.'),
- '/frivolities/': (None, 'Odd corners of the NBN data — charts, career earnings, and every trade regraded.'),
- '/finances/': (None, 'Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.'),
- '/h2h/': (None, 'All-time head-to-head records between every NBN team and every owner.'),
- '/hof/': (None, 'NBN Hall of Fame scores, rings and career totals for the league’s best players.'),
- '/injuries/': (None, 'Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.'),
- '/inbox/': (None, 'Your NBN notifications.'),
- '/invest/': (None, 'Buy and sell shares in NBN teams. Prices move with game results.'),
- '/invest/fair/': (None, 'A discounted-cash-flow price for every NBN franchise, built on the Front Office Ledger.'),
- '/join/': (None, 'How to join the NBN sim league — what a GM does and how to get a team.'),
+ '/history/draft/': (None, 'Every NBN draft, pick by pick, with who took whom and where they landed.'),
+ '/history/draft/guide/': (None, 'How the NBN draft works — order, rounds, rookie scale and signing rights.'),
+ '/history/draft/live/': (None, 'The NBN draft as it happens, pick by pick.'),
+ '/history/draft/pick/': (None, 'Make your selection in the NBN draft.'),
+ '/fo/extensions/': (None, 'Contract extensions across NBN — who is eligible, who has signed and on what terms.'),
+ '/fo/free-agency/': (None, 'NBN free agency: the pool, open bidding windows and where your team’s offers stand.'),
+ '/stats/frivolities/': (None, 'Odd corners of the NBN data — charts, career earnings, and every trade regraded.'),
+ '/fo/finances/': (None, 'Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.'),
+ '/stats/h2h/': (None, 'All-time head-to-head records between every NBN team and every owner.'),
+ '/history/hof/': (None, 'NBN Hall of Fame scores, rings and career totals for the league’s best players.'),
+ '/season/injuries/': (None, 'Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.'),
+ '/about/inbox/': (None, 'Your NBN notifications.'),
+ '/nbyen/invest/': (None, 'Buy and sell shares in NBN teams. Prices move with game results.'),
+ '/nbyen/invest/fair/': (None, 'A discounted-cash-flow price for every NBN franchise, built on the Front Office Ledger.'),
+ '/about/join/': (None, 'How to join the NBN sim league — what a GM does and how to get a team.'),
  '/legal/': (None, 'NBN disciplinary record — filings, findings and penalties.'),
  '/legal/nothing-but-net-sim-league-v-jdbeats/': (None, 'Disciplinary findings in NBN Sim League v. JDBeats.'),
  '/members/': (None, 'Everyone in NBN — tenures, teams, achievements and rings.'),
  '/members/profile/': (None, 'An NBN member’s tenures, achievements and league history.'),
- '/nbnfl/': ('NBNFL — Bengals', 'Game log and player stats for the Bengals in NBN’s sister American-football league, plus their players’ real-world NFL stats.'),
- '/nbnfl/CIN/': ('Moved - NBNFL', 'Moved — the Bengals log is now /nbnfl.'),
- '/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
+ '/media/nbnfl/': ('NBNFL — Bengals', 'Game log and player stats for the Bengals in NBN’s sister American-football league, plus their players’ real-world NFL stats.'),
+ '/nbnfl/CIN/': ('Moved - NBNFL', 'Moved — the Bengals log is now /media/nbnfl.'),
+ '/media/nbntv-classics/': (None, 'The greatest playoff performances in NBN history, ranked and annotated.'),
  '/nbyen-economy/': ('NBN | Moved | NB¥ Balances', 'Retired — the NB¥ economy proposal was superseded by the restart. Balances are at /nbyen.'),
  '/news/': (None, 'League news, written by NBN members.'),
  '/news/new/': (None, 'Write an article for NBN News.'),
  '/news/rankings/': ('NBN | Power Rankings Ballot', 'Rank all 30 teams and write the blurbs for an NBN power-rankings edition.'),
  '/news/view/': (None, 'An article from NBN News.'),
- '/memos/': (None, 'Memos from the NBN league office to the league.'),
- '/memos/2026-01-sac-2028-first/': (None, "League office ruling: how six 2028 firsts tied together by swap rights resolve. Trades execute in the order they were made."),
- '/owners/': (None, 'Career records, ratings and playoff résumés for every NBN general manager.'),
+ '/office/memos/': (None, 'Memos from the NBN league office to the league.'),
+ '/office/memos/2026-01-sac-2028-first/': (None, "League office ruling: how six 2028 firsts tied together by swap rights resolve. Trades execute in the order they were made."),
+ '/stats/owners/': (None, 'Career records, ratings and playoff résumés for every NBN general manager.'),
  '/pdc/': (None, 'Moved — the PDC dashboard is now at /committees/pdc.'),
- '/perry/': (None, 'The daily NBN Perry game. One guess a day.'),
+ '/games/perry/': (None, 'The daily NBN Perry game. One guess a day.'),
  '/pickem/': (None, 'Moved — Pick\'em is now a tab on the Betting page.'),
- '/players/': (None, 'Every player in NBN — career stats, contracts, ratings, awards and game logs.'),
- '/players/injuries/': (None, 'One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.'),
- '/players/ratings/': (None, 'One NBN player’s 2K ratings: every attribute and badge, and how they have moved.'),
- '/players/contract/': (None, 'One NBN player’s contract: the deal at a glance and every season’s salary.'),
- '/players/history/': (None, 'One NBN player’s history: every transaction, a recap of each season, and the edit log.'),
- '/poeltl/': (None, 'The daily NBN Poeltl. Guess the player in eight tries.'),
+ '/stats/players/': (None, 'Every player in NBN — career stats, contracts, ratings, awards and game logs.'),
+ '/stats/players/injuries/': (None, 'One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.'),
+ '/stats/players/ratings/': (None, 'One NBN player’s 2K ratings: every attribute and badge, and how they have moved.'),
+ '/stats/players/contract/': (None, 'One NBN player’s contract: the deal at a glance and every season’s salary.'),
+ '/stats/players/history/': (None, 'One NBN player’s history: every transaction, a recap of each season, and the edit log.'),
+ '/games/poeltl/': (None, 'The daily NBN Poeltl. Guess the player in eight tries.'),
  '/proposals/': (None, 'Rule proposals up for a vote in NBN.'),
  '/proposals/new/': (None, 'Put a rule change to the NBN league.'),
  '/proposals/view/': (None, 'A rule proposal before the NBN league.'),
  '/preview/': (None, 'One NBN game ahead of tip-off: form, head-to-head, projected starters and career milestones in reach.'),
- '/ratings-changes/': (None, 'Every OVR, position, attribute and badge change the 2K ratings scrape has picked up, player by player.'),
- '/roles/': (None, 'Who can do what in NBN — roles, committees and permissions.'),
+ '/stats/ratings-changes/': (None, 'Every OVR, position, attribute and badge change the 2K ratings scrape has picked up, player by player.'),
+ '/about/roles/': (None, 'Who can do what in NBN — roles, committees and permissions.'),
  '/rookie-scale/': (None, 'Moved — the rookie scale is now a tab of League Settings.'),
- '/rulebook/': (None, 'The NBN rulebook: salary cap, trades, free agency, extensions and the draft.'),
+ '/about/rulebook/': (None, 'The NBN rulebook: salary cap, trades, free agency, extensions and the draft.'),
  '/schedule/': (None, 'Moved — the schedule is now on the calendar, streamer claims included.'),
- '/season-summary/': (None, 'Every NBN season at a glance — champion, award winners and statistical leaders.'),
- '/standings/': (None, 'NBN standings season by season, with every playoff bracket.'),
+ '/history/season-summary/': (None, 'Every NBN season at a glance — champion, award winners and statistical leaders.'),
+ '/season/standings/': (None, 'NBN standings season by season, with every playoff bracket.'),
  '/stats/': (None, 'The NBN stat lab — season stats, career leaders, single-game highs, head-to-head records and data viz.'),
  '/stats/highs/': (None, 'The biggest single games in NBN history in 15 categories, and the most triple-doubles, 50-point games and more — for any season, franchise or the playoffs.'),
  '/stats/highs/p/': (None, 'Moved — the biggest scoring games are now on /stats/highs.'),
@@ -145,28 +148,28 @@ PAGES = {
  '/stats/totals/b/': (None, 'Moved — career blocks leaders are now on /stats/totals.'),
  '/stats/totals/3pm/': (None, 'Moved — career three-point leaders are now on /stats/totals.'),
  '/skills/': (None, 'The Claude Code commands defined for this project.'),
- '/strikes/': (None, 'The NBN strike record — who has one and what for.'),
- '/donations/': (None, "League funding tracker — who's donated, how much, and to what."),
+ '/office/strikes/': (None, 'The NBN strike record — who has one and what for.'),
+ '/nbyen/donations/': (None, "League funding tracker — who's donated, how much, and to what."),
  '/stream/': (None, 'Moved — the streamer dashboard is now at /committees/stream.'),
- '/suggestions/': (None, 'Suggest a change to NBN, and see what the league thinks of it.'),
- '/tetris/': (None, 'Tetris, for the wait between games. Your best score is kept in your browser.'),
- '/teams/': (None, 'All 30 NBN franchises — rosters, salary cap, draft picks and franchise history.'),
+ '/office/suggestions/': (None, 'Suggest a change to NBN, and see what the league thinks of it.'),
+ '/games/tetris/': (None, 'Tetris, for the wait between games. Your best score is kept in your browser.'),
+ '/stats/teams/': (None, 'All 30 NBN franchises — rosters, salary cap, draft picks and franchise history.'),
  '/trade-retros/': (None, 'Moved — trade retrospectives are now a tab on /frivolities.'),
  '/trade-sim/': (None, 'Moved — the trade simulator now lives at /transaction-sim.'),
- '/tradeblock/': (None, 'Who’s available around NBN — every team’s listed players and picks.'),
- '/transaction-sim/': (None, 'Model a trade, signing or extension and see every cap rule it passes or fails — before you submit it.'),
- '/transactions/': (None, 'Every trade, signing, extension and release in NBN, with the cap rules each one cleared.'),
- '/trivia/': (None, 'NBN trivia. How well do you actually know this league?'),
+ '/fo/tradeblock/': (None, 'Who’s available around NBN — every team’s listed players and picks.'),
+ '/fo/transaction-sim/': (None, 'Model a trade, signing or extension and see every cap rule it passes or fails — before you submit it.'),
+ '/fo/transactions/': (None, 'Every trade, signing, extension and release in NBN, with the cap rules each one cleared.'),
+ '/games/trivia/': (None, 'NBN trivia. How well do you actually know this league?'),
 }
 
 # One set of award pages per season folder on disk, so a new season is a
 # copied folder and no edit here.
-for _d in sorted((ROOT / 'awards').glob('[0-9][0-9]-[0-9][0-9]')):
+for _d in sorted((ROOT / 'history' / 'awards').glob('[0-9][0-9]-[0-9][0-9]')):
     _s = _d.name
     _y = f'20{_s[:2]}-{_s[3:]}'
-    PAGES[f'/awards/{_s}/'] = (f'NBN | {_y} Awards', f'The {_y} NBN awards ballot and results.')
-    PAGES[f'/awards/{_s}/results/'] = (f'NBN | {_y} Award Results', f'Full voting results for the {_y} NBN awards.')
-    PAGES[f'/awards/{_s}/vote/'] = (f'NBN | {_y} Award Voting', f'Cast your ballot in the {_y} NBN awards.')
+    PAGES[f'/history/awards/{_s}/'] = (f'NBN | {_y} Awards', f'The {_y} NBN awards ballot and results.')
+    PAGES[f'/history/awards/{_s}/results/'] = (f'NBN | {_y} Award Results', f'Full voting results for the {_y} NBN awards.')
+    PAGES[f'/history/awards/{_s}/vote/'] = (f'NBN | {_y} Award Voting', f'Cast your ballot in the {_y} NBN awards.')
 
 
 def url_for(p: pathlib.Path) -> str:
@@ -200,7 +203,7 @@ def block(title, desc, url, image, alt):
 
 TEAMS = dict(re.findall(
     r'(\w{3}):\s*"([^"]+)"',
-    re.search(r'const TEAMS = \{(.*?)\n\};', (ROOT / 'teams/team.js').read_text(), re.S).group(1)))
+    re.search(r'const TEAMS = \{(.*?)\n\};', (ROOT / 'stats/teams/team.js').read_text(), re.S).group(1)))
 assert len(TEAMS) == 30
 
 changed = missing = stale = 0
@@ -212,7 +215,18 @@ for p in sorted(ROOT.rglob('*.html')):
     url = url_for(p)
     text = p.read_text()
 
-    m = re.match(r'^/teams/([A-Z]{3})/$', url)
+    # A redirect stub left at a page's old path (docs/route-migration.md)
+    # unfurls as the page it forwards to: same card, the new URL.
+    moved = re.search(r'<meta name="nbn-moved" content="([^"]+)">', text)
+    if moved:
+        url = moved.group(1)
+        target = ROOT / url.lstrip('/') / 'index.html'
+        tm = re.search(r'<title>([^<]*)</title>', target.read_text()) if target.exists() else None
+    m = re.match(r'^/stats/teams/([A-Z]{3})/$', url)
+    if moved and not m and url not in PAGES:
+        print(f'  ! {rel} forwards to {url}, which has no entry in PAGES', file=sys.stderr)
+        missing += 1
+        continue
     if m:
         ab = m.group(1)
         name = TEAMS[ab]
@@ -221,13 +235,17 @@ for p in sorted(ROOT.rglob('*.html')):
         image = f'/og/team-{ab.lower()}.png'
         alt = f'{name} — Nothing But Net'
         # these shells ship a placeholder <title>NBN</title>
-        text = re.sub(r'<title>[^<]*</title>', f'<title>{title}</title>', text, count=1)
+        if not moved:
+            text = re.sub(r'<title>[^<]*</title>', f'<title>{title}</title>', text, count=1)
     elif url in PAGES:
         override, desc = PAGES[url]
-        tm = re.search(r'<title>([^<]*)</title>', text)
+        if not moved:
+            tm = re.search(r'<title>([^<]*)</title>', text)
         # The <title> text is already HTML; unescape it so esc() doesn't double it.
         title = override or (html.unescape(tm.group(1)) if tm and tm.group(1).strip() else 'NBN')
-        if override and tm:
+        if moved:
+            pass  # the stub keeps its own "NBN | Moved" <title>
+        elif override and tm:
             text = re.sub(r'<title>[^<]*</title>', f'<title>{override}</title>', text, count=1)
         elif override and not tm:
             text = text.replace('</head>', f'  <title>{override}</title>\n</head>', 1)

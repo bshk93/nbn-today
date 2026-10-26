@@ -1,6 +1,6 @@
 // feed-types.js — what a league event is called, and what colour it wears.
 //
-// The league office (`/transactions`) has labelled transaction types since it
+// The league office (`/fo/transactions`) has labelled transaction types since it
 // was built, in a `typeLabel()` map plus a matching set of `.badge-{type}` CSS
 // rules. The homepage feed needs the same vocabulary: it merges transactions,
 // news and (in season) final scores into one list where every row is tagged,
@@ -23,7 +23,7 @@
 // headline event, a release or waiver takes a player off a roster, and a
 // waiver tie or hard-cap level wants someone's attention. A signing is the
 // commonest move there is, and twenty colours made the tag column noise.
-// `/transactions` keeps its own `.badge-{type}` colours; only the labels are
+// `/fo/transactions` keeps its own `.badge-{type}` colours; only the labels are
 // shared, since they are what drifts and what a reader notices.
 
 (function (global) {

@@ -667,7 +667,7 @@
     /* The next day's header carries the rule. */
     :root a.dash-feed-row:last-child, :root a.dash-feed-row:has(+ .dash-feed-day) { border-bottom: none; }
     /* Wraps rather than truncating: "Offer Sheet Decision" doesn't fit the
-       column, and the label is shared with /transactions, so it isn't
+       column, and the label is shared with /fo/transactions, so it isn't
        shortened here. */
     .dash-feed-tag.ui-chip { justify-self: start; white-space: normal; transform: translateY(-1px); }
     :root .dash-feed-text { font-size: var(--text-base); font-weight: 500; color: var(--text-primary); line-height: 1.4; }
@@ -838,7 +838,7 @@
 
   <p class="visitor-intro" id="visitor-intro" hidden>
     A fantasy NBA GM league, played out in NBA 2K since 2020.
-    <a href="/join/">What it is and how to join</a>
+    <a href="/about/join/">What it is and how to join</a>
   </p>
 
   <section class="dash" id="dash">
@@ -900,7 +900,7 @@
 
 
   <footer class="site-footer">
-    Nothing But Net · <a href="/changelog" id="site-version">Changelog</a>
+    Nothing But Net · <a href="/about/changelog" id="site-version">Changelog</a>
   </footer>
 
   </div>
@@ -939,7 +939,7 @@
   <script src="/clinch.js"></script>
   <script src="/vod.js"></script>
   <script src="/award-race.js"></script>
-  <script src="/teams/lineup.js"></script>
+  <script src="/stats/teams/lineup.js"></script>
   <script>
   // ── Homepage dashboard ──────────────────────────────────────────────────
   //
@@ -1009,7 +1009,7 @@
     // A link to that team's page. `recs` (TEAM → "12–4") adds the record
     // when a season is being played.
     const teamChip = (abbr, recs) =>
-      `<a class="dash-game-team" href="/teams/${esc(String(abbr).toUpperCase())}/">`
+      `<a class="dash-game-team" href="/stats/teams/${esc(String(abbr).toUpperCase())}/">`
       + `<img class="dash-game-logo" src="/logos/sm/logo-${esc(String(abbr).toLowerCase())}.webp" alt="">`
       + `<span>${esc(abbr)}</span>`
       + (recs && recs[abbr] ? `<span class="dash-game-rec">${esc(recs[abbr])}</span>` : '')
@@ -1203,7 +1203,7 @@
 
       // Only the title text is the link: a night's box-score video link is added
       // beside it later, and a link can't sit inside another.
-      card.innerHTML = `<div class="dash-card-title"><a class="ui-title-link" href="/calendar">${esc(title)}</a></div>${head}`
+      card.innerHTML = `<div class="dash-card-title"><a class="ui-title-link" href="/season/calendar">${esc(title)}</a></div>${head}`
         // Grouped under a date heading rather than a date column: the card is
         // too narrow for date + two team chips + time on one line, and the
         // times were spilling out past its edge.
@@ -1230,7 +1230,7 @@
           const [a, h] = String(g.away_team).toUpperCase() === row.dataset.away.toUpperCase()
             ? [g.away_score, g.home_score] : [g.home_score, g.away_score];
           const el = row.querySelector('.dash-game-time');
-          el.href = `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
+          el.href = `/stats/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
           el.title = 'Box score';
           el.classList.add('final');
           el.innerHTML = `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
@@ -1304,7 +1304,7 @@
       // Last name only: the card is too narrow for two full names a row.
       const last = p => nbnPlayerName(String(p.name).split(',')[0]);
       const name = (p, side) => (p
-        ? `<a class="dash-five-name ${side}" href="/players/?p=${encodeURIComponent(p.slug)}" title="${esc(nbnPlayerName(p.name))}">${esc(last(p))}</a>`
+        ? `<a class="dash-five-name ${side}" href="/stats/players/?p=${encodeURIComponent(p.slug)}" title="${esc(nbnPlayerName(p.name))}">${esc(last(p))}</a>`
         : `<span class="dash-five-name ${side}" style="color:var(--text-muted)">—</span>`);
       const ovrCell = (p, q) => `<span class="dash-five-ovr${p && p.OVR && (!q || p.OVR > q.OVR) ? ' edge' : ''}">${p && p.OVR ? esc(p.OVR) : ''}</span>`;
       const avg = s => { const f = s.five.filter(p => p && p.OVR); return f.length ? (f.reduce((n, p) => n + p.OVR, 0) / f.length).toFixed(1) : '—'; };
@@ -1398,7 +1398,7 @@
               type: t.type,
               html: h.html,
               sub: h.sub ? (h.subHtml ? h.sub : esc(h.sub)) : '',
-              href: '/transactions',
+              href: '/fo/transactions',
             };
           }).filter(Boolean);
         });
@@ -1443,7 +1443,7 @@
         type: 'score',
         html: plural(nightGames.length, 'game')
           + `<span class="dash-feed-scores">${games.join(' ')}</span>`,
-        href: `/boxscores/?date=${encodeURIComponent(date)}`,
+        href: `/stats/boxscores/?date=${encodeURIComponent(date)}`,
       };
     };
     const feedFromLatestNight = () => latestNight.then(night =>
@@ -1664,7 +1664,7 @@
       const d = new Date(data.last_report.date + 'T12:00:00');
       const when = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-      card.innerHTML = '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/injuries/">Injury Report'
+      card.innerHTML = '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/season/injuries/">Injury Report'
         + `<span class="dash-inj-date">${esc(when)}</span></a></div></div>`
         + (rows.length ? '<div class="dash-feed-filters">'
           + '<div class="ui-segmented dash-feed-kinds" role="group" aria-label="Status">'
@@ -1693,7 +1693,7 @@
         list.innerHTML = '<div class="ui-table-wrap dash-inj-scroll"><table class="ui-table ui-table--dense dash-inj-table">'
           + '<thead><tr><th>Player</th><th class="dash-inj-status">Status</th><th class="num dash-inj-ovr">OVR</th><th>Injury</th><th>Duration</th></tr></thead><tbody>'
           + shown.map(({ p, out }) => '<tr>'
-            + `<td><a class="dash-inj-player" href="/players/?p=${encodeURIComponent(p.slug)}">`
+            + `<td><a class="dash-inj-player" href="/stats/players/?p=${encodeURIComponent(p.slug)}">`
             + (p.team ? `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">` : '')
             + `${esc(p.name)}</a>`
             + `<div class="dash-inj-status-sm ${out ? 'dash-inj-out' : 'dash-inj-hurt'}">${esc(p.status)}</div></td>`
@@ -1767,7 +1767,7 @@
           + `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/news/view/?id=${encodeURIComponent(latest.id)}">Power Rankings</a></div></div>`
           + `<span class="dash-ranks-edition">${esc(latest.title || 'Latest edition')} · ${esc(shortDate(when))}</span></div>`
           + '<div class="dash-ranks-row">' + top.map(r =>
-              `<a class="dash-rank-team" href="/teams/${esc(String(r.team).toLowerCase())}/" `
+              `<a class="dash-rank-team" href="/stats/teams/${esc(String(r.team).toLowerCase())}/" `
               + `title="${esc(r.team)}">`
               + `<span class="dash-rank-pos">${r.tied ? 'T-' : ''}${r.rank}</span>`
               + `<img src="/logos/sm/logo-${esc(String(r.team).toLowerCase())}.webp" alt="">`
@@ -1816,7 +1816,7 @@
         + `<span class="dash-best-title-date">${esc(shortDate(night.date))}</span></div>`
         + '<div class="dash-best-row">' + lines.map((x, i) => {
           const tag = x.p.slug ? 'a' : 'div';
-          const href = x.p.slug ? ` href="/players/?p=${encodeURIComponent(x.p.slug)}"` : '';
+          const href = x.p.slug ? ` href="/stats/players/?p=${encodeURIComponent(x.p.slug)}"` : '';
           // No photo on file: the team logo stands in, rather than a blank circle.
           const photo = x.p.photo_url
             ? `<img class="dash-best-photo" src="${esc(x.p.photo_url)}" alt="" `
@@ -1852,7 +1852,7 @@
       const finals = games.map(g => {
         const a = Number(g.away_score), h = Number(g.home_score);
         const side = (t, n, won) => `${logo(t)}${won ? `<b>${esc(t)} ${esc(String(n))}</b>` : `${esc(t)} ${esc(String(n))}`}`;
-        return `<a class="ticker-item" href="/boxscores/?date=${encodeURIComponent(night.date)}`
+        return `<a class="ticker-item" href="/stats/boxscores/?date=${encodeURIComponent(night.date)}`
           + `&game=${encodeURIComponent(g.away_team)}-${encodeURIComponent(g.home_team)}">`
           + `${side(g.away_team, a, a > h)}<span aria-hidden="true">·</span>${side(g.home_team, h, h > a)}`
           + '<span class="ticker-final">F</span></a>';
@@ -1867,7 +1867,7 @@
             .filter(([k], i) => i < 3 || p[k] >= 3)
             .map(([k, label]) => `<b>${esc(String(p[k]))}</b><span class="ticker-stat">${label}</span>`).join('');
           const tag = p.slug ? 'a' : 'span';
-          const href = p.slug ? ` href="/players/?p=${encodeURIComponent(p.slug)}"` : '';
+          const href = p.slug ? ` href="/stats/players/?p=${encodeURIComponent(p.slug)}"` : '';
           return `<${tag} class="ticker-item"${href}>${logo(team)}`
             + `<span>${esc(nbnPlayerName(p.player))}</span>${stats}</${tag}>`;
         });
@@ -1878,7 +1878,7 @@
       const injuries = hurt.slice(0, INJ_MAX).map(p => {
         const out = /^out$/i.test(p.status || '');
         const tag = p.slug ? 'a' : 'span';
-        const href = p.slug ? ` href="/players/?p=${encodeURIComponent(p.slug)}"` : '';
+        const href = p.slug ? ` href="/stats/players/?p=${encodeURIComponent(p.slug)}"` : '';
         return `<${tag} class="ticker-item"${href}>${p.team ? logo(p.team) : ''}`
           + `<span>${esc(p.name)}</span>`
           + `<span class="${out ? 'ticker-out' : 'ticker-hurt'}">${esc(p.status)}</span>`
@@ -1888,7 +1888,7 @@
       if (!finals.length && !injuries.length) return;
       const items = finals.join('')
         + (top.length ? '<span class="ticker-head">Top performers</span>' + top.join('') : '')
-        + (injuries.length ? '<a class="ticker-head" href="/injuries/">New injuries'
+        + (injuries.length ? '<a class="ticker-head" href="/season/injuries/">New injuries'
           + (hurt.length > INJ_MAX ? ` <span class="ticker-more">${hurt.length} total</span>` : '')
           + '</a>' + injuries.join('') : '');
       const label = finals.length
@@ -1964,7 +1964,7 @@
       if (f) {
         const [a, h] = String(f.away_team).toUpperCase() === g.away_team.toUpperCase()
           ? [f.away_score, f.home_score] : [f.home_score, f.away_score];
-        score = `<a class="dash-vod-score" title="Box score" href="/boxscores/?date=${encodeURIComponent(g.date)}`
+        score = `<a class="dash-vod-score" title="Box score" href="/stats/boxscores/?date=${encodeURIComponent(g.date)}`
           + `&game=${esc(f.away_team)}-${esc(f.home_team)}">`
           + `<span class="${a > h ? 'win' : ''}">${esc(a)}</span>–`
           + `<span class="${h > a ? 'win' : ''}">${esc(h)}</span> F</a>`;
@@ -1981,14 +1981,14 @@
       if (!date) return;
       vodCard('dash-box-vod', 'Latest Box Scores', date, days[date].youtube_url,
         `${+date.slice(5, 7)}/${+date.slice(8, 10)} Box Scores`,
-        `<a class="dash-vod-score" href="/boxscores/?date=${encodeURIComponent(date)}">Box scores</a>`);
+        `<a class="dash-vod-score" href="/stats/boxscores/?date=${encodeURIComponent(date)}">Box scores</a>`);
     }).catch(() => {});
 
     // ── Standings ─────────────────────────────────────────────────────────
     //
     // Each conference in full, while a season is being played, with games
     // back of its 1 seed. The seeds are the build's own (tiebreaks included),
-    // so this agrees with /standings by construction.
+    // so this agrees with /season/standings by construction.
     //
     // The playoff odds (GET /api/playoff-odds) aren't shown here, but the
     // payload still supplies unplayed teams and the clinch marks.
@@ -1998,10 +1998,10 @@
       if (!seeded.length) return;
       // The odds payload knows every team's conference and season length,
       // which the standings file can't (it lists only teams that have played):
-      // the same fill-in and clinch marks /standings makes.
+      // the same fill-in and clinch marks /season/standings makes.
       const live = odds && odds.season === season && Array.isArray(odds.teams)
         ? new Map(odds.teams.map(t => [t.team, t])) : null;
-      // Same formula as /standings: half a game per win or loss behind the leader.
+      // Same formula as /season/standings: half a game per win or loss behind the leader.
       const gb = (lead, r) => {
         const d = ((+lead.W - +r.W) + (+r.L - +lead.L)) / 2;
         return d === 0 ? '—' : d.toFixed(1);
@@ -2025,7 +2025,7 @@
           + list.map((r, i) =>
           (i === Clinch.PLAYOFF ? '<div class="dash-stand-line" title="Seeds 7–10 play in">Play-in</div>' : '')
           + (i === Clinch.PLAY_IN ? '<div class="dash-stand-line" title="Seeds 11–15 miss the postseason">Lottery</div>' : '')
-          + `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
+          + `<a class="dash-stand-row" href="/stats/teams/${esc(r.TEAM)}/">`
           + `<span class="dash-stand-seed">${i + 1}</span>`
           + `<img src="/logos/sm/logo-${esc(r.TEAM.toLowerCase())}.webp" alt="">`
           + `<span class="dash-stand-abbr">${esc(r.TEAM)}</span>`
@@ -2033,7 +2033,7 @@
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span><span class="dash-stand-gb" title="Games back">${gb(list[0], r)}</span></a>`).join('') + '</div>';
       };
       $('dash-standings').innerHTML =
-        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings">Standings</a></div></div>`
+        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/season/standings">Standings</a></div></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
     }).catch(() => {});
@@ -2041,7 +2041,7 @@
     // ── Ratings movers ────────────────────────────────────────────────────
     //
     // The three biggest OVR gains and drops in the latest 2K scrape, off the
-    // same diff /ratings-changes shows. Stub ratings are left out, as that page
+    // same diff /stats/ratings-changes shows. Stub ratings are left out, as that page
     // keeps them in their own table: they were never synced into the live OVR.
     // `since` keeps the payload to recent scrapes as the history grows; a
     // league that hasn't scraped in six months simply has no card.
@@ -2058,7 +2058,7 @@
       const up = pick(1), down = pick(-1);
       if (!up.length && !down.length) return;
 
-      const row = e => `<a class="dash-stand-row" href="/players/?p=${encodeURIComponent(e.slug)}">`
+      const row = e => `<a class="dash-stand-row" href="/stats/players/?p=${encodeURIComponent(e.slug)}">`
         // No team at scrape time: an unsigned player, marked FA in the logo's place.
         + (e.team ? `<img src="/logos/sm/logo-${esc(String(e.team).toLowerCase())}.webp" alt="" title="${esc(e.team)}">`
                   : '<span class="dash-mover-fa" title="Free agent">FA</span>')
@@ -2072,7 +2072,7 @@
           + list.map(row).join('') + '</div>' : '';
 
       $('dash-movers').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/ratings-changes/">Ratings Movers'
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/stats/ratings-changes/">Ratings Movers'
         + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></a></div></div>`
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
@@ -2080,7 +2080,7 @@
 
     // ── Award race ────────────────────────────────────────────────────────
     //
-    // The leaders of /awards/race, while a season is being played: MVP's top
+    // The leaders of /season/award-race, while a season is being played: MVP's top
     // three, then the leader of each other award. The formulas are
     // award-race.js; this only picks who to show.
     Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise]).then(async ([season, rows, stand]) => {
@@ -2091,7 +2091,7 @@
       const lad = key => AwardRace.ladder(key, rows, season, pct, { starts });
       const mvp = lad('MVP').slice(0, 3);
       if (!mvp.length) return;
-      const row = (award, p, num) => `<a class="dash-race-row" href="/awards/race/">`
+      const row = (award, p, num) => `<a class="dash-race-row" href="/season/award-race/">`
         + `<span class="dash-race-award">${esc(award)}</span>`
         + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
         + `<span class="dash-race-name">${esc(nbnPlayerName(p.name))}</span>`
@@ -2103,14 +2103,14 @@
            ['MIP', 'MIP', p => `+${(p.gmscPg - p.prevGmscPg).toFixed(1)} GmSc`]]
           .map(([key, label, num]) => { const top = lad(key)[0]; return top ? row(label, top, num(top)) : ''; }).join('');
       $('dash-race').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/awards/race/">Award Race</a></div></div>' + html;
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/season/award-race/">Award Race</a></div></div>' + html;
       $('dash-race').hidden = false;
     }).catch(() => {});
 
     // ── Rookie watch ──────────────────────────────────────────────────────
     //
     // This season's draft class, ranked by the same ROTY ladder as
-    // /awards/race (award-race.js), with each rookie's draft slot and line.
+    // /season/award-race (award-race.js), with each rookie's draft slot and line.
     const ROOKIES_SHOWN = 5;
     Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise]).then(([season, rows, stand]) => {
       if (!season || !window.AwardRace) return;
@@ -2123,8 +2123,8 @@
       const slot = p => (p.draftPick && p.draftPick !== 'NA' ? `Pick #${p.draftPick}` : 'Undrafted');
       const pg = (p, f) => (p[f] / p.G).toFixed(1);
       $('dash-rookies').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/awards/race/">Rookie Watch</a></div></div>'
-        + list.map(p => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(p.slug)}">`
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/season/award-race/">Rookie Watch</a></div></div>'
+        + list.map(p => `<a class="dash-stand-row dash-ms-row" href="/stats/players/?p=${encodeURIComponent(p.slug)}">`
           + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(p.name))}</span>`
           + `<span class="dash-rookie-pick">${esc(slot(p))}</span>`
@@ -2146,7 +2146,7 @@
       if (!list.length) return;
       $('dash-milestones').innerHTML =
         '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/stats/totals">Milestone Watch</a></div></div>'
-        + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/players/?p=${encodeURIComponent(m.slug)}">`
+        + list.map(m => `<a class="dash-stand-row dash-ms-row" href="/stats/players/?p=${encodeURIComponent(m.slug)}">`
           + `<img src="/logos/sm/logo-${esc(m.team.toLowerCase())}.webp" alt="" title="${esc(m.team)}">`
           + `<span class="dash-mover-name">${esc(nbnPlayerName(m.name))}</span>`
           + `<span class="dash-mover-ovr" title="At their per-game rate from ${esc(data.careers[m.slug].rateSeason || 'their career')}">${esc(Milestones.eta(m))}</span>`
@@ -2173,7 +2173,7 @@
         const L = g.line || {};
         const away = g.home ? g.opp : g.team, home = g.home ? g.team : g.opp;
         items.push({ rank: g.feat ? 2 : 4, date: g.date,
-          href: `/boxscores/?date=${encodeURIComponent(g.date)}&game=${encodeURIComponent(away)}-${encodeURIComponent(home)}`,
+          href: `/stats/boxscores/?date=${encodeURIComponent(g.date)}&game=${encodeURIComponent(away)}-${encodeURIComponent(home)}`,
           html: `<b>${esc(nbnPlayerName(g.player))}</b> ${L.P} pts, ${L.R} reb, ${L.A} ast `
             + `<span class="dash-otd-sub">${g.home ? 'vs' : '@'} ${esc(g.opp)}${g.playoff ? ' · playoffs' : ''}${g.feat ? ' · ' + esc(g.feat) : ''}</span>` });
       });
@@ -2186,7 +2186,7 @@
         const ctx = headlineCtx(bios);
         trades.forEach(t => {
           const h = FeedTypes.headline(t, ctx);
-          if (h) items.push({ rank: 3, date: t.date, href: '/transactions', html: h.html });
+          if (h) items.push({ rank: 3, date: t.date, href: '/fo/transactions', html: h.html });
         });
       }
       if (!items.length) return;
@@ -2227,7 +2227,7 @@
           ? `<img class="dash-tw-av dash-tw-av--logo" src="/logos/sm/logo-${esc(t.team.toLowerCase())}.webp" alt="">`
           : `<span class="dash-tw-av dash-tw-av--init">${esc(t.name.replace(/[^A-Za-z0-9]/g, '').charAt(0).toUpperCase())}</span>`;
       const game = t.teams && t.teams.length === 2
-        ? `<a href="/boxscores/?date=${encodeURIComponent(t.date)}&game=${esc(t.teams[0])}-${esc(t.teams[1])}">${esc(t.teams[0])} @ ${esc(t.teams[1])}</a>`
+        ? `<a href="/stats/boxscores/?date=${encodeURIComponent(t.date)}&game=${esc(t.teams[0])}-${esc(t.teams[1])}">${esc(t.teams[0])} @ ${esc(t.teams[1])}</a>`
         : '';
       return `<div class="dash-tw">${av}<div style="min-width:0">`
         + `<div class="dash-tw-who"><b>${esc(t.name)}</b> <span>@${esc(t.handle)} · ${esc(shortDate(t.date))}</span></div>`
@@ -2344,7 +2344,7 @@
       }
 
       const headHtml = `<div class="dash-team-head">`
-        + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
+        + `<a class="dash-team-id" href="/stats/teams/${esc(abbr)}/">`
         + `<img src="/logos/sm/logo-${esc(abbr)}.webp" alt="">`
         + `<div><div class="dash-team-name">${esc(teamName)}</div>`
         + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div></a>`
@@ -2358,7 +2358,7 @@
       if (last) {
         const home = last.home_team === team;
         const [us, them] = home ? [last.home_score, last.away_score] : [last.away_score, last.home_score];
-        glance.push(`<a class="dash-glance" href="/boxscores/?date=${esc(last.date)}&game=${esc(last.away_team)}-${esc(last.home_team)}">`
+        glance.push(`<a class="dash-glance" href="/stats/boxscores/?date=${esc(last.date)}&game=${esc(last.away_team)}-${esc(last.home_team)}">`
           + `<span class="dash-line-label">Last</span> `
           + `<span class="${us > them ? 'tone-ok' : 'tone-violation'}">${us > them ? 'W' : 'L'}</span> ${esc(us)}–${esc(them)} `
           + `${home ? 'vs' : '@'} ${esc(home ? last.away_team : last.home_team)}</a>`);
@@ -2439,7 +2439,7 @@
           .filter(w => w.severity === 'violation' || w.severity === 'caution')
           .forEach(w => chips.push({
             tone: w.severity, text: w.short || w.text, title: w.text,
-            href: `/teams/${abbr}/`,
+            href: `/stats/teams/${abbr}/`,
           }));
       }
 
@@ -2522,9 +2522,9 @@
       // to a `#tab-coaching` anchor that would only scroll to a hidden panel.)
       jget('/api/coaching-settings', { headers: auth }).then(all => {
         const rec = all && all[team];
-        if (!rec) add('caution', 'No coaching settings', `/teams/${abbr}/`,
+        if (!rec) add('caution', 'No coaching settings', `/stats/teams/${abbr}/`,
                       'This team has never submitted a coaching-settings blob');
-        else if (rec.pending) add('note', 'Coaching settings queued', `/teams/${abbr}/`,
+        else if (rec.pending) add('note', 'Coaching settings queued', `/stats/teams/${abbr}/`,
                       'Saved, waiting for a streamer to enter them into 2K');
       }).catch(() => {}).then(done);
 
@@ -2537,7 +2537,7 @@
         if (!open.length) return;
         const hrs = Math.max(0, Math.round((Date.parse(open[0].deadline) - Date.now()) / 3.6e6));
         add(hrs <= 24 ? 'caution' : 'note',
-          `${open.length} on waivers · ${hrs}h left`, '/transactions',
+          `${open.length} on waivers · ${hrs}h left`, '/fo/transactions',
           `${plural(open.length, 'player')} you have not claimed; the next window closes in ${plural(hrs, 'hour')}`);
       }).catch(() => {}).then(done);
 
@@ -2546,11 +2546,11 @@
       jget(`/api/fa/offers?team=${encodeURIComponent(team)}`, { headers: auth }).then(offers => {
         const n = s => (offers || []).filter(o => o.status === s).length;
         if (n('returned')) add('violation', `${n('returned')} FA offer${n('returned') === 1 ? '' : 's'} returned`,
-                                '/free-agency/', 'Remanded to you by the committee — needs another look');
+                                '/fo/free-agency/', 'Remanded to you by the committee — needs another look');
         if (n('draft')) add('caution', `${n('draft')} FA offer${n('draft') === 1 ? '' : 's'} unsubmitted`,
-                            '/free-agency/', 'Drafted but never submitted');
+                            '/fo/free-agency/', 'Drafted but never submitted');
         if (n('submitted')) add('note', `${n('submitted')} offer${n('submitted') === 1 ? '' : 's'} pending`,
-                                '/free-agency/', 'Submitted and with the committee — nothing needed from you');
+                                '/fo/free-agency/', 'Submitted and with the committee — nothing needed from you');
       }).catch(() => {}).then(done);
 
       // Open FFA windows the league is bidding into. Public — § 9.2 already
@@ -2564,7 +2564,7 @@
         if (!open.length) return;
         const hrs = Math.max(0, Math.round((Date.parse(open[0][1].ffa_deadline) - Date.now()) / 3.6e6));
         add('note',
-          `${open.length} FFA open · ${hrs}h left`, '/free-agency/',
+          `${open.length} FFA open · ${hrs}h left`, '/fo/free-agency/',
           `${plural(open.length, 'free agent')} accepting offers; the next window closes in ${plural(hrs, 'hour')}`);
       }).catch(() => {}).then(done);
 
@@ -2572,12 +2572,12 @@
       // string — nothing about the rule is re-derived here.
       jget('/api/poext/eligible').then(list => {
         const n = (list || []).filter(p => p.team === team && p.eligible).length;
-        if (n) add('note', `${n} extension-eligible`, '/extensions/',
+        if (n) add('note', `${n} extension-eligible`, '/fo/extensions/',
                    `${plural(n, 'player')} on this roster meets § 6.2's eligibility rules`);
       }).catch(() => {}).then(done);
 
       // Guarantee/vesting dates inside 30 days. Reads `guarantee_schedule`,
-      // the field /calendar renders from; its `guarantee_dates` fallback is
+      // the field /season/calendar renders from; its `guarantee_dates` fallback is
       // dead league-wide (present on 625 players, non-empty on none), so
       // leaving it out cannot change what shows. Deferred to an idle callback:
       // /api/players is 83KB gzipped, by far the heaviest thing here, and no
@@ -2604,7 +2604,7 @@
           if (d > 30) return;
           const amt = steps[0].amount ? ` · ${fmtM(steps[0].amount)}` : '';
           add(d <= 7 ? 'caution' : 'note',
-            `Guarantee in ${d}d${amt}`, '/calendar',
+            `Guarantee in ${d}d${amt}`, '/season/calendar',
             `${steps[0].slug} — ${steps[0].date}`);
         })).catch(() => {}).then(done);
       if (window.requestIdleCallback) requestIdleCallback(soon, { timeout: 3000 });

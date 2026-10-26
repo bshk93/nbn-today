@@ -73,52 +73,52 @@ SCHEMA = {
          "playoff_w", "playoff_l", "playoff_pct", "total_w", "total_l",
          "total_pct", "playoff_appearances", "po_r2", "po_conf_finals",
          "po_finals", "championships", "off_rtg", "def_rtg"],
-        1, "owners/index.html",
+        1, "stats/owners/index.html",
     ),
     "standings/standings-history.csv": (
         ["SEASON", "W", "L", "PCT", "PPG", "OPPG", "DIFF", "SEED", "SEED_NUM",
          "OFF_RTG", "DEF_RTG", "PLAYOFF_RESULT", "FOTY", "COTY", "TEAM"],
-        30, "standings/index.html",
+        30, "season/standings/index.html",
     ),
     "standings/playoff-brackets.csv": (
         ["SEASON", "ROUND", "T1", "T2", "T1_W", "T2_W", "WINNER",
          "T1_SEED", "T1_SEED_NUM", "T2_SEED", "T2_SEED_NUM"],
-        1, "standings/index.html",
+        1, "season/standings/index.html",
     ),
     "nbntv-classics/playoff-series-margins.csv": (
         ["SEASON", "ROUND", "T1", "T2", "GAMES", "AVG_MARGIN", "WINNER"],
-        1, "nbntv-classics/index.html",
+        1, "media/nbntv-classics/index.html",
     ),
     "nbntv-classics/playoff-classics.csv": (
         ["RANK", "SEASON", "DATE", "PLAYER", "TEAM", "OPP", "GMSC"],
-        1, "nbntv-classics/index.html",
+        1, "media/nbntv-classics/index.html",
     ),
     "players/player_seasons.csv": (
-        PLAYER_SEASON_COLS + ["RINGS"], 1, "players/index.html",
+        PLAYER_SEASON_COLS + ["RINGS"], 1, "stats/players/index.html",
     ),
     "players/player_seasons_playoffs.csv": (
-        PLAYER_SEASON_COLS, 1, "players/index.html",
+        PLAYER_SEASON_COLS, 1, "stats/players/index.html",
     ),
     "players/player_awards.csv": (
-        ["SLUG", "PLAYER", "SEASON", "AWARD"], 1, "players/index.html",
+        ["SLUG", "PLAYER", "SEASON", "AWARD"], 1, "stats/players/index.html",
     ),
     "data/hof.csv": (
         ["PLAYER", "TEAMS", "HOF_POINTS", "RINGS", "PLAYOFF_APPS", "ALLSTARS",
          "ALL_NBN_1", "ALL_NBN_2", "ALL_NBN_3", "MVP", "DPOY", "ALL_DEF",
          "SIX_MOY", "ROY", "MIP", "G", "M", "P", "R", "A", "S", "B", "ACTIVE"],
-        1, "hof/index.html",
+        1, "history/hof/index.html",
     ),
     "data/league-history.csv": (
         ["SEASON", "CHAMPION", "RUNNER_UP", "MVP", "DPOY", "ROTY", "MIP",
          "FOTY", "COTY", "PTS_LEADER", "REB_LEADER", "AST_LEADER",
          "STL_LEADER", "BLK_LEADER", "TPM_LEADER", "BEST_OFF", "BEST_DEF",
          "BEST_OVERALL"],
-        1, "season-summary/index.html",
+        1, "history/season-summary/index.html",
     ),
     "data/franchise-records.csv": (
         ["TEAM", "STAT", "RANK", "VALUE", "PLAYER", "SLUG", "DATE", "SEASON",
          "OPP", "gametype"],
-        30, "teams/team.js (Franchise Records)",
+        30, "stats/teams/team.js (Franchise Records)",
     ),
     # The Front Office Ledger (nbn-api stats_build/finances.py). DEAD_MONEY is
     # read too but left out: it is blank until a cap snapshot carries dead_cap.
@@ -128,30 +128,30 @@ SCHEMA = {
          "PLAYOFF_HOME_GAMES", "PLAYOFF_GATE", "CONCESSIONS", "MERCH", "MEDIA",
          "NBNTV", "TITLE_BONUS", "TAX_SHARE", "REVENUE", "PAYROLL", "LUXURY_TAX", "ARENA_OPS",
          "PROFIT", "VALUE", "VALUE_CHANGE"],
-        30, "finances/index.html",
+        30, "fo/finances/index.html",
     ),
     "data/franchise-owners.csv": (
         ["OWNER", "TEAM", "SEASONS", "FIRST", "LAST", "IN_PROGRESS", "TITLES",
          "START_VALUE", "END_VALUE", "VS_LEAGUE"],
-        30, "finances/index.html (Owners)",
+        30, "fo/finances/index.html (Owners)",
     ),
-    "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "h2h/index.html"),
-    "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
-    "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),
+    "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "stats/h2h/index.html"),
+    "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "stats/h2h/index.html"),
+    "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "stats/h2h/index.html"),
 }
 
 for _t in TEAMS:
     SCHEMA[f"data/{_t}-seasons.csv"] = (
         ["SEASON", "W", "L", "PCT", "PPG", "OPPG", "DIFF", "SEED", "SEED_NUM",
          "OFF_RTG", "DEF_RTG", "PLAYOFF_RESULT", "FOTY", "COTY"],
-        1, f"teams/{_t.upper()}/",
+        1, f"stats/teams/{_t.upper()}/",
     )
     SCHEMA[f"data/{_t}-players.csv"] = (
         ["PLAYER", "GP", "GMSC_TOT", "GMSC_AVG", "PPG", "RPG", "APG", "SPG",
          "BPG", "3PMPG", "SEASONS"],
-        1, f"teams/{_t.upper()}/",
+        1, f"stats/teams/{_t.upper()}/",
     )
-    SCHEMA[f"data/{_t}-roster.csv"] = (["SLUG"], 0, f"teams/{_t.upper()}/")
+    SCHEMA[f"data/{_t}-roster.csv"] = (["SLUG"], 0, f"stats/teams/{_t.upper()}/")
 
 
 class Report:
@@ -275,7 +275,7 @@ def check_rulebook_badges(report):
     if proc.returncode == 0:
         report.ok(f"rulebook badges match the enforcement manifest{' (skipped)' if out.startswith('skip:') else ''}")
     else:
-        report.error("rulebook/index.html", "badges disagree with nbn-api's "
+        report.error("about/rulebook/index.html", "badges disagree with nbn-api's "
                      "enforcement manifest; run build/check_rulebook_badges.py "
                      "--fix\n      " + out.replace("\n", "\n      "))
 

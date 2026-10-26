@@ -57,7 +57,7 @@ for src in repo.rglob('index.html'):
     rel = src.relative_to(repo)
     # teams/ are 30 identical shells rendered entirely by team.js; auditing one
     # would be enough, and auditing thirty is thirty Chrome launches.
-    if rel.as_posix().startswith(('build/', 'teams/')):
+    if rel.as_posix().startswith(('build/', 'stats/teams/')):
         continue
     name = rel.parent.as_posix() or '.'
     if only and name not in only:

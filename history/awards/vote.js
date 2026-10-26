@@ -1,0 +1,555 @@
+(function () {
+  // Infer season from URL: /history/awards/25-26/vote/ → '25-26'
+  const SEASON = (location.pathname.match(/\/(\d\d-\d\d)(\/|$)/) || [])[1];
+
+  document.title = 'NBN | ' + SEASON + ' Ballot';
+
+  // theme.css and nav-chrome.css are <link>ed from the page's <head>: a
+  // stylesheet a script inserts doesn't hold up the first paint.
+  { const _s = document.createElement('style'); _s.textContent = `
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-page); color: var(--text-primary);
+      min-height: 100vh; padding: 2rem 1rem 4rem;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page { max-width: 1060px; margin: 0 auto; }
+
+
+    header { margin-bottom: 1.75rem; }
+    header h1 { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); margin-top: 0.4rem; font-size: var(--text-base); }
+
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
+
+    .awards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .award-section-full { margin-bottom: 1.5rem; }
+
+    .award-heading {
+      font-size: var(--text-xs); font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+
+    /* Pick list */
+    .pick-list { margin-bottom: 0.4rem; }
+
+    .tier-label {
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-dim); margin: 0.65rem 0 0.3rem;
+    }
+
+    .pick-item {
+      display: flex; align-items: center; gap: 0.45rem;
+      padding: 0.45rem 0.65rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); margin-bottom: 3px;
+      user-select: none;
+    }
+    .pick-item[draggable="true"] { cursor: grab; }
+    .pick-item[draggable="true"]:active { cursor: grabbing; }
+    .pick-item.empty { opacity: 0.4; }
+    .pick-item.dragging { opacity: 0.25; border-style: dashed; }
+    .pick-item.drag-over { border-color: var(--link); background: var(--bg-hover); }
+
+    .pick-handle {
+      color: var(--text-dim); font-size: var(--text-sm); line-height: 1;
+      flex-shrink: 0; letter-spacing: -1px;
+    }
+    .pick-item.empty .pick-handle { visibility: hidden; }
+
+    .pick-rank {
+      width: 1.5rem; text-align: right; flex-shrink: 0;
+      color: var(--text-muted); font-size: var(--text-xs);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pick-name {
+      flex: 1; font-size: var(--text-base); font-weight: 600; color: var(--text-primary);
+      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pick-item.empty .pick-name { color: var(--border); font-weight: 400; font-style: italic; }
+    .pick-ineligible { font-size: var(--text-xs); font-weight: 500; color: var(--danger); flex-shrink: 0; }
+
+    .pick-remove {
+      background: none; border: none; color: var(--text-dim);
+      cursor: pointer; font-size: var(--text-base); line-height: 1;
+      padding: 0 0.1rem; flex-shrink: 0; transition: color 0.1s;
+    }
+    .pick-remove:hover { color: var(--danger); }
+
+    /* Search */
+    .search-wrap { position: relative; }
+    .search-input {
+      width: 100%; padding: 0.45rem 0.65rem;
+      background: var(--bg-page); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); color: var(--text-primary);
+      font-size: var(--text-sm); outline: none; font-family: inherit;
+    }
+    .search-input:focus { border-color: var(--text-dim); }
+    .search-input::placeholder { color: var(--border); }
+
+    .search-dropdown {
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); z-index: 20;
+      max-height: 220px; overflow-y: auto;
+    }
+    .search-option {
+      padding: 0.4rem 0.65rem; cursor: pointer;
+      font-size: var(--text-sm); color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .search-option:last-child { border-bottom: none; }
+    .search-option:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    /* Save bar */
+    .save-bar {
+      display: flex; align-items: center; justify-content: flex-end;
+      padding-top: 1.25rem; margin-top: 0.5rem;
+      border-top: 1px solid var(--bg-card);
+    }
+    .save-status { font-size: var(--text-sm); color: var(--text-muted); }
+    .save-status.saving { color: var(--warning); }
+    .save-status.saved  { color: var(--market-positive); }
+    .save-status.error  { color: var(--danger); }
+
+    /* Readonly banner */
+    .readonly-banner {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+      font-size: var(--text-base); color: var(--text-muted);
+    }
+  `; document.head.appendChild(_s); }
+
+  document.body.innerHTML = `
+    <div class="page ui-page">
+      <nav class="nav">
+        <a href="/history/awards/">← Awards</a> ·
+        <a href="/history/awards/${SEASON}/results/">View Results</a>
+      </nav>
+      <header>
+        <h1 id="page-title" class="ui-title">${SEASON} Ballot</h1>
+        <p id="page-sub">Loading…</p>
+      </header>
+      <div id="ballot-container">
+        <div id="status">Loading…</div>
+      </div>
+    </div>
+  `;
+
+  const AWARDS = [
+    { key: 'MVP',         label: 'MVP',         size: 3,  isTeam: false, tierSize: null, rookiesOnly: false },
+    { key: 'DPOY',        label: 'DPOY',        size: 3,  isTeam: false, tierSize: null, rookiesOnly: false },
+    { key: 'ROTY',        label: 'ROTY',        size: 3,  isTeam: false, tierSize: null, rookiesOnly: true  },
+    { key: '6MOY',        label: '6MOY',        size: 3,  isTeam: false, tierSize: null, rookiesOnly: false },
+    { key: 'MIP',         label: 'MIP',         size: 3,  isTeam: false, tierSize: null, rookiesOnly: false },
+    { key: 'FOTY',        label: 'FOTY',        size: 3,  isTeam: true,  tierSize: null, rookiesOnly: false },
+    { key: 'COTY',        label: 'COTY',        size: 3,  isTeam: true,  tierSize: null, rookiesOnly: false },
+    { key: 'All-NBN',     label: 'All-NBN',     size: 15, isTeam: false, tierSize: 5,   rookiesOnly: false },
+    { key: 'All-Defense', label: 'All-Defense', size: 10, isTeam: false, tierSize: 5,   rookiesOnly: false },
+    { key: 'All-Rookie',  label: 'All-Rookie',  size: 10, isTeam: false, tierSize: 5,   rookiesOnly: true  },
+  ];
+
+  const TEAMS = {
+    ATL: 'Atlanta Hawks',    BKN: 'Brooklyn Nets',       BOS: 'Boston Celtics',
+    CHA: 'Charlotte Hornets',CHI: 'Chicago Bulls',        CLE: 'Cleveland Cavaliers',
+    DAL: 'Dallas Mavericks', DEN: 'Denver Nuggets',       DET: 'Detroit Pistons',
+    GSW: 'Golden State Warriors', HOU: 'Houston Rockets', IND: 'Indiana Pacers',
+    LAC: 'LA Clippers',      LAL: 'Los Angeles Lakers',   MEM: 'Memphis Grizzlies',
+    MIA: 'Miami Heat',       MIL: 'Milwaukee Bucks',      MIN: 'Minnesota Timberwolves',
+    NOP: 'New Orleans Pelicans', NYK: 'New York Knicks',  OKC: 'Oklahoma City Thunder',
+    ORL: 'Orlando Magic',    PHI: 'Philadelphia 76ers',   PHX: 'Phoenix Suns',
+    POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings', SAS: 'San Antonio Spurs',
+    TOR: 'Toronto Raptors',  UTA: 'Utah Jazz',            WAS: 'Washington Wizards',
+  };
+
+  const TEAM_ROLES = new Set([
+    'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',
+    'hou','ind','lac','lal','mem','mia','mil','min','nop','nyk',
+    'okc','orl','phi','phx','por','sac','sas','tor','uta','was',
+  ]);
+
+  function isFirstYearPlayer(bio) {
+    const sal = bio.salaries || {};
+    return !!sal[SEASON] && !Object.keys(sal).some(s => s < SEASON);
+  }
+
+  let bios = {};
+  // 6MOY eligibility (rulebook § 8.1), from GET /api/game-starters/sixth-man:
+  // slug → {gs, known, eligible}. A player not in it is eligible.
+  let sixthMan = {};
+  const sixthManOut = slug => sixthMan[slug] && !sixthMan[slug].eligible;
+  let ballot = {};
+  let teamAbb = null;
+  let token = null;
+  let isEditable = false;
+  let dragFrom = null;
+
+  // ---- Helpers ----
+  function dispName(slug) {
+    const bio = bios[slug];
+    if (!bio) return slug;
+    const n = bio.name || slug;
+    if (!n.includes(',')) return n;
+    const [last, first] = n.split(',').map(s => s.trim());
+    return `${first} ${last}`;
+  }
+
+  function safeId(key) { return key.replace(/[^a-zA-Z0-9]/g, '-'); }
+
+  // ---- Ballot ops ----
+  function compact(key) {
+    const aw = AWARDS.find(a => a.key === key);
+    const filled = ballot[key].filter(Boolean);
+    ballot[key] = [...filled, ...new Array(aw.size - filled.length).fill(null)];
+  }
+
+  function addPick(key, slug) {
+    const idx = ballot[key].indexOf(null);
+    if (idx === -1) return;
+    ballot[key][idx] = slug;
+    renderAward(key);
+    scheduleSave();
+  }
+
+  function removePick(key, idx) {
+    ballot[key][idx] = null;
+    compact(key);
+    renderAward(key);
+    scheduleSave();
+  }
+
+  function movePick(key, fromIdx, toIdx) {
+    if (fromIdx === toIdx) return;
+    const arr = ballot[key];
+    const [item] = arr.splice(fromIdx, 1);
+    arr.splice(toIdx, 0, item);
+    renderAward(key);
+    scheduleSave();
+  }
+
+  // ---- Render ----
+  function renderAward(key) {
+    const aw = AWARDS.find(a => a.key === key);
+    const section = document.getElementById(`award-${safeId(key)}`);
+    if (!section) return;
+    const list = section.querySelector('.pick-list');
+    list.innerHTML = '';
+
+    ballot[key].forEach((slug, idx) => {
+      if (aw.tierSize && idx % aw.tierSize === 0) {
+        const tierEl = document.createElement('div');
+        tierEl.className = 'tier-label';
+        tierEl.textContent = ['1st Team', '2nd Team', '3rd Team'][Math.floor(idx / aw.tierSize)];
+        list.appendChild(tierEl);
+      }
+
+      const item = document.createElement('div');
+      item.className = `pick-item${slug ? '' : ' empty'}`;
+
+      const handle = document.createElement('span');
+      handle.className = 'pick-handle';
+      handle.textContent = '⠿';
+
+      const rank = document.createElement('span');
+      rank.className = 'pick-rank';
+      rank.textContent = idx + 1;
+
+      const name = document.createElement('span');
+      name.className = 'pick-name';
+      name.textContent = slug
+        ? (aw.isTeam ? (TEAMS[slug] || slug) : dispName(slug))
+        : 'Empty';
+
+      item.appendChild(handle);
+      item.appendChild(rank);
+      item.appendChild(name);
+
+      if (key === '6MOY' && sixthManOut(slug)) {
+        const note = document.createElement('span');
+        note.className = 'pick-ineligible';
+        note.textContent = `Not eligible: started ${sixthMan[slug].gs} of ${sixthMan[slug].known}`;
+        note.title = 'Sixth Man of the Year needs more games off the bench than started (rulebook § 8.1)';
+        item.appendChild(note);
+      }
+
+      if (isEditable && slug) {
+        item.draggable = true;
+
+        item.addEventListener('dragstart', e => {
+          dragFrom = { key, idx };
+          e.dataTransfer.effectAllowed = 'move';
+          setTimeout(() => item.classList.add('dragging'), 0);
+        });
+        item.addEventListener('dragend', () => {
+          item.classList.remove('dragging');
+          document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+          dragFrom = null;
+        });
+        item.addEventListener('dragover', e => {
+          if (!dragFrom || dragFrom.key !== key) return;
+          e.preventDefault();
+          document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over'));
+          item.classList.add('drag-over');
+        });
+        item.addEventListener('drop', e => {
+          e.preventDefault();
+          item.classList.remove('drag-over');
+          if (!dragFrom || dragFrom.key !== key) return;
+          movePick(key, dragFrom.idx, idx);
+        });
+
+        const rm = document.createElement('button');
+        rm.className = 'pick-remove';
+        rm.textContent = '×';
+        rm.title = 'Remove';
+        rm.addEventListener('click', () => removePick(key, idx));
+        item.appendChild(rm);
+      }
+
+      list.appendChild(item);
+    });
+  }
+
+  function renderAll() { AWARDS.forEach(aw => renderAward(aw.key)); }
+
+  // ---- Search ----
+  let searchTimer = null;
+
+  function getSearchResults(q, aw) {
+    const lq = q.toLowerCase();
+    if (aw.isTeam) {
+      return Object.entries(TEAMS)
+        .filter(([abbr, name]) => abbr.toLowerCase().includes(lq) || name.toLowerCase().includes(lq))
+        .slice(0, 8)
+        .map(([abbr, name]) => ({ slug: abbr, label: name }));
+    }
+    const cur = new Set(ballot[aw.key].filter(Boolean));
+    return Object.entries(bios)
+      .filter(([slug, bio]) => {
+        if (cur.has(slug)) return false;
+        if (aw.rookiesOnly && !isFirstYearPlayer(bio)) return false;
+        if (aw.key === '6MOY' && sixthManOut(slug)) return false;
+        return dispName(slug).toLowerCase().includes(lq) || slug.includes(lq);
+      })
+      .slice(0, 8)
+      .map(([slug]) => ({ slug, label: dispName(slug) }));
+  }
+
+  function setupSearch(aw) {
+    const section = document.getElementById(`award-${safeId(aw.key)}`);
+    const input = section.querySelector('.search-input');
+    const dropdown = section.querySelector('.search-dropdown');
+    if (!input) return;
+
+    input.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if (!q) { dropdown.innerHTML = ''; dropdown.hidden = true; return; }
+      searchTimer = setTimeout(() => {
+        const results = getSearchResults(q, aw);
+        dropdown.innerHTML = '';
+        if (!results.length) { dropdown.hidden = true; return; }
+        results.forEach(({ slug, label }) => {
+          const opt = document.createElement('div');
+          opt.className = 'search-option';
+          opt.textContent = label;
+          opt.addEventListener('mousedown', e => {
+            e.preventDefault();
+            addPick(aw.key, slug);
+            input.value = '';
+            dropdown.hidden = true;
+          });
+          dropdown.appendChild(opt);
+        });
+        dropdown.hidden = false;
+      }, 150);
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { input.value = ''; dropdown.hidden = true; }
+    });
+
+    document.addEventListener('click', e => {
+      if (!section.contains(e.target)) dropdown.hidden = true;
+    }, { capture: true });
+  }
+
+  // ---- Save ----
+  let saveTimer = null;
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    setSaveStatus('saving');
+    saveTimer = setTimeout(doSave, 1500);
+  }
+
+  function setSaveStatus(state, message) {
+    const el = document.getElementById('save-status');
+    if (!el) return;
+    el.className = `save-status ${state}`;
+    if (state === 'saving') el.textContent = 'Saving…';
+    else if (state === 'saved') el.textContent = 'Saved';
+    else el.textContent = message || 'Error saving — check your connection';
+  }
+
+  async function doSave() {
+    try {
+      const res = await fetch(`/api/awards-ballots/${SEASON}/${teamAbb}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(ballot),
+      });
+      if (res.status === 422) {
+        // A refused pick (§ 8.1) says who and why; nothing was saved.
+        const detail = (await res.json().catch(() => ({}))).detail;
+        setSaveStatus('error', `Not saved. ${(detail && detail.message) || 'The ballot was refused.'}`);
+        return;
+      }
+      if (!res.ok) throw new Error();
+      setSaveStatus('saved');
+    } catch {
+      setSaveStatus('error');
+    }
+  }
+
+  // ---- Build DOM ----
+  function buildSection(aw) {
+    const section = document.createElement('div');
+    section.id = `award-${safeId(aw.key)}`;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'award-heading';
+    h2.textContent = aw.label;
+    section.appendChild(h2);
+
+    const list = document.createElement('div');
+    list.className = 'pick-list';
+    section.appendChild(list);
+
+    if (isEditable) {
+      const wrap = document.createElement('div');
+      wrap.className = 'search-wrap';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'search-input';
+      input.placeholder = aw.isTeam ? 'Search teams…' : 'Search players…';
+      const dropdown = document.createElement('div');
+      dropdown.className = 'search-dropdown';
+      dropdown.hidden = true;
+      wrap.appendChild(input);
+      wrap.appendChild(dropdown);
+      section.appendChild(wrap);
+    }
+
+    return section;
+  }
+
+  function buildPage() {
+    const container = document.getElementById('ballot-container');
+    container.innerHTML = '';
+
+    if (!isEditable) {
+      const banner = document.createElement('div');
+      banner.className = 'readonly-banner';
+      banner.textContent = 'Voting has closed — this ballot is read-only.';
+      container.appendChild(banner);
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'awards-grid';
+    AWARDS.slice(0, 7).forEach(aw => grid.appendChild(buildSection(aw)));
+    container.appendChild(grid);
+
+    AWARDS.slice(7).forEach(aw => {
+      const wrap = document.createElement('div');
+      wrap.className = 'award-section-full';
+      wrap.appendChild(buildSection(aw));
+      container.appendChild(wrap);
+    });
+
+    if (isEditable) {
+      const bar = document.createElement('div');
+      bar.className = 'save-bar';
+      const status = document.createElement('span');
+      status.id = 'save-status';
+      status.className = 'save-status';
+      bar.appendChild(status);
+      container.appendChild(bar);
+      AWARDS.forEach(aw => setupSearch(aw));
+    }
+  }
+
+  // ---- Init ----
+  async function showMsg(msg) {
+    document.getElementById('ballot-container').innerHTML = `<div id="status">${msg}</div>`;
+  }
+
+  async function init() {
+    token = localStorage.getItem('nbn_token');
+    if (!token) { showMsg('No token found. Set your token to access your ballot.'); return; }
+
+    let me, config;
+    try {
+      [me, config] = await Promise.all([
+        fetch('/api/me', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.ok ? r.json() : null),
+        fetch('/api/awards-config').then(r => r.ok ? r.json() : {}),
+      ]);
+    } catch { showMsg('Failed to load. Please try again.'); return; }
+
+    if (!me) { showMsg('Invalid or expired token.'); return; }
+
+    const teamRole = (me.roles || []).find(r => TEAM_ROLES.has(r));
+    if (!teamRole) { showMsg('No team associated with your token.'); return; }
+
+    teamAbb = teamRole.toUpperCase();
+    isEditable = !(config[SEASON] || {}).revealed;
+
+    document.getElementById('page-title').textContent = `${SEASON} Ballot — ${TEAMS[teamAbb] || teamAbb}`;
+    document.getElementById('page-sub').textContent = isEditable
+      ? 'Voting is open. Changes save automatically.'
+      : 'Voting has closed. Results have been released.';
+
+    const [biosRes, ballotRes, sixthRes] = await Promise.allSettled([
+      fetch('/api/players'),
+      fetch(`/api/awards-ballots/${SEASON}/${teamAbb}`, { headers: { 'Authorization': `Bearer ${token}` } }),
+      fetch(`/api/game-starters/sixth-man?season=${SEASON}`),
+    ]);
+
+    if (biosRes.status === 'fulfilled' && biosRes.value.ok) bios = await biosRes.value.json();
+    // Without it the search can't filter, but the save still refuses an
+    // ineligible pick and says who.
+    if (sixthRes.status === 'fulfilled' && sixthRes.value.ok) sixthMan = (await sixthRes.value.json()).players || {};
+
+    ballot = Object.fromEntries(AWARDS.map(aw => [aw.key, new Array(aw.size).fill(null)]));
+
+    if (ballotRes.status === 'fulfilled' && ballotRes.value.ok) {
+      const saved = await ballotRes.value.json();
+      AWARDS.forEach(aw => {
+        const arr = saved[aw.key];
+        if (!arr) return;
+        for (let i = 0; i < aw.size; i++) ballot[aw.key][i] = arr[i] ?? null;
+      });
+    }
+
+    buildPage();
+    renderAll();
+  }
+
+  init();
+
+  { const _s = document.createElement('script'); _s.src = '/nav.js'; document.head.appendChild(_s); }
+  { const _s = document.createElement('script'); _s.src = '/token-badge.js'; document.head.appendChild(_s); }
+})();

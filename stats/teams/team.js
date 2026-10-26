@@ -1,0 +1,9070 @@
+// =============================================================================
+// FUNCTION INDEX (teams/team.js) — names only; grep for the symbol. Line numbers
+// were dropped because they had drifted by thousands of lines.
+// =============================================================================
+// Constants & boot
+//   TEAMS                        abbr → full team name
+//   RETIRED_JERSEYS              per-team retired number records
+//   ratingsPopupReady            resolves once /ratings-popup.js has loaded
+//   namesReady                   resolves once /names.js has loaded
+//   lineupReady                  resolves once /stats/teams/lineup.js has loaded
+//   contractReady                resolves once /contract.js has loaded
+//   capHealthReady               resolves once /cap-health.js has loaded
+//   coachingConfigReady          resolves once /coaching-config.js has loaded
+//   radarReady                   resolves once /radar.js has loaded
+//   CAP_HOLD_CSS                 cap-hold type → td class
+//   CAP_HOLD_LABELS              cap-hold type → legend label
+//   SWATCH_COLORS                cap-hold type → legend swatch color
+//   CAP_HOLD_COLORS              cap-hold type → text color
+//   PO_CLASS                     playoff result → css class
+//
+// Parsing & formatting utilities
+//   parseCSV                     CSV text → array of row objects
+//   parseLine                    handles quoted fields
+//   fmtPct                       decimal → "56.1%"
+//   fmtSigned                    signed decimal with +/- prefix
+//   sv                           safe numeric value from row field
+//   formatSalary                 "$37,000,000" display
+//   displayNameFromBio           "LAST, FIRST" → "First Last"
+//   calcAge                      ISO dob → age string
+//   fmtDate                      ISO date → short display date
+//   parseCapHolds                legacy CSV cap-holds string → object
+//   currentSeasonYr              infers current season year
+//   parseSalaryNum               "$37,000,000" → 37000000
+//   fmtDollars                   number → "$37.0M"
+//
+// Tooltips
+//   _ttShow                      shows the shared tooltip element
+//   _ttHide                      hides the shared tooltip element
+//   attachTooltip                attaches a hover/focus tooltip to an element
+//
+// Cap & roster logic
+//   computeMleType               determines MLE type from team salary
+//   mleTypeLabel                 MLE type → display label
+//   renderHardCapBanner          What-If Mode's hard cap banner
+//   countRosterSlots             roster rows → standard / two-way slot counts
+//   renderCapHealth              injects the Cap Health card
+//   renderExceptionsSection      renders MLE/BAE exceptions panel
+//   renderTradeExceptionsSection renders the trade exceptions (TPE) panel
+//   buildNonGtdTip               builds the non-guaranteed salary tooltip text
+//
+// Table builders
+//   buildTable                   generic sortable table (owners/index.html has its own copy of the same shape)
+//   enableRangeSum               Sheets-style drag/shift/ctrl-click column sum + floating bar
+//   copyTableToClipboard         copies a table as TSV + HTML for pasting into Sheets
+//   attachCopyBtn                adds the "Copy" button next to a section title
+//   computeStartingFive          best PG/SG/SF/PF/C lineup for the Overview mode
+//                                     — lives in teams/lineup.js, loaded above
+//   buildRosterTable             renders the Roster section with salary/cap data
+//   buildPicksTable              renders the Draft Picks section (future picks only, no player yet)
+//   makeSeasonRenderCell         season history cell renderer (badges, playoff coloring)
+//   buildTimeline                season timeline component
+//   buildPersonnelSection        franchise personnel history (tenures + records)
+//   buildHistoricalRoster        renders an all-time roster table for a past season
+//
+// Player cell rendering
+//   playerSlug                   name → slug
+//   makePlayerRenderCell         renders player name/photo/pos badge cell + on-roster dot
+//   applyCapHoldColor            colors cap-hold cells by type
+//
+// Edit mode & auth
+//   getToken                     reads the stored bearer token
+//   hasAuthRole                  true if the signed-in member holds a role
+//   canEditRosters               true if the member may edit this team
+//   canEditTeamSettings          true only for the team's own role (jersey/secondary pos)
+//   canEditCoachingSettings      true only for the team's own role (2K coach profile)
+//   promptToken                  modal to enter/store bearer token
+//   withToken                    wraps fn with stored token
+//   makeSelect                   <select> helper
+//   nextSalaryYear               "25-26" → "26-27"
+//   prevSalaryYear               "26-27" → "25-26"
+//   makeEditCell                 creates editable cell (text/select/salary/cap-hold)
+//   buildEditableGrid            full in-place editable table grid
+//   rosterCellConfig             cell config map for roster editing
+//   enterEditMode                swaps read view for edit grid
+//   setupPicksEditable           wires edit mode for picks table
+//   setupTeamSettingsTab         wires the Team Settings section (jersey #, secondary pos)
+//   setupCoachingSettingsTab     wires the Coaching Settings section (2K coach profile) — schema-driven off /coaching-config.js
+//                                     Both sections share the Coaching tab (#tab-coaching), folded together 2026-09-04.
+//   setupEditable                wires edit mode for roster table
+//   setupDeadCapEditable         wires edit mode for the dead cap table
+// =============================================================================
+
+const TEAMS = {
+  ATL: "Atlanta Hawks",
+  BKN: "Brooklyn Nets",
+  BOS: "Boston Celtics",
+  CHA: "Charlotte Hornets",
+  CHI: "Chicago Bulls",
+  CLE: "Cleveland Cavaliers",
+  DAL: "Dallas Mavericks",
+  DEN: "Denver Nuggets",
+  DET: "Detroit Pistons",
+  GSW: "Golden State Warriors",
+  HOU: "Houston Rockets",
+  IND: "Indiana Pacers",
+  LAC: "LA Clippers",
+  LAL: "Los Angeles Lakers",
+  MEM: "Memphis Grizzlies",
+  MIA: "Miami Heat",
+  MIL: "Milwaukee Bucks",
+  MIN: "Minnesota Timberwolves",
+  NOP: "New Orleans Pelicans",
+  NYK: "New York Knicks",
+  OKC: "Oklahoma City Thunder",
+  ORL: "Orlando Magic",
+  PHI: "Philadelphia 76ers",
+  PHX: "Phoenix Suns",
+  POR: "Portland Trail Blazers",
+  SAC: "Sacramento Kings",
+  SAS: "San Antonio Spurs",
+  TOR: "Toronto Raptors",
+  UTA: "Utah Jazz",
+  WAS: "Washington Wizards",
+};
+
+const RETIRED_JERSEYS = {
+  HOU: [{ no: 13, player: 'James Harden',        date: '2024-02-09' }],
+  LAC: [{ no: 15, player: 'Cam Payne',            date: '2024-02-08' }],
+  SAC: [{ no: 17, player: 'Aleksej Pokusevski',   date: '2024-02-10' }],
+};
+
+const abbr = location.pathname.replace(/\/$/, "").split("/").pop().toUpperCase();
+const TEAM_ABBRS = Object.keys(TEAMS);
+const _teamIdx = TEAM_ABBRS.indexOf(abbr);
+const prevAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx - 1 + TEAM_ABBRS.length) % TEAM_ABBRS.length] : null;
+const nextAbbr = _teamIdx >= 0 ? TEAM_ABBRS[(_teamIdx + 1) % TEAM_ABBRS.length] : null;
+const name = TEAMS[abbr] || "Unknown Team";
+const slug = abbr.toLowerCase();
+// Team colours for the page (css/team-colors.css): --team-primary / --team-accent.
+document.documentElement.dataset.team = abbr;
+
+// The shell already ships this as a static <title> (and matching OG tags) so
+// crawlers see it; keep the two in step rather than downgrading to the abbr.
+document.title = `NBN | ${name}`;
+
+// Team pages are 11-line shells that load only this file, so shared modules are
+// pulled in from here. Starts now, in parallel with the data fetches; the render
+// awaits ratingsPopupReady so RatingsPopup is guaranteed defined by then. A load
+// failure just means no popup — every call site guards on window.RatingsPopup.
+const ratingsPopupReady = new Promise(resolve => {
+  const _rp = document.createElement('script');
+  _rp.src = '/ratings-popup.js';
+  _rp.onload = resolve;
+  _rp.onerror = resolve;
+  document.head.appendChild(_rp);
+});
+
+// nbnPlayerName — "MCCOLLUM, CJ" → "CJ McCollum", the same everywhere on the
+// site. displayNameFromBio falls back to plain title case until it arrives.
+const namesReady = new Promise(resolve => {
+  const _nm = document.createElement('script');
+  _nm.src = '/names.js';
+  _nm.onload = resolve;
+  _nm.onerror = resolve;
+  document.head.appendChild(_nm);
+});
+
+// DEPTH_SLOTS / computeStartingFive — the Overview mode's starting five. Unlike
+// the popup above this is a hard dependency, not a nicety: the 'depth' branch of
+// buildRosterTable calls it directly, so the render awaits this and a failure is
+// logged rather than swallowed. Same file is loaded by anything else that needs
+// a projected lineup, which is why it doesn't live in here any more.
+const lineupReady = new Promise(resolve => {
+  const _lu = document.createElement('script');
+  _lu.src = '/stats/teams/lineup.js';
+  _lu.onload = resolve;
+  _lu.onerror = () => { console.error('teams/lineup.js failed to load — depth chart unavailable'); resolve(); };
+  document.head.appendChild(_lu);
+});
+
+// CONTRACT_TAGS / summarizeContract / the cap-hold vocabulary, shared with
+// /pdc and /fo/transactions so one deal reads the same everywhere. Hard dependency
+// like lineup.js: the Overview mode calls summarizeContract on every row.
+const contractReady = new Promise(resolve => {
+  const _ct = document.createElement('script');
+  _ct.src = '/contract.js';
+  _ct.onload = resolve;
+  _ct.onerror = () => { console.error('/contract.js failed to load — contract shorthand unavailable'); resolve(); };
+  document.head.appendChild(_ct);
+});
+
+// CapHealth — the standing rules (§ 1.3/1.4 cap and aprons, § 2.1/2.1a/2.2
+// roster limits). Soft dependency: if it fails to load the
+// Cap Health card stays hidden and the rest of the page is unaffected, which is
+// why every call site checks window.CapHealth first.
+const capHealthReady = new Promise(resolve => {
+  const _ch = document.createElement('script');
+  _ch.src = '/cap-health.js';
+  _ch.onload = resolve;
+  _ch.onerror = () => { console.error('/cap-health.js failed to load — cap health card unavailable'); resolve(); };
+  document.head.appendChild(_ch);
+});
+
+// Radar — the archetype radar, shared with player pages. Soft dependency: the
+// Team Identity section stays hidden if it fails to load.
+const radarReady = new Promise(resolve => {
+  const _rd = document.createElement('script');
+  _rd.src = '/radar.js';
+  _rd.onload = resolve;
+  _rd.onerror = () => { console.error('/radar.js failed to load — team identity radar unavailable'); resolve(); };
+  document.head.appendChild(_rd);
+});
+
+// CoachingSettings — the 2K coach-profile field/option schema, shared with the
+// streamer dashboard on /committees/stream so a team's settings render the same way in
+// both places. Soft dependency, like CapHealth: the Coaching tab reports
+// itself unavailable rather than throwing if this fails to load.
+const coachingConfigReady = new Promise(resolve => {
+  const _cs = document.createElement('script');
+  _cs.src = '/coaching-config.js';
+  _cs.onload = resolve;
+  _cs.onerror = () => { console.error('/coaching-config.js failed to load — Coaching tab unavailable'); resolve(); };
+  document.head.appendChild(_cs);
+});
+
+// theme.css and nav-chrome.css are <link>ed from each team shell's <head>, not
+// @imported here: a stylesheet a script inserts doesn't hold up the first
+// paint, so the page drew once without components.css (bare tab buttons).
+{ const _s = document.createElement('style'); _s.textContent = `
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+  /* Scales fluidly with viewport width instead of jumping at a breakpoint:
+     stays at 1024px on laptop-class screens (anything ≤ ~1365px wide),
+     then grows proportionally (75% of viewport) up to a 1600px ceiling
+     for wide/ultrawide monitors. */
+  .page { max-width: var(--page-width-wide); margin: 0 auto; }
+  .team-header-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .team-nav-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 2.5rem; height: 2.5rem; border-radius: 50%;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-muted); font-size: var(--text-lg); cursor: pointer;
+    text-decoration: none; flex-shrink: 0; line-height: 1;
+  }
+  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; }
+  .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  /* On the team-colour band (components.css § Team pages): light on colour. */
+  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
+  :root[data-team] .team-share-btn:hover { color: white; border-color: white; }
+  .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+  .team-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  .team-header img { width: 140px; height: 140px; object-fit: contain; }
+  .team-header h1 { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; text-align: center; }
+  section { margin-bottom: 3rem; }
+  .section-title { font-size: var(--text-md); font-weight: 600; margin-bottom: 0.25rem; }
+  .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem; }
+
+  /* One integrated card for Team Settings + Coaching Profile, rather than two
+     independent sections (which carry their own 3rem gap and full-weight h2
+     each) — same bordered-card shape as .exceptions-card/.ch-card below. */
+  .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
+  .settings-subsection + .settings-subsection { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid var(--border-subtle); }
+  .settings-subtitle { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .settings-subsub { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.65rem; }
+  .settings-card .table-wrap { border: none; padding: 0; }
+  /* Coaching Profile's group/pool cards default to a plain stack (mobile,
+     and narrow desktop windows). Wide screens switch to a masonry-style
+     multi-column flow instead, since each card is short but there are many
+     of them — one full-width column per card was the "too wide, too long"
+     complaint. CSS columns, not grid, on purpose: card heights vary a lot
+     (6-row group vs. 2-row pool) and grid would equalize row heights across
+     the whole set, reintroducing the wasted space this is fixing. */
+  .cs-cards-grid > div { break-inside: avoid; }
+  @media (min-width: 1100px) {
+    /* Roster Settings (the player table) stays the wide, primary panel on
+       the left; Coaching Profile becomes a narrower rail beside it instead
+       of a third full-width block stacked underneath. */
+    .settings-card { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 1.75rem; align-items: start; }
+    .settings-card .settings-subsection + .settings-subsection {
+      margin-top: 0; padding-top: 0; border-top: none;
+      border-left: 1px solid var(--border-subtle); padding-left: 1.75rem;
+    }
+    .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
+  }
+  .settings-card.note-card { display: block; margin-bottom: 1rem; }
+  .sn-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); color: var(--text-primary); }
+  .sn-meta { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
+  .sn-meta.open { color: var(--gold); }
+  .sn-meta.clear { color: var(--success-light); }
+  .sn-edit textarea { width: 100%; min-height: 5rem; resize: vertical; }
+  .sn-count { font-size: var(--text-xs); color: var(--text-dim); margin-right: auto; }
+  .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 1.9rem; margin-bottom: 0.5rem; }
+  .settings-head .settings-subtitle { margin-bottom: 0; }
+  .settings-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+  .ts-status { font-size: var(--text-xs); color: var(--text-muted); }
+
+  /* Rotation table (setupTeamSettingsTab). */
+  .ts-meter { margin-bottom: 0.75rem; }
+  .ts-meter-label { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.3rem; }
+  .ts-meter-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); }
+  .ts-meter.ok .ts-meter-val { color: var(--success-light); }
+  .ts-meter.over .ts-meter-val { color: var(--danger-light); }
+  .ts-meter-track { height: 6px; border-radius: var(--radius-sm); background: var(--bg-subtle); overflow: hidden; }
+  .ts-meter-fill { height: 100%; background: var(--gold); transition: width 0.15s; }
+  .ts-meter.ok .ts-meter-fill { background: var(--success-light); }
+  .ts-meter.over .ts-meter-fill { background: var(--danger-light); }
+  .ts-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  .ts-table th { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
+  .ts-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+  .ts-table tbody tr:last-child td { border-bottom: none; }
+  /* Classes, not nth-child: the Inactive line is a row of its own, so a
+     row's index is no longer its slot. Set by markRow. */
+  .ts-table tbody tr.ts-last-starter td { border-bottom: 2px solid var(--border); }
+  .ts-table tbody tr.ts-starter .ts-slot { color: var(--accent-light); font-weight: 700; }
+  .ts-table tbody tr.ts-inactive { opacity: 0.55; }
+  .ts-table tbody tr.ts-divider td { background: var(--bg-subtle); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding-block: 0.3rem; }
+  .ts-slot { width: 2.6rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .ts-name { font-weight: 600; }
+  .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
+  .ts-name .ts-injury { margin-left: 0.4rem; font-weight: 600; white-space: nowrap; }
+  .ts-2w-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--gold); }
+  .ts-illegal-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--danger-light); }
+  .ts-table tbody tr.ts-illegal td { background: var(--danger-bg); }
+  .ts-table tbody tr.ts-illegal .ts-pos { color: var(--danger-light); font-weight: 700; }
+  .ts-name a { color: var(--text-primary); text-decoration: none; }
+  .ts-name a:hover { color: var(--accent-light); }
+  .ts-ovr { width: 2.6rem; text-align: right !important; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  .ts-ovr-inline { display: none; margin-left: 0.35rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  .ts-pos { width: 6.5rem; white-space: nowrap; }
+  .ts-pos2 { color: var(--text-muted); }
+  .ts-min { width: 9rem; text-align: right !important; white-space: nowrap; }
+  .ts-minbar { display: inline-block; vertical-align: middle; width: 4rem; height: 4px; border-radius: var(--radius-sm); background: var(--bg-subtle); overflow: hidden; margin-right: 0.5rem; }
+  .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
+  .ts-minval { display: inline-block; min-width: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .ts-minval.dim { color: var(--text-dim); font-weight: 400; }
+  .ts-res-tag { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.35rem; }
+  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: var(--text-xs); border-radius: var(--radius-sm); }
+  .ts-num-input { width: 2.2rem; text-align: center; }
+  .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .ts-sec-select { width: auto; color: var(--text-secondary); }
+  .ts-sec-select.ts-sec-illegal { color: var(--danger-light); border-color: var(--danger-light); }
+  .ts-pos2.ts-pos2-illegal { color: var(--danger-light); font-weight: 700; }
+  .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
+  .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: var(--text-xs); cursor: pointer; user-select: none; }
+  .ts-pin-mark { margin-left: 0.25rem; font-size: var(--text-xs); color: var(--text-muted); }
+  .ts-pos-wait { margin-left: 0.3rem; font-size: var(--text-xs); color: var(--gold); }
+  .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: var(--text-sm); cursor: pointer; padding: 0; }
+  .ts-stepper button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+  .ts-stepper input { width: 2.2rem; border: none; border-inline: 1px solid var(--border); border-radius: 0; text-align: center; font-size: var(--text-xs); padding: 0; -moz-appearance: textfield; }
+  .ts-stepper input::-webkit-outer-spin-button, .ts-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .ts-min-edit:has(.ts-res input:checked) .ts-stepper { opacity: 0.35; }
+  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
+  .ts-res input { position: absolute; opacity: 0; pointer-events: none; }
+  .ts-res:has(input:checked) { color: var(--gold); border-color: var(--gold-border); background: var(--gold-bg); }
+  .ts-res:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ts-res:has(input:disabled) { opacity: 0.4; cursor: default; }
+  @media (max-width: 640px) {
+    .ts-ovr, .ts-minbar { display: none; }
+    .ts-ovr-inline { display: inline; }
+    .ts-table td, .ts-table th { padding-inline: 0.3rem; }
+  }
+  .ts-handle { width: 1.8rem; padding: 0.3rem 0.2rem !important; }
+  .drag-handle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.6rem; height: 1.6rem; cursor: grab; color: var(--text-dim);
+    font-size: var(--text-base); user-select: none; touch-action: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  #team-settings-wrap tr.dragging { opacity: 0.4; }
+  .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
+  .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .rec-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.9rem 1rem;
+  }
+  .rec-stat {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-muted); font-weight: 600; margin-bottom: 0.5rem;
+  }
+  .rec-top { display: flex; align-items: baseline; gap: 0.5rem; }
+  .rec-top .val {
+    font-size: var(--text-xl); font-weight: 700; color: var(--accent-light);
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .rec-top .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 600; }
+  .rec-when { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; }
+  .rec-rest { margin-top: 0.6rem; border-top: 1px solid var(--border-subtle); padding-top: 0.4rem; }
+  .rec-row { display: flex; gap: 0.5rem; font-size: var(--text-xs); padding: 0.15rem 0; align-items: baseline; }
+  .rec-row .val { font-variant-numeric: tabular-nums; color: var(--text-secondary); min-width: 2.6rem; }
+  .rec-row .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec-row .when { margin-left: auto; color: var(--text-dim); white-space: nowrap; font-size: var(--text-xs); }
+  .rec-po { color: var(--gold); font-weight: 700; }
+  .rec-group-title { font-size: var(--text-sm); font-weight: 700; margin: 0 0 0.5rem; }
+  .rec-group-title:not(:first-child) { margin-top: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: var(--text-base); white-space: nowrap; }
+  thead th {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--text-secondary); }
+  thead th[data-active="true"] { color: var(--accent-light); }
+  thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: var(--text-xs); }
+  thead th[data-active="true"] .sort-arrow { opacity: 1; }
+  thead th.right { text-align: right; }
+  thead th.center { text-align: center; }
+  tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-hover); }
+  tr.personnel-active td { background: var(--success-bg); }
+  tr.personnel-active:hover td { background: var(--success-bg-hover); }
+  tr.personnel-former { opacity: 0.45; }
+  tr.personnel-former:hover { opacity: 0.8; }
+  tr.personnel-divider td { padding: 0.2rem 1rem; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); background: var(--bg-page); border-top: 1px solid var(--border-subtle); }
+  .cur-role { color: var(--success-light); }
+  .cur-since { color: var(--success-light); }
+  td { padding: 0.65rem 1rem; color: var(--text-secondary); }
+  #roster-wrap table th:nth-child(2), #roster-wrap table td:nth-child(2),
+  #roster-wrap table th:nth-child(3), #roster-wrap table td:nth-child(3),
+  #roster-wrap table th:nth-child(4), #roster-wrap table td:nth-child(4) {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  @media (min-width: 641px) {
+    #roster-wrap table th:first-child,
+    #roster-wrap table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+    }
+    #roster-wrap table thead th:first-child { z-index: 2; }
+    #roster-wrap table tbody tr:hover td:first-child { background: var(--bg-hover); }
+  }
+  td.right { text-align: right; font-variant-numeric: tabular-nums; }
+  td.muted { color: var(--text-muted); }
+  .stat-line { display: inline-flex; align-items: baseline; gap: var(--space-2); white-space: nowrap; }
+  .stat-line-item { display: inline-flex; align-items: baseline; gap: var(--space-1); }
+  .stat-line-val { font-variant-numeric: tabular-nums; }
+  .stat-line-lbl, .stat-line-season { color: var(--text-muted); font-size: var(--text-xs); }
+  .stat-line-gmsc { padding-left: var(--space-2); border-left: 1px solid var(--border); }
+  td.bold { font-weight: 600; color: var(--text-primary); }
+  td a { color: var(--link); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .badge {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    vertical-align: middle;
+    color: var(--gold);
+  }
+  .rec-badge { color: var(--gold); }
+  .on-roster-dot {
+    display: inline-block;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--success);
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    cursor: default;
+  }
+  .po-champion   { color: var(--gold); font-weight: 600; }
+  .po-runnerup   { color: var(--text-muted); }
+  .po-conffinals { color: var(--link); }
+  .po-other      { color: var(--text-muted); }
+  .po-missed     { color: var(--text-dim); }
+  td.center      { text-align: center; }
+  .timeline {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding: 0.5rem 0 0.75rem;
+    margin-bottom: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .tl-card {
+    flex-shrink: 0;
+    width: 58px;
+    background: var(--bg-card);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.25rem;
+    text-align: center;
+    cursor: default;
+    transition: filter 0.1s;
+  }
+  .tl-card:hover { filter: brightness(1.15); }
+  .tl-season { display: block; font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+  .tl-wins   { display: block; font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); line-height: 1; margin: 0.2rem 0 0.15rem; }
+  .tl-seed   { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+  .tl-champion   { border-color: var(--champion-border); background: var(--champion-bg); }
+  .tl-champion .tl-wins { color: var(--gold); }
+  .tl-runnerup   { border-color: var(--runnerup-border); background: var(--runnerup-bg); }
+  .tl-runnerup .tl-wins { color: var(--runnerup-text); }
+  .tl-conffinals { border-color: var(--accent-dark); }
+  .tl-second     { border-color: var(--border); }
+  .tl-missed     { opacity: 0.55; }
+  td.div-left    { border-left: 1px solid var(--border); }
+  .subheader td  {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.35rem 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .row-twoway td { opacity: 0.6; }
+  .row-draft-rights td { opacity: 0.7; font-style: italic; }
+  .row-dead td   { opacity: 0.45; font-style: italic; text-decoration: line-through; }
+  .row-erc td    { opacity: 0.7; font-style: italic; color: var(--warning); }
+  .row-empty-slot td { opacity: 0.5; font-style: italic; }
+  td.depth-slot, th.depth-slot {
+    font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em;
+    color: var(--text-muted); width: 2.5rem;
+  }
+  .picks-acquired td   { color: var(--link); }
+  .picks-traded td     { color: var(--text-muted); font-style: italic; }
+  .picks-uncertain td  { color: var(--warning); font-style: italic; }
+  .picks-legacy td     { color: var(--danger); font-style: italic; }
+  .picks-legacy td:nth-child(7) { color: var(--text-secondary); font-style: normal; }
+  .picks-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    padding: 0.6rem 1rem 0.75rem;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
+  }
+  .picks-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+  .picks-swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+  .fo-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: var(--space-3) var(--space-5); align-items: start; }
+  .fo-strip .fo-item { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+  .fo-strip .fo-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .fo-strip .ui-statline b { font-size: var(--text-lg); }
+  .fo-strip .fo-sub { font-size: var(--text-xs); color: var(--text-muted); }
+  .fo-strip .fo-patch { font-size: var(--text-sm); color: var(--text-secondary); }
+  .fo-strip .fo-up { color: var(--success); }
+  .fo-strip .fo-down { color: var(--danger); }
+  .retired-banners {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .retired-banner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 90px;
+    padding: 0.85rem 0.5rem 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--text-muted);
+    border-radius: var(--radius-sm);
+    gap: 0.2rem;
+  }
+  .retired-no   { font-size: var(--text-xl); font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.03em; }
+  .retired-name { font-size: var(--text-xs); color: var(--text-muted); text-align: center; line-height: 1.3; }
+  .retired-date { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.15rem; }
+  td.cap-non-gtd    { color: var(--text-dim); }
+  td.cell-selected { position: relative; box-shadow: inset 0 0 0 2px var(--accent); }
+  td.cell-selected::after {
+    content: ''; position: absolute; inset: 0;
+    background: color-mix(in srgb, var(--accent) 25%, transparent); pointer-events: none;
+  }
+  .range-sum-bar {
+    display: none; position: fixed; right: 1.25rem; bottom: 1.25rem;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 0.5rem 1rem; font-size: var(--text-sm); color: var(--text-secondary);
+    box-shadow: var(--shadow-overlay); z-index: 500;
+    pointer-events: none; white-space: nowrap;
+  }
+  .range-sum-bar b { color: var(--text-primary); }
+  .cap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    padding: 0.6rem 1rem 0.75rem;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
+  }
+  .cap-legend-item { display: flex; align-items: center; gap: 0.35rem; }
+  .cap-swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+  tfoot tr td { font-size: var(--text-sm); padding: 0.3rem 0.6rem; color: var(--text-muted); border-top: none; }
+  tfoot tr.tfoot-divider td { border-top: 1px solid var(--border); padding-top: 0.45rem; }
+  tfoot tr.tfoot-total td { font-weight: 700; color: var(--text-secondary); }
+  tfoot tr.tfoot-cap td { color: var(--text-muted); }
+  tfoot tr.tfoot-cap.over .tfoot-diff { color: var(--danger); }
+  tfoot tr.tfoot-cap.under .tfoot-diff { color: var(--success); }
+  tfoot td.tfoot-label { color: var(--text-muted); }
+  tfoot td.tfoot-count { color: var(--border); font-size: var(--text-xs); text-align: right; }
+  tfoot tr.tfoot-hardcap td { padding-top: 0.4rem; }
+  .hardcap-chip { display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.02em;
+    padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+  .hardcap-chip.apron2 { background: var(--danger-bg); color: var(--danger-light); border-color: var(--danger-border-strong); }
+  .cap-edit-form {
+    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+    margin-top: 0.75rem; padding: 0.6rem 0.75rem;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+  .cap-edit-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; }
+  .cap-edit-form input { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form input:focus { border-color: var(--accent); }
+  .cap-edit-form select { background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.25rem 0.4rem; width: 8rem; outline: none; }
+  .cap-edit-form select:focus { border-color: var(--accent); }
+  .cap-edit-form .form-divider { width: 100%; height: 1px; background: var(--border); margin: 0.25rem 0; }
+  .cap-edit-form .form-section-label { width: 100%; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.05em; padding-top: 0.15rem; }
+  .sched-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .sched-head-actions { display: flex; align-items: center; gap: 0.75rem; }
+  .sched-recap { font-size: var(--text-sm); color: var(--link); text-decoration: none; }
+  .sched-recap:hover { text-decoration: underline; }
+  .sched-season { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.25rem 0.5rem; font: inherit; font-size: var(--text-sm); }
+  .sched-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; margin: 0.25rem 0 1rem; }
+  .sched-summary:empty { display: none; }
+  .sched-stat { display: flex; flex-direction: column; gap: 0.1rem; }
+  .sched-stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .sched-stat b { font-size: var(--text-md); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .sched-month { font-size: var(--text-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
+  .sched-table td { padding: 0.45rem 1rem; }
+  .sched-table .sched-date { width: 7.5rem; }
+  /* The team, the Playoffs tag and the stream mark share one centred row, so
+     the mark lines up with the name rather than the text baseline. */
+  .sched-opp-team { display: inline-flex; align-items: center; vertical-align: middle; }
+  .sched-opp a { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.35rem; font-weight: 600; color: var(--text-primary); }
+  .sched-opp img { width: 18px; height: 18px; object-fit: contain; }
+  .sched-res { font-variant-numeric: tabular-nums; color: var(--text-primary) !important; }
+  .sched-w { color: var(--success); font-weight: 700; }
+  .sched-l { color: var(--danger); font-weight: 700; }
+  .sched-up { color: var(--link) !important; }
+  .sched-rec { width: 4rem; }
+  .sched-tag { margin-left: 0.35rem; font-size: var(--text-xs); }
+  .sched-tag-stream { display: inline-flex; font-size: var(--text-base); color: var(--accent-light); }
+  .sched-tag-po { color: var(--danger); font-weight: 600; }
+  tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .rival-card {
+    display: flex; flex-direction: column; gap: 0.2rem; padding: 0.8rem 1rem;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    border-left: 3px solid var(--team-primary, var(--border));
+    color: inherit; text-decoration: none;
+  }
+  .rival-card:hover { border-color: var(--text-muted); border-left-color: var(--team-primary, var(--text-muted)); text-decoration: none; }
+  .rival-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+  .rival-team { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--text-secondary); font-size: var(--text-sm); }
+  .rival-team img, .rival-opp img { width: 20px; height: 20px; object-fit: contain; }
+  .rival-main { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .rival-sub { font-size: var(--text-xs); color: var(--text-muted); }
+  .rival-opp { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .hard-cap-banner {
+    background: var(--danger-bg); border: 1px solid var(--danger-border); border-radius: var(--radius-sm);
+    padding: 0.6rem 1rem; font-size: var(--text-sm); font-weight: 600; color: var(--danger);
+    margin-bottom: 1.25rem;
+  }
+  .hard-cap-banner.apron2 { background: var(--danger-alt-bg); border-color: var(--danger-alt-border); color: var(--danger-alt); }
+  .exceptions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: var(--text-sm); }
+  .exceptions-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--border-subtle); gap: 1rem; }
+  .exceptions-row:last-child { border-bottom: none; }
+  .exc-label { color: var(--text-muted); font-size: var(--text-xs); }
+  .exc-mle-type { font-size: var(--text-xs); color: var(--text-muted); margin-left: 0.35rem; }
+  .exc-remaining { color: var(--success); }
+  .exc-used { color: var(--danger); }
+  .ch-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.25rem; font-size: var(--text-sm); }
+  .ch-block + .ch-block { margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); }
+  .ch-block-title { display: flex; align-items: baseline; gap: 0.6rem; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .ch-block-count { margin-left: auto; font-weight: 600; letter-spacing: normal; text-transform: none; font-size: var(--text-xs); color: var(--text-muted); }
+  .ch-row { display: grid; grid-template-columns: 10rem minmax(6rem, auto) 1fr; align-items: baseline; gap: 0.5rem 1rem; padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .ch-row:last-child { border-bottom: none; }
+  .ch-row-label { color: var(--text-muted); font-size: var(--text-xs); }
+  .ch-row-amount { font-variant-numeric: tabular-nums; }
+  .ch-row-note { font-size: var(--text-xs); color: var(--text-dim); }
+  .ch-tone-over .ch-row-note { color: var(--danger); }
+  .ch-tone-under .ch-row-note { color: var(--success); }
+  .ch-tone-unknown .ch-row-amount, .ch-tone-unknown .ch-row-note { color: var(--text-dim); font-style: italic; }
+  .ch-tone-violation .ch-row-note, .ch-tone-violation .ch-row-amount { color: var(--danger); font-weight: 600; }
+  .ch-tone-caution .ch-row-note { color: var(--gold-alt); }
+  /* Three columns don't fit a phone: label and amount share a line, the note
+     goes under them at full width. */
+  @media (max-width: 600px) {
+    .ch-row { grid-template-columns: minmax(0, 1fr) auto; gap: 0.15rem 1rem; }
+    .ch-row-note { grid-column: 1 / -1; }
+    .ch-row-note:empty { display: none; }
+  }
+  .ch-warning { font-size: var(--text-xs); font-weight: 600; padding: 0.2rem 0; color: var(--danger); }
+  .ch-warning.caution { color: var(--gold-alt); }
+  .ch-foot { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.6rem; line-height: 1.5; }
+  .whatif-enter-btn, .whatif-exit-btn {
+    padding: 0.3rem 0.7rem; border: 1px solid var(--danger-border); border-radius: var(--radius-sm);
+    font-size: var(--text-xs); font-weight: 600; cursor: pointer; background: transparent;
+    color: var(--danger); font-family: inherit; white-space: nowrap;
+  }
+  .whatif-enter-btn:hover, .whatif-exit-btn:hover { background: var(--danger-bg); }
+  .whatif-panel {
+    border: 1px dashed var(--danger-border); border-radius: var(--radius);
+    padding: 0.85rem 1rem; margin-top: 0.85rem;
+    background: repeating-linear-gradient(135deg, transparent, transparent 10px, var(--danger-bg) 10px, var(--danger-bg) 20px);
+  }
+  .whatif-panel > * + * { margin-top: 0.75rem; }
+  .whatif-toolbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .whatif-badge {
+    display: inline-block; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: var(--radius-sm);
+    background: var(--danger-bg); color: var(--danger-light); border: 1px solid var(--danger-border-strong);
+  }
+  .whatif-add-input {
+    background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text-primary); font-size: var(--text-sm); padding: 0.3rem 0.55rem;
+    font-family: inherit; min-width: 240px; outline: none;
+  }
+  .whatif-add-input:focus { border-color: var(--accent); }
+  .whatif-row-action {
+    font-size: var(--text-xs); padding: 0.12rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); color: var(--text-muted); cursor: pointer; font-family: inherit; margin-left: 0.3rem;
+    white-space: nowrap;
+  }
+  .whatif-row-action:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  .whatif-row-action.danger { color: var(--danger); border-color: var(--danger-border); }
+  .whatif-row-action.danger:hover { background: var(--danger-bg); }
+  .whatif-warning-line { color: var(--danger); font-size: var(--text-xs); font-weight: 600; padding: 0.15rem 0; }
+  .whatif-attr-heading { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .whatif-attr-heading-note { font-size: var(--text-xs); font-weight: 500; text-transform: none; letter-spacing: normal; color: var(--text-dim); }
+  #whatif-attr-impact table td, #whatif-attr-impact table th { padding: 0.35rem 0.75rem; font-size: var(--text-xs); }
+  .whatif-attr-delta-line { font-weight: 700; }
+  .whatif-attr-ba-line { font-size: var(--text-xs); color: var(--text-dim); font-weight: 400; margin-top: 0.1rem; }
+  .whatif-attr-up   .whatif-attr-delta-line { color: var(--success); }
+  .whatif-attr-down .whatif-attr-delta-line { color: var(--danger); }
+  .whatif-attr-zero .whatif-attr-delta-line { color: var(--text-dim); }
+  .whatif-attr-total-row td { font-weight: 700; border-bottom: 1px solid var(--border); }
+  .whatif-attr-total-row td:first-child { color: var(--text-primary); }
+  .whatif-attr-total-row .whatif-attr-delta-line { font-weight: 800; }
+  .whatif-contract-form {
+    display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;
+    padding: 0.6rem 0.75rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+  .whatif-contract-form label { display: flex; flex-direction: column; gap: 0.2rem; color: var(--text-muted); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; }
+  .whatif-contract-form input, .whatif-contract-form select {
+    background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary);
+    font-size: var(--text-sm); font-family: inherit; padding: 0.25rem 0.4rem; width: 7.5rem; outline: none;
+  }
+  .whatif-contract-form input:focus, .whatif-contract-form select:focus { border-color: var(--accent); }
+  .whatif-contract-year { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.5rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+  .whatif-log { display: flex; flex-direction: column; gap: 0.3rem; }
+  .whatif-log-entry {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+    font-size: var(--text-xs); color: var(--text-secondary);
+    background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    padding: 0.25rem 0.3rem 0.25rem 0.6rem;
+  }
+  .whatif-log-entry button {
+    background: none; border: none; color: var(--text-dim); cursor: pointer;
+    font-size: var(--text-md); line-height: 1; padding: 0 0.3rem; font-family: inherit;
+  }
+  .whatif-log-entry button:hover { color: var(--danger); }
+  .token-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .token-modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 360px;
+    max-width: 90vw;
+  }
+  .token-modal h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 0.4rem; }
+  .token-modal p  { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+  .token-modal input {
+    width: 100%;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    font-family: var(--font-mono);
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+  }
+  .token-modal input:focus { outline: none; border-color: var(--accent); }
+  .token-modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+  /* ── Owner roster moves (per-player action menu) ─────────────────────────── */
+  .move-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.5rem; height: 1.5rem; padding: 0; flex: none;
+    background: var(--bg-hover); border: 1px solid var(--border); border-radius: 50%;
+    color: var(--text-muted); cursor: pointer;
+  }
+  .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+  .identity-players-col { min-width: 15rem; }
+  .identity-players-title { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .identity-players { list-style: none; margin: 0; padding: 0; counter-reset: ip; }
+  .identity-players li { counter-increment: ip; display: grid; grid-template-columns: 1.2rem 1fr auto; column-gap: 0.4rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
+  .identity-players li:last-child { border-bottom: none; }
+  .identity-players li::before { content: counter(ip); grid-row: 1 / span 2; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  .identity-players .ip-name { font-weight: 600; }
+  .identity-players .ip-name a { color: var(--text-primary); text-decoration: none; }
+  .identity-players .ip-name a:hover { color: var(--accent-light); }
+  .identity-players .ip-line { grid-column: 2; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: var(--text-xs); color: var(--text-dim); }
+  .move-btn:hover { border-color: var(--text-dim); color: var(--text-primary); }
+  .move-menu {
+    position: fixed; z-index: 1001; min-width: 220px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 0.3rem; box-shadow: var(--shadow-overlay);
+  }
+  .move-menu-head {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-dim); padding: 0.3rem 0.5rem 0.35rem;
+    border-bottom: 1px solid var(--border); margin-bottom: 0.25rem;
+  }
+  .move-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer;
+    font-family: inherit; font-size: var(--text-sm); padding: 0.4rem 0.5rem;
+  }
+  .move-menu button:hover:not(:disabled) { background: var(--bg-page); color: var(--text-primary); }
+  .move-menu button.danger:hover:not(:disabled) { color: var(--danger); }
+  .move-menu button:disabled { color: var(--text-dim); cursor: default; opacity: 0.65; }
+  /* Ineligible actions stay visible with their reason rather than disappearing —
+     "why can't I renounce him?" is a rules question, and the menu is where it
+     gets answered. */
+  .move-menu-why {
+    display: block; font-size: var(--text-xs); color: var(--text-dim);
+    padding: 0 0.5rem 0.35rem; margin-top: -0.2rem; white-space: normal;
+  }
+  .confirm-modal {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.35rem; width: 520px; max-width: 92vw;
+    max-height: 86vh; overflow-y: auto;
+  }
+  .confirm-modal h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 0.15rem; }
+  .confirm-modal .sub { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.9rem; }
+  .confirm-facts {
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 0.5rem 0.7rem; margin-bottom: 0.9rem;
+  }
+  .confirm-fact {
+    display: flex; justify-content: space-between; gap: 1rem;
+    font-size: var(--text-xs); padding: 0.2rem 0;
+  }
+  .confirm-fact span:first-child { color: var(--text-muted); }
+  .confirm-fact span:last-child  { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .confirm-check {
+    font-size: var(--text-xs); line-height: 1.4; padding: 0.4rem 0.55rem;
+    border-radius: var(--radius-sm); margin-bottom: 0.4rem; border: 1px solid transparent;
+  }
+  .confirm-check.ok    { color: var(--text-muted); }
+  .confirm-check.warn  { color: var(--gold);         background: color-mix(in srgb, var(--gold) 12%, transparent);   border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+  .confirm-check.error { color: var(--danger-light); background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+  .confirm-modal input[type=text] {
+    width: 100%; background: var(--bg-page); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary); font-family: inherit;
+    font-size: var(--text-sm); padding: 0.45rem 0.65rem; margin-bottom: 0.9rem;
+    box-sizing: border-box;
+  }
+  .confirm-modal input[type=text]:focus { outline: none; border-color: var(--accent); }
+  .confirm-modal label {
+    display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.3rem;
+  }
+  .confirm-actions { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; }
+  .confirm-actions .spacer { flex: 1; font-size: var(--text-xs); color: var(--danger); }
+  .btn-plain, .btn-danger, .btn-go {
+    padding: 0.4rem 0.85rem; border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 600;
+    cursor: pointer; background: transparent; font-family: inherit;
+  }
+  .btn-plain  { border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-go     { border: 1px solid var(--accent); color: var(--link); }
+  .btn-danger { border: 1px solid var(--danger); color: var(--danger); }
+  .btn-danger:disabled, .btn-go:disabled { opacity: 0.4; cursor: not-allowed; }
+  .row-draft-rights .stash-tag { font-style: normal; margin-left: 0.4rem; }
+  /* Open offer sheet (§ 3.15). Sits above the hard-cap banner because a pending
+     offer changes what the team can spend and is waiting on somebody. */
+  .offer-banner {
+    border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent);
+    border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
+    font-size: var(--text-sm); color: var(--text-secondary);
+  }
+  .trade-banner {
+    border: 1px solid var(--border); background: var(--bg-subtle);
+    border-radius: var(--radius); padding: 0.7rem 0.9rem; margin-bottom: 0.9rem;
+    font-size: var(--text-sm); color: var(--text-secondary);
+  }
+  .trade-banner b { color: var(--text-primary); }
+  .trade-banner .meta { display: block; margin-top: 0.2rem; font-size: var(--text-xs); color: var(--text-muted); }
+  .trade-banner .tag {
+    color: var(--danger); font-weight: 700; font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .offer-banner.overdue { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
+  .offer-banner b { color: var(--text-primary); }
+  .offer-banner .meta { display: block; margin-top: 0.2rem; font-size: var(--text-xs); color: var(--text-muted); }
+  .offer-banner .tag {
+    color: var(--danger); font-weight: 700; font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  /* Only rendered when no token is stored. Without it a team owner who isn't on
+     the committee has no way into their own tools: every other affordance that
+     prompts for a token is itself gated on roles that require a token. */
+  .player-note {
+    display: inline-flex; align-items: center;
+    margin-left: 0.35rem; color: var(--gold-dim);
+    vertical-align: middle; transition: color 0.1s;
+  }
+  .player-note:hover { color: var(--gold); }
+  .roster-name-cell { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+  .roster-name-top { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .roster-avatar {
+    flex: none; width: 26px; height: 26px; border-radius: 50%;
+    overflow: hidden; background: var(--bg-card); border: 1px solid var(--border);
+  }
+  .roster-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
+  /* No photo: the person icon (css/ui-icons.css), bottom-anchored like a headshot. */
+  .roster-avatar-empty::after {
+    content: ''; display: block; width: 100%; height: 100%;
+    background-color: var(--text-dim);
+    -webkit-mask: var(--ui-icon) center 4px / 80% no-repeat; mask: var(--ui-icon) center 4px / 80% no-repeat;
+  }
+  /* Top-10%-in-category badges, shown inline after the player name (same
+     slot the jersey number tag used to occupy). Same muted color at both
+     levels -- top-5% (elite) just gets a more visible outline, not a
+     brighter fill or different hue, to stay quiet. */
+  .attr-badges { display: inline-flex; align-items: center; gap: 0.2rem; flex: none; }
+  .attr-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0 0.3rem; height: 16px; border-radius: var(--radius-sm); flex: none;
+    font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; font-variant-numeric: tabular-nums; cursor: help;
+    color: var(--text-muted); background: var(--bg-subtle);
+    border: 1px solid var(--border);
+  }
+  .attr-badge-elite { color: var(--text-secondary); border-color: var(--text-dim); }
+  .attr-legend .cap-legend-item { cursor: default; }
+  .attr-legend-note { color: var(--text-dim); font-style: italic; margin-left: auto; }
+  .attr-badge-legend { cursor: default; }
+
+  /* NON_GTD salary cell tooltip */
+  .sal-tip { cursor: pointer; }
+
+  /* mobile-friendly tooltip popup (hover on pointer devices, tap-to-toggle on touch) */
+  .tt-anchor { cursor: pointer; }
+  .tt-popup {
+    position: absolute; z-index: 500; max-width: 260px;
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+    padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); font-size: var(--text-xs);
+    white-space: pre-line; line-height: 1.5; text-align: left;
+    pointer-events: none; box-shadow: var(--shadow-overlay);
+  }
+
+  /* Tabs: the shared .ui-tabs (css/components.css). */
+  .tab-panel.hidden { display: none; }
+
+  /* Roster table mode switch (Contracts / Stats / Ratings) */
+  .roster-header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 0.5rem;
+  }
+  .roster-header-row .section-title { margin-bottom: 0; }
+  /* The mode switch is the shared .ui-segmented. */
+  .mode-tabs { flex: none; }
+  .hist-controls { margin-bottom: 1.5rem; }
+  .hist-controls select {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    padding: 0.4rem 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+  .hist-controls select:focus { border-color: var(--accent); }
+`; document.head.appendChild(_s); }
+
+// Mobile-friendly tooltip: hover-to-show on pointer devices, tap-to-toggle on touch.
+let _ttEl = null, _ttAnchor = null;
+function _ttHide() { if (_ttEl) { _ttEl.remove(); _ttEl = null; _ttAnchor = null; } }
+function _ttShow(anchor, text) {
+  _ttHide();
+  const tip = document.createElement('div');
+  tip.className = 'tt-popup';
+  tip.textContent = text;
+  document.body.appendChild(tip);
+  const r = anchor.getBoundingClientRect();
+  let left = r.left + r.width / 2 - tip.offsetWidth / 2;
+  left = Math.max(6, Math.min(left, window.innerWidth - tip.offsetWidth - 6));
+  let top = r.top - tip.offsetHeight - 8;
+  if (top < 4) top = r.bottom + 8;
+  tip.style.left = `${left + window.scrollX}px`;
+  tip.style.top = `${top + window.scrollY}px`;
+  _ttEl = tip;
+  _ttAnchor = anchor;
+}
+const _ttIsTouch = window.matchMedia('(hover: none)').matches;
+document.addEventListener('click', e => { if (_ttEl && !e.target.closest('.tt-anchor')) _ttHide(); });
+function attachTooltip(el, textOrFn) {
+  el.classList.add('tt-anchor');
+  const getText = () => (typeof textOrFn === 'function' ? textOrFn() : textOrFn);
+  if (_ttIsTouch) {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const text = getText();
+      if (!text) return;
+      if (_ttAnchor === el) _ttHide(); else _ttShow(el, text);
+    });
+  } else {
+    el.addEventListener('mouseenter', () => { const text = getText(); if (text) _ttShow(el, text); });
+    el.addEventListener('mouseleave', _ttHide);
+  }
+}
+
+document.body.innerHTML = `
+  <div class="page ui-page">
+    <nav class="nav"><a href="/stats/teams">← Teams</a></nav>
+    <div class="team-header-nav">
+      ${prevAbbr ? `<a class="team-nav-btn" href="/stats/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
+      <div class="team-header">
+        <img src="/logos/logo-${slug}.png" alt="${name} logo">
+        <div class="team-header-text">
+          <h1>${name}</h1>
+          <div class="team-header-facts" id="team-header-facts"></div>
+        </div>
+        <button type="button" class="team-share-btn" id="team-share-btn" title="Share this team">Share</button>
+      </div>
+      ${nextAbbr ? `<a class="team-nav-btn" href="/stats/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
+    </div>
+    <div class="tabs ui-tabs" role="tablist">
+      <button class="tab ui-tab active" data-tab="overview">Roster</button>
+      <button class="tab ui-tab" data-tab="schedule">Schedule</button>
+      <button class="tab ui-tab" data-tab="coaching" hidden>Coaching</button>
+      <button class="tab ui-tab" data-tab="franchise">Franchise</button>
+      <button class="tab ui-tab" data-tab="draft">Draft History</button>
+      <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
+      <button class="tab ui-tab" data-tab="history">Historical Rosters</button>
+      <button class="tab ui-tab" data-tab="irl">IRL</button>
+    </div>
+    <div class="tab-panel" id="tab-overview">
+      <div id="offer-sheet-banner" style="display:none"></div>
+      <div id="trade-request-banner" style="display:none"></div>
+      <section>
+        <div class="roster-header-row">
+          <h2 class="section-title" id="roster-title">Roster</h2>
+          <div class="mode-tabs ui-segmented" role="group" id="roster-mode-tabs">
+            <button class="mode-tab active" data-mode="depth" type="button">Overview</button>
+            <button class="mode-tab" data-mode="contracts" type="button">Contracts</button>
+            <button class="mode-tab" data-mode="stats" type="button">Stats</button>
+            <button class="mode-tab" data-mode="ratings" type="button">Ratings</button>
+          </div>
+          <button id="whatif-enter-btn" class="whatif-enter-btn" type="button">What If Mode</button>
+        </div>
+        <div class="ui-table-wrap table-wrap" id="roster-wrap"><div class="status">Loading…</div></div>
+        <div id="cap-edit-wrap"></div>
+        <div id="dead-cap-edit-wrap"></div>
+        <div id="whatif-panel" class="whatif-panel" style="display:none">
+          <div class="whatif-toolbar">
+            <span class="whatif-badge">What If Mode — nothing here is saved</span>
+            <span id="whatif-add-wrap"></span>
+            <button id="whatif-exit-btn" class="whatif-exit-btn" type="button">Exit What If Mode</button>
+          </div>
+          <div id="whatif-log" class="whatif-log"></div>
+          <div id="whatif-contract-form-slot"></div>
+          <div class="ui-table-wrap table-wrap" id="whatif-roster-wrap"></div>
+          <div id="whatif-warnings"></div>
+          <div id="whatif-attr-impact-wrap" style="display:none">
+            <div class="whatif-attr-heading">Attribute Impact <span class="whatif-attr-heading-note">— vs. your real roster, cap holds excluded</span></div>
+            <div id="whatif-attr-impact" class="ui-table-wrap table-wrap"></div>
+          </div>
+          <div id="whatif-hard-cap-banner" style="display:none"></div>
+          <div id="whatif-exceptions-section" style="display:none">
+            <div id="whatif-exceptions-wrap" class="exceptions-card"></div>
+          </div>
+        </div>
+      </section>
+      <section id="cap-health-section" style="display:none">
+        <h2 class="section-title">Cap Health</h2>
+        <div id="cap-health-wrap" class="ch-card"></div>
+      </section>
+      <section id="exceptions-section" style="display:none">
+        <h2 class="section-title">Cap Exceptions</h2>
+        <div id="exceptions-wrap" class="exceptions-card"></div>
+      </section>
+      <section id="trade-exceptions-section" style="display:none">
+        <h2 class="section-title">Trade Exceptions</h2>
+        <div id="trade-exceptions-wrap" class="exceptions-card"></div>
+      </section>
+      <section>
+        <h2 class="section-title" id="picks-title">Draft Picks</h2>
+        <div class="ui-table-wrap table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-schedule">
+      <section>
+        <div class="sched-head">
+          <h2 class="section-title">Schedule</h2>
+          <span class="sched-head-actions">
+            <a id="sched-recap" class="sched-recap" href="/history/recap/?team=${abbr}">Season recap</a>
+            <select id="sched-season" class="sched-season" aria-label="Season" hidden></select>
+          </span>
+        </div>
+        <div class="sched-summary" id="sched-summary"></div>
+        <div id="sched-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-coaching">
+      <section>
+        <h2 class="section-title">Settings</h2>
+        <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
+        <div class="settings-card note-card">
+          <div class="settings-head">
+            <h3 class="settings-subtitle">Note to the streamer</h3>
+            <div class="settings-actions" id="streamer-note-actions"></div>
+          </div>
+          <div id="streamer-note-wrap"><div class="status">Loading…</div></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-subsection">
+            <div class="settings-head">
+              <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
+              <div class="settings-actions" id="team-settings-actions"></div>
+            </div>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked <i class="ui-icon ui-icon--warning" aria-hidden="true"></i> is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
+            <div id="team-settings-wrap"><div class="status">Loading…</div></div>
+          </div>
+          <div class="settings-subsection">
+            <div class="settings-head">
+              <h3 class="settings-subtitle" id="coaching-settings-title">Coaching Profile</h3>
+              <div class="settings-actions" id="coaching-settings-actions"></div>
+            </div>
+            <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-franchise">
+      <section id="identity-section" style="display:none">
+        <h2 class="section-title">Team Identity</h2>
+        <div id="identity-wrap"></div>
+      </section>
+      <section>
+        <h2 class="section-title">Season History</h2>
+        <div class="timeline" id="timeline-wrap"></div>
+        <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section id="rivals-section" style="display:none">
+        <h2 class="section-title">Rivalries</h2>
+        <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
+        <div class="rivals-cards" id="rivals-cards"></div>
+        <div class="ui-table-wrap table-wrap" id="rivals-wrap"></div>
+      </section>
+      <section id="personnel-section" style="display:none">
+        <h2 class="section-title">Franchise Personnel</h2>
+        <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
+      </section>
+      <section id="frontoffice-section" style="display:none">
+        <h2 class="section-title"><a class="ui-title-link" href="/fo/finances/?team=${abbr}">Front Office</a></h2>
+        <div class="fo-strip" id="frontoffice-wrap"></div>
+      </section>
+      <section id="retired-section" style="display:none">
+        <h2 class="section-title">Retired Numbers</h2>
+        <div class="retired-banners" id="retired-banners"></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-draft">
+      <section>
+        <h2 class="section-title">Draft History</h2>
+        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-alltime">
+      <section>
+        <h2 class="section-title">All-Time Top Players</h2>
+        <p class="section-sub">Regular season · ranked by total Game Score</p>
+        <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section>
+        <h2 class="section-title"><a class="ui-title-link" href="/stats/highs/?team=${abbr}">Franchise Records</a></h2>
+        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
+        <div id="records-wrap"><div class="status">Loading…</div></div>
+        <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-history">
+      <section>
+        <h2 class="section-title">Historical Rosters</h2>
+        <div class="hist-controls" id="hist-controls"></div>
+        <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
+      </section>
+    </div>
+    <div class="tab-panel hidden" id="tab-irl"></div>
+  </div>
+`;
+
+const _navScript = document.createElement('script');
+_navScript.src = '/nav.js';
+document.head.appendChild(_navScript);
+
+const _badgeScript = document.createElement('script');
+_badgeScript.src = '/token-badge.js';
+_badgeScript.onload = function () { window.__nbnBadge && window.__nbnBadge(); };
+document.head.appendChild(_badgeScript);
+
+// nav.js is injected above and may not have loaded yet, so look it up on click.
+document.getElementById('team-share-btn').onclick = e =>
+  window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
+
+// The open tab is kept in the URL hash (#coaching), so the reload after a save
+// lands back on the tab the save was made from, and a tab can be linked to.
+function showTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  if (btn.dataset.tab === 'irl') mountIrlFeed();
+  if (btn.dataset.tab === 'schedule') mountSchedule();
+}
+// A tab switch is a history entry, so Back returns to the last tab instead of
+// leaving the page.
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    showTab(btn);
+    const url = btn.dataset.tab === 'overview' ? location.pathname + location.search : '#' + btn.dataset.tab;
+    if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
+  });
+});
+window.addEventListener('popstate', () => {
+  const tab = document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1) || 'overview')}"]:not([hidden])`)
+    || document.querySelector('.tab[data-tab="overview"]');
+  if (tab) showTab(tab);
+});
+
+// IRL tab — this roster's real-world NBA game logs and injury news, from ESPN
+// via /api/irl (/irl-feed.js, shared with /media/nbnfl). Kept apart from every NBN
+// stat on purpose. Loaded the first time the tab opens, so a team page that
+// never opens it never fetches it.
+let _irlMounted = false;
+function mountIrlFeed() {
+  if (_irlMounted) return;
+  _irlMounted = true;
+  const panel = document.getElementById('tab-irl');
+  const go = () => window.IrlFeed
+    ? IrlFeed.mount(panel, { sport: 'nba', roster: abbr })
+    : (panel.innerHTML = '<div class="status">Couldn’t load the IRL stats.</div>');
+  if (window.IrlFeed) return go();
+  const s = document.createElement('script');
+  s.src = '/irl-feed.js';
+  s.onload = go;
+  s.onerror = go;
+  document.head.appendChild(s);
+}
+
+// Schedule tab — this team's games for a season: results from the box score
+// index the page already loads (/api/boxscores/games), the rest from the
+// league schedule (/api/schedule). A past season has no schedule file, so it
+// shows results only. Built the first time the tab opens.
+let _teamGamesResolve;
+const teamGamesReady = new Promise(r => { _teamGamesResolve = r; });
+let _schedMounted = false;
+let _schedSeasonGames = {};   // season -> schedule rows (fetched on demand)
+
+// July 1 rollover, the same rule as /league-time.js (not loaded on this page).
+function seasonOfDate(date) {
+  const [y, m] = date.split('-').map(Number);
+  const start = m >= 7 ? y : y - 1;
+  return `${String(start % 100).padStart(2, '0')}-${String((start + 1) % 100).padStart(2, '0')}`;
+}
+
+async function mountSchedule() {
+  if (_schedMounted) return;
+  _schedMounted = true;
+  const games = await teamGamesReady;
+  const seasons = [...new Set([currentSeasonYr(), ...games.map(g => seasonOfDate(g.date))])].sort().reverse();
+  const sel = document.getElementById('sched-season');
+  sel.innerHTML = seasons.map(s => `<option value="${s}">${s}</option>`).join('');
+  sel.hidden = seasons.length < 2;
+  sel.onchange = () => renderSchedule(games, sel.value);
+  renderSchedule(games, seasons[0]);
+}
+
+async function renderSchedule(allGames, season) {
+  document.getElementById('sched-recap').href = `/history/recap/?team=${abbr}&season=${season}`;
+  const wrap = document.getElementById('sched-wrap');
+  const summary = document.getElementById('sched-summary');
+  wrap.innerHTML = '<div class="status">Loading…</div>';
+  if (!(season in _schedSeasonGames)) {
+    _schedSeasonGames[season] = await fetch(`/api/schedule?season=${season}&team=${abbr}`)
+      .then(r => (r.ok ? r.json() : null)).then(d => d?.games || []).catch(() => []);
+  }
+  const key = (date, a, b) => `${date}|${[a, b].sort().join('~')}`;
+  const results = new Map(allGames.filter(g => seasonOfDate(g.date) === season)
+    .map(g => [key(g.date, g.home_team, g.away_team), g]));
+
+  // One row per game: every scheduled game, plus any result the schedule
+  // doesn't list (the playoffs, and every game of a season with no schedule).
+  const rows = _schedSeasonGames[season].map(g => ({ ...g, result: results.get(key(g.date, g.home_team, g.away_team)) }));
+  const listed = new Set(rows.map(r => key(r.date, r.home_team, r.away_team)));
+  results.forEach((g, k) => { if (!listed.has(k)) rows.push({ date: g.date, home_team: g.home_team, away_team: g.away_team, result: g }); });
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+  if (!rows.length) {
+    summary.innerHTML = '';
+    wrap.innerHTML = '<div class="status">No games this season yet.</div>';
+    return;
+  }
+
+  // Box score sides come from the raw rows, so read home/away off the result
+  // when there is one rather than off the schedule.
+  const side = g => {
+    const home = (g.result || g).home_team === abbr;
+    const opp = home ? (g.result || g).away_team : (g.result || g).home_team;
+    return { home, opp };
+  };
+  const won = r => (r.home_team === abbr ? r.home_score > r.away_score : r.away_score > r.home_score);
+  const ours = r => (r.home_team === abbr ? [r.home_score, r.away_score] : [r.away_score, r.home_score]);
+
+  // Running regular-season record, and the splits for the summary line.
+  const rec = { w: 0, l: 0, hw: 0, hl: 0, aw: 0, al: 0 };
+  const form = [];
+  rows.forEach(g => {
+    if (!g.result || g.result.gametype === 'PLAYOFF') return;
+    const w = won(g.result), { home } = side(g);
+    rec[w ? 'w' : 'l']++;
+    rec[(home ? 'h' : 'a') + (w ? 'w' : 'l')]++;
+    form.push(w);
+    g.recAfter = `${rec.w}–${rec.l}`;
+  });
+  const last10 = form.slice(-10);
+  let streak = 0;
+  for (let i = form.length - 1; i >= 0 && form[i] === form[form.length - 1]; i--) streak++;
+  const stat = (label, val) => `<div class="sched-stat"><span>${label}</span><b>${val}</b></div>`;
+  summary.innerHTML = form.length ? [
+    stat('Record', `${rec.w}–${rec.l}`),
+    stat('Home', `${rec.hw}–${rec.hl}`),
+    stat('Away', `${rec.aw}–${rec.al}`),
+    stat('Last 10', `${last10.filter(Boolean).length}–${last10.filter(w => !w).length}`),
+    stat('Streak', `${form[form.length - 1] ? 'W' : 'L'}${streak}`),
+  ].join('') : '';
+
+  const fmtDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const fmtMonth = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const fmtTime = t => {
+    const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
+    return m ? `${m[1]}:${m[2]} ${m[3] === 'p' ? 'PM' : 'AM'} ET` : '';
+  };
+  const boxHref = r => `/stats/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}`;
+  const previewHref = g => `/preview/?away=${g.away_team}&home=${g.home_team}&date=${g.date}`;
+
+  let html = '', month = '';
+  const nextIdx = rows.findIndex(g => !g.result);
+  rows.forEach((g, i) => {
+    const m = fmtMonth(g.date);
+    if (m !== month) {
+      if (month) html += '</tbody></table></div>';
+      month = m;
+      html += `<h3 class="sched-month">${m}</h3><div class="ui-table-wrap table-wrap"><table class="sched-table"><tbody>`;
+    }
+    const { home, opp } = side(g);
+    const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
+    const stream = g.stream ? ' <span class="sched-tag sched-tag-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
+    let res;
+    if (g.result) {
+      const [us, them] = ours(g.result);
+      const w = won(g.result);
+      res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="${w ? 'sched-w' : 'sched-l'}">${w ? 'W' : 'L'}</span> ${us}–${them}</a>`;
+    } else {
+      res = `<a href="${previewHref(g)}" class="sched-res sched-up">${fmtTime(g.time_et) || 'Preview'} ›</a>`;
+    }
+    html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
+      <td class="muted sched-date">${fmtDay(g.date)}</td>
+      <td class="sched-opp"><span class="muted">${home ? 'vs' : '@'}</span>
+        <span class="sched-opp-team"><a href="/stats/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${stream}</span></td>
+      <td class="right">${res}</td>
+      <td class="right muted sched-rec">${g.recAfter || ''}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+// Open the tab named in the hash. After mountIrlFeed's state is declared, so
+// #irl doesn't hit it before initialisation.
+{
+  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]:not([hidden])`);
+  if (initialTab) showTab(initialTab);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] ?? ''; });
+    return obj;
+  });
+}
+
+function parseLine(line) {
+  const out = [];
+  let cur = '', quoted = false;
+  for (const ch of line) {
+    if (ch === '"') { quoted = !quoted; }
+    else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  out.push(cur);
+  return out;
+}
+
+function fmtPct(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? '—' : n.toFixed(3);
+}
+
+function fmtSigned(v, decimals = 1) {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + n.toFixed(decimals);
+}
+
+function sv(row, field) {
+  const v = row[field];
+  if (!v || v === 'NA') return -Infinity;
+  const n = parseFloat(v);
+  return isNaN(n) ? v : n;
+}
+
+function formatSalary(v) {
+  if (!v && v !== 0) return '—';
+  const s = String(v).trim();
+  if (!s || s === '—') return '—';
+  const digits = s.replace(/[$,\s]/g, '');
+  const n = parseFloat(digits);
+  if (isNaN(n)) return s;
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+function buildNonGtdTip(year, guaranteed, guarantee_dates, guarantee_schedule) {
+  function fmtDate(d) {
+    if (!d) return '';
+    const dt = new Date(d + 'T00:00:00');
+    return isNaN(dt) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  const sched    = (guarantee_schedule || {})[year];
+  const gtdAmt   = (guaranteed || {})[year];
+  const gtdDate  = (guarantee_dates || {})[year];
+  const lines = ['Non-Guaranteed'];
+  if (sched && sched.length) {
+    sched.forEach(step => {
+      if (!step.amount) {
+        lines.push('→ Fully guaranteed' + (step.date ? ' ' + fmtDate(step.date) : ' at signing'));
+      } else {
+        lines.push('→ ' + formatSalary(step.amount) + ' vests' + (step.date ? ' ' + fmtDate(step.date) : ' at signing'));
+      }
+    });
+  } else if (gtdAmt || gtdDate) {
+    if (gtdAmt)  lines.push('→ ' + formatSalary(gtdAmt) + ' guaranteed');
+    if (gtdDate) lines.push('→ Fully guaranteed ' + fmtDate(gtdDate));
+  } else {
+    lines.push('→ $0 guaranteed');
+  }
+  return lines.join('\n');
+}
+
+function displayNameFromBio(canonical) {
+  if (!canonical) return '';
+  if (typeof nbnPlayerName === 'function') return nbnPlayerName(canonical);
+  const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  if (canonical.includes(',')) {
+    const [last, first] = canonical.split(',', 2);
+    return toTitle(`${first.trim()} ${last.trim()}`);
+  }
+  return toTitle(canonical);
+}
+
+function calcAge(dob) {
+  if (!dob) return '';
+  return Math.floor((Date.now() - new Date(dob + 'T00:00:00').getTime()) / (365.25 * 24 * 3600 * 1000));
+}
+
+function buildTable(cols, rows, initSortField, initSortDir, renderCell) {
+  let sortField = initSortField;
+  let sortDir = initSortDir;
+
+  const table = document.createElement('table');
+  const thead = table.createTHead();
+  const hr = thead.insertRow();
+
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    const arrow = document.createElement('span');
+    arrow.className = 'sort-arrow';
+    th.appendChild(document.createTextNode(col.label));
+    th.appendChild(arrow);
+    th.dataset.active = String(col.sortField === sortField);
+    if (col.cls?.includes('right')) th.classList.add('right');
+    th.addEventListener('click', () => {
+      if (sortField === col.sortField) sortDir *= -1;
+      else { sortField = col.sortField; sortDir = col.defaultDir; }
+      hr.querySelectorAll('th').forEach(t => {
+        t.dataset.active = 'false';
+        t.querySelector('.sort-arrow').textContent = '↓';
+      });
+      th.dataset.active = 'true';
+      th.querySelector('.sort-arrow').textContent = sortDir === -1 ? '↓' : '↑';
+      rebuild();
+    });
+    hr.appendChild(th);
+  });
+
+  const activeIdx = cols.findIndex(c => c.sortField === sortField);
+  if (activeIdx >= 0) {
+    const activeTh = hr.querySelectorAll('th')[activeIdx];
+    activeTh.querySelector('.sort-arrow').textContent = initSortDir === -1 ? '↓' : '↑';
+  }
+
+  const tbody = table.createTBody();
+
+  function rebuild() {
+    tbody.innerHTML = '';
+    [...rows].sort((a, b) => {
+      const va = sv(a, sortField), vb = sv(b, sortField);
+      return va < vb ? -sortDir : va > vb ? sortDir : 0;
+    }).forEach(row => {
+      const tr = tbody.insertRow();
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        if (col.cls) col.cls.split(' ').forEach(c => c && td.classList.add(c));
+        renderCell(td, col, row);
+      });
+    });
+  }
+
+  rebuild();
+  return table;
+}
+
+// Google-Sheets-style range selection: drag or shift-click down a single numeric
+// column inside `container` to see the sum/avg/count of the selected cells in a
+// floating bar. Ctrl/Cmd-click (or ctrl/cmd-drag) adds a non-contiguous block to
+// the existing selection instead of replacing it, mirroring Sheets' multi-select.
+// Delegated on `container` (not the table) so it keeps working across re-renders
+// (mode switches, edits) without needing to be re-attached.
+function enableRangeSum(container) {
+  const bar = document.createElement('div');
+  bar.className = 'range-sum-bar';
+  document.body.appendChild(bar);
+
+  let selectedCol = null;   // column index every selected cell must belong to
+  let committed = new Set(); // cells locked in from prior, already-finished gestures
+  let gesture = [];          // cells touched by the in-progress mouse gesture
+  let anchor = null;         // start cell of the in-progress gesture
+  let dragging = false;
+
+  function dataRows() {
+    const tbody = container.querySelector('table tbody');
+    return tbody ? [...tbody.rows].filter(tr => !tr.classList.contains('subheader')) : [];
+  }
+
+  function eligibleTd(target) {
+    const td = target.closest && target.closest('td.right');
+    if (!td || !container.contains(td) || !td.closest('tbody')) return null;
+    if (td.closest('tr').classList.contains('subheader')) return null;
+    if (td.classList.contains('nosum')) return null;   // right-aligned but not a number
+    return td;
+  }
+
+  function numFromCell(td) {
+    let t = td.textContent.replace(/[$,%\s]/g, '');
+    if (t[0] === '+') t = t.slice(1);
+    if (t === '' || t === '—' || t === '-') return null;
+    const n = parseFloat(t);
+    return isNaN(n) ? null : n;
+  }
+
+  function blockBetween(fromTd, toTd) {
+    if (toTd.cellIndex !== fromTd.cellIndex) return [fromTd];
+    const rows = dataRows();
+    const a = rows.indexOf(fromTd.closest('tr'));
+    const b = rows.indexOf(toTd.closest('tr'));
+    if (a === -1 || b === -1) return [fromTd];
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    return rows.slice(lo, hi + 1).map(tr => tr.cells[fromTd.cellIndex]).filter(Boolean);
+  }
+
+  function currentSelection() {
+    return new Set([...committed, ...gesture]);
+  }
+
+  function clearSelection() {
+    container.querySelectorAll('td.cell-selected').forEach(td => td.classList.remove('cell-selected'));
+    selectedCol = null;
+    committed = new Set();
+    gesture = [];
+    anchor = null;
+    dragging = false;
+    bar.style.display = 'none';
+  }
+
+  function render() {
+    container.querySelectorAll('td.cell-selected').forEach(td => td.classList.remove('cell-selected'));
+    const all = currentSelection();
+    all.forEach(td => td.classList.add('cell-selected'));
+    if (all.size < 2) { bar.style.display = 'none'; return; }
+
+    const nums = [...all].map(numFromCell).filter(n => n !== null);
+    if (!nums.length) { bar.style.display = 'none'; return; }
+    const isCurrency = [...all].some(td => td.textContent.includes('$'));
+    const sum = nums.reduce((a, b) => a + b, 0);
+    const avg = sum / nums.length;
+    const fmt = n => isCurrency
+      ? '$' + Math.round(n).toLocaleString('en-US')
+      : n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    bar.innerHTML = `Sum <b>${fmt(sum)}</b> &nbsp;·&nbsp; Avg <b>${fmt(avg)}</b> &nbsp;·&nbsp; Count <b>${nums.length}</b>`;
+    bar.style.display = 'block';
+  }
+
+  container.addEventListener('mousedown', e => {
+    const td = eligibleTd(e.target);
+    if (!td) { clearSelection(); return; }
+    e.preventDefault();
+
+    const ctrlKey = e.ctrlKey || e.metaKey;
+    const sameCol = selectedCol === td.cellIndex;
+
+    if (e.shiftKey && anchor && sameCol) {
+      // Plain shift-click always re-anchors to one contiguous block.
+      committed = new Set();
+      gesture = blockBetween(anchor, td);
+      dragging = true;
+      render();
+      return;
+    }
+
+    if (ctrlKey && selectedCol !== null && sameCol) {
+      // Fold whatever was selected before into `committed`, then start a new
+      // block anchored at this cell that gets ADDED rather than replacing it.
+      committed = currentSelection();
+      anchor = td;
+      gesture = [td];
+      dragging = true;
+      render();
+      return;
+    }
+
+    // Plain click/drag: start a brand-new selection in this column.
+    selectedCol = td.cellIndex;
+    committed = new Set();
+    anchor = td;
+    gesture = [td];
+    dragging = true;
+    render();
+  });
+
+  container.addEventListener('mouseover', e => {
+    if (!dragging || !anchor) return;
+    const td = eligibleTd(e.target);
+    if (!td || td.cellIndex !== selectedCol) return;
+    gesture = blockBetween(anchor, td);
+    render();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    committed = currentSelection();
+    gesture = [];
+    dragging = false;
+  });
+  document.addEventListener('mousedown', e => { if (!container.contains(e.target)) clearSelection(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') clearSelection(); });
+
+  new MutationObserver(clearSelection).observe(container, { childList: true });
+}
+
+// Copies `table` to the clipboard as tab-separated text (plus an HTML table
+// variant) so pasting into Google Sheets/Excel lands each cell in its own
+// spreadsheet cell instead of one blob of text. Player-name cells resolve to
+// just the link text (skipping avatar/badge/note clutter); footnote markup
+// (`sup` player counts, cap-vs-total diff lines, the Guaranteed info badge)
+// is stripped so it can't glue onto an adjacent number (e.g. "$50,000,0003").
+function getCellText(td) {
+  const clone = td.cloneNode(true);
+  clone.querySelectorAll('sup, .tfoot-diff, .badge').forEach(el => el.remove());
+  const a = clone.querySelector('a');
+  const text = (a ? a.textContent : clone.textContent) || '';
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+function tableToTSV(table) {
+  return [...table.querySelectorAll('tr')]
+    .map(tr => [...tr.cells].map(td => getCellText(td).replace(/\t/g, ' ')).join('\t'))
+    .join('\n');
+}
+
+function tableToHTML(table) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rows = [...table.querySelectorAll('tr')].map(tr => {
+    const cells = [...tr.cells].map(td => {
+      const tag = td.tagName.toLowerCase();
+      const colspan = td.colSpan > 1 ? ` colspan="${td.colSpan}"` : '';
+      return `<${tag}${colspan}>${esc(getCellText(td))}</${tag}>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('');
+  return `<table>${rows}</table>`;
+}
+
+async function copyTableToClipboard(table, btn) {
+  const tsv = tableToTSV(table);
+  const origLabel = btn.textContent;
+  const flash = msg => { btn.textContent = msg; setTimeout(() => { btn.textContent = origLabel; }, 1400); };
+
+  try {
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([tsv], { type: 'text/plain' }),
+          'text/html':  new Blob([tableToHTML(table)], { type: 'text/html' }),
+        }),
+      ]);
+    } else {
+      await navigator.clipboard.writeText(tsv);
+    }
+    flash('Copied!');
+  } catch (err) {
+    // Clipboard API needs a secure context + permission; fall back to the
+    // old select-a-hidden-textarea-and-execCommand trick.
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = tsv;
+      ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      flash('Copied!');
+    } catch (err2) {
+      flash('Copy failed');
+    }
+  }
+}
+
+function attachCopyBtn(titleId, wrapId) {
+  const titleEl = document.getElementById(titleId);
+  if (!titleEl || titleEl.querySelector('.section-copy-btn')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'section-copy-btn';
+  btn.textContent = 'Copy';
+  btn.style.cssText = 'font-size:var(--text-xs);padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+  btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+  btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
+  btn.addEventListener('click', () => {
+    const table = document.getElementById(wrapId)?.querySelector('table');
+    if (table) copyTableToClipboard(table, btn);
+  });
+  titleEl.appendChild(btn);
+}
+
+const CAP_HOLD_CSS = {
+  UFA:        'cap-ufa',
+  RFA:        'cap-rfa',
+  PLAYER_OPT: 'cap-player-opt',
+  TEAM_OPT:   'cap-team-opt',
+  NON_GTD:    'cap-non-gtd',
+};
+
+const CAP_HOLD_LABELS = {
+  UFA:        'UFA Hold',
+  RFA:        'RFA Hold',
+  PLAYER_OPT: 'Player Option',
+  TEAM_OPT:   'Team Option',
+  NON_GTD:    'Non-Guaranteed',
+};
+
+const SWATCH_COLORS = {
+  UFA:        'var(--cap-ufa)',
+  RFA:        'var(--cap-rfa)',
+  PLAYER_OPT: 'var(--cap-player-opt)',
+  TEAM_OPT:   'var(--cap-team-opt)',
+  NON_GTD:    'var(--border)',
+};
+
+// Thin alias for contract.js's parseCapHoldMap, kept because seven call sites
+// here use the shorter name. Falls back to a local copy if contract.js hasn't
+// loaded — a few of these run off CSV rows before the render awaits
+// contractReady, and a missing shorthand is better than a broken roster table.
+function parseCapHolds(val) {
+  if (typeof parseCapHoldMap === 'function') return parseCapHoldMap(val);
+  if (val && typeof val === 'object') return val;
+  const map = {};
+  if (!val) return map;
+  String(val).split(',').forEach(pair => {
+    const [yr, type] = pair.split(':');
+    if (yr && type) map[yr.trim()] = type.trim();
+  });
+  return map;
+}
+
+// The current league year (cap/contract clock). Set from GET /api/league-year at
+// page load; falls back to the date-based season if that fetch fails. BOD advances
+// it from Cap Settings; once set it drives every "current season" use on this page
+// (roster first column, total salary, hard-cap banner, exceptions, trades).
+let LEAGUE_YEAR = null;
+// True during the regular season, when § 2.1's roster ceiling is 15 rather than
+// 20 — from GET /api/league-year, which reads it off the schedule. Undefined
+// until that answers, which cap-health.js reads as "don't guess".
+let IN_SEASON;
+// The current league year's last regular-season game, from the same call.
+// Null when it has no schedule yet.
+let SEASON_LAST_GAME = null;
+
+function currentSeasonYr() {
+  if (LEAGUE_YEAR) return LEAGUE_YEAR;
+  const now = new Date();
+  const y = now.getFullYear() % 100;
+  const m = now.getMonth() + 1;
+  return m < 7
+    ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+    : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+}
+
+function parseSalaryNum(v) {
+  if (!v && v !== 0) return 0;
+  const n = parseFloat(String(v).replace(/[$,\s]/g, ''));
+  return isNaN(n) ? 0 : Math.round(n);
+}
+
+function fmtDollars(v) {
+  return v ? '$' + Math.round(v).toLocaleString('en-US') : '$0';
+}
+
+// Real, persisted Empty Roster Charge (rulebook § 2.1a) — distinct from the
+// 14-player standard-roster minimum (§ 2.1) and from the trade-legality mock
+// the backend runs against a 14-player floor (routers/transactions.py,
+// _empty_roster_charge). The charge that actually shows on a team's roster
+// and counts toward real Team Salary only kicks in below 12 players — this
+// mirrors _is_standard_roster_slot's type filter (two-way/draft-rights/dead
+// don't occupy a standard slot) but against the narrower 12-player floor.
+const ROSTER_CHARGE_MIN = 12;
+const ROSTER_EXEMPT_TYPES = new Set(['two-way', 'draft-rights', 'dead']);
+
+// § 2.2: a two-way may play at most 50 games a season. There is no call-up
+// step, so the count is all there is to watch. Box scores only hold games
+// played, so G in player_seasons.csv is games played. Summed over every team
+// for the season, since a player traded mid-season still has one limit.
+const TWO_WAY_GAME_LIMIT = 50;
+let TWO_WAY_GAMES = {}; // slug -> regular-season games this season; set once player_seasons.csv loads
+
+function computeSeasonGames(allSeasons, season) {
+  const out = {};
+  allSeasons.forEach(r => {
+    if (r.SEASON !== season || !r.SLUG) return;
+    out[r.SLUG] = (out[r.SLUG] || 0) + (parseInt(r.G, 10) || 0);
+  });
+  return out;
+}
+
+// "12/50 G", gold from 40 games, red once the limit is reached.
+function twoWayGamesBadge(slug, prefix = '') {
+  const g = TWO_WAY_GAMES[slug] || 0;
+  const tag = document.createElement('span');
+  tag.className = 'ui-badge twoway-games'
+    + (g >= TWO_WAY_GAME_LIMIT ? ' ui-badge--danger' : g >= 40 ? ' ui-badge--warning' : '');
+  tag.textContent = `${prefix}${g}/${TWO_WAY_GAME_LIMIT} G`;
+  attachTooltip(tag, `Two-way: ${g} of ${TWO_WAY_GAME_LIMIT} games played in ${currentSeasonYr()} (§ 2.2)`);
+  return tag;
+}
+
+function computeEmptyRosterCharge(rosterRows, biosData, capLevels, season) {
+  const standardCount = rosterRows.filter(row => {
+    const bio = biosData[row.SLUG] || {};
+    const type = row.TYPE || bio.type || '';
+    return !ROSTER_EXEMPT_TYPES.has(type);
+  }).length;
+  const deficiency = Math.max(0, ROSTER_CHARGE_MIN - standardCount);
+  const rookieMin = (capLevels?.[season] || {}).min_salary_scale?.['0'] || 0;
+  return { deficiency, rookieMin, charge: deficiency * rookieMin };
+}
+
+// Team salary totals (§ 1.3/1.4: teamSalaryExHolds excludes pure UFA/RFA
+// free-agent holds for apron/hard-cap comparisons, teamSalaryFull keeps them
+// for plain Cap/room checks) plus the real Empty Roster Charge. Shared by the
+// real roster render and by What-If Mode, which calls this with a hypothetical
+// rosterRows/deadCapRows + a merged biosData rather than the real ones.
+function computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, season) {
+  const FA_HOLD_TYPES = ['UFA', 'RFA'];
+  let teamSalaryFull = 0, teamSalaryExHolds = 0;
+  rosterRows.forEach(row => {
+    const bio = biosData[row.SLUG] || {};
+    const sal = parseSalaryNum((bio.salaries || {})[season]);
+    teamSalaryFull += sal;
+    if (!FA_HOLD_TYPES.includes((bio.cap_holds || {})[season])) teamSalaryExHolds += sal;
+  });
+  deadCapRows.forEach(row => {
+    const sal = parseSalaryNum(row[season] || '');
+    teamSalaryFull += sal;
+    teamSalaryExHolds += sal;
+  });
+  const erc = computeEmptyRosterCharge(rosterRows, biosData, capLevels, season);
+  teamSalaryFull += erc.charge;
+  teamSalaryExHolds += erc.charge;
+  return { teamSalaryFull, teamSalaryExHolds, erc };
+}
+
+function computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState) {
+  // team-state.json's schema is the short "room" form, but a record written
+  // by a declared `room_exception` signing_method stamped the long form
+  // before that was normalized on write — accept both so an old record
+  // doesn't fall through to '—' below.
+  if (teamState?.mle_type) return teamState.mle_type === 'room_exception' ? 'room' : teamState.mle_type;
+  const cl = capLevels?.[season];
+  if (!cl?.ntmle_amount) return null;
+  // Room Exception eligibility is Cap-based and still counts holds (§ 3.2);
+  // NTMLE/TMLE eligibility is apron-based and excludes pure FA holds (§ 1.3/1.4).
+  if (cl.cap - teamSalaryFull > cl.ntmle_amount) return 'room';
+  if (cl.apron1 - teamSalaryExHolds >= cl.ntmle_amount) return 'ntmle';
+  return 'tmle';
+}
+
+function mleTypeLabel(type) {
+  return { room: 'Room Exception', ntmle: 'Non-Taxpayer MLE', tmle: 'Taxpayer MLE' }[type] || '—';
+}
+
+// What-If Mode's banner only. The real page says this quietly, in the Cap
+// Health card (renderCapHealth): it is a standing, not an alarm, and
+// a red banner above the roster was the first thing every visitor read.
+function renderHardCapBanner(teamState, el) {
+  if (!el) return;
+  if (!teamState?.hard_cap) { el.style.display = 'none'; return; }
+  const isApron2 = teamState.hard_cap === 'second_apron';
+  el.className = 'hard-cap-banner' + (isApron2 ? ' apron2' : '');
+  el.style.display = '';
+  const reason = teamState.hard_cap_reason ? ` · ${teamState.hard_cap_reason}` : '';
+  el.dataset.icon = 'warning';
+  el.textContent = `Hard-Capped: ${isApron2 ? 'Second' : 'First'} Apron${reason}`;
+}
+
+// The undrafted draft-year horizon to reason about for § 7.2 — once every
+// team's pick for a year is drafted (player set), that year drops out of the
+// ledger entirely and would otherwise misread as a league-wide gap rather
+// than a resolved past year.
+function stepienYearRange(allPicks) {
+  const years = (allPicks || []).filter(p => p.round === 1 && !p.player).map(p => p.year);
+  if (!years.length) return null;
+  return [Math.min(...years), Math.max(...years)];
+}
+
+// § 7.2 Stepien Rule is a restriction on trading, not a retroactive state —
+// the league can't already be sitting in violation (the trade that would
+// cause it gets blocked at submit time, see nbn-api's _check_stepien_rule),
+// so a whole-team "are you currently in violation" check is close to
+// pointless: it can only ever fire from a data-modeling gap, not a real one.
+// What's actually useful to a GM is knowing WHICH of their picks they
+// currently can't trade away — this returns the set of "{year}:{orig}" keys
+// for picks that are the team's only claim on that draft year, with an
+// already-empty year on one side, so trading it away in isolation would open
+// a two-year gap right now. Mirrors the backend's per-trade simulation, just
+// evaluated proactively per pick instead of only at trade-submit time.
+function computeStepienLocked(teamPicks, allPicks, teamAbbr) {
+  const locked = new Set();
+  const range = stepienYearRange(allPicks);
+  if (!range) return locked;
+  const [lo, hi] = range;
+  const round1 = (teamPicks || []).filter(p => p.round === 1 && !p.player);
+  const have = new Set(round1.map(p => p.year));
+
+  // A pick can carry a real but easy-to-miss claim: `ladder_fallback_of` on
+  // a DIFFERENT pick names it as compensation if that pick's protection
+  // ladder never resolves. `/api/picks/{team}` doesn't currently surface
+  // this (its own owner/leaves match doesn't check ladder_fallback_of), so
+  // `teamPicks` alone would silently miss real year coverage -- pull it
+  // from the league-wide `allPicks` instead, which carries the raw field.
+  // Not added to the claims map below (no visible row exists for it to
+  // attach a lock flag to, a separate, pre-existing gap in the API's own
+  // team filter) -- just credited toward `have` so it doesn't cause a
+  // false lock on some OTHER real pick in a neighboring year.
+  (allPicks || []).forEach(p => {
+    if (p.round === 1 && !p.player && p.ladder_fallback_of?.to === teamAbbr) have.add(p.year);
+  });
+
+  // Two pick rows sharing the same group_id (a swap group / binary chain)
+  // are ONE shared claim, not two independent ones -- trading either row
+  // mutates the same underlying priority list / chain node (see nbn-api's
+  // registry.handle_retrade), so a team can't give up one and "keep the
+  // other." Group rows by claim before counting how many distinct claims a
+  // team holds in a year, and lock every row in a claim together.
+  const claims = new Map();
+  round1.forEach(p => {
+    const key = p.group_id || `solo:${p.year}:${p.orig}`;
+    if (!claims.has(key)) claims.set(key, { year: p.year, rows: [] });
+    claims.get(key).rows.push(p);
+  });
+  const countByYear = new Map();
+  claims.forEach(c => countByYear.set(c.year, (countByYear.get(c.year) || 0) + 1));
+  claims.forEach(c => {
+    if (countByYear.get(c.year) > 1) return;   // another distinct claim still covers this year
+    const prevMissing = c.year - 1 >= lo && !have.has(c.year - 1);
+    const nextMissing = c.year + 1 <= hi && !have.has(c.year + 1);
+    if (prevMissing || nextMissing) c.rows.forEach(p => locked.add(`${p.round}:${p.year}:${p.orig}`));
+  });
+  return locked;
+}
+
+// -----------------------------------------------------------------------------
+// Cap Health
+//
+// Where the team sits against § 1.3/1.4's cap and aprons, its own hard cap, and
+// § 2.1/2.1a/2.2's roster limits.
+//
+// Differences from the league sheet are deliberately not shown here: they are
+// bookkeeping for the rosters committee, and live on /committees/rosters.
+//
+// The rules are in /cap-health.js, not here, so What-If Mode and the
+// league-wide compliance board apply the same ones. This function only renders,
+// and it recomputes nothing: the salary figures are passed in from
+// computeCapSummary.
+// -----------------------------------------------------------------------------
+
+// § 2.1's "standard roster slot" — the same type filter computeEmptyRosterCharge
+// uses. Two-way, draft-rights and dead entries don't occupy one.
+function countRosterSlots(rosterRows, biosData) {
+  let standard = 0, twoWay = 0;
+  (rosterRows || []).forEach(row => {
+    const type = row.TYPE || (biosData[row.SLUG] || {}).type || '';
+    if (type === 'two-way') twoWay++;
+    else if (!ROSTER_EXEMPT_TYPES.has(type)) standard++;
+  });
+  return { standard, twoWay };
+}
+
+// The team's unsigned picks, in the shape CapHealth.draftRightsWarnings reads
+// (the same fields `cap_history._draft_rights` sends the league-wide pages).
+function draftRightsFor(rosterRows, biosData) {
+  return (rosterRows || []).filter(row => (biosData[row.SLUG] || {}).type === 'draft-rights')
+    .map(row => {
+      const bio = biosData[row.SLUG];
+      return { slug: row.SLUG, name: displayNameFromBio(bio.name || row.SLUG),
+        draft_year: bio.draft_year, draft_round: bio.draft_round, stash: bio.stash || null };
+    });
+}
+
+function chBlockTitle(title, countText) {
+  const head = document.createElement('div');
+  head.className = 'ch-block-title';
+  head.appendChild(document.createTextNode(title));
+  if (countText) {
+    const c = document.createElement('span');
+    c.className = 'ch-block-count';
+    c.textContent = countText;
+    head.appendChild(c);
+  }
+  return head;
+}
+
+function renderCapHealth(opts) {
+  const section = document.getElementById('cap-health-section');
+  const wrap = document.getElementById('cap-health-wrap');
+  if (!section || !wrap || !window.CapHealth) return;
+
+  const counts = countRosterSlots(opts.rosterRows, opts.biosData);
+  const { rows, warnings } = CapHealth.standing({
+    season: opts.season,
+    capLevels: opts.capLevels,
+    teamState: opts.teamState,
+    teamSalaryFull: opts.teamSalaryFull,
+    teamSalaryExHolds: opts.teamSalaryExHolds,
+    standardCount: counts.standard,
+    twoWayCount: counts.twoWay,
+    inSeason: IN_SEASON,
+    erc: opts.erc,
+    draftRights: draftRightsFor(opts.rosterRows, opts.biosData),
+    fmt: fmtDollars,
+  });
+
+  section.style.display = '';
+  wrap.innerHTML = '';
+
+  const standingBlock = document.createElement('div');
+  standingBlock.className = 'ch-block';
+  standingBlock.appendChild(chBlockTitle('Standing', opts.season));
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = `ch-row ch-tone-${r.tone || 'plain'}`;
+    const label = document.createElement('span');
+    label.className = 'ch-row-label';
+    label.textContent = r.label;
+    const amount = document.createElement('span');
+    amount.className = 'ch-row-amount';
+    amount.textContent = r.value !== undefined ? r.value : (r.amount === null ? '—' : fmtDollars(r.amount));
+    const note = document.createElement('span');
+    note.className = 'ch-row-note';
+    note.textContent = r.note || '';
+    row.append(label, amount, note);
+    standingBlock.appendChild(row);
+    // Why the team is hard-capped. The stored reason ends with the
+    // triggering transaction's id, which means nothing on this page.
+    const why = r.key === 'hard_cap'
+      ? String(opts.teamState?.hard_cap_reason || '').replace(/\s*\(txn [0-9a-f]+\)\s*$/i, '').trim()
+      : '';
+    if (why) {
+      const reason = document.createElement('div');
+      reason.className = 'ch-foot';
+      reason.textContent = `Hard-capped by: ${why}`;
+      standingBlock.appendChild(reason);
+    }
+  });
+
+  // Only real problems get a warning line of their own. "Over the Salary Cap"
+  // is the normal condition for most of the league and the Standing rows above
+  // already say it in dollars; repeating it as a warning would train owners to skip
+  // the whole card. What-If Mode renders the full set, where crossing a line is
+  // exactly the question being asked.
+  warnings.filter(w => w.severity !== 'note').forEach(w => {
+    const line = document.createElement('div');
+    line.className = 'ch-warning' + (w.severity === 'caution' ? ' caution' : '');
+    if (w.severity !== 'caution') line.dataset.icon = 'warning';
+    line.textContent = (w.severity === 'caution' ? '• ' : '') + w.text;
+    standingBlock.appendChild(line);
+  });
+  wrap.appendChild(standingBlock);
+}
+
+function renderExceptionsSection(
+  teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season,
+  section = document.getElementById('exceptions-section'),
+  wrap = document.getElementById('exceptions-wrap'),
+) {
+  if (!section || !wrap) return;
+  const cl = capLevels?.[season];
+  if (!cl?.ntmle_amount && !cl?.bae_amount) { section.style.display = 'none'; return; }
+
+  const mleType = computeMleType(teamSalaryFull, teamSalaryExHolds, capLevels, season, teamState);
+  const mleTotal = mleType === 'tmle' ? (cl.tmle_amount || 0) : mleType === 'room' ? (cl.room_amount || 0) : (cl.ntmle_amount || 0);
+  const mleUsed = teamState?.mle_used || 0;
+  const mleRemaining = Math.max(0, mleTotal - mleUsed);
+  const baeUsed = teamState?.bae_used;
+  const baeAvail = teamState?.bae_available;
+
+  wrap.innerHTML = '';
+
+  if (mleType && mleTotal > 0) {
+    const row = document.createElement('div');
+    row.className = 'exceptions-row';
+    const remCls = mleRemaining > 0 ? 'exc-remaining' : 'exc-used';
+    row.innerHTML = `
+      <span class="exc-label">MLE <span class="exc-mle-type">(${mleTypeLabel(mleType)})</span></span>
+      <span>
+        <span class="${remCls}">${fmtDollars(mleRemaining)} remaining</span>
+        <span style="color:var(--text-dim);font-size:var(--text-xs)"> / ${fmtDollars(mleTotal)}</span>
+        ${mleUsed ? `<span style="color:var(--text-muted);font-size:var(--text-xs)"> (${fmtDollars(mleUsed)} used)</span>` : ''}
+      </span>`;
+    wrap.appendChild(row);
+  }
+
+  if (baeAvail || baeUsed) {
+    const row = document.createElement('div');
+    row.className = 'exceptions-row';
+    row.innerHTML = baeUsed
+      ? `<span class="exc-label">BAE</span><span class="exc-used">Used · ${fmtDollars(cl.bae_amount)}</span>`
+      : `<span class="exc-label">BAE</span><span class="exc-remaining">Available · ${fmtDollars(cl.bae_amount)}</span>`;
+    wrap.appendChild(row);
+  }
+
+  section.style.display = wrap.children.length ? '' : 'none';
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Rulebook § 4.1a — banked when a team sends out more salary than it receives
+// in a trade; not itself tradeable. Read-only for now: creation/consumption is
+// manual (ported from the league's roster/cap spreadsheet), not computed from
+// trade transactions.
+function renderTradeExceptionsSection(exceptions) {
+  const section = document.getElementById('trade-exceptions-section');
+  const wrap = document.getElementById('trade-exceptions-wrap');
+  wrap.innerHTML = '';
+
+  const list = (exceptions || []).slice().sort((a, b) => a.expires_date.localeCompare(b.expires_date));
+  if (!list.length) { section.style.display = 'none'; return; }
+
+  list.forEach(exc => {
+    const row = document.createElement('div');
+    row.className = 'exceptions-row';
+    if (exc.expired) row.style.opacity = '0.5';
+    const remCls = !exc.expired && exc.remaining > 0 ? 'exc-remaining' : 'exc-used';
+    const noteHtml = exc.note ? `<span class="exc-mle-type">(${exc.note})</span>` : '';
+    row.innerHTML = `
+      <span class="exc-label">TPE ${noteHtml}</span>
+      <span>
+        <span class="${remCls}">${fmtDollars(exc.remaining)} remaining</span>
+        <span style="color:var(--text-dim);font-size:var(--text-xs)"> / ${fmtDollars(exc.amount)}</span>
+        <span style="color:var(--text-muted);font-size:var(--text-xs)"> · ${exc.expired ? 'expired' : 'expires'} ${fmtDate(exc.expires_date)}</span>
+      </span>`;
+    wrap.appendChild(row);
+  });
+
+  section.style.display = '';
+}
+
+// Compact roster-table badges summarizing a player's standout 2K attributes.
+// Each entry is a specific skill (not a whole ratings-popup category); score
+// is the plain average of every attribute in the group (see
+// computeAttrBadgeCutoffs for why the bronze/silver/gold bar is calibrated
+// per group instead of one fixed number).
+const ATTR_BADGE_GROUPS = [
+  { label: 'S3', full: 'Scoring: 3PT',        keys: ['three_point_shot'] },
+  { label: 'Sm', full: 'Scoring: Mid-Range',  keys: ['mid_range_shot'] },
+  { label: 'Si', full: 'Scoring: Inside',     keys: ['layup', 'driving_dunk', 'standing_dunk', 'post_hook', 'post_fade', 'post_control', 'draw_foul'] },
+  { label: 'Pa', full: 'Passing',             keys: ['pass_accuracy', 'pass_vision'] },
+  { label: 'H',  full: 'Ballhandling',        keys: ['ball_handle', 'speed_with_ball'] },
+  { label: 'IQ', full: 'IQ',                  keys: ['shot_iq', 'pass_iq', 'help_defense_iq'] },
+  { label: 'Dp', full: 'Perimeter Defense',   keys: ['perimeter_defense', 'steal'] },
+  { label: 'Di', full: 'Inside Defense',      keys: ['interior_defense', 'block'] },
+  { label: 'R',  full: 'Rebounding',          keys: ['defensive_rebound', 'offensive_rebound'] },
+  { label: 'A',  full: 'Athleticism',         keys: ['speed', 'strength', 'agility', 'vertical', 'hustle'] },
+];
+
+// A plain average across a 5-7 attribute group (e.g. Athleticism, Inside
+// Finishing) regresses hard to the mean -- a real player is rarely elite at
+// every sub-skill simultaneously -- so its raw scale sits far below a 1-2
+// attribute group's. Rather than a fixed cut that would starve the big
+// groups, each group's own cutoffs are the values at the Nth percentile of
+// that group's score distribution *across the whole league* (not just this
+// roster), computed fresh from attributesData so it tracks as ratings
+// change. Every badge therefore represents roughly the same population
+// rarity no matter which group it's in. `elite` (top 5%) gets a slightly
+// more visible outline than `base` (top 10%) -- same muted color either
+// way, just a hair more emphasis, no tier-color system.
+const ATTR_BADGE_PERCENTILES = { base: 0.90, elite: 0.95 };
+
+function computeAttrBadgeCutoffs(attributesData) {
+  const scoresByLabel = {};
+  ATTR_BADGE_GROUPS.forEach(g => { scoresByLabel[g.label] = []; });
+  Object.values(attributesData || {}).forEach(snap => {
+    const attrs = snap && snap.attributes;
+    if (!attrs) return;
+    ATTR_BADGE_GROUPS.forEach(group => {
+      const vals = group.keys.map(k => parseFloat(attrs[k])).filter(v => !isNaN(v));
+      if (!vals.length) return;
+      scoresByLabel[group.label].push(vals.reduce((s, v) => s + v, 0) / vals.length);
+    });
+  });
+  const cutoffs = {};
+  Object.keys(scoresByLabel).forEach(label => {
+    const sorted = scoresByLabel[label].slice().sort((a, b) => a - b);
+    const at = p => sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))] : Infinity;
+    cutoffs[label] = { base: at(ATTR_BADGE_PERCENTILES.base), elite: at(ATTR_BADGE_PERCENTILES.elite) };
+  });
+  return cutoffs;
+}
+
+function computeAttrBadges(attrSnap, cutoffs) {
+  if (!attrSnap || !attrSnap.attributes || !cutoffs) return [];
+  const attrs = attrSnap.attributes;
+  const badges = [];
+  ATTR_BADGE_GROUPS.forEach(group => {
+    const vals = group.keys.map(k => parseFloat(attrs[k])).filter(v => !isNaN(v));
+    if (!vals.length) return;
+    const score = vals.reduce((s, v) => s + v, 0) / vals.length;
+    const c = cutoffs[group.label];
+    if (c && score >= c.base) {
+      badges.push({ label: group.label, full: group.full, value: score, elite: score >= c.elite });
+    }
+  });
+  return badges;
+}
+
+// Individual 2K attributes for the roster table's Ratings mode. Same
+// grouping/order/abbreviations as players/index.html's ATTR_CATEGORIES /
+// ATTR_ABBR, so the two pages read consistently. `catStart` marks the first
+// column of each category for a divider, mirroring the salary-year divider.
+const RATING_ATTR_COLUMNS = [
+  { key: 'three_point_shot',      abbr: '3PT',  full: '3PT Shot',              catStart: true },
+  { key: 'mid_range_shot',        abbr: 'MID',  full: 'Mid-Range Shot' },
+  { key: 'close_shot',            abbr: 'CS',   full: 'Close Shot' },
+  { key: 'free_throw',            abbr: 'FT',   full: 'Free Throw' },
+  { key: 'shot_iq',               abbr: 'SIQ',  full: 'Shot IQ' },
+  { key: 'offensive_consistency', abbr: 'OCON', full: 'Offensive Consistency' },
+
+  { key: 'layup',                 abbr: 'LAY',  full: 'Layup',                 catStart: true },
+  { key: 'driving_dunk',          abbr: 'DDK',  full: 'Driving Dunk' },
+  { key: 'standing_dunk',         abbr: 'SDK',  full: 'Standing Dunk' },
+  { key: 'post_hook',             abbr: 'PHK',  full: 'Post Hook' },
+  { key: 'post_fade',             abbr: 'PFD',  full: 'Post Fade' },
+  { key: 'post_control',          abbr: 'PCTL', full: 'Post Control' },
+  { key: 'draw_foul',             abbr: 'DF',   full: 'Draw Foul' },
+  { key: 'hands',                 abbr: 'HND',  full: 'Hands' },
+
+  { key: 'speed',                 abbr: 'SPD',  full: 'Speed',                 catStart: true },
+  { key: 'strength',              abbr: 'STR',  full: 'Strength' },
+  { key: 'agility',               abbr: 'AGL',  full: 'Agility' },
+  { key: 'vertical',              abbr: 'VERT', full: 'Vertical' },
+  { key: 'hustle',                abbr: 'HUS',  full: 'Hustle' },
+  { key: 'stamina',               abbr: 'STA',  full: 'Stamina' },
+  { key: 'overall_durability',    abbr: 'DUR',  full: 'Durability' },
+
+  { key: 'ball_handle',           abbr: 'BHD',  full: 'Ball Handle',           catStart: true },
+  { key: 'speed_with_ball',       abbr: 'SWB',  full: 'Speed With Ball' },
+  { key: 'pass_accuracy',         abbr: 'PACC', full: 'Pass Accuracy' },
+  { key: 'pass_vision',           abbr: 'PVIS', full: 'Pass Vision' },
+  { key: 'pass_iq',               abbr: 'PIQ',  full: 'Pass IQ' },
+
+  { key: 'block',                 abbr: 'BLK',  full: 'Block',                 catStart: true },
+  { key: 'steal',                 abbr: 'STL',  full: 'Steal' },
+  { key: 'pass_perception',       abbr: 'PPER', full: 'Pass Perception' },
+  { key: 'interior_defense',      abbr: 'IDEF', full: 'Interior Defense' },
+  { key: 'perimeter_defense',     abbr: 'PDEF', full: 'Perimeter Defense' },
+  { key: 'defensive_consistency', abbr: 'DCON', full: 'Defensive Consistency' },
+  { key: 'help_defense_iq',       abbr: 'HDIQ', full: 'Help Defense IQ' },
+  { key: 'defensive_rebound',     abbr: 'DREB', full: 'Defensive Rebound' },
+  { key: 'offensive_rebound',     abbr: 'OREB', full: 'Offensive Rebound' },
+
+  { key: 'intangibles',           abbr: 'INT',  full: 'Intangibles',           catStart: true },
+];
+const RATING_HEAT_MIN = 25, RATING_HEAT_MAX = 99;
+
+// Roster table's Stats mode: per-game averages from each player's most
+// recent season on record (any team), looked up by computeLatestSeasonBySlug.
+const STATS_COLS = [
+  { key: '_statSeason', label: 'Season', cls: 'muted' },
+  { key: '_statG',      label: 'G',      cls: 'right' },
+  // Games started: recorded from 26-27 only, and only for teams whose
+  // starters were entered (GET /api/game-starters/counts). Unknown is '—'.
+  { key: '_statGs',     label: 'GS',     cls: 'right muted', full: 'Games started' },
+  { key: '_statMpg',    label: 'MPG',    cls: 'right muted' },
+  { key: '_statPpg',    label: 'PPG',    cls: 'right' },
+  { key: '_statRpg',    label: 'RPG',    cls: 'right' },
+  { key: '_statApg',    label: 'APG',    cls: 'right' },
+  { key: '_statSpg',    label: 'SPG',    cls: 'right muted' },
+  { key: '_statBpg',    label: 'BPG',    cls: 'right muted' },
+  { key: '_statTopg',   label: 'TOPG',   cls: 'right muted' },
+  { key: '_statFgPct',  label: 'FG%',    cls: 'right div-left' },
+  { key: '_stat3pPct',  label: '3P%',    cls: 'right' },
+  { key: '_statFtPct',  label: 'FT%',    cls: 'right' },
+  { key: '_stat3pmpg',  label: '3PM/G',  cls: 'right muted' },
+  { key: '_statGmscpg', label: 'GMSC/G', cls: 'right div-left' },
+];
+
+// The Overview mode's one-cell stat line: a per-game figure per stat, in this order.
+const STAT_LINE = [
+  { key: 'pts',  label: 'PTS' },
+  { key: 'reb',  label: 'REB' },
+  { key: 'ast',  label: 'AST' },
+  { key: 'stl',  label: 'STL' },
+  { key: 'blk',  label: 'BLK' },
+  { key: 'gmsc', label: 'GMSC' },
+];
+
+function computeRatingFields(attrSnap) {
+  const attrs = (attrSnap && attrSnap.attributes) || {};
+  const fields = {};
+  RATING_ATTR_COLUMNS.forEach(c => {
+    const v = parseFloat(attrs[c.key]);
+    fields[`_attr_${c.key}`] = isNaN(v) ? null : Math.round(v);
+  });
+  return fields;
+}
+
+// Whether a roster row actually plays for the team (and so should count
+// toward roster-wide attribute totals) as opposed to being a pure cap
+// placeholder — a bare UFA/RFA hold (no real salary this season) or a dead-cap
+// line. Two-way/draft-rights rows do count; they're real players.
+function isAttrCountedRow(row, biosData, season) {
+  if (!row.SLUG) return false;
+  const bio = biosData[row.SLUG] || {};
+  const type = row.TYPE || bio.type || '';
+  if (type === 'dead') return false;
+  // A UFA/RFA cap-hold type means this is a bare hold, not a real roster
+  // spot — even though it carries a nominal $ figure (same convention as
+  // real FA holds elsewhere on the page), it doesn't count as a player.
+  const capType = (bio.cap_holds || {})[season];
+  if (capType === 'UFA' || capType === 'RFA') return false;
+  return true;
+}
+
+// Sum of each RATING_ATTR_COLUMNS attribute across a specific set of rows —
+// the caller decides which rows belong (the whole countable roster, or just
+// its top N by OVR).
+function sumAttrsForRows(rows, attributesData) {
+  const totals = {};
+  RATING_ATTR_COLUMNS.forEach(c => { totals[c.key] = 0; });
+  rows.forEach(row => {
+    const attrs = (attributesData[row.SLUG] && attributesData[row.SLUG].attributes) || {};
+    RATING_ATTR_COLUMNS.forEach(c => {
+      const v = parseFloat(attrs[c.key]);
+      if (!isNaN(v)) totals[c.key] += v;
+    });
+  });
+  return totals;
+}
+
+// Countable rows (cap holds/dead cap excluded), highest OVR first — the
+// ordering a "top N players" cut is taken from.
+function countableRowsByOvr(rows, biosData, currentOvr, season) {
+  return rows
+    .filter(row => isAttrCountedRow(row, biosData, season))
+    .slice()
+    .sort((a, b) => (parseFloat(currentOvr[b.SLUG]) || 0) - (parseFloat(currentOvr[a.SLUG]) || 0));
+}
+
+// Attribute totals for the whole countable roster, plus its top 5/8/10 by
+// OVR — used to diff a real roster against a What-If Mode hypothetical one.
+function computeAttrTotals(rows, biosData, attributesData, currentOvr, season) {
+  const sorted = countableRowsByOvr(rows, biosData, currentOvr, season);
+  return {
+    all:   sumAttrsForRows(sorted, attributesData),
+    top5:  sumAttrsForRows(sorted.slice(0, 5), attributesData),
+    top8:  sumAttrsForRows(sorted.slice(0, 8), attributesData),
+    top10: sumAttrsForRows(sorted.slice(0, 10), attributesData),
+  };
+}
+
+function computeStatFields(seasonRow) {
+  if (!seasonRow) {
+    return { _statSeason: '—', _statG: '—', _statGs: '—', _statMpg: '—', _statPpg: '—', _statRpg: '—', _statApg: '—', _statSpg: '—', _statBpg: '—', _statTopg: '—', _statFgPct: '—', _stat3pPct: '—', _statFtPct: '—', _stat3pmpg: '—', _statGmscpg: '—', _statLine: null };
+  }
+  const g = Math.max(1, parseInt(seasonRow.G) || 1);
+  const pg = k => Math.round((parseFloat(seasonRow[k]) || 0) / g * 10) / 10;
+  const pct = (m, a) => {
+    const att = parseFloat(seasonRow[a]) || 0;
+    return att ? ((parseFloat(seasonRow[m]) || 0) / att * 100).toFixed(1) : '—';
+  };
+  return {
+    _statSeason: seasonRow.SEASON || '—',
+    _statG:      seasonRow.G ?? '0',
+    _statGs:     seasonRow._GS ?? '—',
+    _statMpg:    pg('MIN'),
+    _statPpg:    pg('PTS'),
+    _statRpg:    pg('REB'),
+    _statApg:    pg('AST'),
+    _statSpg:    pg('STL'),
+    _statBpg:    pg('BLK'),
+    _statTopg:   pg('TOV'),
+    _statFgPct:  pct('FGM', 'FGA'),
+    _stat3pPct:  pct('3PM', '3PA'),
+    _statFtPct:  pct('FTM', 'FTA'),
+    _stat3pmpg:  pg('3PM'),
+    _statGmscpg: pg('GMSC'),
+    // The Overview mode's one-cell summary of the Stats mode.
+    _statLine:   {
+      pts: pg('PTS'), reb: pg('REB'), ast: pg('AST'), stl: pg('STL'), blk: pg('BLK'), gmsc: pg('GMSC'),
+      season: seasonRow.SEASON || '', g: seasonRow.G ?? '0',
+    },
+  };
+}
+
+// CONTRACT_TAGS, compactMoney and summarizeContract all moved to /contract.js
+// so /pdc and /fo/transactions render the same shorthand from the same code rather
+// than from three copies of the same grammar. The roster row's `_salaries` /
+// `_cap_holds` are adapted to the shared `{salaries, cap_holds}` shape at the
+// call site in buildRosterTable.
+
+// Roster table for a team page. `mode` selects which columns follow Player /
+// Pos / Age / OVR: 'contracts' (default) shows salary years, 'stats' shows
+// per-game averages from the player's latest season, 'ratings' shows every
+// individual 2K attribute, and 'depth' reorders the rows into a starting five
+// plus a bench by OVR (see computeStartingFive, or the team's own `rotation` — `{slot: slug}`
+// from GET /api/rotations — when one is set). `latestSeasonBySlug` comes
+// from computeLatestSeasonBySlug(allSeasons), computed once at page load.
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null) {
+  if (!rows.length) return null;
+  // Neither format's key column: the CSV came back as something else (a
+  // truncated or error response). Rendering it threw on the first row once,
+  // which killed every section after the roster too.
+  if (!('SLUG' in rows[0]) && !('PLAYER' in rows[0])) return null;
+  const curYr = currentSeasonYr();
+  const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
+
+  if (!hasSlug) {
+    // ── Legacy format: CSV has PLAYER, POS, AGE, TYPE, CAP_HOLDS, salary cols ──
+    const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr);
+    const ovrMin = 60, ovrMax = 99;
+
+    const cols = [
+      { key: 'PLAYER', label: 'Player',   cls: 'bold',         },
+      { key: 'POS',    label: 'Pos',      cls: 'muted center', },
+      { key: 'AGE',    label: 'Age',      cls: 'center',       },
+      { key: 'OVR',    label: 'OVR',      cls: 'center bold',  },
+      ...salaryKeys.map((k, i) => ({
+        key: k, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
+        display: r => formatSalary(r[k]),
+      })),
+    ];
+
+    const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
+    const sorted = [...rows].sort((a, b) => {
+      const ta = typeOrder[a.TYPE] ?? 4, tb = typeOrder[b.TYPE] ?? 4;
+      if (ta !== tb) return ta - tb;
+      return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
+    });
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    cols.forEach(col => {
+      const th = document.createElement('th');
+      th.textContent = col.label;
+      if (col.cls?.includes('right')) th.classList.add('right');
+      if (col.cls?.includes('center')) th.classList.add('center');
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    let lastType = null;
+    const LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
+
+    sorted.forEach(row => {
+      if (row.TYPE !== lastType && LABELS[row.TYPE]) {
+        const sep = tbody.insertRow();
+        sep.className = 'subheader';
+        const td = sep.insertCell();
+        td.colSpan = cols.length;
+        td.textContent = LABELS[row.TYPE];
+        lastType = row.TYPE;
+      } else if (row.TYPE !== lastType) {
+        lastType = row.TYPE;
+      }
+
+      const tr = tbody.insertRow();
+      if (row.TYPE === 'two-way')      tr.className = 'row-twoway';
+      if (row.TYPE === 'draft-rights') tr.className = 'row-draft-rights';
+      if (row.TYPE === 'dead')         tr.className = 'row-dead';
+
+      const capMap = parseCapHolds(row.CAP_HOLDS);
+
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        col.cls?.split(' ').forEach(c => c && td.classList.add(c));
+
+        if (col.key === 'PLAYER') {
+          const a = document.createElement('a');
+          a.href = `/stats/players/?p=${playerSlug(row.PLAYER)}`;
+          a.textContent = row.PLAYER;
+          td.appendChild(a);
+        } else if (col.key === 'OVR') {
+          const n = parseFloat(row.OVR);
+          td.textContent = isNaN(n) ? '—' : String(n);
+          if (!isNaN(n)) {
+            const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
+            td.classList.add('ui-heat');
+            td.style.setProperty('--heat', t.toFixed(3));
+            const ovrSlug = playerSlug(row.PLAYER);
+            if (ovrSlug && window.RatingsPopup) {
+              RatingsPopup.attach(td, ovrSlug, { name: row.PLAYER });
+            }
+          }
+        } else if (/^\d{2}-\d{2}$/.test(col.key)) {
+          td.textContent = col.display ? col.display(row) : (row[col.key] || '—');
+          const capType = capMap[col.key];
+          if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
+        } else if (col.display) {
+          td.textContent = col.display(row);
+        } else {
+          td.textContent = row[col.key] ?? '—';
+        }
+      });
+    });
+
+    const hasCapData = rows.some(r => r.CAP_HOLDS && r.CAP_HOLDS.trim() !== '');
+    if (!hasCapData) return table;
+
+    const allTypes = new Set();
+    rows.forEach(r => {
+      Object.values(parseCapHolds(r.CAP_HOLDS || '')).forEach(t => allTypes.add(t));
+    });
+
+    const legend = document.createElement('div');
+    legend.className = 'cap-legend';
+    ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+      if (!allTypes.has(type)) return;
+      const item = document.createElement('span');
+      item.className = 'cap-legend-item';
+      const swatch = document.createElement('span');
+      swatch.className = 'cap-swatch';
+      swatch.style.background = SWATCH_COLORS[type];
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
+      legend.appendChild(item);
+    });
+
+    const legacyWrap = document.createElement('div');
+    legacyWrap.appendChild(table);
+    legacyWrap.appendChild(legend);
+    return legacyWrap;
+  }
+
+  // ── New format: SLUG + TYPE, OVR from currentOvr, rest from biosData ────────
+  biosData = biosData || {};
+
+  const attrBadgeCutoffs = computeAttrBadgeCutoffs(attributesData);
+
+  const augmented = rows
+    .map(row => {
+      const bio = biosData[row.SLUG] || {};
+      const _type = row.TYPE || bio.type || '';
+      return {
+        SLUG:       row.SLUG,
+        OVR:        currentOvr[row.SLUG] ?? '',
+        _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
+        _pos:       (bio.pos || []).join(' · ') || '—',
+        _posList:   bio.pos || [],
+        _age:       calcAge(bio.dob),
+        _type,
+        _cap_holds:          bio.cap_holds || {},
+        _salaries:           bio.salaries || {},
+        _guaranteed:         bio.guaranteed || {},
+        _guarantee_dates:    bio.guarantee_dates || {},
+        _guarantee_schedule: bio.guarantee_schedule || {},
+        _badges:             computeAttrBadges((attributesData || {})[row.SLUG], attrBadgeCutoffs),
+        _photo:              bio.photo_url || '',
+        _notes:              bio.notes || '',
+        _stash:              _type === 'draft-rights' ? (bio.stash || null) : null,
+        ...computeStatFields(latestSeasonBySlug[row.SLUG]),
+        ...computeRatingFields((attributesData || {})[row.SLUG]),
+      };
+    });
+
+  deadCapRows.forEach(row => {
+    const bio = biosData[row.SLUG] || {};
+    const dcSals = {};
+    Object.keys(row).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && row[k] && k >= curYr) dcSals[k] = row[k]; });
+    if (!Object.keys(dcSals).length) return; // dead cap fully in the past — keep the record, just stop showing the row
+    augmented.push({
+      SLUG:       row.SLUG,
+      OVR:        '',
+      _name:      displayNameFromBio(bio.name || '') || row.SLUG || '—',
+      _pos:       (bio.pos || []).join(' · ') || '—',
+      _posList:   bio.pos || [],
+      _age:       calcAge(bio.dob),
+      _type:      'dead',
+      _cap_holds: {},
+      _salaries:  dcSals,
+      _badges:    [],
+      _photo:     bio.photo_url || '',
+      _notes:     bio.notes || '',
+      ...computeStatFields(latestSeasonBySlug[row.SLUG]),
+      ...computeRatingFields((attributesData || {})[row.SLUG]),
+    });
+  });
+
+  // Empty Roster Charge rows (§ 2.1a) — virtual, never persisted to the roster
+  // CSV. Recomputed live from the real roster count every render, so they
+  // appear/disappear on their own as the team crosses the 12-player line
+  // (§ 2.1a's charge floor, not § 2.1's 14-player roster minimum); no
+  // explicit transaction ever creates or removes one.
+  const erc = computeEmptyRosterCharge(rows, biosData, capLevels, curYr);
+  for (let i = 0; i < erc.deficiency && erc.rookieMin; i++) {
+    augmented.push({
+      SLUG:       '',
+      OVR:        '',
+      _name:      'Empty Roster Charge',
+      _pos:       '—',
+      _posList:   [],
+      _age:       '',
+      _type:      'player',
+      _erc:       true,
+      _cap_holds: {},
+      _salaries:  { [curYr]: erc.rookieMin },
+      _badges:    [],
+      _photo:     '',
+      _notes:     '',
+    });
+  }
+
+  const salaryKeySet = new Set();
+  augmented.forEach(a => {
+    Object.keys(a._salaries).forEach(k => { if (k >= curYr) salaryKeySet.add(k); });
+  });
+  const salaryKeys = [...salaryKeySet].sort();
+  augmented.forEach(a => {
+    salaryKeys.forEach(k => { a[`_s_${k}`] = a._salaries[k] || ''; });
+  });
+
+  const ovrMin = 60, ovrMax = 100;
+
+  const hasAnyBadges = augmented.some(a => a._badges && a._badges.length);
+
+  const sharedCols = [
+    { key: '_name',   label: 'Player', cls: 'bold' },
+    { key: '_pos',    label: 'Pos',    cls: 'muted center' },
+    { key: '_age',    label: 'Age',    cls: 'center' },
+    { key: 'OVR',     label: 'OVR',    cls: 'center bold' },
+  ];
+  let modeCols;
+  if (mode === 'stats') {
+    modeCols = STATS_COLS.map((c, i) => ({ ...c, cls: c.cls + (i === 0 ? ' div-left' : '') }));
+  } else if (mode === 'ratings') {
+    modeCols = RATING_ATTR_COLUMNS.map(c => ({
+      key: `_attr_${c.key}`, label: c.abbr, full: c.full, cls: 'right' + (c.catStart ? ' div-left' : ''),
+    }));
+  } else if (mode === 'depth') {
+    // Overview: one column summing up each of the other modes — OVR (above)
+    // for Ratings, the stat line for Stats, the shorthand for Contracts.
+    modeCols = [
+      { key: '_statLine', label: 'Stats', full: 'Per game, latest season played', cls: 'nosum div-left' },
+      { key: '_contract', label: 'Contract', cls: 'right nosum div-left' },
+    ];
+  } else {
+    modeCols = salaryKeys.map((k, i) => ({
+      key: `_s_${k}`, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
+    }));
+  }
+  const cols = [
+    ...(mode === 'depth' ? [{ key: '_slot', label: '', cls: 'depth-slot center' }] : []),
+    ...sharedCols,
+    ...modeCols,
+  ];
+
+  const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
+  const byOvrDesc = (a, b) => (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
+
+  // Row order and the subheaders that break it up. Every mode but 'depth'
+  // groups by contract type; 'depth' splits the standard players into a
+  // starting five and a bench, then falls back to the type groups for the rest.
+  let sorted, GROUP_LABELS;
+  if (mode === 'depth') {
+    const starterPool = augmented.filter(a => a._type === 'player' && !a._erc);
+
+    // The team's own rotation (Roster Settings, saved on the coaching-settings
+    // record) wins whenever it names at least one starter still on the roster.
+    // Otherwise the starting five is the auto-sort below. A rotation can hold
+    // a two-way player, and can put a player at a slot outside his listed
+    // positions — both are the team's call in 2K, so both are shown as set.
+    const rotationPool = augmented.filter(a => a.SLUG && !a._erc && (a._type === 'player' || a._type === 'two-way'));
+    const fromRotation = rotationFive(rotationPool, rotation);
+    const useRotation = !!fromRotation;
+    const five = fromRotation || computeStartingFive(starterPool);
+    const started = new Set(five.filter(Boolean));
+
+    const starterRows = five.map((p, i) => {
+      const slot = DEPTH_SLOTS[i];
+      if (p) return { ...p, _slot: slot, _group: 'starters' };
+      return {
+        SLUG: '', OVR: '', _name: useRotation ? `No ${slot} set` : `No eligible ${slot}`, _pos: '—', _posList: [],
+        _age: '', _type: 'player', _slot: slot, _group: 'starters', _emptySlot: true,
+        _cap_holds: {}, _salaries: {}, _badges: [], _photo: '', _notes: '',
+      };
+    });
+    // The bench is by OVR, not the rotation's 6th–15th: a hurt player left out
+    // of the rotation would otherwise sink below the deep bench.
+    const bench = starterPool.filter(a => !started.has(a)).sort(byOvrDesc)
+      .map(a => ({ ...a, _group: 'bench' }));
+    const rest = augmented.filter(a => (a._type !== 'player' || a._erc) && !started.has(a))
+      .sort((a, b) => (typeOrder[a._type] ?? 4) - (typeOrder[b._type] ?? 4) || byOvrDesc(a, b))
+      .map(a => ({ ...a, _group: a._type }));
+
+    sorted = [...starterRows, ...bench, ...rest];
+    GROUP_LABELS = {
+      starters: useRotation ? 'Starters · Team Rotation' : 'Starters', bench: 'Bench',
+      'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap',
+    };
+  } else {
+    // Rows stay the original objects here — what-if's rowActions is handed them.
+    sorted = [...augmented]
+      .sort((a, b) => (typeOrder[a._type] ?? 4) - (typeOrder[b._type] ?? 4) || byOvrDesc(a, b));
+    GROUP_LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
+  }
+  const groupOf = row => (mode === 'depth' ? row._group : row._type);
+
+  const table = document.createElement('table');
+  const thead = table.createTHead();
+  const hr = thead.insertRow();
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    if (col.cls?.includes('right')) th.classList.add('right');
+    if (col.cls?.includes('center')) th.classList.add('center');
+    if (col.full) attachTooltip(th, col.full);
+    hr.appendChild(th);
+  });
+  // An `inline` rowActions draws into the name cell instead of a trailing
+  // column, so it is on screen without scrolling past every salary year.
+  const actionsCol = rowActions && !rowActions.inline;
+  if (actionsCol) hr.appendChild(document.createElement('th'));
+
+  const tbody = table.createTBody();
+  let lastGroup = null;
+
+  sorted.forEach(row => {
+    const group = groupOf(row);
+    if (group !== lastGroup && GROUP_LABELS[group]) {
+      const sep = tbody.insertRow();
+      sep.className = 'subheader';
+      const td = sep.insertCell();
+      td.colSpan = cols.length + (actionsCol ? 1 : 0);
+      td.textContent = GROUP_LABELS[group];
+      lastGroup = group;
+    } else if (group !== lastGroup) {
+      lastGroup = group;
+    }
+
+    const tr = tbody.insertRow();
+    if (row._type === 'two-way')      tr.className = 'row-twoway';
+    if (row._type === 'draft-rights') tr.className = 'row-draft-rights';
+    if (row._type === 'dead')         tr.className = 'row-dead';
+    if (row._erc)                     tr.className = 'row-erc';
+    if (row._emptySlot)               tr.className = 'row-empty-slot';
+
+    const capMap = parseCapHolds(row._cap_holds);
+
+    cols.forEach(col => {
+      const td = tr.insertCell();
+      col.cls?.split(' ').forEach(c => c && td.classList.add(c));
+
+      if (col.key === '_slot') {
+        td.textContent = row._slot || '';
+      } else if (col.key === '_statLine') {
+        const sl = row._statLine;
+        if (row._emptySlot) {
+          td.textContent = '';
+        } else if (!sl) {
+          td.textContent = '—';
+          td.classList.add('muted');
+        } else {
+          const line = document.createElement('span');
+          line.className = 'stat-line';
+          STAT_LINE.forEach(({ key, label }) => {
+            const item = document.createElement('span');
+            item.className = 'stat-line-item' + (key === 'gmsc' ? ' stat-line-gmsc' : '');
+            const v = document.createElement('span');
+            v.className = 'stat-line-val';
+            v.textContent = sl[key].toFixed(1);
+            const l = document.createElement('span');
+            l.className = 'stat-line-lbl';
+            l.textContent = label;
+            item.append(v, l);
+            line.appendChild(item);
+          });
+          // A line from an earlier season is labelled, so it isn't read as this year's.
+          if (sl.season && sl.season !== curYr) {
+            const tag = document.createElement('span');
+            tag.className = 'stat-line-season';
+            tag.textContent = sl.season;
+            line.appendChild(tag);
+          }
+          td.appendChild(line);
+          attachTooltip(td, `${sl.season} · ${sl.g} G`);
+        }
+      } else if (col.key === '_contract') {
+        td.textContent = row._emptySlot ? ''
+          : summarizeContract({ salaries: row._salaries, cap_holds: row._cap_holds }, curYr);
+      } else if (row._emptySlot) {
+        td.textContent = col.key === '_name' ? row._name : '';
+      } else if (col.key === '_name') {
+        const cell = document.createElement('span');
+        cell.className = 'roster-name-cell';
+
+        const topRow = document.createElement('span');
+        topRow.className = 'roster-name-top';
+
+        if (rowActions?.inline) {
+          const slot = document.createElement('span');
+          rowActions(row, slot, capMap);
+          if (slot.childNodes.length) topRow.appendChild(slot);
+        }
+
+        const avatar = document.createElement('span');
+        avatar.className = 'roster-avatar';
+        if (row._photo) {
+          const img = document.createElement('img');
+          img.src = row._photo;
+          img.alt = '';
+          img.loading = 'lazy';
+          img.onerror = () => { avatar.classList.add('roster-avatar-empty', 'ui-icon--person'); img.remove(); };
+          avatar.appendChild(img);
+        } else {
+          avatar.classList.add('roster-avatar-empty', 'ui-icon--person');
+        }
+        topRow.appendChild(avatar);
+
+        if (row.SLUG && !row.SLUG.startsWith(WHATIF_CUSTOM_PREFIX)) {
+          const a = document.createElement('a');
+          a.href = `/stats/players/?p=${row.SLUG}`;
+          a.textContent = row._name;
+          topRow.appendChild(a);
+        } else {
+          topRow.appendChild(document.createTextNode(row._name));
+        }
+
+        if (row._badges && row._badges.length) {
+          const badgeGroup = document.createElement('span');
+          badgeGroup.className = 'attr-badges';
+          row._badges.forEach(b => {
+            const badge = document.createElement('span');
+            badge.className = 'attr-badge' + (b.elite ? ' attr-badge-elite' : '');
+            badge.textContent = b.label;
+            attachTooltip(badge, `${b.full} (${Math.round(b.value)})`);
+            badgeGroup.appendChild(badge);
+          });
+          topRow.appendChild(badgeGroup);
+        }
+
+        if (row._stash) {
+          const tag = document.createElement('span');
+          tag.className = 'ui-badge stash-tag';
+          tag.textContent = `Stashed · § ${row._stash.basis}`;
+          attachTooltip(tag, (row._stash.basis === '7.4' ? 'Overseas contract' : 'Not in 2K, sitting out')
+            + (row._stash.note ? ` — ${row._stash.note}` : '') + (row._stash.date ? ` (${row._stash.date})` : ''));
+          topRow.appendChild(tag);
+        }
+
+        if (row._type === 'two-way' && row.SLUG) topRow.appendChild(twoWayGamesBadge(row.SLUG));
+
+        cell.appendChild(topRow);
+
+        td.appendChild(cell);
+        if (row._notes) {
+          const pip = document.createElement('span');
+          pip.className = 'player-note';
+          pip.innerHTML = '<svg width="9" height="11" viewBox="0 0 9 11" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="8" height="10" rx="1" stroke="currentColor"/><line x1="2" y1="3.5" x2="7" y2="3.5" stroke="currentColor"/><line x1="2" y1="5.5" x2="7" y2="5.5" stroke="currentColor"/><line x1="2" y1="7.5" x2="5" y2="7.5" stroke="currentColor"/></svg>';
+          attachTooltip(pip, row._notes);
+          topRow.appendChild(pip);
+        }
+      } else if (col.key === 'OVR') {
+        const n = parseFloat(row.OVR);
+        td.textContent = isNaN(n) ? '—' : String(n);
+        if (!isNaN(n)) {
+          const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', t.toFixed(3));
+          if (row.SLUG && window.RatingsPopup) {
+            RatingsPopup.attach(td, row.SLUG, { name: row._name });
+          }
+        }
+      } else if (col.key.startsWith('_attr_')) {
+        const v = row[col.key];
+        if (v == null) {
+          td.textContent = '—';
+        } else {
+          td.textContent = String(v);
+          const t = Math.min(1, Math.max(0, (v - RATING_HEAT_MIN) / (RATING_HEAT_MAX - RATING_HEAT_MIN)));
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', t.toFixed(3));
+        }
+      } else if (col.key.startsWith('_s_')) {
+        const k = col.key.slice(3);
+        const capType = capMap[k];
+        if (capType === 'NON_GTD' && row[col.key]) {
+          const tipText = buildNonGtdTip(k, row._guaranteed, row._guarantee_dates, row._guarantee_schedule);
+          const wrap = document.createElement('span');
+          wrap.className = 'sal-tip';
+          wrap.textContent = formatSalary(row[col.key]);
+          attachTooltip(wrap, tipText);
+          td.appendChild(wrap);
+        } else {
+          td.textContent = formatSalary(row[col.key]);
+        }
+        if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
+      } else {
+        td.textContent = row[col.key] ?? '—';
+      }
+    });
+
+    if (actionsCol) {
+      const actionsTd = tr.insertCell();
+      actionsTd.className = 'whatif-actions-cell';
+      rowActions(row, actionsTd, capMap);
+    }
+  });
+
+  // ── Salary tfoot ─────────────────────────────────────────────────────────────
+  if (mode === 'contracts' && salaryKeys.length) {
+    const BUCKET_ORDER = ['Guaranteed', 'Player Option', 'Team Option', 'Non-Guaranteed', 'Two-Way', 'Dead Cap', 'UFA Hold', 'RFA Hold'];
+    const nonSalCols = cols.length - salaryKeys.length;
+
+    // per-year per-bucket totals
+    const totals = {};
+    BUCKET_ORDER.forEach(b => { totals[b] = {}; salaryKeys.forEach(k => { totals[b][k] = { amt: 0, count: 0 }; }); });
+    const grandTotals = {};
+    // Apron/hard-cap comparisons exclude pure UFA/RFA holds (§ 1.3/1.4) — same
+    // convention as computeMleType/computeCapSummary; the plain Salary Cap row
+    // below still uses the hold-inclusive grandTotals.
+    const grandTotalsExHolds = {};
+    salaryKeys.forEach(k => { grandTotals[k] = 0; grandTotalsExHolds[k] = 0; });
+
+    augmented.forEach(a => {
+      const capMap = parseCapHolds(a._cap_holds);
+      salaryKeys.forEach(k => {
+        const amt = parseSalaryNum(a._salaries[k]);
+        if (!amt) return;
+        const holdType = capMap[k];
+        let bucket;
+        if (a._type === 'dead')              bucket = 'Dead Cap';
+        else if (a._type === 'two-way')      bucket = 'Two-Way';
+        else if (holdType === 'PLAYER_OPT')  bucket = 'Player Option';
+        else if (holdType === 'TEAM_OPT')    bucket = 'Team Option';
+        else if (holdType === 'NON_GTD')     bucket = 'Non-Guaranteed';
+        else if (holdType === 'UFA')         bucket = 'UFA Hold';
+        else if (holdType === 'RFA')         bucket = 'RFA Hold';
+        else                                 bucket = 'Guaranteed';
+        totals[bucket][k].amt += amt;
+        totals[bucket][k].count += 1;
+        grandTotals[k] += amt;
+        if (bucket !== 'UFA Hold' && bucket !== 'RFA Hold') grandTotalsExHolds[k] += amt;
+      });
+    });
+
+    const anyData = salaryKeys.some(k => grandTotals[k] > 0);
+    if (anyData) {
+      const tfoot = table.createTFoot();
+
+      function tfRow(cls) {
+        const tr = tfoot.insertRow();
+        if (cls) tr.className = cls;
+        return tr;
+      }
+      function tfCell(tr, text, cls, colspan) {
+        const td = tr.insertCell();
+        td.textContent = text;
+        if (cls) td.className = cls;
+        if (colspan) td.colSpan = colspan;
+        return td;
+      }
+
+      // bucket rows
+      BUCKET_ORDER.forEach(name => {
+        const hasAny = salaryKeys.some(k => totals[name][k].count > 0);
+        if (!hasAny) return;
+        const tr = tfRow('tfoot-bucket');
+        const labelTd = tfCell(tr, name, 'tfoot-label', nonSalCols);
+        if (name === 'Guaranteed') {
+          const badge = document.createElement('span');
+          badge.className = 'badge';
+          badge.textContent = 'ⓘ';
+          attachTooltip(badge, 'Salary with no player/team option, non-guaranteed flag, or free-agent hold — owed regardless of roster moves.');
+          labelTd.appendChild(badge);
+        }
+        salaryKeys.forEach(k => {
+          const { amt, count } = totals[name][k];
+          const td = tfCell(tr, amt ? formatSalary(amt) : '—', 'right');
+          if (count) {
+            const sup = document.createElement('sup');
+            sup.textContent = count;
+            sup.style.cssText = 'color:var(--border);font-size:var(--text-xs);margin-left:2px';
+            td.appendChild(sup);
+          }
+        });
+      });
+
+      // total row
+      const totalTr = tfRow('tfoot-divider tfoot-total');
+      tfCell(totalTr, 'Total', 'tfoot-label', nonSalCols);
+      salaryKeys.forEach(k => tfCell(totalTr, grandTotals[k] ? formatSalary(grandTotals[k]) : '—', 'right'));
+
+      // cap level rows
+      if (capLevels) {
+        const capDefs = [
+          { label: 'Salary Cap', key: 'cap',      exHolds: false },
+          { label: '1st Apron',  key: 'apron1',   exHolds: true },
+          { label: '2nd Apron',  key: 'apron2',   exHolds: true },
+          { label: 'Hard Cap',   key: 'hard_cap', exHolds: true },
+        ];
+        capDefs.forEach(({ label, key, exHolds }) => {
+          const hasCap = salaryKeys.some(k => capLevels[k]?.[key]);
+          if (!hasCap) return;
+          const totalsForRow = exHolds ? grandTotalsExHolds : grandTotals;
+          const tr = tfRow('tfoot-cap');
+          tfCell(tr, label, 'tfoot-label', nonSalCols);
+          salaryKeys.forEach(k => {
+            let val = capLevels[k]?.[key];
+            // A team locked at an apron (§ 1.4) has that apron as its hard
+            // cap, not the league-wide figure (§ 1.3: the lower of the two).
+            const lock = key === 'hard_cap' && seasonStates[k]?.hard_cap;
+            const lockVal = lock && capLevels[k]?.[lock === 'second_apron' ? 'apron2' : 'apron1'];
+            if (lockVal && (!val || lockVal < val)) val = lockVal;
+            if (!val) { tfCell(tr, '—', 'right'); return; }
+            const diff = totalsForRow[k] - val;
+            const over = diff > 0;
+            if (over) tr.classList.add('over'); else tr.classList.add('under');
+            const td = tfCell(tr, formatSalary(val), 'right');
+            const diffSpan = document.createElement('span');
+            diffSpan.className = 'tfoot-diff';
+            diffSpan.style.cssText = 'display:block;font-size:var(--text-xs);margin-top:0.1rem';
+            diffSpan.textContent = over
+              ? `+${formatSalary(diff)}`
+              : `-${formatSalary(Math.abs(diff))}`;
+            td.appendChild(diffSpan);
+          });
+        });
+      }
+
+      // per-season hard-cap status row
+      const anyHardCap = salaryKeys.some(k => seasonStates[k]?.hard_cap);
+      if (anyHardCap) {
+        const tr = tfRow('tfoot-cap tfoot-hardcap');
+        tfCell(tr, 'Hard-Capped', 'tfoot-label', nonSalCols);
+        salaryKeys.forEach(k => {
+          const hc = seasonStates[k]?.hard_cap;
+          if (!hc) { tfCell(tr, '—', 'right'); return; }
+          const td = tr.insertCell();
+          td.className = 'right';
+          const chip = document.createElement('span');
+          chip.className = 'hardcap-chip' + (hc === 'second_apron' ? ' apron2' : '');
+          chip.textContent = hc === 'second_apron' ? '2nd Apron' : '1st Apron';
+          const reason = seasonStates[k]?.hard_cap_reason;
+          if (reason) attachTooltip(chip, reason);
+          td.appendChild(chip);
+        });
+      }
+    }
+  }
+
+  const allCapTypes = new Set();
+  augmented.forEach(a => {
+    Object.values(parseCapHolds(a._cap_holds || '')).forEach(t => allCapTypes.add(t));
+  });
+  const hasCapData = mode === 'contracts' && augmented.some(a => Object.keys(a._cap_holds || {}).length > 0);
+  if (!hasCapData && !hasAnyBadges) return table;
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(table);
+
+  if (hasCapData) {
+    const legend = document.createElement('div');
+    legend.className = 'cap-legend';
+    ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
+      if (!allCapTypes.has(type)) return;
+      const item = document.createElement('span');
+      item.className = 'cap-legend-item';
+      const swatch = document.createElement('span');
+      swatch.className = 'cap-swatch';
+      swatch.style.background = SWATCH_COLORS[type];
+      item.appendChild(swatch);
+      item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
+      legend.appendChild(item);
+    });
+    wrap.appendChild(legend);
+  }
+
+  if (hasAnyBadges) {
+    const attrLegend = document.createElement('div');
+    attrLegend.className = 'cap-legend attr-legend';
+    ATTR_BADGE_GROUPS.forEach(group => {
+      const item = document.createElement('span');
+      item.className = 'cap-legend-item';
+      const badge = document.createElement('span');
+      badge.className = 'attr-badge attr-badge-legend';
+      badge.textContent = group.label;
+      item.appendChild(badge);
+      item.appendChild(document.createTextNode(group.full));
+      attrLegend.appendChild(item);
+    });
+    const note = document.createElement('span');
+    note.className = 'attr-legend-note';
+    note.textContent = 'top 10% of rostered players in that category, league-wide (outlined = top 5%)';
+    attrLegend.appendChild(note);
+    wrap.appendChild(attrLegend);
+  }
+
+  return wrap;
+}
+
+// Cache of resolved "{date}: {description}" strings for GET /api/transactions/{id},
+// keyed by txn id, shared across every picks table on the page.
+const _txnDescCache = new Map();
+async function _fetchTxnDesc(id) {
+  if (_txnDescCache.has(id)) return _txnDescCache.get(id);
+  _txnDescCache.set(id, null);
+  try {
+    const res = await fetch(`/api/transactions/${id}`);
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    _txnDescCache.set(id, `${data.date}: ${data.description}`);
+  } catch {
+    // leave cached as null (not found / not yet backfilled) — tooltip falls back
+  }
+}
+
+// Contingent picks (protected/swap/binary chain) carry a `leaves` array from
+// GET /api/picks describing every possible final owner, each optionally tagged
+// with the real trade(s) that created that leg. Builds the tooltip text for
+// the pick's Team cell so "Owner TBD" isn't a dead end for the reader.
+function buildLeavesTooltip(p) {
+  const uniq = [];
+  const seen = new Set();
+  (p.leaves || []).forEach(l => (l.txn_ids || []).forEach(t => {
+    if (!seen.has(t.id)) { seen.add(t.id); uniq.push(t); }
+  }));
+  uniq.sort((a, b) => a.date.localeCompare(b.date));
+  const body = uniq.length
+    ? uniq.map(t => _txnDescCache.get(t.id) || `${t.date}: (loading…)`).join('\n\n')
+    : 'Originating trade(s) not yet linked.';
+  const rnd = p.round === 1 ? '1st' : '2nd';
+  const header = p._groupOrigs && p._groupOrigs.length > 1
+    ? `One ${rnd} conveys here — originally ${p._groupOrigs.join('/')}'s own pick, exact origin TBD.\n\n`
+    : '';
+  return header + body;
+}
+
+// A swap group / binary chain spans N distinct real picks (one per member
+// team). In every case checked live (2026-07-19 audit: 0 of 19 groups), a team
+// occupies at most one leaf of the shared `leaves` list, so it ends up with
+// exactly one of the N — showing all N as separate rows on one team's page
+// overstates that team's haul, hence the collapse below. But the model does
+// NOT guarantee that (a swap priority list or nested leaf could in principle
+// assign the same team twice), so this checks actual leaf occupancy per group
+// rather than assuming it: only collapses down to `myCount` rows when this
+// team's own leaf count for the group is <= 1. If a team ever does occupy 2+
+// leaves of the same group, this leaves all N member rows un-collapsed rather
+// than guessing which ones to hide — never drop a real claim to keep the
+// display tidy.
+function dedupeByGroup(rows, teamAbbr) {
+  const groups = new Map();
+  const out = [];
+  rows.forEach(p => {
+    if (!p.group_id) { out.push(p); return; }
+    if (!groups.has(p.group_id)) groups.set(p.group_id, []);
+    groups.get(p.group_id).push(p);
+  });
+  groups.forEach(members => {
+    const leaves = members[0].leaves || [];
+    const myLeafCount = leaves.filter(l => l.team === teamAbbr).length;
+    if (myLeafCount > 1) {
+      out.push(...members);   // ambiguous which of the N is "ours" -- show them all
+      return;
+    }
+    const rep = members.find(p => p.orig === teamAbbr) || members[0];
+    rep._groupOrigs = [...new Set(members.map(p => p.orig))].sort();
+    out.push(rep);
+  });
+  return out;
+}
+
+// The flat `swap_owner` field is just "the other pick's ORIG team" for a
+// 2-member swap group — accurate but reads like that team holds a right
+// over THIS pick, when the real right-holder is whoever's first in the
+// group's priority order (often a third team, e.g. BOS holding the swap
+// right over OKC's and DEN's own picks — `swap_owner: DEN` on OKC's own row
+// badly misreads as "DEN has swap rights"). `leaves` already carries the
+// real, self-describing priority order ("swap priority (better pick)" /
+// "(worse pick)"), so build the column from that instead of the raw field.
+function formatSwapLeaves(p) {
+  const swapLeaves = (p.leaves || []).filter(l => (l.description || '').startsWith('swap priority'));
+  if (!swapLeaves.length) return '';
+  return swapLeaves.map(l => {
+    const m = l.description.match(/\(([^)]+)\)/);
+    const label = m ? m[1].replace(/ pick$/, '') : '';
+    return label ? `${l.team} (${label})` : l.team;
+  }).join(' · ');
+}
+
+// The flat `protected` column only ever holds a single from-1 threshold — a
+// multi-team band split (e.g. the pick conveys to one team across positions
+// 31-50 and a different team across 51-60) has no single number to put there,
+// so `p.protected` comes back null even though the pick is very much
+// protected. Fall back to the real per-band leaves so that case isn't just
+// blank (mirrors formatSwapLeaves' approach for the Swap column).
+function formatProtectedLeaves(p) {
+  const protLeaves = (p.leaves || []).filter(l => (l.description || '').startsWith('protected band'));
+  if (!protLeaves.length) return '';
+  return protLeaves.map(l => {
+    const m = l.description.match(/protected band (\d+-\d+)/);
+    return m ? `${l.team} (${m[1]})` : l.team;
+  }).join(' · ');
+}
+
+// Historical NOTES rows in the flat CSV predate the conveyance model and
+// carry a leftover one-word marker ("protected") or a stale
+// "conditional: X/Y" string for picks that have since been fully modeled as
+// real structure (`leaves` non-empty) — now redundant with, and sometimes
+// flatly contradicted by, the Protection/Swap columns (e.g. a `swap`-type
+// pick whose NOTES still says "protected"). Only suppress those two known
+// stale shapes, and only once the pick actually has modeled structure to
+// stand in for them — anything else in NOTES (genuine prose, a real
+// unmigrated pick with no structure yet) is left exactly as-is.
+function cleanNotes(p) {
+  const notes = (p.notes || '').trim();
+  const hasStructure = (p.leaves || []).length > 0;
+  if (hasStructure && (notes === 'protected' || /^conditional:/i.test(notes))) return '';
+  return notes;
+}
+
+// Identity vs. ownership are two different facts about a pick and used to be
+// crammed into one "Team" cell with kind-dependent formatting ("from DET",
+// "DET | OKC | BKN", "DET → DET | OKC | BKN", ...) — every prior fix in this
+// area (the arrow-prefix hack, `_groupOrigs`) was patching that same
+// conflation one shape at a time. Split into two columns instead: **Orig**
+// (whose draft slot this is — immutable, never changes; same name as the
+// picks-edit grid's read-only "Orig" column a few hundred lines down, and
+// the `orig` field itself — don't reintroduce a second name for this) and
+// **Owner** (who currently has a real claim on it — can be contingent).
+// Every kind reads from the same two functions; only `legacy` overrides
+// Owner, to flag that its nominal owner isn't fully trusted (see below).
+//
+// A swap/binary-chain group can collapse two or more PHYSICALLY DISTINCT
+// picks (e.g. DEN's own natural 1st and OKC's own natural 1st) into one
+// displayed row (dedupeByGroup, above) — `_groupOrigs` (set only when a group
+// was actually collapsed) carries the ORIGINAL orig team(s) for that case;
+// a single-pick row just uses its own `orig`.
+function origCell(p, teamAbbr) {
+  if (p._groupOrigs && p._groupOrigs.length > 1) return p._groupOrigs.join('/');
+  return p.orig === teamAbbr ? 'Own' : p.orig;
+}
+
+function ownerCell(p) {
+  return p.owner === '?' ? '?' : p.owner.split('|').join(' | ');
+}
+
+const PICK_KIND_DISPLAY = {
+  own:       { cls: null },
+  uncertain: { cls: 'picks-uncertain' },
+  acquired:  { cls: 'picks-acquired' },
+  traded:    { cls: 'picks-traded',   ownerCell: p => `to ${p.owner}` },
+  // A `legacy` pick is a real historical deal too tangled to model
+  // structurally — its flat owner/orig look exactly like a plain settled
+  // pick (single team, nothing flagged), but the real terms live only in
+  // its notes prose and can name entirely different teams (e.g. OKC's own
+  // 2027 1st shows owner "OKC" while its notes say Phoenix and the Clippers
+  // are the real parties). Without a distinct marker this silently renders as
+  // a confident, trustworthy owner — same failure shape the Swap-column fix
+  // addressed, just for a different node type.
+  legacy:    { cls: 'picks-legacy',   ownerCell: p => `${p.owner} · unmodeled` },
+};
+
+function buildPicksTable(picks, teamAbbr, allPicks = []) {
+  // Once a pick is used, it's a historical fact that belongs in Draft
+  // History, not this panel — this panel is only future picks still up in
+  // the air (no player attached yet).
+  const notDrafted = p => !p.player;
+  // A pick whose owner/leaves look like a plain settled fact can still carry
+  // a real contingent claim for THIS team via `ladder_fallback_of` — server
+  // now includes such picks in this team's list (2026-07-23 fix), but the
+  // `owner` field itself is untouched (still names the actual current
+  // holder, e.g. "OKC"), so without this check it would wrongly land in the
+  // confident "Acquired" bucket below instead of "Uncertain owner".
+  const isFallbackClaim = p => !!(p.ladder_fallback_of && p.ladder_fallback_of.to === teamAbbr);
+  const isTBD      = p => p.owner === '?' || p.owner.includes('|') || isFallbackClaim(p);
+  const isLegacy   = p => !!p.legacy;
+
+  const tag = (arr, kind) => arr.map(p => ({ ...p, _kind: kind }));
+  const legacy    = tag(picks.filter(p => notDrafted(p) && isLegacy(p)
+                        && (p.orig === teamAbbr || p.owner === teamAbbr)), 'legacy');
+  const own       = tag(picks.filter(p => notDrafted(p) && !isLegacy(p) && p.orig === teamAbbr && p.owner === teamAbbr), 'own');
+  const uncertain = tag(dedupeByGroup(picks.filter(p => notDrafted(p) && !isLegacy(p) && isTBD(p)), teamAbbr), 'uncertain');
+  const acquired  = tag(picks.filter(p => notDrafted(p) && !isLegacy(p) && p.orig !== teamAbbr && !isTBD(p)), 'acquired');
+  // Traded-away picks aren't picks this team has — kept out of the merged,
+  // sorted "picks I hold" list below and shown as its own section instead.
+  const legacyTraded = tag(allPicks.filter(p => notDrafted(p) && isLegacy(p)
+                           && p.orig === teamAbbr && p.owner !== teamAbbr), 'legacy');
+  const traded    = [
+                       ...tag(allPicks.filter(p => notDrafted(p) && !isLegacy(p)
+                             && p.orig === teamAbbr && p.owner !== teamAbbr && !isTBD(p)), 'traded'),
+                       ...legacyTraded,
+                     ].sort((a, b) => a.year - b.year || a.round - b.round);
+
+  const rows = [...own, ...uncertain, ...legacy, ...acquired]
+    .sort((a, b) => a.year - b.year || a.round - b.round);
+
+  if (!rows.length && !traded.length) return null;
+
+  const stepienLocked = computeStepienLocked(picks, allPicks, teamAbbr);
+
+  const table = document.createElement('table');
+  const thead = table.createTHead();
+  const hr = thead.insertRow();
+  ['Year', 'Rnd', 'Orig', 'Owner', 'Protection', 'Swap', 'Frozen', 'Notes'].forEach(label => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    if (label === 'Year' || label === 'Rnd') th.classList.add('right');
+    if (label === 'Orig' || label === 'Owner') th.classList.add('center');
+    if (label !== 'Year' && label !== 'Rnd') th.classList.add('muted');
+    hr.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+
+  const renderRow = p => {
+    const { cls, ownerCell: ownerCellFn } = PICK_KIND_DISPLAY[p._kind];
+    const tr = tbody.insertRow();
+    if (cls) tr.className = cls;
+
+    const protLabel = p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p);
+    const isStepienLocked = p._kind !== 'traded' && stepienLocked.has(`${p.round}:${p.year}:${p.orig}`);
+    const cells = [
+      [String(p.year),                'right',        ],
+      [p.round === 1 ? '1st' : '2nd', 'right',        ],
+      [origCell(p, teamAbbr),          'muted center', ],
+      [(ownerCellFn || ownerCell)(p),  'muted center', ],
+      [protLabel,                      'muted',        ],
+      [formatSwapLeaves(p),            'muted',        ],
+      [p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN' : (isStepienLocked ? 'STEPIEN' : '')), 'muted', ],
+      [cleanNotes(p),                  'muted',        ],
+    ];
+    cells.forEach(([text, cellCls]) => {
+      const td = tr.insertCell();
+      if (cellCls) cellCls.split(' ').forEach(c => td.classList.add(c));
+      td.textContent = text;
+    });
+    // A `legacy` pick is ALWAYS frozen from re-trade by design (until someone
+    // manually converts its notes into real structure) regardless of the
+    // flat FROZEN column, which was never set for it — so this can't just
+    // reuse the `p.frozen` check above.
+    if (p.legacy) {
+      const legacyTd = tr.cells[tr.cells.length - 2];
+      legacyTd.style.color = 'var(--danger)';
+      legacyTd.style.fontWeight = '700';
+      attachTooltip(legacyTd, 'This pick predates the site\'s conveyance model and '
+        + 'isn’t tracked automatically — the real terms are whatever Notes says. '
+        + 'Frozen from re-trade until manually converted to real structure.');
+    } else if (p.frozen) {
+      const frozenTd = tr.cells[tr.cells.length - 2];
+      frozenTd.style.color = 'var(--danger)';
+      frozenTd.style.fontWeight = '700';
+      if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
+    } else if (isStepienLocked) {
+      const stepienTd = tr.cells[tr.cells.length - 2];
+      stepienTd.style.color = 'var(--danger-alt)';
+      stepienTd.style.fontWeight = '700';
+      attachTooltip(stepienTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
+        + 'now would leave a two-year gap with no first-round pick, violating the Stepien Rule (§ 7.2).');
+    }
+    if (p.leaves && p.leaves.length) {
+      p.leaves.forEach(l => (l.txn_ids || []).forEach(t => _fetchTxnDesc(t.id)));
+      attachTooltip(tr.cells[3], () => buildLeavesTooltip(p));
+    }
+  };
+
+  rows.forEach(renderRow);
+
+  if (traded.length) {
+    const sep = tbody.insertRow();
+    sep.className = 'subheader';
+    const td = sep.insertCell();
+    td.colSpan = 8;
+    td.textContent = 'Traded Away';
+    traded.forEach(renderRow);
+  }
+
+  const legend = document.createElement('div');
+  legend.className = 'picks-legend';
+  [
+    ['Own',           null,               'var(--text-secondary)'],
+    ['Acquired',      'picks-acquired',   'var(--link)'],
+    ['Traded away',   'picks-traded',     'var(--text-muted)'],
+    ['Uncertain owner', 'picks-uncertain', 'var(--warning)'],
+    ['Legacy — unmodeled, see Notes', 'picks-legacy', 'var(--danger)'],
+  ].forEach(([label, , color]) => {
+    const item = document.createElement('span');
+    item.className = 'picks-legend-item';
+    const swatch = document.createElement('span');
+    swatch.className = 'picks-swatch';
+    swatch.style.background = color;
+    item.appendChild(swatch);
+    item.appendChild(document.createTextNode(label));
+    legend.appendChild(item);
+  });
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(table);
+  wrap.appendChild(legend);
+  return wrap;
+}
+
+const SEASON_COLS = [
+  { key: 'SEASON',         label: 'Season',  cls: 'bold',        sortField: 'SEASON',        defaultDir:  1 },
+  { key: 'wl',             label: 'W–L',     cls: 'right',       sortField: 'PCT',           defaultDir: -1,
+    display: r => `${r.W}–${r.L}` },
+  { key: 'PCT',            label: 'W%',      cls: 'right muted', sortField: 'PCT',           defaultDir: -1,
+    display: r => fmtPct(r.PCT) },
+  { key: 'PPG',            label: 'PPG',     cls: 'right',       sortField: 'PPG',           defaultDir: -1 },
+  { key: 'OPPG',           label: 'OPPG',    cls: 'right',       sortField: 'OPPG',          defaultDir:  1 },
+  { key: 'DIFF',           label: '+/−',     cls: 'right',       sortField: 'DIFF',          defaultDir: -1,
+    display: r => fmtSigned(r.DIFF) },
+  { key: 'SEED',           label: 'Seed',    cls: 'right',       sortField: 'SEED_NUM',      defaultDir:  1,
+    display: r => r.SEED || '—' },
+  { key: 'OFF_RTG',        label: 'Off Rtg', cls: 'right',       sortField: 'OFF_RTG',       defaultDir: -1,
+    display: r => fmtSigned(r.OFF_RTG, 2) },
+  { key: 'DEF_RTG',        label: 'Def Rtg', cls: 'right',       sortField: 'DEF_RTG',       defaultDir: -1,
+    display: r => fmtSigned(r.DEF_RTG, 2) },
+  { key: 'PLAYOFF_RESULT', label: 'Playoffs', cls: '',           sortField: 'PLAYOFF_RESULT', defaultDir: -1 },
+];
+
+const PLAYER_COLS = [
+  { key: 'PLAYER',   label: 'Player',  cls: 'bold',        sortField: 'PLAYER',   defaultDir:  1 },
+  { key: 'GP',       label: 'GP',      cls: 'right',       sortField: 'GP',       defaultDir: -1 },
+  { key: 'GMSC_TOT', label: 'GMSC',    cls: 'right',       sortField: 'GMSC_TOT', defaultDir: -1 },
+  { key: 'GMSC_AVG', label: 'GMSC/G',  cls: 'right muted', sortField: 'GMSC_AVG', defaultDir: -1 },
+  { key: 'PPG',      label: 'PPG',     cls: 'right',       sortField: 'PPG',      defaultDir: -1 },
+  { key: 'RPG',      label: 'RPG',     cls: 'right',       sortField: 'RPG',      defaultDir: -1 },
+  { key: 'APG',      label: 'APG',     cls: 'right',       sortField: 'APG',      defaultDir: -1 },
+  { key: 'SPG',      label: 'SPG',     cls: 'right',       sortField: 'SPG',      defaultDir: -1 },
+  { key: 'BPG',      label: 'BPG',     cls: 'right',       sortField: 'BPG',      defaultDir: -1 },
+  { key: '3PMPG',    label: '3PM/G',   cls: 'right',       sortField: '3PMPG',    defaultDir: -1 },
+  { key: 'SEASONS',  label: 'Seasons', cls: 'muted',       sortField: 'SEASONS',  defaultDir:  1,
+    display: r => formatSeasonsCell(r.SEASONS) },
+];
+
+// "20-21, 21-22, 22-23, 24-25" -> "3 (20-23, 24-25)": season count, then a
+// compact run-length-encoded range list collapsing consecutive seasons.
+function formatSeasonsCell(seasonsStr) {
+  const seasons = (seasonsStr || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!seasons.length) return '—';
+
+  const ranges = [];
+  let rangeStart = seasons[0], rangeEnd = seasons[0];
+  for (let i = 1; i < seasons.length; i++) {
+    const s = seasons[i];
+    if (rangeEnd.split('-')[1] === s.split('-')[0]) {
+      rangeEnd = s;
+    } else {
+      ranges.push([rangeStart, rangeEnd]);
+      rangeStart = s; rangeEnd = s;
+    }
+  }
+  ranges.push([rangeStart, rangeEnd]);
+
+  const rangeStrs = ranges.map(([a, b]) => `${a.split('-')[0]}-${b.split('-')[1]}`);
+  return `${seasons.length} (${rangeStrs.join(', ')})`;
+}
+
+const PO_CLASS = {
+  'Champion':     'po-champion',
+  'Runner-Up':    'po-runnerup',
+  'Conf Finals':  'po-conffinals',
+  'Second Round': 'po-other',
+  'First Round':  'po-other',
+  'Missed':       'po-missed',
+};
+
+const SEASON_COLOR_COLS = new Set(['DIFF', 'OFF_RTG', 'DEF_RTG']);
+
+function makeSeasonRenderCell(rows) {
+  const ranges = {};
+  SEASON_COLOR_COLS.forEach(key => {
+    const vals = rows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
+    if (vals.length > 0) {
+      const absMax = Math.max(...vals.map(Math.abs));
+      ranges[key] = { absMax };
+    }
+  });
+
+  return function(td, col, row) {
+    if (col.key === 'SEASON') {
+      // Each season opens its recap.
+      const a = document.createElement('a');
+      a.href = `/history/recap/?team=${abbr}&season=${encodeURIComponent(row.SEASON)}`;
+      a.textContent = row.SEASON;
+      a.title = `${row.SEASON} season recap`;
+      td.appendChild(a);
+      if (row.FOTY === 'TRUE') {
+        const b = document.createElement('span');
+        b.className = 'badge ui-icon ui-icon--star';
+        attachTooltip(b, 'Franchise of the Year');
+        td.appendChild(b);
+      }
+      if (row.COTY === 'TRUE') {
+        const b = document.createElement('span');
+        b.className = 'badge ui-icon ui-icon--medal';
+        attachTooltip(b, 'Coach of the Year');
+        td.appendChild(b);
+      }
+    } else if (col.key === 'PLAYOFF_RESULT') {
+      const cls = PO_CLASS[row.PLAYOFF_RESULT];
+      if (cls) td.classList.add(cls);
+      td.textContent = row.PLAYOFF_RESULT || '—';
+    } else if (col.display) {
+      td.textContent = col.display(row);
+    } else {
+      td.textContent = row[col.key] ?? '—';
+    }
+
+    if (ranges[col.key]) {
+      const n = parseFloat(row[col.key]);
+      if (!isNaN(n)) {
+        const { absMax } = ranges[col.key];
+        const t = absMax === 0 ? 0.5 : Math.min(1, Math.max(0, n / absMax * 0.5 + 0.5));
+        td.classList.add('ui-heat');
+        td.style.setProperty('--heat', t.toFixed(3));
+      }
+    }
+  };
+}
+
+// The Franchise tab's Rivalries: this team's record against every opponent,
+// from the same game list the Personnel section reads, plus playoff series
+// from playoff-brackets.csv (fetched here; nothing else on the page uses it).
+// Four cards up top name the stories — the most-played playoff rival, the
+// team this one owns, its nemesis, and the biggest win and worst loss.
+function renderRivalries(allGames) {
+  const section = document.getElementById('rivals-section');
+  const cards = document.getElementById('rivals-cards');
+  const wrap = document.getElementById('rivals-wrap');
+  if (!section || !allGames || !allGames.length) return;
+
+  const by = new Map();
+  let best = null, worst = null;
+  allGames.forEach(g => {
+    const home = g.home_team === abbr;
+    if (!home && g.away_team !== abbr) return;
+    const opp = home ? g.away_team : g.home_team;
+    const us = home ? g.home_score : g.away_score;
+    const them = home ? g.away_score : g.home_score;
+    if (us == null || them == null || us === them) return;
+    const r = by.get(opp) || by.set(opp, { opp, G: 0, W: 0, L: 0, PO_G: 0, MARGIN: 0, SER_W: 0, SER_L: 0, last: '' }).get(opp);
+    r.G++; r.MARGIN += us - them;
+    if (us > them) r.W++; else r.L++;
+    if (g.gametype === 'PLAYOFF') r.PO_G++;
+    if (g.date > r.last) r.last = g.date;
+    const m = { opp, date: g.date, us, them, margin: us - them, po: g.gametype === 'PLAYOFF' };
+    if (!best || m.margin > best.margin) best = m;
+    if (!worst || m.margin < worst.margin) worst = m;
+  });
+  if (!by.size) return;
+
+  fetch('/standings/playoff-brackets.csv')
+    .then(r => (r.ok ? r.text() : ''))
+    .catch(() => '')
+    .then(text => {
+      (text ? parseCSV(text) : []).forEach(s => {
+        if (s.T1 !== abbr && s.T2 !== abbr) return;
+        const opp = s.T1 === abbr ? s.T2 : s.T1;
+        const r = by.get(opp);
+        if (!r) return;
+        if (s.WINNER === abbr) r.SER_W++; else if (s.WINNER) r.SER_L++;
+      });
+
+      const rows = [...by.values()].map(r => ({ ...r, PCT: r.W / r.G, AVG: r.MARGIN / r.G, SER: r.SER_W + r.SER_L }));
+      const MIN_G = 8;   // a record over fewer games says little
+      const enough = rows.filter(r => r.G >= MIN_G);
+      const rival = [...rows].sort((a, b) => b.SER - a.SER || b.PO_G - a.PO_G || b.G - a.G)[0];
+      const owns = [...enough].sort((a, b) => b.PCT - a.PCT || b.G - a.G)[0];
+      const nemesis = [...enough].sort((a, b) => a.PCT - b.PCT || b.G - a.G)[0];
+
+      const fmtDay = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      const logo = t => `<img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="">`;
+      const card = (label, team, main, sub) => team ? `<a class="rival-card" href="/stats/teams/${team}/" data-team="${team}">`
+        + `<span class="rival-label">${label}</span>`
+        + `<span class="rival-team">${logo(team)}${TEAMS[team] || team}</span>`
+        + `<span class="rival-main">${main}</span><span class="rival-sub">${sub}</span></a>` : '';
+      const game = m => `${m.us}–${m.them} ${m.po ? 'in the playoffs, ' : ''}${fmtDay(m.date)}`;
+      cards.innerHTML = [
+        rival && rival.SER ? card('Playoff rival', rival.opp, `${rival.SER} series`,
+          `${rival.SER_W}–${rival.SER_L} in series · ${rival.W}–${rival.L} overall`) : '',
+        owns && owns.PCT > 0.5 ? card('Has their number', owns.opp, `${owns.W}–${owns.L}`, `${fmtPct(owns.PCT)} all-time`) : '',
+        nemesis && nemesis.PCT < 0.5 ? card('Nemesis', nemesis.opp, `${nemesis.W}–${nemesis.L}`, `${fmtPct(nemesis.PCT)} all-time`) : '',
+        best ? card('Biggest win', best.opp, `+${best.margin}`, game(best)) : '',
+        worst && worst.margin < 0 ? card('Worst loss', worst.opp, `${worst.margin}`, game(worst)) : '',
+      ].join('');
+
+      const COLS = [
+        { key: 'opp', label: 'Opponent', cls: 'bold', sortField: 'opp', defaultDir: 1 },
+        { key: 'G', label: 'G', cls: 'right', sortField: 'G', defaultDir: -1 },
+        { key: 'wl', label: 'W–L', cls: 'right', sortField: 'PCT', defaultDir: -1 },
+        { key: 'PCT', label: 'W%', cls: 'right muted', sortField: 'PCT', defaultDir: -1 },
+        { key: 'AVG', label: 'Avg margin', cls: 'right', sortField: 'AVG', defaultDir: -1 },
+        { key: 'SER', label: 'Playoff series', cls: 'right', sortField: 'SER', defaultDir: -1 },
+        { key: 'last', label: 'Last met', cls: 'right muted', sortField: 'last', defaultDir: -1 },
+      ];
+      wrap.innerHTML = '';
+      wrap.appendChild(buildTable(COLS, rows, 'G', -1, (td, col, r) => {
+        if (col.key === 'opp') {
+          td.innerHTML = `<a class="rival-opp" href="/stats/teams/${r.opp}/">${logo(r.opp)}${r.opp}</a>`;
+        } else if (col.key === 'wl') td.textContent = `${r.W}–${r.L}`;
+        else if (col.key === 'PCT') td.textContent = fmtPct(r.PCT);
+        else if (col.key === 'AVG') {
+          td.textContent = (r.AVG > 0 ? '+' : '') + r.AVG.toFixed(1);
+          td.style.color = r.AVG > 0 ? 'var(--market-positive)' : r.AVG < 0 ? 'var(--danger)' : '';
+        } else if (col.key === 'SER') td.textContent = r.SER ? `${r.SER_W}–${r.SER_L}` : '—';
+        else if (col.key === 'last') td.textContent = r.last ? fmtDay(r.last) : '';
+        else td.textContent = r[col.key];
+      }));
+      section.style.display = '';
+    });
+}
+
+// One line of franchise facts under the name in the team band: who runs it
+// now, titles, all-time record, playoff trips. Everything here is also on the
+// Franchise tab; this is the summary a visitor sees without clicking.
+function renderHeaderFacts(seasonRows, members) {
+  const el = document.getElementById('team-header-facts');
+  if (!el) return;
+  const facts = [];
+  const owners = [];
+  (members || []).forEach(m => (m.tenures || []).forEach(t => {
+    if (t.team === abbr && t.end == null && t.position === 'owner') owners.push(m.name);
+  }));
+  // Each fact is a figure and its label, the figure in the scoreboard face.
+  const fact = (fig, label) => {
+    const f = document.createElement('span');
+    f.className = 'thf';
+    const b = document.createElement('b');
+    b.textContent = fig;
+    f.append(b, ' ' + label);
+    return f;
+  };
+  const rows = (seasonRows || []).filter(r => r.SEASON);
+  if (rows.length) {
+    const titles = rows.filter(r => r.PLAYOFF_RESULT === 'Champion').length;
+    const trips = rows.filter(r => r.PLAYOFF_RESULT && r.PLAYOFF_RESULT !== 'Missed').length;
+    const w = rows.reduce((s, r) => s + (+r.W || 0), 0);
+    const l = rows.reduce((s, r) => s + (+r.L || 0), 0);
+    facts.push(fact(`${w}–${l}`, 'all-time'));
+    if (titles) facts.push(fact(titles, titles === 1 ? 'title' : 'titles'));
+    facts.push(fact(trips, `NBN playoff trip${trips === 1 ? '' : 's'}`));
+  }
+  if (owners.length) {
+    const o = document.createElement('span');
+    o.className = 'thf-owner';
+    o.textContent = `Owner ${owners.join(' & ')}`;
+    facts.push(o);
+  }
+  el.replaceChildren(...facts);
+}
+
+function buildPersonnelSection(members, allGames) {
+  const POS_LABEL = { owner: 'Owner', gm: 'GM', coach: 'Coach' };
+
+  const rows = [];
+  for (const member of members) {
+    for (const tenure of (member.tenures || [])) {
+      if (tenure.team !== abbr || tenure.position === 'none') continue;
+
+      const ts = tenure.start;
+      const te = tenure.end ?? '9999-99-99';
+
+      const games = allGames.filter(g =>
+        g.date >= ts && g.date <= te &&
+        (g.home_team === abbr || g.away_team === abbr)
+      );
+
+      let W = 0, L = 0;
+      for (const g of games) {
+        const won = g.home_team === abbr ? g.home_score > g.away_score : g.away_score > g.home_score;
+        if (won) W++; else L++;
+      }
+      const pct    = W + L > 0 ? W / (W + L) : null;
+      const active = tenure.end === null;
+
+      rows.push({
+        name: member.name, posLabel: POS_LABEL[tenure.position] || tenure.position,
+        startDate: tenure.start, endDate: tenure.end,
+        active, n: games.length, W, L, pct,
+      });
+    }
+  }
+
+  if (!rows.length) return;
+
+  function fmtTenureDate(iso) {
+    return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
+  const POS_ORDER = { owner: 0, gm: 1, coach: 2 };
+  rows.sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    if (a.active) {
+      const pa = POS_ORDER[a.posLabel.toLowerCase()] ?? 9;
+      const pb = POS_ORDER[b.posLabel.toLowerCase()] ?? 9;
+      if (pa !== pb) return pa - pb;
+    }
+    return b.startDate.localeCompare(a.startDate);
+  });
+
+  const section = document.getElementById('personnel-section');
+  const wrap    = document.getElementById('personnel-wrap');
+
+  const table = document.createElement('table');
+  const hrow  = table.createTHead().insertRow();
+  ['Name', 'Role', 'Tenure', 'W', 'L', 'PCT'].forEach((h, i) => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    if (i >= 3) th.className = 'right';
+    hrow.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+  let shownDivider = false;
+  rows.forEach(row => {
+    if (!row.active && !shownDivider) {
+      shownDivider = true;
+      const divTr = tbody.insertRow();
+      divTr.className = 'personnel-divider';
+      const divTd = divTr.insertCell();
+      divTd.colSpan = 6;
+      divTd.textContent = 'Former';
+    }
+
+    const tr = tbody.insertRow();
+    tr.className = row.active ? 'personnel-active' : 'personnel-former';
+
+    const tdN = tr.insertCell(); tdN.className = 'bold';
+    const nameLink = document.createElement('a');
+    nameLink.href = `/members/${encodeURIComponent(row.name)}/`;
+    nameLink.textContent = row.name;
+    tdN.appendChild(nameLink);
+
+    const tdP = tr.insertCell();
+    if (row.active) {
+      tdP.innerHTML = `<span class="cur-role">${row.posLabel}</span>`;
+    } else {
+      tdP.className = 'muted'; tdP.textContent = row.posLabel;
+    }
+
+    const tdS = tr.insertCell();
+    if (row.active) {
+      tdS.innerHTML = `<span class="cur-since">Since ${fmtTenureDate(row.startDate)}</span>`;
+    } else {
+      tdS.textContent = fmtTenureDate(row.startDate) + ' – ' + fmtTenureDate(row.endDate);
+    }
+
+    const tdW   = tr.insertCell(); tdW.className   = 'right'; tdW.textContent   = row.n ? row.W   : '—';
+    const tdL   = tr.insertCell(); tdL.className   = 'right'; tdL.textContent   = row.n ? row.L   : '—';
+    const tdPct = tr.insertCell(); tdPct.className = 'right'; tdPct.textContent = row.pct !== null ? fmtPct(row.pct) : '—';
+  });
+
+  wrap.appendChild(table);
+  section.style.display = '';
+}
+
+function buildTimeline(rows) {
+  const wrap = document.getElementById('timeline-wrap');
+  if (!wrap) return;
+  const TL_CLASS = {
+    'Champion':     'tl-champion',
+    'Runner-Up':    'tl-runnerup',
+    'Conf Finals':  'tl-conffinals',
+    'Second Round': 'tl-second',
+    'First Round':  'tl-second',
+    'Missed':       'tl-missed',
+  };
+  const sorted = [...rows].sort((a, b) => (a.SEASON > b.SEASON ? 1 : -1));
+  sorted.forEach(row => {
+    const card = document.createElement('div');
+    card.className = 'tl-card ' + (TL_CLASS[row.PLAYOFF_RESULT] || '');
+    const tip = `${row.SEASON}: ${row.W}–${row.L} · ${row.SEED || '—'} · ${row.PLAYOFF_RESULT || '—'}`;
+    attachTooltip(card, tip);
+    card.innerHTML = `
+      <span class="tl-season">${row.SEASON}</span>
+      <span class="tl-wins">${row.W}</span>
+      <span class="tl-seed">${(row.SEED || '').replace('East-', 'E').replace('West-', 'W')}</span>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+function playerSlug(name) {
+  return String(name || '').toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+// rosterRows: current roster rows (SLUG or legacy PLAYER format), used to mark
+// which all-time players are still on the team.
+function computeCurrentSlugSet(rosterRows) {
+  const slugs = new Set();
+  (rosterRows || []).forEach(r => {
+    if (r.SLUG) slugs.add(r.SLUG.trim());
+    else if (r.PLAYER) slugs.add(playerSlug(r.PLAYER));
+  });
+  return slugs;
+}
+
+function makePlayerRenderCell(currentSlugs) {
+  return function(td, col, row) {
+    if (col.key === 'PLAYER') {
+      const a = document.createElement('a');
+      a.href = `/stats/players/?p=${playerSlug(row.PLAYER)}`;
+      a.textContent = row.PLAYER;
+      td.appendChild(a);
+      if (currentSlugs.has(playerSlug(row.PLAYER))) {
+        const dot = document.createElement('span');
+        dot.className = 'on-roster-dot';
+        attachTooltip(dot, 'Currently on roster');
+        td.appendChild(dot);
+      }
+    } else {
+      td.textContent = col.display ? col.display(row) : (row[col.key] ?? '—');
+    }
+  };
+}
+
+// ── Edit mode ────────────────────────────────────────────────────────────────
+
+const TOKEN_KEY = 'nbn_token';
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+const setToken = t => localStorage.setItem(TOKEN_KEY, t);
+
+// Roles for the current token, populated once on load from GET /api/auth/me.
+// Used to decide whether to render edit buttons at all — the API still enforces
+// permissions on write, this only hides affordances the user can't actually use.
+let AUTH_ROLES = [];
+// Mirror the server's has_role logic: admin satisfies anything; bod implies rosters.
+function hasAuthRole(role) {
+  if (AUTH_ROLES.includes('admin')) return true;
+  if (AUTH_ROLES.includes(role)) return true;
+  if (role === 'rosters' && AUTH_ROLES.includes('bod')) return true;
+  return false;
+}
+// Roster, picks, dead cap, and team state all gate on the 'rosters' role.
+const canEditRosters = () => hasAuthRole('rosters');
+// Team Settings (jersey number, secondary position) are gated by the team's own
+// role only (e.g. 'phx' on /stats/teams/PHX) — deliberately not by rosters/bod/admin,
+// since these are the team's own cosmetic identity choices, not league-administered
+// roster data.
+const canEditTeamSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
+// Coaching Settings is the same "this team's own call" predicate as Team
+// Settings, for the same reason — a team's coach profile isn't
+// league-administered data, so admin is deliberately not OR'd in here.
+const canEditCoachingSettings = abbr => AUTH_ROLES.includes(abbr.toLowerCase());
+// Who sees the Coaching tab at all: the team itself, plus the streamers who
+// enter it into 2K (and admin). GET /api/coaching-settings scopes the same way.
+const canViewCoachingSettings = abbr =>
+  AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_ROLES.includes('streamer') || AUTH_ROLES.includes('admin');
+// The trading block takes the team's own role OR admin — mirroring
+// put_trading_block in roster_picks.py. Deliberately not the same predicate as
+// canEditTeamSettings above, which excludes admin on purpose: a jersey number is
+// the team's own cosmetic choice, while the block is league-visible listing data
+// the office does administer.
+const canEditTradeBlock = abbr => AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_ROLES.includes('admin');
+
+// Teams this member currently *owns*, from GET /api/auth/me. Ownership is a
+// tenure position, not a role — every FO member of a team carries the team role
+// (it gates the trading block and jersey numbers), but only the owner may move
+// real roster state. The server computes this with the same `is_team_owner` its
+// write endpoints gate on, so the menu can't offer a move the API would refuse.
+let AUTH_OWNER_OF = [];
+const canRenounce = abbr => AUTH_OWNER_OF.includes(abbr.toUpperCase());
+
+const SEL_STYLE = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-xs);padding:0.15rem 0.3rem;font-family:inherit;cursor:pointer;outline:none';
+
+const CAP_OPTIONS = [
+  { value: '',           label: '—'          },
+  { value: 'UFA',        label: 'UFA'        },
+  { value: 'RFA',        label: 'RFA'        },
+  { value: 'PLAYER_OPT', label: 'Player Opt' },
+  { value: 'TEAM_OPT',   label: 'Team Opt'   },
+  { value: 'NON_GTD',    label: 'Non-Gtd'    },
+];
+
+const CAP_HOLD_COLORS = {
+  UFA:        'var(--cap-ufa)',
+  RFA:        'var(--cap-rfa)',
+  PLAYER_OPT: 'var(--cap-player-opt)',
+  TEAM_OPT:   'var(--cap-team-opt)',
+};
+
+// The cap-hold picker wears its choice: tinted like the salary cell it sets.
+function applyCapHoldColor(sel) {
+  const c = CAP_HOLD_COLORS[sel.value];
+  sel.style.background = c ? `color-mix(in srgb, ${c} 18%, var(--bg-page))` : 'var(--bg-page)';
+  sel.style.color = c ? 'var(--text-primary)' : sel.value === 'NON_GTD' ? 'var(--text-dim)' : 'var(--text-secondary)';
+  sel.style.borderColor = c || 'var(--border)';
+}
+
+function promptToken(onSuccess) {
+  const overlay = document.createElement('div');
+  overlay.className = 'token-overlay';
+  overlay.innerHTML = `
+    <div class="token-modal">
+      <h3>Access token required</h3>
+      <p>Enter your committee token. It will be saved in this browser.</p>
+      <input type="password" id="token-input" placeholder="Paste token…" autocomplete="off" />
+      <div class="token-modal-actions">
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit" id="tok-cancel">Cancel</button>
+        <button style="padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit" id="tok-submit">Continue</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector('#token-input');
+  input.focus();
+  overlay.querySelector('#tok-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('#tok-submit').addEventListener('click', () => {
+    const val = input.value.trim();
+    if (!val) return;
+    setToken(val);
+    overlay.remove();
+    onSuccess(val);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') overlay.querySelector('#tok-submit').click();
+    if (e.key === 'Escape') overlay.remove();
+  });
+}
+
+function withToken(fn) {
+  const t = getToken();
+  if (t) { fn(t); return; }
+  promptToken(fn);
+}
+
+// ── Owner roster moves ───────────────────────────────────────────────────────
+// The per-player "Moves" menu on a team's own roster. Every move here writes for
+// real through the API; nothing in this section is a simulation. The what-if
+// tab's row buttons look similar on purpose but are purely hypothetical, so
+// each real action confirms explicitly and says what it will change.
+
+function openConfirmModal({ title, sub, render, confirmLabel, danger, onConfirm }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'token-overlay';
+  const modal = document.createElement('div');
+  modal.className = 'confirm-modal';
+  overlay.appendChild(modal);
+
+  const h = document.createElement('h3'); h.textContent = title;
+  const s = document.createElement('div'); s.className = 'sub'; s.textContent = sub || '';
+  const bodyEl = document.createElement('div');
+  const actions = document.createElement('div'); actions.className = 'confirm-actions';
+  const err = document.createElement('div'); err.className = 'spacer';
+  const cancel = document.createElement('button'); cancel.className = 'btn-plain'; cancel.textContent = 'Cancel';
+  const go = document.createElement('button');
+  go.className = danger ? 'btn-danger' : 'btn-go';
+  go.textContent = confirmLabel;
+  actions.append(err, cancel, go);
+  modal.append(h, s, bodyEl, actions);
+
+  const close = () => { overlay.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  cancel.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  go.addEventListener('click', async () => {
+    go.disabled = true; cancel.disabled = true; err.textContent = '';
+    const prev = go.textContent; go.textContent = 'Working…';
+    try {
+      await onConfirm();
+      close();
+    } catch (e) {
+      err.textContent = e.message || 'Failed.';
+      go.disabled = false; cancel.disabled = false; go.textContent = prev;
+    }
+  });
+
+  document.body.appendChild(overlay);
+  // `render` gets the body element plus a handle to gate the confirm button, so
+  // a dialog can require typed confirmation or block on a failed check.
+  render(bodyEl, { setEnabled: v => { go.disabled = !v; }, close });
+  return overlay;
+}
+
+function factRow(label, value, color) {
+  const d = document.createElement('div'); d.className = 'confirm-fact';
+  const a = document.createElement('span'); a.textContent = label;
+  const b = document.createElement('span'); b.textContent = value;
+  if (color) b.style.color = color;
+  d.append(a, b);
+  return d;
+}
+
+function checkRow(c) {
+  const d = document.createElement('div');
+  d.className = 'confirm-check ' + (c.passed ? 'ok' : c.level === 'error' ? 'error' : 'warn');
+  d.dataset.icon = c.passed ? 'check' : c.level === 'error' ? 'x' : 'warning';
+  d.textContent = c.message;
+  return d;
+}
+
+// The API stores trading-block entries by display name; the roster works in
+// slugs. Same transform the API's _display_name applies, so membership tests
+// line up on both sides.
+const blockNameFor = bio => displayNameFromBio((bio && bio.name) || '');
+
+// Mirror of the API's _renounce_eligibility (§ 3.10), so the menu greys out
+// exactly what the server would reject. Note it can't be read off the current
+// season's cap-hold cell: a player whose contract runs through this season sits
+// as a hold for *next* season, and that is the common renounceable case. The
+// test is on the player's EARLIEST hold, not the current year's.
+function renounceEligibility(bio) {
+  // Unsigned draft rights carry no cap hold at all — the rights themselves
+  // are what's given up, so they're renounceable without one (§ 7.1's
+  // "retaining unsigned draft rights").
+  if (bio && bio.type === 'draft-rights') {
+    return { ok: true, why: '', holdType: 'DRAFT_RIGHTS', holdSeason: null };
+  }
+  const holds = (bio && bio.cap_holds) || {};
+  const years = Object.keys(holds).sort();
+  if (!years.length) return { ok: false, why: 'No cap hold on file — nothing to renounce (§ 3.10).' };
+  const earliest = years[0];
+  const type = holds[earliest];
+  const cur = currentSeasonYr();
+  const m = cur.match(/^(\d{2})-(\d{2})$/);
+  const next = m ? `${m[2]}-${String((parseInt(m[2], 10) + 1) % 100).padStart(2, '0')}` : cur;
+  if (type === 'PLAYER_OPT' || type === 'TEAM_OPT') {
+    return { ok: false, why: 'Decline the option first (§ 6.1) — only a UFA/RFA hold can be renounced.' };
+  }
+  if (type !== 'UFA' && type !== 'RFA') {
+    return { ok: false, why: 'Under contract — a player still under contract must be released (§ 5.1), not renounced.' };
+  }
+  if (earliest > next) {
+    return { ok: false, why: `Contract runs through ${earliest} — renounce applies once they reach free agency (§ 3.10).` };
+  }
+  // A hold for next season means the contract still runs through this one, so
+  // he is only a free agent once this season's games are over. Until then it's
+  // a release (§ 5.1). No schedule on file counts as not over, as on the API.
+  if (earliest === next) {
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (!SEASON_LAST_GAME || today <= SEASON_LAST_GAME) {
+      return { ok: false, why: `Under contract for ${cur} — release him instead (§ 5.1). Renounce applies once the season is over (§ 3.10).` };
+    }
+  }
+  return { ok: true, why: '', holdType: type, holdSeason: earliest };
+}
+
+// § 3.1 qualifying offer: mirrors the API's _qo_target_season and the window
+// check in _validate_qualifying_offer, so the menu greys out what the server
+// would reject. `relevant` is false for a player with no RFA tag and no QO on
+// file, and the menu leaves the items off entirely — a QO means nothing there.
+function qoEligibility(bio) {
+  const holds = (bio && bio.cap_holds) || {};
+  const qos = (bio && bio.qualifying_offers) || {};
+  const extended = Object.keys(qos).filter(s => qos[s].status === 'extended').sort();
+  const fa = Object.keys(holds).filter(s => holds[s] === 'UFA' || holds[s] === 'RFA').sort();
+  const relevant = extended.length > 0 || Object.values(holds).includes('RFA');
+  const out = { relevant, extend: { ok: false, why: '' }, withdraw: { ok: false, why: '' } };
+  if (extended.length) {
+    out.season = extended[0];
+    out.amount = qos[extended[0]].amount;
+    out.extend.why = `A ${extended[0]} qualifying offer is already out (§ 3.1).`;
+    out.withdraw.ok = true;   // the round-opened cutoff is the server's call, shown in the dialog
+    return out;
+  }
+  out.withdraw.why = 'No qualifying offer is out to withdraw (§ 3.1).';
+  const season = fa[0];
+  if (!season || holds[season] !== 'RFA') {
+    out.extend.why = 'Not RFA-eligible — no qualifying offer applies (§ 3.1).';
+    return out;
+  }
+  out.season = season;
+  const rec = qos[season];
+  if (rec) { out.extend.why = `The ${season} qualifying offer was ${rec.status} (§ 3.1).`; return out; }
+  const finalYear = seasonShift(season, -1);
+  const cur = currentSeasonYr();
+  if (cur === finalYear) out.extend.ok = true;
+  else if (cur > finalYear) out.extend.why = `The deadline for a ${season} qualifying offer was July 1 — he is a UFA (§ 3.1).`;
+  else out.extend.why = `A ${season} qualifying offer can be made during ${finalYear}, the final year of his deal (§ 3.1).`;
+  return out;
+}
+
+function seasonShift(season, delta) {
+  const m = String(season).match(/^(\d{2})-(\d{2})$/);
+  if (!m) return season;
+  const f = n => String((parseInt(n, 10) + delta + 100) % 100).padStart(2, '0');
+  return `${f(m[1])}-${f(m[2])}`;
+}
+
+// § 6.1: only a TEAM_OPT is the team's own call. A PLAYER_OPT decision
+// belongs to PDC — the team never even initiates it (docs/pdc-free-agency-spec.md)
+// — so it's never offered here at all, not just disabled.
+function optionEligibility(bio) {
+  const holds = (bio && bio.cap_holds) || {};
+  const teamOptYears = Object.keys(holds).filter(y => holds[y] === 'TEAM_OPT').sort();
+  if (teamOptYears.length) return { ok: true, why: '', year: teamOptYears[0] };
+  const hasPlayerOpt = Object.values(holds).includes('PLAYER_OPT');
+  if (hasPlayerOpt) {
+    return { ok: false, why: 'This is a player option — that decision belongs to PDC, not the team (§ 6.1).' };
+  }
+  return { ok: false, why: 'No team option on file (§ 6.1).' };
+}
+
+// § 5.1: mirrors _validate_release's own eligibility test — a player with
+// only a UFA/RFA/TEAM_OPT hold and no real salary left has nothing to
+// release, and is renounced instead (§ 3.10). A two-way's contract years pay
+// $0 (§ 2.2) but are still a contract, so they count.
+function releaseEligibility(bio) {
+  const salaries = (bio && bio.salaries) || {};
+  const holds = (bio && bio.cap_holds) || {};
+  const cur = currentSeasonYr();
+  const twoWay = bio && bio.type === 'two-way';
+  const hasRealYear = Object.keys(salaries).some(season =>
+    season >= cur && !['UFA', 'RFA', 'TEAM_OPT'].includes(holds[season]) &&
+    (twoWay || parseSalaryNum(salaries[season]) > 0));
+  if (!hasRealYear) {
+    return { ok: false, why: 'Nothing real left to release — renounce instead (§ 3.10).' };
+  }
+  return { ok: true, why: '' };
+}
+
+// § 2.2: only a currently two-way player is eligible at all. Whether a
+// like-for-like minimum conversion is actually possible right now (real
+// contract history on file, a resolvable experience tier) is server-side
+// only — GET /api/self/convert_twoway/preview/{slug} is the source of
+// truth, not a client-side guess.
+function twoWayEligibility(bio) {
+  if ((bio && bio.type) !== 'two-way') {
+    return { ok: false, why: 'Not on a two-way contract (§ 2.2).' };
+  }
+  return { ok: true, why: '' };
+}
+
+// § 7.1: only unsigned draft rights are eligible, and only a 1st-round pick
+// self-serve — a 2nd-rounder has no contract generator anywhere in the API
+// (see _self_sign_pick_contract), so it's never offered here at all.
+function signPickEligibility(bio) {
+  if ((bio && bio.type) !== 'draft-rights') {
+    return { ok: false, why: 'Not unsigned draft rights (§ 7.1).' };
+  }
+  if (bio.draft_round !== 1) {
+    return { ok: false, why: 'Only a 1st-round pick can be signed here — a 2nd-rounder still needs the office form.' };
+  }
+  return { ok: true, why: '' };
+}
+
+// § 7.1 / § 7.4: any unsigned draft rights can be stashed, 1st or 2nd round.
+// Whether the grounds hold is the server's call (/api/validate/stash).
+function stashEligibility(bio) {
+  if ((bio && bio.type) !== 'draft-rights') {
+    return { ok: false, why: 'Only unsigned draft rights can be stashed (§ 7.1).' };
+  }
+  return { ok: true, why: '' };
+}
+
+async function apiFetch(url, opts, token) {
+  const res = await fetch(url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts.headers || {}) },
+  });
+  if (res.status === 401) {
+    localStorage.removeItem(TOKEN_KEY);
+    throw new Error('Token rejected — cleared, reload and try again.');
+  }
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try {
+      const j = await res.json();
+      if (typeof j.detail === 'string') detail = j.detail;
+      else if (j.detail && j.detail.checks) {
+        const bad = j.detail.checks.filter(c => !c.passed && c.level === 'error');
+        detail = bad.length ? bad[0].message : detail;
+      }
+    } catch {}
+    throw new Error(detail);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+function openRenounceDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  // Typed confirmation, using the surname alone so it's short enough to type but
+  // still specific to this player. Renounce has no self-serve undo — restoring
+  // one is a committee `rescind_renounce` — so a stray click must not be enough.
+  const surname = String(bio.name || '').split(',')[0].trim() || name;
+
+  const sub = bio.type === 'draft-rights'
+    ? `${abbr} gives up ${name}'s unsigned draft rights under § 3.10. Checking against the rulebook…`
+    : `${abbr} gives up this cap hold under § 3.10. Checking against the rulebook…`;
+  openConfirmModal({
+    title: `Renounce ${name}?`,
+    sub,
+    confirmLabel: 'Renounce',
+    danger: true,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 3.10 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/renounce', { player: slug });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const f = data.fact_sheet || {};
+      const isDraftRights = f.hold_type === 'DRAFT_RIGHTS';
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      facts.appendChild(isDraftRights
+        ? factRow('Status', 'Unsigned draft rights')
+        : factRow('Cap hold', `${f.hold_type || '—'} · ${f.hold_season || '—'}`));
+      facts.appendChild(factRow('Hold removed', formatSalary(f.hold_amount)));
+      if (f.cap_room_before != null) {
+        facts.appendChild(factRow('Cap room', `${formatSalary(f.cap_room_before)} → ${formatSalary(f.cap_room_after)}`));
+      }
+      facts.appendChild(factRow('Team salary', `${formatSalary(f.team_salary_before)} → ${formatSalary(f.team_salary_after)}`));
+      facts.appendChild(factRow('Roster', `${f.standard_count_before} → ${f.standard_count_after} players`,
+        f.standard_count_after < f.roster_min ? 'var(--danger)' : ''));
+      facts.appendChild(factRow('Bird Rights forfeited', f.bird_tier || 'none on record',
+        (f.bird_tier === 'QVFA' || f.bird_tier === 'EQVFA') ? 'var(--gold)' : ''));
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      const note = document.createElement('div');
+      note.className = 'confirm-check warn';
+      note.textContent = 'This cannot be undone from here. ' + name +
+        ' becomes an unsigned free agent, free to sign anywhere, and only the committee can restore them.';
+      body.appendChild(note);
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This renounce is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+
+      const label = document.createElement('label');
+      label.textContent = `Type ${surname} to confirm`;
+      const input = document.createElement('input');
+      input.type = 'text'; input.autocomplete = 'off';
+      body.append(label, input);
+      input.addEventListener('input', () => {
+        ctl.setEnabled(input.value.trim().toLowerCase() === surname.toLowerCase());
+      });
+      input.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/renounce', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, description: `${abbr} renounce ${name}` }),
+          }, token);
+          resolve();
+          // Team salary, cap room, the exceptions panel, the hard-cap banner and
+          // the roster table all derive from the roster that just changed. There
+          // is no partial re-render path that keeps them consistent, so reload.
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+// § 3.1 — extend or withdraw a qualifying offer. Neither is undoable from
+// here, but neither destroys anything either (a withdrawal keeps the hold and
+// Bird Rights), so a plain confirm rather than renounce's typed one.
+function openQualifyingOfferDialog(slug, bio, abbr, action) {
+  const name = displayNameFromBio(bio.name || slug);
+  const extend = action === 'extend';
+  openConfirmModal({
+    title: extend ? `Extend a qualifying offer to ${name}?` : `Withdraw ${name}’s qualifying offer?`,
+    sub: (extend
+      ? `${name} becomes a restricted free agent: ${abbr} can match any offer sheet, and the PDC can keep him on the QO.`
+      : `${name} becomes an unrestricted free agent. ${abbr} keeps his cap hold and Bird Rights until he signs elsewhere.`)
+      + ' Checking against the rulebook…',
+    confirmLabel: extend ? 'Extend' : 'Withdraw',
+    danger: !extend,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 3.1 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/qualifying_offer', { player: slug, action });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const f = data.fact_sheet || {};
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      facts.appendChild(factRow('Season', f.season || '—'));
+      facts.appendChild(factRow('Qualifying offer', f.two_way ? 'One-year two-way contract'
+        : (f.amount != null ? `${formatSalary(f.amount)} for one year` : 'set by the office')));
+      if (!f.two_way) {
+        facts.appendChild(factRow('Cap hold', f.hold_after !== f.hold_before
+          ? `${formatSalary(f.hold_before)} → ${formatSalary(f.hold_after)}` : formatSalary(f.hold_before)));
+      }
+      if (extend && f.deadline) facts.appendChild(factRow('Deadline', f.deadline));
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = `This ${extend ? 'offer' : 'withdrawal'} is not legal, so it cannot be submitted.`;
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/qualifying-offer', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, action }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+// § 6.1 — TEAM_OPT only; the Moves menu never offers this for a PLAYER_OPT at
+// all (optionEligibility), so `decision`/`year` here are always a real team
+// option. Unlike renounce, exercising or declining moves no cap dollars
+// (§ 1.3 already counts the option year's salary before it's exercised) —
+// so there's no cap-room fact sheet to show, just the eligibility/roster
+// checks the validator actually reports.
+function openOptionDialog(slug, bio, abbr, decision, year) {
+  const name = displayNameFromBio(bio.name || slug);
+  const verb = decision === 'accept' ? 'Exercise' : 'Decline';
+  let capHoldSelect;
+  openConfirmModal({
+    title: `${verb} ${name}’s ${year} team option?`,
+    sub: decision === 'accept'
+      ? `${abbr} keeps ${name} at the ${year} option salary. Checking against the rulebook…`
+      : `${name} enters free agency for ${year} (§ 6.1). Checking against the rulebook…`,
+    confirmLabel: verb,
+    danger: decision === 'decline',
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 6.1 checks…';
+      body.appendChild(loading);
+
+      if (decision === 'decline') {
+        const label = document.createElement('label');
+        label.textContent = 'Resulting free-agent status';
+        capHoldSelect = document.createElement('select');
+        ['UFA', 'RFA'].forEach(v => {
+          const opt = document.createElement('option'); opt.value = v; opt.textContent = v;
+          capHoldSelect.appendChild(opt);
+        });
+        body.append(label, capHoldSelect);
+        const note = document.createElement('div');
+        note.className = 'confirm-check warn';
+        note.textContent = 'RFA only makes him eligible for a qualifying offer (§ 3.1) — he becomes a ' +
+          'restricted free agent once you extend one, from this menu, before July 1.';
+        body.appendChild(note);
+      }
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/option', {
+          player: slug, decision, option_type: 'TEAM_OPT', year, cap_hold_type: 'UFA',
+        });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = `This ${decision} is not legal, so it cannot be submitted.`;
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/option', {
+            method: 'POST',
+            body: JSON.stringify({
+              player: slug, decision,
+              cap_hold_type: (capHoldSelect && capHoldSelect.value) || 'UFA',
+              description: `${abbr} ${decision}s ${name}’s ${year} team option`,
+            }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+// § 5.1 — only the two payment methods _apply_release actually implements
+// are reachable here: the original schedule (default, no input) and the
+// stretch provision (an explicit year count, since the rulebook's own
+// formula is ambiguous across NON_GTD/option contracts and the office form
+// doesn't auto-derive it either). Buying out with cap space has no
+// implementation anywhere in the API — there's nothing to wire up.
+function openReleaseDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  const surname = String(bio.name || '').split(',')[0].trim() || name;
+  let stretchInput;
+  openConfirmModal({
+    title: `Release ${name}?`,
+    sub: `${abbr} releases ${name} under § 5.1. Checking against the rulebook…`,
+    confirmLabel: 'Release',
+    danger: true,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 5.1 checks…';
+      body.appendChild(loading);
+
+      // A two-way pays $0 (§ 2.2), so there is no obligation to stretch or buy out.
+      if (bio.type === 'two-way') {
+        const note = document.createElement('div');
+        note.className = 'confirm-check ok';
+        note.textContent = 'A two-way contract pays $0, so releasing leaves no dead cap.';
+        body.appendChild(note);
+      } else {
+        const label = document.createElement('label');
+        label.textContent = 'Stretch provision — years to spread the obligation over (optional)';
+        stretchInput = document.createElement('input');
+        stretchInput.type = 'number'; stretchInput.min = '1'; stretchInput.step = '1';
+        stretchInput.placeholder = 'Leave blank for the original payment schedule';
+        body.append(label, stretchInput);
+        const note = document.createElement('div');
+        note.className = 'confirm-check warn';
+        note.textContent = 'Buying out with cap space isn’t available — it has no implementation yet, ' +
+          'here or on the office form.';
+        body.appendChild(note);
+      }
+
+      let data;
+      try {
+        data = await apiFetchPublic('/api/validate/release', { player: slug });
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This release is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+
+      const confirmLabel = document.createElement('label');
+      confirmLabel.textContent = `Type ${surname} to confirm`;
+      const confirmInput = document.createElement('input');
+      confirmInput.type = 'text'; confirmInput.autocomplete = 'off';
+      body.append(confirmLabel, confirmInput);
+      confirmInput.addEventListener('input', () => {
+        ctl.setEnabled(confirmInput.value.trim().toLowerCase() === surname.toLowerCase());
+      });
+      confirmInput.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          const stretchYears = stretchInput && stretchInput.value ? parseInt(stretchInput.value, 10) : null;
+          await apiFetch('/api/self/release', {
+            method: 'POST',
+            body: JSON.stringify({
+              player: slug,
+              stretch_years: stretchYears,
+              description: `${abbr} release ${name}`,
+            }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+// § 2.2 — the only case this needs no PDC involvement: a minimum contract
+// matching the length of the existing two-way deal. Nothing is submitted;
+// the preview endpoint shows exactly what the server would build (same
+// figures, same helper POST /api/self/convert_twoway itself uses), so
+// there's no client-side re-derivation of the minimum scale to get wrong.
+function openConvertTwoWayDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  // § 2.2: Year 2 of a 2-year conversion may be guaranteed, a team option or
+  // non-guaranteed. Keys match SELF_CONVERT_YEAR2_TERMS on the API.
+  const YEAR2_TERMS = [
+    ['guaranteed', 'Fully guaranteed'],
+    ['team_option', 'Team option'],
+    ['non_guaranteed', 'Non-guaranteed'],
+  ];
+  const YEAR2_TAG_LABEL = { TEAM_OPT: 'team option', NON_GTD: 'non-guaranteed' };
+  let year2 = 'guaranteed';
+  openConfirmModal({
+    title: `Convert ${name} to a standard contract?`,
+    sub: `${abbr} signs ${name} to a minimum contract matching their two-way deal's own length (§ 2.2). Checking against the rulebook…`,
+    confirmLabel: 'Convert',
+    danger: false,
+    render: async (body, ctl) => {
+      // The select survives a re-check; everything below it is redrawn.
+      let year2Wrap = null;
+      const results = document.createElement('div');
+      body.appendChild(results);
+
+      const check = async () => {
+        ctl.setEnabled(false);
+        results.innerHTML = '';
+        const loading = document.createElement('div');
+        loading.className = 'confirm-check ok';
+        loading.textContent = 'Running § 2.2 checks…';
+        results.appendChild(loading);
+
+        let data;
+        try {
+          const res = await fetch(`/api/self/convert_twoway/preview/${encodeURIComponent(slug)}?year2=${year2}`);
+          if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            throw new Error(typeof j.detail === 'string' ? j.detail : `Request failed (${res.status})`);
+          }
+          data = await res.json();
+        } catch (e) {
+          loading.className = 'confirm-check error';
+          loading.textContent = `Could not validate: ${e.message}`;
+          return;
+        }
+        loading.remove();
+
+        const seasons = Object.keys(data.salaries || {});
+        if (seasons.length === 2 && !year2Wrap) {
+          year2Wrap = document.createElement('div');
+          const label = document.createElement('label');
+          label.textContent = `Year 2 (${seasons[1]})`;
+          const sel = document.createElement('select');
+          YEAR2_TERMS.forEach(([v, l]) => {
+            const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
+            sel.appendChild(opt);
+          });
+          sel.addEventListener('change', () => { year2 = sel.value; check(); });
+          year2Wrap.append(label, sel);
+          body.insertBefore(year2Wrap, results);
+        }
+
+        const facts = document.createElement('div'); facts.className = 'confirm-facts';
+        Object.entries(data.salaries || {}).forEach(([season, amount]) => {
+          let tag = YEAR2_TAG_LABEL[(data.cap_holds || {})[season]];
+          const gtdDate = (data.guarantee_dates || {})[season];
+          if (tag && gtdDate) tag += ` until ${gtdDate}`;
+          facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount)) + (tag ? ` (${tag})` : '')));
+        });
+        results.appendChild(facts);
+
+        (data.checks || []).forEach(c => results.appendChild(checkRow(c)));
+
+        if (!data.legal) {
+          const stop = document.createElement('div');
+          stop.className = 'confirm-check error';
+          stop.textContent = 'This conversion is not legal, so it cannot be submitted.';
+          results.appendChild(stop);
+          return;   // confirm stays disabled
+        }
+        ctl.setEnabled(true);
+      };
+      await check();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/convert_twoway', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, year2, description: `${abbr} converts ${name} to a standard contract` }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+// § 7.1 — 1st-round only, same "server builds it, nothing submitted" shape
+// as two-way conversion: the rookie scale is deterministic (120% of the NBA
+// scale for the slot, 4 years, Years 3-4 as team options), so there's
+// nothing for the owner to choose.
+function openSignPickDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  openConfirmModal({
+    title: `Sign ${name} to the rookie scale?`,
+    sub: `${abbr} signs ${name} to their § 7.1 rookie-scale contract. Checking against the rulebook…`,
+    confirmLabel: 'Sign',
+    danger: false,
+    render: async (body, ctl) => {
+      ctl.setEnabled(false);
+      const loading = document.createElement('div');
+      loading.className = 'confirm-check ok';
+      loading.textContent = 'Running § 7.1 checks…';
+      body.appendChild(loading);
+
+      let data;
+      try {
+        const res = await fetch(`/api/self/sign_pick/preview/${encodeURIComponent(slug)}`);
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(typeof j.detail === 'string' ? j.detail : `Request failed (${res.status})`);
+        }
+        data = await res.json();
+      } catch (e) {
+        loading.className = 'confirm-check error';
+        loading.textContent = `Could not validate: ${e.message}`;
+        return;
+      }
+      loading.remove();
+
+      const facts = document.createElement('div'); facts.className = 'confirm-facts';
+      Object.entries(data.salaries || {}).forEach(([season, amount]) => {
+        const tag = data.cap_holds && data.cap_holds[season];
+        facts.appendChild(factRow(season, formatSalary(parseSalaryNum(amount)) + (tag ? ` (${tag})` : '')));
+      });
+      body.appendChild(facts);
+
+      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+
+      if (!data.legal) {
+        const stop = document.createElement('div');
+        stop.className = 'confirm-check error';
+        stop.textContent = 'This signing is not legal, so it cannot be submitted.';
+        body.appendChild(stop);
+        return;   // confirm stays disabled
+      }
+      ctl.setEnabled(true);
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/sign_pick', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, description: `${abbr} signs ${name} to the rookie scale` }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+// § 7.1 / § 7.4 — keep an unsigned pick's rights past the signing deadline.
+// Nothing about the player changes (still draft rights, no hold, off the 15);
+// what's recorded is the grounds, which is what a reviewer checks. The checks
+// re-run as the owner picks a basis and types the reason, since both change
+// the verdict.
+function openStashDialog(slug, bio, abbr) {
+  const name = displayNameFromBio(bio.name || slug);
+  let basisSel, noteInput;
+  openConfirmModal({
+    title: `Stash ${name}?`,
+    sub: `${abbr} keeps ${name}'s draft rights without signing him. He stays off the roster count and carries no cap hold.`,
+    confirmLabel: 'Stash',
+    danger: false,
+    render: (body, ctl) => {
+      ctl.setEnabled(false);
+      if (bio.stash) {
+        body.appendChild(factRow('Current stash',
+          `§ ${bio.stash.basis} · ${bio.stash.date || bio.stash.season}`));
+      }
+      const l1 = document.createElement('label');
+      l1.textContent = 'Grounds';
+      basisSel = makeSelect([
+        { value: '7.4', label: '§ 7.4 — under contract overseas' },
+        { value: '7.1', label: '§ 7.1 — not in 2K and sitting out' },
+      ], (bio.stash && bio.stash.basis) || '7.4');
+      const l2 = document.createElement('label');
+      l2.textContent = 'Why he qualifies';
+      noteInput = document.createElement('input');
+      noteInput.type = 'text';
+      noteInput.placeholder = 'e.g. Real Madrid, contract through 2028';
+      const checksEl = document.createElement('div');
+      body.append(l1, basisSel, l2, noteInput, checksEl);
+
+      let seq = 0, timer = null;
+      const run = async () => {
+        const mine = ++seq;
+        ctl.setEnabled(false);
+        let data;
+        try {
+          data = await apiFetchPublic('/api/validate/stash',
+            { player: slug, basis: basisSel.value, note: noteInput.value });
+        } catch (e) {
+          if (mine !== seq) return;
+          checksEl.innerHTML = '';
+          const d = document.createElement('div');
+          d.className = 'confirm-check error';
+          d.textContent = `Could not validate: ${e.message}`;
+          checksEl.appendChild(d);
+          return;
+        }
+        if (mine !== seq) return;
+        checksEl.innerHTML = '';
+        (data.checks || []).forEach(c => checksEl.appendChild(checkRow(c)));
+        ctl.setEnabled(!!data.legal);
+      };
+      const later = () => { clearTimeout(timer); timer = setTimeout(run, 300); };
+      basisSel.addEventListener('change', run);
+      noteInput.addEventListener('input', later);
+      run();
+      noteInput.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          await apiFetch('/api/self/stash', {
+            method: 'POST',
+            body: JSON.stringify({ player: slug, basis: basisSel.value, note: noteInput.value.trim(),
+              description: `${abbr} stashes ${name}` }),
+          }, token);
+          resolve();
+          location.reload();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+async function apiFetchPublic(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try { const j = await res.json(); if (typeof j.detail === 'string') detail = j.detail; } catch {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+function openBlockDialog(slug, bio, abbr, onBlock, currentNotes, afterChange) {
+  const name = displayNameFromBio(bio.name || slug);
+  let notesInput;
+  openConfirmModal({
+    title: onBlock ? `Remove ${name} from the trade block?` : `Put ${name} on the trade block?`,
+    sub: onBlock
+      ? `${name} stops being listed as available on /tradeblock.`
+      : `${name} is listed as available on /tradeblock. This is a listing only — it moves no salary and makes no trade.`,
+    confirmLabel: onBlock ? 'Remove' : 'Add to block',
+    danger: false,
+    render: (body, ctl) => {
+      ctl.setEnabled(true);
+      if (onBlock) return;
+      const label = document.createElement('label');
+      label.textContent = 'Note for other teams (optional)';
+      notesInput = document.createElement('input');
+      notesInput.type = 'text';
+      notesInput.placeholder = 'e.g. looking for a wing / expiring';
+      notesInput.value = currentNotes || '';
+      body.append(label, notesInput);
+      notesInput.focus();
+    },
+    onConfirm: () => new Promise((resolve, reject) => {
+      withToken(async token => {
+        try {
+          const url = `/api/trading-block/${abbr}/player/${encodeURIComponent(slug)}`;
+          if (onBlock) await apiFetch(url, { method: 'DELETE' }, token);
+          else await apiFetch(url, { method: 'PUT', body: JSON.stringify({ notes: (notesInput?.value || '').trim() }) }, token);
+          afterChange(!onBlock, (notesInput?.value || '').trim());
+          resolve();
+        } catch (e) { reject(e); }
+      });
+    }),
+  });
+}
+
+function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, poextEntry) {
+  document.querySelectorAll('.move-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'move-menu';
+
+  const head = document.createElement('div');
+  head.className = 'move-menu-head';
+  head.textContent = displayNameFromBio(bio.name || slug);
+  menu.appendChild(head);
+
+  const close = () => { menu.remove(); document.removeEventListener('click', onDoc, true); };
+  const onDoc = e => { if (!menu.contains(e.target) && e.target !== anchor) close(); };
+
+  const addItem = (label, { enabled, why, danger, onClick }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    if (danger) b.className = 'danger';
+    b.disabled = !enabled;
+    if (enabled) b.addEventListener('click', () => { close(); onClick(); });
+    menu.appendChild(b);
+    if (!enabled && why) {
+      const w = document.createElement('span');
+      w.className = 'move-menu-why';
+      w.textContent = why;
+      menu.appendChild(w);
+    }
+  };
+
+  const onBlock = blockState.on;
+  addItem(onBlock ? 'Remove from trade block' : 'Add to trade block', {
+    enabled: canEditTradeBlock(abbr),
+    why: 'Only this team’s front office can edit the trade block.',
+    onClick: () => openBlockDialog(slug, bio, abbr, onBlock, blockState.notes, afterBlockChange),
+  });
+
+  // § 3.10: a UFA/RFA cap hold is renounceable, and so are unsigned draft
+  // rights (§ 7.1). A player under contract is released (§ 5.1); one with a
+  // live option has it declined first (§ 6.1).
+  const elig = renounceEligibility(bio);
+  const owner = canRenounce(abbr);
+  addItem('Renounce…', {
+    enabled: elig.ok && owner,
+    danger: true,
+    why: !owner ? 'Only the team owner can renounce.' : elig.why,
+    onClick: () => openRenounceDialog(slug, bio, abbr),
+  });
+
+  // A new contract for a free agent is an offer on /fo/free-agency, never a move
+  // made here: it goes to the PDC like any other bid, Bird Rights included.
+  // Shown for the holds renounce would accept, since those are the team's
+  // free agents; whether the board is taking offers is /fo/free-agency's call.
+  if (elig.ok && (elig.holdType === 'UFA' || elig.holdType === 'RFA')) {
+    addItem('Make an offer…', {
+      enabled: canEditTradeBlock(abbr),
+      why: 'Only this team’s front office can make an offer.',
+      onClick: () => { location.href = `/fo/free-agency/?player=${encodeURIComponent(slug)}&team=${abbr}`; },
+    });
+  }
+
+  // § 3.1 — the qualifying offer, same owner gate. Withdrawing one is how a
+  // team lets an RFA go unrestricted without renouncing his Bird Rights.
+  const qo = qoEligibility(bio);
+  if (qo.relevant) {
+    addItem('Extend qualifying offer…', {
+      enabled: qo.extend.ok && owner,
+      why: !owner ? 'Only the team owner can make a qualifying offer.' : qo.extend.why,
+      onClick: () => openQualifyingOfferDialog(slug, bio, abbr, 'extend'),
+    });
+    addItem('Withdraw qualifying offer…', {
+      enabled: qo.withdraw.ok && owner,
+      danger: true,
+      why: !owner ? 'Only the team owner can withdraw a qualifying offer.' : qo.withdraw.why,
+      onClick: () => openQualifyingOfferDialog(slug, bio, abbr, 'withdraw'),
+    });
+  }
+
+  // § 6.1 — TEAM_OPT is the team's own unilateral call, same owner gate as
+  // renounce. A PLAYER_OPT is never offered here at all (optionEligibility) —
+  // that decision is PDC's, and the team never initiates it.
+  const optElig = optionEligibility(bio);
+  addItem('Exercise team option…', {
+    enabled: optElig.ok && owner,
+    why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
+    onClick: () => openOptionDialog(slug, bio, abbr, 'accept', optElig.year),
+  });
+  addItem('Decline team option…', {
+    enabled: optElig.ok && owner,
+    danger: true,
+    why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
+    onClick: () => openOptionDialog(slug, bio, abbr, 'decline', optElig.year),
+  });
+
+  // § 5.1 — same owner gate; a player with nothing real left to release
+  // (only a UFA/RFA/TEAM_OPT hold) is renounced instead (releaseEligibility).
+  const relElig = releaseEligibility(bio);
+  addItem('Release…', {
+    enabled: relElig.ok && owner,
+    danger: true,
+    why: !owner ? 'Only the team owner can release.' : relElig.why,
+    onClick: () => openReleaseDialog(slug, bio, abbr),
+  });
+
+  // § 2.2 — same owner gate. Only the like-for-like minimum case is offered
+  // here at all; anything else needs the PDC pitch-and-bid process, same
+  // split as options/releases route their non-self-serve case elsewhere.
+  const twElig = twoWayEligibility(bio);
+  addItem('Convert to standard contract…', {
+    enabled: twElig.ok && owner,
+    why: !owner ? 'Only the team owner can act on a two-way contract.' : twElig.why,
+    onClick: () => openConvertTwoWayDialog(slug, bio, abbr),
+  });
+
+  // § 7.1 — same owner gate. Only a 1st-round pick is offered here; a
+  // 2nd-rounder still needs the office form (signPickEligibility).
+  const spElig = signPickEligibility(bio);
+  addItem('Sign to rookie scale…', {
+    enabled: spElig.ok && owner,
+    why: !owner ? 'Only the team owner can sign a draft pick.' : spElig.why,
+    onClick: () => openSignPickDialog(slug, bio, abbr),
+  });
+
+  // § 7.1 / § 7.4 — same owner gate. Offered for any unsigned pick, either
+  // round; the grounds are checked in the dialog.
+  const stElig = stashEligibility(bio);
+  addItem(bio.stash ? 'Update stash…' : 'Stash draft rights…', {
+    enabled: stElig.ok && owner,
+    why: !owner ? 'Only the team owner can stash a draft pick.' : stElig.why,
+    onClick: () => openStashDialog(slug, bio, abbr),
+  });
+
+  // § 6.2 — same "team role, not owner-tenure" gate as the trade block, since
+  // proposing an extension is a front-office move, not one that touches a
+  // player's actual contract state the way renounce does. Deep-links into
+  // /fo/extensions rather than duplicating the proposal form here — that page is
+  // also where a proposal's status (returned for revision, voided, decided)
+  // lives, so it's the one place to go either way, not a second entry point
+  // with its own copy of the form.
+  addItem('Propose extension…', {
+    enabled: canEditTradeBlock(abbr) && !!(poextEntry && poextEntry.eligible),
+    why: !canEditTradeBlock(abbr) ? 'Only this team’s front office can propose an extension.'
+       : (poextEntry ? poextEntry.reason : 'Not eligible for an extension right now.'),
+    onClick: () => { location.href = `/fo/extensions/?player=${encodeURIComponent(slug)}`; },
+  });
+
+  document.body.appendChild(menu);
+  const r = anchor.getBoundingClientRect();
+  const mr = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - mr.width - 8))}px`;
+  menu.style.top = `${r.bottom + 4 + mr.height > window.innerHeight ? Math.max(8, r.top - mr.height - 4) : r.bottom + 4}px`;
+  setTimeout(() => document.addEventListener('click', onDoc, true), 0);
+}
+
+
+// Any § 3.15 offer sheet this team is on either side of. Shown to everyone, not
+// just the teams involved — an unresolved offer is exactly the state that used
+// to go unnoticed, and the offering team is carrying a real cap hold for it.
+function renderOfferSheetBanner(offers) {
+  const el = document.getElementById('offer-sheet-banner');
+  if (!el || !offers.length) return;
+  el.style.display = '';
+  el.innerHTML = offers.map(o => {
+    const offering = o.offering_team === abbr;
+    const who = `<a href="/stats/players/?p=${o.player}">${o.player_name || o.player}</a>`;
+    const line = offering
+      ? `Offer sheet out for <b>${who}</b> — ${o.retaining_team} has the right to match.`
+      : `<b>${o.offering_team}</b> has an offer sheet out for <b>${who}</b> — ${abbr} must decide whether to match.`;
+    const cost = offering
+      ? `Holding ${formatSalary(o.hold)} against the cap until it's resolved (§ 3.15).`
+      : `${o.offering_team} is holding ${formatSalary(o.hold)} against their cap until this is resolved.`;
+    return `<div class="offer-banner${o.overdue ? ' overdue' : ''}">
+      ${line}${o.overdue ? ' <span class="tag">overdue</span>' : ''}
+      <span class="meta">${cost} Offered ${o.date}${o.deadline ? ` · due ${o.deadline}` : ''} ·
+        <a href="/fo/transactions">resolve on the Transactions page</a></span>
+    </div>`;
+  }).join('');
+}
+
+// Trades this team is in that were submitted to the TRC and aren't decided yet.
+// Only the team's own front office sees it: GET /api/trade-requests answers
+// the parties and the committee, nobody else. Decided requests drop off here
+// and stay in the TRC page's history.
+async function renderTradeRequestBanner(biosData) {
+  const el = document.getElementById('trade-request-banner');
+  const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
+  if (!el || !mine || !getToken()) return;
+  let items = [];
+  try {
+    const r = await fetch(`/api/trade-requests?team=${abbr}`, { headers: { Authorization: `Bearer ${getToken()}` } });
+    if (!r.ok) return;
+    items = (await r.json()).filter(i => ['awaiting_consent', 'balloting', 'ready_to_finalize'].includes(i.status));
+  } catch (e) { return; }
+  if (!items.length) return;
+
+  const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const asset = a => {
+    if (a.type === 'pick') return `${a.year} ${a.round === 1 ? '1st' : '2nd'}${a.orig && a.orig !== abbr ? ` (${a.orig})` : ''}`;
+    const bio = biosData[a.slug];
+    return esc(bio ? displayNameFromBio(bio.name) : a.slug);
+  };
+  const side = (transfers, key) => transfers.filter(t => t[key] === abbr)
+    .flatMap(t => t.assets.map(asset)).join(', ') || 'nothing';
+  const stage = i => {
+    if (i.status === 'awaiting_consent') {
+      const waiting = Object.entries(i.consents).filter(([, c]) => !c.consented).map(([t]) => t);
+      return waiting.includes(abbr) && AUTH_OWNER_OF.includes(abbr)
+        ? 'Waiting on your consent' + (waiting.length > 1 ? ` and ${waiting.filter(t => t !== abbr).join(', ')}’s` : '')
+        : `Waiting on consent from ${waiting.join(', ')}`;
+    }
+    const approvals = Object.values(i.ballots || {}).filter(b => b.decision === 'approve').length;
+    if (i.status === 'balloting') return `With the TRC for a vote · ${approvals}/3 approvals`;
+    return 'Approved by the TRC · waiting on the committee head to finalize';
+  };
+
+  el.style.display = '';
+  el.innerHTML = items.map(i => {
+    const others = i.parties.filter(p => p !== abbr).join(', ');
+    const legal = !i.validation || i.validation.legal;
+    return `<div class="trade-banner">
+      Trade with <b>${others}</b> submitted, awaiting approval.${legal ? '' : ' <span class="tag">fails a check</span>'}
+      <span class="meta">${abbr} gets ${side(i.trade.transfers, 'to_team')} · sends ${side(i.trade.transfers, 'from_team')}</span>
+      <span class="meta">${stage(i)} · proposed by ${esc(i.created_by)} ${String(i.created_at).slice(0, 10)} ·
+        <a href="/committees/trc/">open on the TRC page</a></span>
+    </div>`;
+  }).join('');
+}
+
+// Builds the `rowActions` callback for the live roster table. Returns null when
+// the viewer has no move available at all, which keeps the extra column off
+// every public page load.
+function makeRosterMoveActions(abbr, biosData, blockEntries, poextEligible) {
+  if (!canEditTradeBlock(abbr) && !canRenounce(abbr)) return null;
+
+  // slug -> {on, notes}, seeded from the team's current block listing.
+  // Keyed lowercase: older entries are hand-cased ("Jared McCain") where the bio
+  // renders "Jared Mccain", and the API matches without regard to case too.
+  const byName = new Map((blockEntries || []).map(e => [(e.player || '').toLowerCase(), e.notes || '']));
+  const state = {};
+  Object.keys(biosData || {}).forEach(slug => {
+    const n = blockNameFor(biosData[slug]).toLowerCase();
+    if (n && byName.has(n)) state[slug] = { on: true, notes: byName.get(n) };
+  });
+  const stateFor = slug => state[slug] || (state[slug] = { on: false, notes: '' });
+
+  const actions = (row, td) => {
+    if (!row.SLUG || row._erc || row._type === 'dead') return;
+    const bio = (biosData || {})[row.SLUG];
+    if (!bio) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'move-btn';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+    btn.title = 'Roster moves';
+    btn.setAttribute('aria-haspopup', 'menu');
+    btn.setAttribute('aria-label', `Roster moves for ${displayNameFromBio(bio.name || row.SLUG)}`);
+    const st = stateFor(row.SLUG);
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      openMovesMenu(btn, row.SLUG, bio, abbr, st,
+        (nowOn, notes) => { st.on = nowOn; st.notes = notes; },
+        (poextEligible || {})[row.SLUG]);
+    });
+    td.append(btn);
+  };
+  actions.inline = true;
+  return actions;
+}
+
+function makeSelect(options, selectedValue) {
+  const sel = document.createElement('select');
+  sel.style.cssText = SEL_STYLE;
+  options.forEach(opt => {
+    const o = document.createElement('option');
+    const v = typeof opt === 'string' ? opt : opt.value;
+    const l = typeof opt === 'string' ? opt : opt.label;
+    o.value = v;
+    o.textContent = l;
+    if (v === selectedValue) o.selected = true;
+    sel.appendChild(o);
+  });
+  return sel;
+}
+
+function nextSalaryYear(yr) {
+  const b = parseInt(yr.split('-')[1], 10);
+  return `${String(b).padStart(2,'0')}-${String((b + 1) % 100).padStart(2,'0')}`;
+}
+
+function prevSalaryYear(yr) {
+  const a = parseInt(yr.split('-')[0], 10);
+  return `${String((a - 1 + 100) % 100).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
+}
+
+function makeEditCell(header, value, config, pickerCtx) {
+  const td = document.createElement('td');
+  let getValue;
+  let capHoldRef = null;
+
+  if (config?.type === 'select') {
+    const sel = makeSelect(config.options, value);
+    td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
+    td.appendChild(sel);
+    getValue = () => sel.value;
+
+  } else if (config?.type === 'cap-holds') {
+    const holdMap = {};
+    (value || '').split(',').forEach(pair => {
+      const [yr, type] = pair.split(':');
+      if (yr && type) holdMap[yr.trim()] = type.trim();
+    });
+    td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.2rem 0.5rem;align-items:center';
+    const selects = {};
+    config.years.forEach(yr => {
+      const lbl = document.createElement('span');
+      lbl.textContent = yr;
+      lbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap';
+      const sel = makeSelect(CAP_OPTIONS, holdMap[yr] || '');
+      applyCapHoldColor(sel);
+      sel.addEventListener('change', () => applyCapHoldColor(sel));
+      selects[yr] = sel;
+      wrap.appendChild(lbl);
+      wrap.appendChild(sel);
+    });
+    td.appendChild(wrap);
+    capHoldRef = { wrap, selects };
+    getValue = () => config.years
+      .filter(yr => selects[yr].value !== '')
+      .map(yr => `${yr}:${selects[yr].value}`)
+      .join(',');
+
+  } else if (config?.type === 'salary') {
+    td.contentEditable = 'true';
+    td.textContent = value;
+    td.style.outline = 'none';
+    td.addEventListener('focus', () => {
+      td.style.background = 'var(--bg-hover)';
+      td.style.boxShadow = 'inset 0 0 0 1px var(--accent)';
+    });
+    td.addEventListener('blur', () => {
+      td.style.background = '';
+      td.style.boxShadow = '';
+      const raw = td.textContent.replace(/[$,\s]/g, '');
+      const n = parseInt(raw, 10);
+      if (!isNaN(n) && n > 0) td.textContent = '$' + n.toLocaleString('en-US');
+      else if (raw === '') td.textContent = '';
+    });
+    getValue = () => td.textContent.trim();
+
+  } else if (config?.type === 'player-picker') {
+    const ctx = pickerCtx || {};
+    const input = document.createElement('input');
+    input.type = 'text';
+    if (ctx.listId) input.setAttribute('list', ctx.listId);
+    input.value = value && ctx.slugToDisplay ? (ctx.slugToDisplay.get(value) || value) : (value || '');
+    input.style.cssText = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-sm);padding:0.2rem 0.4rem;font-family:inherit;width:180px;box-sizing:border-box';
+    td.style.cssText = 'padding:0.4rem 0.5rem;vertical-align:middle';
+    td.appendChild(input);
+    getValue = () => {
+      const typed = input.value.trim();
+      return (ctx.nameToSlug && ctx.nameToSlug.get(typed.toLowerCase())) || '';
+    };
+
+  } else {
+    td.contentEditable = 'true';
+    td.textContent = value;
+    td.style.outline = 'none';
+    td.addEventListener('focus', () => {
+      td.style.background = 'var(--bg-hover)';
+      td.style.boxShadow = 'inset 0 0 0 1px var(--accent)';
+    });
+    td.addEventListener('blur', () => {
+      td.style.background = '';
+      td.style.boxShadow = '';
+    });
+    getValue = () => td.textContent.trim();
+  }
+
+  return { td, getValue, capHoldRef };
+}
+
+// Shared "type a name, resolve to a slug" datalist, built fresh from biosData
+// each time (biosData is already the full league-wide player-bios.json, so
+// this is a league-wide picker regardless of caller). `excludeSlugs` hides
+// players already spoken for by the caller (e.g. already on the roster grid
+// being edited, or already added to a What-If Mode roster).
+function buildPlayerDatalist(biosData, excludeSlugs = new Set()) {
+  const nameToSlug = new Map();
+  const slugToDisplay = new Map();
+  const listId = `nbn-pdl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const dl = document.createElement('datalist');
+  dl.id = listId;
+  Object.entries(biosData || {}).sort(([, a], [, b]) => {
+    return displayNameFromBio(a.name || '').localeCompare(displayNameFromBio(b.name || ''));
+  }).forEach(([s, bio]) => {
+    if (excludeSlugs.has(s)) return;
+    const dn = displayNameFromBio(bio.name || '');
+    if (!dn) return;
+    nameToSlug.set(dn.toLowerCase(), s);
+    slugToDisplay.set(s, dn);
+    const opt = document.createElement('option');
+    opt.value = dn;
+    dl.appendChild(opt);
+  });
+  document.body.appendChild(dl);
+  return { listId, dl, nameToSlug, slugToDisplay };
+}
+
+function buildEditableGrid(headers, rows, cellConfig = {}) {
+  const mutableHeaders = [...headers];
+  const capHoldCells = [];
+
+  // Build shared datalist for any player-picker column
+  let pickerCtx = null;
+  const pickerConf = Object.values(cellConfig).find(c => c?.type === 'player-picker');
+  if (pickerConf) {
+    pickerCtx = buildPlayerDatalist(pickerConf.biosData || {});
+  }
+
+  const table = document.createElement('table');
+  const thead = table.createTHead();
+  const headerRow = thead.insertRow();
+  const emptyTh = document.createElement('th');
+  emptyTh.style.cssText = 'width:28px;padding:0 0.4rem';
+  headerRow.appendChild(emptyTh);
+  mutableHeaders.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = cellConfig[h]?.label || h;
+    headerRow.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+
+  function makeRow(data = {}) {
+    const tr = document.createElement('tr');
+    const getters = [];
+
+    const delTd = document.createElement('td');
+    delTd.style.cssText = 'width:28px;padding:0 0.4rem;text-align:center;vertical-align:middle';
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '×';
+    delBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:var(--text-md);line-height:1;padding:0;font-family:inherit';
+    delBtn.onmouseenter = () => { delBtn.style.color = 'var(--danger)'; };
+    delBtn.onmouseleave = () => { delBtn.style.color = 'var(--text-dim)'; };
+    delBtn.addEventListener('click', () => tr.remove());
+    delTd.appendChild(delBtn);
+    tr.appendChild(delTd);
+
+    mutableHeaders.forEach(h => {
+      const { td, getValue, capHoldRef } = makeEditCell(h, data[h] ?? '', cellConfig[h], pickerCtx);
+      getters.push(getValue);
+      if (capHoldRef) capHoldCells.push(capHoldRef);
+      tr.appendChild(td);
+    });
+
+    tr._getters = getters;
+    return tr;
+  }
+
+  rows.forEach(row => tbody.appendChild(makeRow(row)));
+
+  const addTr = document.createElement('tr');
+  const addTd = document.createElement('td');
+  addTd.colSpan = mutableHeaders.length + 1;
+  addTd.style.cssText = 'padding:0.5rem 1rem;border-top:1px solid var(--border)';
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '+ Add row';
+  addBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:var(--text-sm);padding:0.25rem 0.75rem;font-family:inherit';
+  addBtn.onmouseenter = () => { addBtn.style.color = 'var(--text-secondary)'; addBtn.style.borderColor = 'var(--text-muted)'; };
+  addBtn.onmouseleave = () => { addBtn.style.color = 'var(--text-muted)'; addBtn.style.borderColor = 'var(--border)'; };
+  addBtn.addEventListener('click', () => tbody.insertBefore(makeRow({}), addTr));
+  addTd.appendChild(addBtn);
+  addTr.appendChild(addTd);
+  tbody.appendChild(addTr);
+
+  function addYearColumn(yr) {
+    // Insert at the correct sorted position among salary year columns
+    const rawIdx = mutableHeaders.findIndex(h => /^\d{2}-\d{2}$/.test(h) && h > yr);
+    const insertAt = rawIdx === -1 ? mutableHeaders.length : rawIdx;
+
+    mutableHeaders.splice(insertAt, 0, yr);
+    cellConfig[yr] = { type: 'salary' };
+    addTd.colSpan = mutableHeaders.length + 1;
+
+    // Insert in CAP_HOLDS years list in sorted order
+    if (cellConfig.CAP_HOLDS?.years) {
+      const capYrs = cellConfig.CAP_HOLDS.years;
+      const capIdx = capYrs.findIndex(y => y > yr);
+      if (capIdx === -1) capYrs.push(yr);
+      else capYrs.splice(capIdx, 0, yr);
+    }
+
+    // Add th at correct position (children[0] = emptyTh, so headers index i → children[i+1])
+    const thRef = headerRow.children[insertAt + 1] || null;
+    const th = document.createElement('th');
+    th.textContent = yr;
+    headerRow.insertBefore(th, thRef);
+
+    // Add td to each existing data row at correct position
+    [...tbody.rows].filter(tr => tr !== addTr).forEach(tr => {
+      const { td, getValue } = makeEditCell(yr, '', { type: 'salary' });
+      tr.insertBefore(td, tr.children[insertAt + 1] || null);
+      tr._getters.splice(insertAt, 0, getValue);
+    });
+
+    // Add year select to each CAP_HOLDS cell in sorted order
+    capHoldCells.forEach(({ wrap, selects }) => {
+      const lbl = document.createElement('span');
+      lbl.textContent = yr;
+      lbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap';
+      const sel = makeSelect(CAP_OPTIONS, '');
+      applyCapHoldColor(sel);
+      sel.addEventListener('change', () => applyCapHoldColor(sel));
+      selects[yr] = sel;
+      const posInNewYears = cellConfig.CAP_HOLDS.years.indexOf(yr);
+      const wrapRef = wrap.children[posInNewYears * 2] || null;
+      wrap.insertBefore(lbl, wrapRef);
+      wrap.insertBefore(sel, wrapRef);
+    });
+  }
+
+  function getRows() {
+    return [...tbody.rows]
+      .filter(tr => tr !== addTr)
+      .map(tr => {
+        const obj = {};
+        tr._getters.forEach((get, i) => { obj[mutableHeaders[i]] = get(); });
+        return obj;
+      });
+  }
+
+  function getHeaders() { return [...mutableHeaders]; }
+
+  return { table, getRows, getHeaders, addYearColumn };
+}
+
+function rosterCellConfig(headers, biosData = {}) {
+  if (headers.includes('SLUG') && !headers.includes('PLAYER')) {
+    const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
+    const config = {
+      SLUG: { type: 'player-picker', biosData, label: 'Player' },
+    };
+    salaryYears.forEach(yr => { config[yr] = { type: 'salary' }; });
+    return config;
+  }
+  const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
+  const config = {
+    TYPE: { type: 'select', options: [
+      { value: 'player',       label: 'Player'       },
+      { value: 'two-way',      label: 'Two-Way'      },
+      { value: 'draft-rights', label: 'Draft Rights' },
+      { value: 'dead',         label: 'Dead Cap'     },
+    ]},
+    CAP_HOLDS: { type: 'cap-holds', years: salaryYears },
+  };
+  salaryYears.forEach(yr => { config[yr] = { type: 'salary' }; });
+  return config;
+}
+
+
+function enterEditMode(wrapEl, headers, rows, apiPath, renderView, cellConfig = {}) {
+  const { table, getRows, getHeaders, addYearColumn } = buildEditableGrid(headers, rows, cellConfig);
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'roster-edit-toolbar';
+  toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save';
+  saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+
+  const statusEl = document.createElement('span');
+  statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:auto';
+
+  toolbar.appendChild(saveBtn);
+  toolbar.appendChild(cancelBtn);
+
+  const salaryYears = headers.filter(h => /^\d{2}-\d{2}$/.test(h));
+  if (salaryYears.length && (cellConfig.CAP_HOLDS || cellConfig.SLUG)) {
+    const YR_BTN = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:500;cursor:pointer;background:transparent;color:var(--text-muted);font-family:inherit';
+    const onYrEnter = e => { e.target.style.color = 'var(--text-secondary)'; e.target.style.borderColor = 'var(--text-muted)'; };
+    const onYrLeave = e => { e.target.style.color = 'var(--text-muted)'; e.target.style.borderColor = 'var(--border)'; };
+
+    let pendingPrevYr = prevSalaryYear(salaryYears[0]);
+    const addPrevBtn = document.createElement('button');
+    addPrevBtn.style.cssText = YR_BTN;
+    addPrevBtn.onmouseenter = onYrEnter;
+    addPrevBtn.onmouseleave = onYrLeave;
+    const updatePrevLabel = () => { addPrevBtn.textContent = `+ ${pendingPrevYr}`; };
+    updatePrevLabel();
+    addPrevBtn.addEventListener('click', () => {
+      addYearColumn(pendingPrevYr);
+      pendingPrevYr = prevSalaryYear(pendingPrevYr);
+      updatePrevLabel();
+    });
+    toolbar.appendChild(addPrevBtn);
+
+    let pendingNextYr = nextSalaryYear(salaryYears[salaryYears.length - 1]);
+    const addNextBtn = document.createElement('button');
+    addNextBtn.style.cssText = YR_BTN;
+    addNextBtn.onmouseenter = onYrEnter;
+    addNextBtn.onmouseleave = onYrLeave;
+    const updateNextLabel = () => { addNextBtn.textContent = `+ ${pendingNextYr}`; };
+    updateNextLabel();
+    addNextBtn.addEventListener('click', () => {
+      addYearColumn(pendingNextYr);
+      pendingNextYr = nextSalaryYear(pendingNextYr);
+      updateNextLabel();
+    });
+    toolbar.appendChild(addNextBtn);
+  }
+
+  toolbar.appendChild(statusEl);
+
+  const gridWrap = document.createElement('div');
+  gridWrap.className = 'ui-table-wrap table-wrap';
+  gridWrap.style.overflowX = 'auto';
+  gridWrap.appendChild(table);
+
+  wrapEl.innerHTML = '';
+  wrapEl.appendChild(toolbar);
+  wrapEl.appendChild(gridWrap);
+
+  cancelBtn.addEventListener('click', () => renderView(rows));
+
+  saveBtn.addEventListener('click', async () => {
+    const updatedRows = getRows();
+    saveBtn.disabled = true;
+    cancelBtn.disabled = true;
+    statusEl.textContent = 'Saving…';
+    try {
+      const res = await fetch(`/api${apiPath}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({ headers: getHeaders(), rows: updatedRows }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          localStorage.removeItem(TOKEN_KEY);
+          statusEl.textContent = 'Invalid token — cleared. Try again.';
+        } else {
+          statusEl.textContent = `Error: ${err.detail || res.status}`;
+        }
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+        return;
+      }
+      statusEl.textContent = 'Saved!';
+      setTimeout(() => renderView(updatedRows), 700);
+    } catch {
+      statusEl.textContent = 'Network error';
+      saveBtn.disabled = false;
+      cancelBtn.disabled = false;
+    }
+  });
+}
+
+function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPicks = []) {
+  const INP = 'background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-sm);padding:0.2rem 0.4rem;font-family:inherit;width:100%';
+
+  const playerOpts = [{ slug: '', label: '—' },
+    ...Object.entries(bios)
+      .map(([slug, bio]) => {
+        const parts = bio.name.split(',');
+        const label = parts.length === 2 ? displayNameFromBio(bio.name) : bio.name;
+        return { slug, label };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+  ];
+
+  function renderView(currentPicks) {
+    wrapEl.innerHTML = '';
+    const t = buildPicksTable(currentPicks, teamAbbr, allPicks);
+    if (t) wrapEl.appendChild(t);
+    else wrapEl.innerHTML = '<div class="status">No picks on file.</div>';
+    attachBtn(currentPicks);
+  }
+
+  function attachBtn(currentPicks) {
+    if (!canEditRosters()) return;
+    const titleEl = document.getElementById(titleId);
+    titleEl.querySelector('.section-edit-btn')?.remove();
+    const btn = document.createElement('button');
+    btn.className = 'section-edit-btn';
+    btn.textContent = 'Edit';
+    btn.style.cssText = 'font-size:var(--text-xs);padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+    btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
+    btn.addEventListener('click', () => withToken(() => enterPicksEdit(currentPicks)));
+    titleEl.appendChild(btn);
+  }
+
+  function enterPicksEdit(currentPicks) {
+    wrapEl.innerHTML = '';
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.75rem';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--link);font-family:inherit';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'padding:0.35rem 0.8rem;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:600;cursor:pointer;background:transparent;color:var(--text-secondary);font-family:inherit';
+
+    const statusEl = document.createElement('span');
+    statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:auto';
+
+    toolbar.appendChild(saveBtn);
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(statusEl);
+
+    // Build editable table
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'ui-table-wrap table-wrap';
+    gridWrap.style.overflowX = 'auto';
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    ['Year', 'Rnd', 'Orig', 'Owner', 'Pick #', 'Player', 'Top-N Prot.', 'Swap Owner', 'Notes', 'Frozen'].forEach(label => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      hr.appendChild(th);
+    });
+
+    const teamOptions = Object.keys(TEAMS).sort();
+    const rowGetters = [];
+
+    const tbody = table.createTBody();
+    currentPicks.forEach(p => {
+      const tr = tbody.insertRow();
+
+      // read-only: year, round, orig
+      [String(p.year), p.round === 1 ? '1st' : '2nd', p.orig].forEach(v => {
+        const td = tr.insertCell();
+        td.textContent = v;
+        td.style.color = 'var(--text-muted)';
+      });
+
+      // owner input (supports single team, pipe-separated candidates, or '?')
+      const tdOwner = tr.insertCell();
+      const inpOwner = document.createElement('input');
+      inpOwner.type = 'text';
+      inpOwner.style.cssText = INP;
+      inpOwner.value = p.owner || '';
+      inpOwner.placeholder = 'ATL or ATL|BKN or ?';
+      inpOwner.style.textTransform = 'uppercase';
+      tdOwner.appendChild(inpOwner);
+
+      // pick number
+      const tdPick = tr.insertCell();
+      const inpPick = document.createElement('input');
+      inpPick.type = 'number'; inpPick.min = '1'; inpPick.max = '60';
+      inpPick.style.cssText = INP;
+      if (p.pick != null) inpPick.value = p.pick;
+      tdPick.appendChild(inpPick);
+
+      // player
+      const tdPlayer = tr.insertCell();
+      const selPlayer = document.createElement('select');
+      selPlayer.style.cssText = INP;
+      playerOpts.forEach(({ slug, label }) => {
+        const o = document.createElement('option');
+        o.value = slug; o.textContent = label;
+        if (slug === (p.player || '')) o.selected = true;
+        selPlayer.appendChild(o);
+      });
+      tdPlayer.appendChild(selPlayer);
+
+      // protected
+      const tdProt = tr.insertCell();
+      const inpProt = document.createElement('input');
+      inpProt.type = 'number'; inpProt.min = '1'; inpProt.max = '30';
+      inpProt.style.cssText = INP;
+      if (p.protected != null) inpProt.value = p.protected;
+      tdProt.appendChild(inpProt);
+
+      // swap owner
+      const tdSwap = tr.insertCell();
+      const selSwap = document.createElement('select');
+      selSwap.style.cssText = INP;
+      [{ value: '', label: '—' }, ...teamOptions.map(t => ({ value: t, label: t }))].forEach(({ value, label }) => {
+        const o = document.createElement('option');
+        o.value = value; o.textContent = label;
+        if (value === (p.swap_owner || '')) o.selected = true;
+        selSwap.appendChild(o);
+      });
+      tdSwap.appendChild(selSwap);
+
+      // notes
+      const tdNotes = tr.insertCell();
+      const inpNotes = document.createElement('input');
+      inpNotes.type = 'text';
+      inpNotes.style.cssText = INP;
+      inpNotes.value = p.notes || '';
+      tdNotes.appendChild(inpNotes);
+
+      // frozen
+      const tdFrozen = tr.insertCell();
+      tdFrozen.style.cssText = 'display:flex;gap:0.35rem;align-items:center';
+      const chkFrozen = document.createElement('input');
+      chkFrozen.type = 'checkbox';
+      chkFrozen.checked = !!p.frozen;
+      const inpFrozenReason = document.createElement('input');
+      inpFrozenReason.type = 'text';
+      inpFrozenReason.placeholder = 'reason';
+      inpFrozenReason.style.cssText = INP + ';width:8rem';
+      inpFrozenReason.value = p.frozen_reason || '';
+      tdFrozen.appendChild(chkFrozen);
+      tdFrozen.appendChild(inpFrozenReason);
+
+      rowGetters.push(() => ({
+        year: p.year, round: p.round, orig: p.orig,
+        owner:      inpOwner.value.trim().toUpperCase() || p.orig,
+        pick:       inpPick.value  ? parseInt(inpPick.value)  : null,
+        player:     selPlayer.value || null,
+        protected:  inpProt.value  ? parseInt(inpProt.value)  : null,
+        swap_owner: selSwap.value  || null,
+        notes:      inpNotes.value.trim(),
+        frozen:        chkFrozen.checked,
+        frozen_reason: inpFrozenReason.value.trim(),
+      }));
+    });
+
+    gridWrap.appendChild(table);
+    wrapEl.appendChild(toolbar);
+    wrapEl.appendChild(gridWrap);
+
+    cancelBtn.addEventListener('click', () => renderView(currentPicks));
+
+    saveBtn.addEventListener('click', async () => {
+      const updated = rowGetters.map(g => g());
+      saveBtn.disabled = true; cancelBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      try {
+        const token = getToken();
+        let failed = null;
+        for (const p of updated) {
+          const r = await fetch(`/api/picks/${p.year}/${p.round}/${p.orig}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ owner: p.owner, pick: p.pick, player: p.player, protected: p.protected, swap_owner: p.swap_owner, notes: p.notes, frozen: p.frozen, frozen_reason: p.frozen_reason }),
+          });
+          if (!r.ok) { failed = r; break; }
+        }
+        if (failed) {
+          if (failed.status === 401) { localStorage.removeItem(TOKEN_KEY); statusEl.textContent = 'Invalid token — cleared.'; }
+          else statusEl.textContent = `Error ${failed.status}`;
+          saveBtn.disabled = false; cancelBtn.disabled = false;
+          return;
+        }
+        // Re-fetch to get server-computed conveys
+        const fresh = await fetch(`/api/picks/${abbr}`).then(r => r.json());
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => renderView(fresh), 700);
+      } catch {
+        statusEl.textContent = 'Network error';
+        saveBtn.disabled = false; cancelBtn.disabled = false;
+      }
+    });
+  }
+
+  attachBtn(picks);
+}
+
+// Positions, mirroring "Positions" in nbn-api routers/players.py. A
+// player's primary is 2K's as it was when frozen (bio.position), and stays
+// put through 2K re-ratings until he changes teams. Without a frozen record
+// yet, 2K's today stands in.
+const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
+function frozenPos(bio) {
+  const rec = bio && bio.position;
+  return rec && POSITION_ORDER.includes(rec.primary) ? rec : null;
+}
+function twoKPos(attrSnap) {
+  const pos = attrSnap && attrSnap['2k_pos'];
+  return Array.isArray(pos) ? pos.filter(p => POSITION_ORDER.includes(p)) : [];
+}
+function primaryPos(bio, attrSnap) {
+  const rec = frozenPos(bio);
+  if (rec) return rec.primary;
+  return twoKPos(attrSnap)[0] || '—';
+}
+function secondaryPosOptions(primary) {
+  const i = POSITION_ORDER.indexOf(primary);
+  if (i < 0) return [];
+  return [POSITION_ORDER[i - 1], POSITION_ORDER[i + 1]].filter(Boolean);
+}
+// § 2.3's pool: one step from the primary, or any position 2K has ever
+// listed for him (`2k_pos_seen`, from /api/attributes/current). Mirrors
+// secondary_pool.
+function secondaryPool(bio, attrSnap) {
+  const primary = primaryPos(bio, attrSnap);
+  if (!POSITION_ORDER.includes(primary)) return [];
+  const ok = new Set(secondaryPosOptions(primary));
+  ((attrSnap && attrSnap['2k_pos_seen']) || twoKPos(attrSnap)).forEach(p => ok.add(p));
+  const rec = frozenPos(bio);
+  if (rec && POSITION_ORDER.includes(rec.secondary)) ok.add(rec.secondary);
+  ok.delete(primary);
+  return POSITION_ORDER.filter(p => ok.has(p));
+}
+// A team may still pick a secondary outside the pool: there are exceptions,
+// so it is saved, flagged, and the streamer OKs it by setting it in 2K.
+function secondaryIsLegal(bio, attrSnap, sec) {
+  return !sec || sec === 'none' || secondaryPool(bio, attrSnap).includes(sec);
+}
+
+// The secondary while the team hasn't chosen: the one frozen with his
+// primary, or 2K's today if nothing is frozen. Mirrors default_secondary.
+function defaultSecondary(bio, attrSnap) {
+  const rec = frozenPos(bio);
+  if (rec) return POSITION_ORDER.includes(rec.secondary) && rec.secondary !== rec.primary ? rec.secondary : null;
+  const pos = twoKPos(attrSnap);
+  return pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
+}
+
+// The secondary a player actually has. bio.secondary_pos null: the team
+// hasn't chosen, so the default stands. 'none': the team removed it. A
+// position: the team's pick. Mirrors effective_secondary.
+function effectiveSecondary(bio, attrSnap) {
+  const sec = bio && bio.secondary_pos;
+  if (sec === 'none') return null;
+  return sec || defaultSecondary(bio, attrSnap);
+}
+
+// The Coaching tab's two sections, Roster Settings and the Coaching Profile,
+// save to the same coaching-settings record (minutes and values). Each used
+// to reload the page on save, which threw away whatever was unsaved in the
+// other one. Both read the record from here, and a save that lands while the
+// other section is mid-edit updates it in place instead of reloading.
+const coachingTab = { record: undefined, editing: { roster: false, profile: false } };
+
+// Roster Settings — jersey #, secondary position (both from player-bios.json,
+// via /api/players/{slug}/team-settings) merged with Player Minutes (from the
+// coaching-settings record, via /api/coaching-settings/{team}), one row per
+// roster player. Both were separately "list every player, edit something
+// about them" tables; merging them means a player's name/position context is
+// established once instead of twice. Minutes are stored slot-indexed (one of
+// the 15 CS.MINUTES_SLOTS holds a slug), not player-indexed, so this table
+// flips that lookup direction — a row's position is its slot — while
+// leaving the stored shape untouched, since
+// that shape is also what the streamer dashboard on /stream reads.
+function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, currentOvr) {
+  const wrapEl = document.getElementById(wrapId);
+  const actionsEl = document.getElementById('team-settings-actions');
+  const hintEl = document.getElementById('team-settings-hint');
+  const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
+  const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
+
+  if (!activeRows.length) {
+    wrapEl.innerHTML = '<div class="status">No roster data.</div>';
+    return;
+  }
+
+  const canEdit = canEditTeamSettings(abbr);
+  // Minutes columns only appear if the shared vocabulary loaded — same
+  // graceful-degradation the Coaching Profile section uses, but here it's a
+  // narrower miss (the minutes column and meter absent) rather than the whole
+  // section.
+  const CS = window.CoachingSettings || null;
+  const STARTERS = 5;
+
+  // Which players are pinned for a position check before every game, and
+  // which secondaries the streamer hasn't set in 2K yet. From
+  // GET /api/position-checks/{team}, fetched here and drawn when it lands.
+  let posChecks = { items: [], pinned: [] };
+  let editing = false;
+  fetch(`/api/position-checks/${abbr}`).then(r => r.ok ? r.json() : null).then(v => {
+    if (!v) return;
+    posChecks = v;
+    if (!editing) renderReadView();
+  }).catch(() => {});
+  const posLocked = slug => (posChecks.pinned || []).includes(slug);
+  // slug -> {secondary, approved} for a secondary outside § 2.3's one step.
+  const posException = slug => (posChecks.exceptions || {})[slug] || null;
+  const posWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.changed);
+
+  // Who is on the current injury report (GET /api/injuries), so a coach
+  // setting minutes sees it in the table. Drawn into the name cells when it
+  // lands, in whichever view is up, so an edit in progress isn't re-rendered.
+  let injuries = {};
+  fetch('/api/injuries').then(r => r.ok ? r.json() : null).then(v => {
+    if (!v || !Array.isArray(v.players)) return;
+    injuries = Object.fromEntries(v.players.map(p => [p.slug, p]));
+    wrapEl.querySelectorAll('.ts-name[data-slug]').forEach(td => addInjuryBadge(td, td.dataset.slug));
+  }).catch(() => {});
+  function addInjuryBadge(td, slug) {
+    const inj = injuries[slug];
+    if (!inj || td.querySelector('.ts-injury')) return;
+    const tag = document.createElement('span');
+    tag.className = `ui-badge ts-injury ${/^out$/i.test(inj.status || '') ? 'ui-badge--danger' : 'ui-badge--warning'}`;
+    tag.textContent = inj.duration ? `${inj.status} · ${inj.duration}` : (inj.status || 'Injured');
+    const ovrNote = inj.ovr ? ` Playing at ${inj.ovr} OVR${inj.ovr_delta ? ` (${inj.ovr_delta > 0 ? '+' : ''}${inj.ovr_delta})` : ''}.` : '';
+    attachTooltip(tag, `${inj.injury || 'Injured'}, ${inj.duration || 'duration unknown'}.${ovrNote}`);
+    td.appendChild(tag);
+  }
+  const jerseyWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.jersey_changed);
+
+  // A slot is which row a player is in, not a field they pick — table order
+  // *is* the depth chart: row 0 is always PG, row 1 SG, ... row 4 C, row 5
+  // the 6th man, ... row 14 the 15th man (CS.MINUTES_SLOTS, in order). This
+  // orders the roster the same way for both views: whoever currently holds
+  // each slot first, in slot order, then anyone not in a slot at all after —
+  // so opening Edit shows the depth chart as last saved, not roster order.
+  //
+  // `line` is where the Inactive line sits: rows above it fill the slots in
+  // order, rows below it hold none. The game takes exactly the 15 slotted
+  // players, so a team with 14 standard players and a two-way it doesn't
+  // want dressed needs slot 15 left empty, not the two-way parked in it at 0
+  // minutes. A save writes an empty slot as `{slug: ''}`; seeing one is what
+  // says the team left the rest out on purpose. A record with no empty slot
+  // (never saved, or saved before the line existed) keeps the old reading:
+  // the first 15 rows play.
+  function orderedRows(minutes) {
+    const bySlug = new Map(activeRows.map(r => [r.SLUG, r]));
+    const used = new Set();
+    const rows = [];
+    if (CS) {
+      CS.MINUTES_SLOTS.forEach(slot => {
+        const slug = minutes[slot] && minutes[slot].slug;
+        if (slug && bySlug.has(slug) && !used.has(slug)) {
+          rows.push(bySlug.get(slug));
+          used.add(slug);
+        }
+      });
+    }
+    const slotted = rows.length;
+    activeRows.forEach(r => { if (!used.has(r.SLUG)) rows.push(r); });
+    const leftOpen = !!CS && CS.MINUTES_SLOTS.some(s => minutes[s] && !minutes[s].slug);
+    const line = leftOpen ? slotted : Math.min(CS ? CS.MINUTES_SLOTS.length : 0, rows.length);
+    return { rows, line };
+  }
+
+  // Row classes that used to be nth-child rules: the slot count is no
+  // longer the row index once the Inactive line is a row of its own.
+  function markRow(tr, i, slotted) {
+    tr.classList.toggle('ts-starter', slotted && i < STARTERS);
+    tr.classList.toggle('ts-last-starter', slotted && i === STARTERS - 1);
+    tr.classList.toggle('ts-inactive', !slotted);
+  }
+
+  // The Inactive line itself. In edit mode it carries a drag handle and
+  // moves like a player row.
+  function dividerRow(tbody, colCount, forEdit) {
+    const tr = tbody.insertRow();
+    tr.className = 'ts-divider';
+    tr._divider = true;
+    let span = colCount;
+    if (forEdit) {
+      const handleTd = tr.insertCell();
+      handleTd.className = 'ts-handle';
+      const handle = document.createElement('span');
+      handle.className = 'drag-handle';
+      handle.textContent = '⠿';
+      handle.title = 'Drag to set who is in the game: players below this line are left out';
+      handleTd.appendChild(handle);
+      tr._handle = handle;
+      span--;
+    }
+    const td = tr.insertCell();
+    td.colSpan = span;
+    td.textContent = 'Inactive: not in the game';
+    return tr;
+  }
+
+  // Where a player may start: his 2K primary, one step either side of it,
+  // or his secondary. A secondary outside § 2.3 counts only once a streamer
+  // has OK'd it. Null when there's no 2K primary yet, which isn't checked.
+  // Mirrors starter_positions / counted_secondary in nbn-api
+  // routers/coaching_settings.py.
+  function startPositions(slug) {
+    const primary = primaryPos(biosData[slug], attributesData[slug]);
+    const i = POSITION_ORDER.indexOf(primary);
+    if (i < 0) return null;
+    const ok = new Set([POSITION_ORDER[i - 1], primary, POSITION_ORDER[i + 1]].filter(Boolean));
+    const secondary = effectiveSecondary(biosData[slug], attributesData[slug]);
+    const exc = posException(slug);
+    if (secondary && (secondaryIsLegal(biosData[slug], attributesData[slug], secondary) || (exc && exc.approved && exc.secondary === secondary))) {
+      ok.add(secondary);
+    }
+    return POSITION_ORDER.filter(p => ok.has(p));
+  }
+
+  // "PG" for a starter, "6th" for the bench. The stored key stays the bare
+  // CS.MINUTES_SLOTS value; this is display only.
+  function slotLabel(i) {
+    const slot = CS ? CS.MINUTES_SLOTS[i] : null;
+    if (!slot) return '—';
+    if (i < STARTERS) return slot;
+    const n = +slot;
+    const sfx = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10] || 'th';
+    return `${n}${sfx}`;
+  }
+
+  // The 240-minute budget as a bar above the table, rather than a line of
+  // text under it, so an unbalanced depth chart is the first thing seen.
+  function minutesMeter() {
+    const el = document.createElement('div');
+    el.className = 'ts-meter';
+    el.innerHTML = '<div class="ts-meter-label"><span>Minutes</span><span class="ts-meter-val"></span></div>'
+      + '<div class="ts-meter-track"><div class="ts-meter-fill"></div></div>';
+    el.update = minutes => {
+      const total = CS.minutesTotal(minutes);
+      const budget = CS.MINUTES_BUDGET;
+      const diff = budget - total;
+      el.classList.toggle('ok', diff === 0);
+      el.classList.toggle('over', diff < 0);
+      el.querySelector('.ts-meter-val').textContent = diff === 0
+        ? `${total} / ${budget}`
+        : `${total} / ${budget} · ${diff > 0 ? `${diff} left` : `${-diff} over`}`;
+      el.querySelector('.ts-meter-fill').style.width = `${Math.min(100, total / budget * 100)}%`;
+    };
+    return el;
+  }
+
+  // Slot, #, Player, OVR, Pos, Min. The jersey number is its own narrow
+  // column, not a prefix inside the Player cell: as a prefix, a player with
+  // no number started his name a column's width left of everyone else's.
+  // `forEdit` adds a leading drag-handle column.
+  function buildHead(table, forEdit) {
+    const hr = table.createTHead().insertRow();
+    const cols = [];
+    if (forEdit && CS) cols.push(['', 'ts-handle']);
+    if (CS) cols.push(['Slot', 'ts-slot']);
+    cols.push(['#', 'ts-num'], ['Player', 'ts-name'], ['OVR', 'ts-ovr'], ['Pos', 'ts-pos']);
+    if (CS) cols.push(['Min', 'ts-min']);
+    cols.forEach(([label, cls]) => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      th.className = cls;
+      hr.appendChild(th);
+    });
+  }
+
+  function nameCell(tr, row, bio) {
+    const td = tr.insertCell();
+    td.className = 'ts-name';
+    const a = document.createElement('a');
+    a.href = `/stats/players/?p=${encodeURIComponent(row.SLUG)}`;
+    a.textContent = displayNameFromBio(bio.name || '') || row.SLUG || '—';
+    td.appendChild(a);
+    const ovr = (currentOvr && currentOvr[row.SLUG]) || '';
+    // On a phone the OVR column is dropped for width, so the rating rides
+    // next to the name instead — a coach setting minutes still needs it.
+    if (ovr) {
+      const inline = document.createElement('span');
+      inline.className = 'ts-ovr-inline';
+      inline.textContent = ovr;
+      td.appendChild(inline);
+    }
+    if (bio.type === 'two-way') td.appendChild(twoWayGamesBadge(row.SLUG, '2W · '));
+    td.dataset.slug = row.SLUG;
+    addInjuryBadge(td, row.SLUG);
+    const ovrTd = tr.insertCell();
+    ovrTd.className = 'ts-ovr';
+    ovrTd.textContent = ovr || '—';
+  }
+
+  function setActions(...btns) {
+    if (!actionsEl) return;
+    actionsEl.innerHTML = '';
+    btns.forEach(b => actionsEl.appendChild(b));
+  }
+
+  function button(label, variant) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `ui-btn ui-btn--sm${variant ? ` ui-btn--${variant}` : ''}`;
+    b.textContent = label;
+    return b;
+  }
+
+  function mountTable(table, meter) {
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'ui-table-wrap table-wrap';
+    gridWrap.appendChild(table);
+    wrapEl.innerHTML = '';
+    if (meter) wrapEl.appendChild(meter);
+    wrapEl.appendChild(gridWrap);
+  }
+
+  function renderReadView() {
+    editing = coachingTab.editing.roster = false;
+    const minutes = (coachingTab.record && coachingTab.record.minutes) || {};
+    if (hintEl) hintEl.hidden = true;
+    const table = document.createElement('table');
+    table.className = 'ts-table';
+    buildHead(table, false);
+
+    const tbody = table.createTBody();
+    const { rows, line } = orderedRows(minutes);
+    rows.forEach((row, i) => {
+      const bio = biosData[row.SLUG] || {};
+      if (CS && i === line) dividerRow(tbody, table.tHead.rows[0].cells.length, false);
+      const tr = tbody.insertRow();
+
+      const slot = CS && i < line ? CS.MINUTES_SLOTS[i] : '';
+      if (CS) {
+        markRow(tr, i, !!slot);
+        const slotTd = tr.insertCell();
+        slotTd.className = 'ts-slot';
+        slotTd.textContent = slot ? slotLabel(i) : '—';
+      }
+
+      const numTd = tr.insertCell();
+      numTd.className = 'ts-num';
+      numTd.textContent = bio.jersey_number != null && bio.jersey_number !== '' ? bio.jersey_number : '';
+      if (jerseyWaiting(row.SLUG)) {
+        const w = document.createElement('span');
+        w.className = 'ts-pos-wait';
+        w.textContent = '●';
+        w.title = 'Not set in 2K yet — waiting on the streamer';
+        numTd.appendChild(w);
+      }
+
+      nameCell(tr, row, bio);
+
+      const primary = primaryPos(bio, attributesData[row.SLUG]);
+      const posTd = tr.insertCell();
+      posTd.className = 'ts-pos';
+      posTd.textContent = primary;
+      const secondary = effectiveSecondary(bio, attributesData[row.SLUG]);
+      if (secondary) {
+        const sec = document.createElement('span');
+        sec.className = 'ts-pos2';
+        sec.textContent = ` / ${secondary}`;
+        if (!bio.secondary_pos) sec.title = "2K's secondary position when his positions were set";
+        posTd.appendChild(sec);
+        if (!secondaryIsLegal(bio, attributesData[row.SLUG], secondary)) {
+          const exc = posException(row.SLUG);
+          const ok = exc && exc.approved && exc.secondary === secondary;
+          sec.classList.add('ts-pos2-illegal');
+          sec.insertAdjacentHTML('beforeend', ' <i class="ui-icon ui-icon--warning" aria-hidden="true"></i>');
+          sec.title = ok ? `Outside § 2.3 (one step from ${primary}, or a position 2K has listed). A streamer OK'd it.`
+            : `Outside § 2.3 (one step from ${primary}, or a position 2K has listed). It counts once a streamer OKs it.`;
+          if (ok) sec.classList.add('ok');
+        }
+      }
+      if (posLocked(row.SLUG)) {
+        const pin = document.createElement('span');
+        pin.className = 'ts-pin-mark';
+        pin.classList.add('ui-icon', 'ui-icon--pin');
+        pin.title = secondary ? 'The streamer checks this position before every game'
+          : 'The streamer checks before every game that 2K gives him no secondary position';
+        posTd.appendChild(pin);
+      }
+      if (posWaiting(row.SLUG)) {
+        const w = document.createElement('span');
+        w.className = 'ts-pos-wait';
+        w.textContent = '●';
+        w.title = 'Not set in 2K yet — waiting on the streamer';
+        posTd.appendChild(w);
+      }
+
+      if (CS) {
+        const m = slot ? minutes[slot] : null;
+        const minTd = tr.insertCell();
+        minTd.className = 'ts-min';
+        if (m && m.res) {
+          minTd.innerHTML = '<span class="ts-res-tag">RES</span>';
+        } else if (m && +m.minutes) {
+          const mins = +m.minutes;
+          minTd.innerHTML = `<span class="ts-minbar"><span style="width:${Math.min(100, mins / 48 * 100)}%"></span></span>`
+            + `<span class="ts-minval">${mins}</span>`;
+        } else {
+          minTd.innerHTML = '<span class="ts-minval dim">—</span>';
+        }
+      }
+    });
+
+    let meter = null;
+    if (CS) { meter = minutesMeter(); meter.update(minutes); }
+    mountTable(table, meter);
+
+    if (canEdit) {
+      const btn = button('Edit');
+      btn.addEventListener('click', () => withToken(() => renderEditView()));
+      setActions(btn);
+    }
+  }
+
+  function renderEditView() {
+    editing = coachingTab.editing.roster = true;
+    const startMinutes = (coachingTab.record && coachingTab.record.minutes) || {};
+    let minutesDirty = false;
+    if (hintEl) hintEl.hidden = false;
+
+    const saveBtn = button('Save', 'primary');
+    const cancelBtn = button('Cancel', 'ghost');
+    const statusEl = document.createElement('span');
+    statusEl.className = 'ts-status';
+    const actions = [statusEl];
+    if (CS) {
+      const autoSortBtn = button('Auto-sort');
+      autoSortBtn.title = 'Fill PG/SG/SF/PF/C with the best eligible player at each position, then rank the bench by OVR — a starting point to drag from, not a save';
+      autoSortBtn.addEventListener('click', () => autoSort());
+      actions.push(autoSortBtn);
+    }
+    actions.push(cancelBtn, saveBtn);
+    setActions(...actions);
+
+    const table = document.createElement('table');
+    table.className = 'ts-table editing';
+    buildHead(table, true);
+
+    const tbody = table.createTBody();
+    const fields = [];
+    const meter = CS ? minutesMeter() : null;
+
+    // Each player row's slot, read off the live DOM: player rows above the
+    // Inactive line take the slots in order, everything else gets none.
+    // Nothing is kept in sync as rows get dragged around; this just reads
+    // the current state.
+    function slotPlan() {
+      const plan = [];
+      let n = 0;
+      let above = true;
+      Array.from(tbody.rows).forEach(tr => {
+        if (tr._divider) { above = false; return; }
+        if (!tr._rosterCtl) return;
+        const slot = above && CS ? (CS.MINUTES_SLOTS[n] || '') : '';
+        plan.push({ tr, ctl: tr._rosterCtl, slot, i: n });
+        if (slot) n++;
+      });
+      return plan;
+    }
+
+    // Every slot is written, an empty one as `{slug: ''}`, so a slot left
+    // open is recorded as open (orderedRows reads that back).
+    function minutesFromDom() {
+      if (!CS) return {};
+      const out = CS.emptyMinutes();
+      slotPlan().forEach(({ ctl, slot }) => {
+        if (!slot) return;
+        out[slot] = { slug: ctl.slug, minutes: +ctl.minInput.value || 0, res: ctl.resCheck.checked };
+      });
+      return out;
+    }
+
+    // Two-ways can play (§ 2.2 has no call-up step), but every game they
+    // play counts toward their 50. Named here once they're given minutes,
+    // so it is a choice made knowingly. Never blocks the save.
+    const twoWayNote = document.createElement('div');
+    twoWayNote.className = 'ts-2w-note';
+    twoWayNote.hidden = true;
+
+    function refreshTwoWayNote(minutes) {
+      const playing = Object.values(minutes)
+        .filter(m => m.minutes > 0 && !m.res && (biosData[m.slug] || {}).type === 'two-way')
+        .map(m => `${displayNameFromBio((biosData[m.slug] || {}).name || '') || m.slug} `
+          + `(${TWO_WAY_GAMES[m.slug] || 0}/${TWO_WAY_GAME_LIMIT})`);
+      twoWayNote.hidden = !playing.length;
+      twoWayNote.textContent = playing.length
+        ? `Two-way games count toward the ${TWO_WAY_GAME_LIMIT}-game limit (§ 2.2): ${playing.join(', ')}`
+        : '';
+    }
+
+    // A starter has to play near his slot. A new illegal placement blocks
+    // Save (the API refuses it too); one already saved that way is flagged
+    // but not blocking, matching the API, so the team can still save.
+    const startersNote = document.createElement('div');
+    startersNote.className = 'ts-illegal-note';
+    startersNote.hidden = true;
+
+    function refreshStarters(minutes) {
+      const bad = new Map();  // slug -> line
+      let blocking = 0;
+      CS.MINUTES_SLOTS.slice(0, STARTERS).forEach(slot => {
+        const slug = minutes[slot] && minutes[slot].slug;
+        const ok = slug ? startPositions(slug) : null;
+        if (!ok || ok.includes(slot)) return;
+        const saved = startMinutes[slot] && startMinutes[slot].slug === slug;
+        if (!saved) blocking++;
+        const name = displayNameFromBio((biosData[slug] || {}).name || '') || slug;
+        bad.set(slug, `${name} can't start at ${slot}: he can start at ${ok.join(', ')}`
+          + (saved ? ' (saved that way before this rule; move him when you can)' : ''));
+      });
+      Array.from(tbody.rows).forEach(tr => {
+        if (tr._rosterCtl) tr.classList.toggle('ts-illegal', bad.has(tr._rosterCtl.slug));
+      });
+      startersNote.hidden = !bad.size;
+      startersNote.textContent = [...bad.values()].join('. ');
+      saveBtn.disabled = blocking > 0;
+      saveBtn.title = blocking ? 'A starter is out of position' : '';
+    }
+
+    // Secondaries outside § 2.3, named so the team knows the streamer has to
+    // OK them. Never blocks the save.
+    const secNote = document.createElement('div');
+    secNote.className = 'ts-2w-note';
+    secNote.hidden = true;
+
+    function refreshSecNote() {
+      const lines = fields.map(f => {
+        const sec = f.secSel.value || defaultSecondary(biosData[f.slug], attributesData[f.slug]);
+        if (secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec)) return null;
+        const name = displayNameFromBio((biosData[f.slug] || {}).name || '') || f.slug;
+        const exc = posException(f.slug);
+        const ok = exc && exc.approved && exc.secondary === sec;
+        return `${name} at ${sec}${ok ? " (OK'd)" : ''}`;
+      }).filter(Boolean);
+      fields.forEach(f => {
+        const sec = f.secSel.value || defaultSecondary(biosData[f.slug], attributesData[f.slug]);
+        f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec));
+      });
+      secNote.hidden = !lines.length;
+      secNote.dataset.icon = 'warning';
+      secNote.textContent = lines.length
+        ? `Outside § 2.3, which allows one step from the primary or a position 2K has listed: ${lines.join(', ')}. `
+          + 'The streamer has to OK an exception before it counts, including for starting.'
+        : '';
+    }
+
+    function refreshMinutesTotal() {
+      const minutes = minutesFromDom();
+      if (meter) meter.update(minutes);
+      refreshTwoWayNote(minutes);
+      if (CS) refreshStarters(minutes);
+    }
+
+    // Relabels every row's Slot cell and enables/disables its Min controls
+    // to match its new position after a drag reorder. Values already typed
+    // in are left alone — a row bumped out of the top 15 just stops
+    // counting toward the save, and picks back up where it was if dragged
+    // back in.
+    function relabelSlots() {
+      if (!CS) return;
+      slotPlan().forEach(({ tr, ctl, slot, i }) => {
+        markRow(tr, i, !!slot);
+        ctl.slotTd.textContent = slot ? slotLabel(i) : '—';
+        ctl.minInput.disabled = !slot;
+        ctl.minusBtn.disabled = !slot;
+        ctl.plusBtn.disabled = !slot;
+        ctl.resCheck.disabled = !slot;
+      });
+    }
+
+    // Auto-sort: the same best-legal-starting-five algorithm the Rosters
+    // tab's Depth mode already uses (computeStartingFive, teams/lineup.js —
+    // highest OVR at each position, without stranding a slot a dual-eligible
+    // player was needed elsewhere for), then everyone left over ranked by
+    // OVR into the bench slots. A starting point to drag from, not a save —
+    // nothing here writes anything until Save is clicked. Minutes/RES a
+    // player already had travel with their row, since a row is just moved,
+    // not rebuilt.
+    // The Inactive line keeps the same number of players above it.
+    function autoSort() {
+      if (!CS || typeof computeStartingFive !== 'function') return;
+      const keep = slotPlan().filter(p => p.slot).length;
+      const bySlug = new Map();
+      Array.from(tbody.rows).forEach(tr => { if (tr._rosterCtl) bySlug.set(tr._rosterCtl.slug, tr); });
+
+      const players = activeRows.map(row => ({
+        slug: row.SLUG,
+        OVR: currentOvr ? currentOvr[row.SLUG] : '',
+        _posList: startPositions(row.SLUG) || (biosData[row.SLUG] || {}).pos || [],
+        // startPositions is in PG→C order, not primary first.
+        _primary: POSITION_ORDER.includes(primaryPos(biosData[row.SLUG], attributesData[row.SLUG]))
+          ? primaryPos(biosData[row.SLUG], attributesData[row.SLUG]) : undefined,
+      }));
+      const five = computeStartingFive(players);
+      const startedSlugs = new Set(five.filter(Boolean).map(p => p.slug));
+      const bench = players
+        .filter(p => !startedSlugs.has(p.slug))
+        .sort((a, b) => (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0));
+
+      five.concat(bench).forEach(p => {
+        if (!p) return;
+        const tr = bySlug.get(p.slug);
+        if (tr) tbody.appendChild(tr); // re-appending an existing row moves it — this is the reorder
+      });
+      const playerRows = Array.from(tbody.rows).filter(tr => tr._rosterCtl);
+      tbody.insertBefore(divider, playerRows[keep] || null);
+
+      minutesDirty = true;
+      relabelSlots();
+      refreshMinutesTotal();
+    }
+
+    // Raw mouse/touch events, listening on `document` while a drag is live,
+    // rather than native HTML5 drag-and-drop (no touch equivalent at all on
+    // iOS Safari) or Pointer Events (setPointerCapture + touch-action:none
+    // still left this not reliably suppressing the page's own scroll on
+    // real devices — a captured pointer's touchmove can still be treated as
+    // passive by the browser, silently no-opping preventDefault). Explicit
+    // `{ passive: false }` on touchmove is what actually stops the page
+    // scrolling under the drag; without it, calling preventDefault() there
+    // does nothing in current Chrome/Safari, which is the likelier reason
+    // the previous attempt didn't work on a real phone.
+    let draggedTr = null;
+
+    function pointFromEvent(e) {
+      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function endDrag(tr, onMove, onEnd) {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+      if (draggedTr !== tr) return;
+      tr.classList.remove('dragging');
+      draggedTr = null;
+      minutesDirty = true;
+      relabelSlots();
+      refreshMinutesTotal();
+    }
+
+    function attachDrag(tr, handle) {
+      function onMove(e) {
+        if (draggedTr !== tr) return;
+        if (e.cancelable) e.preventDefault();
+        const { x, y } = pointFromEvent(e);
+        const targetRow = document.elementFromPoint(x, y);
+        const tbodyRow = targetRow && targetRow.closest('tr');
+        if (!tbodyRow || tbodyRow === tr || tbodyRow.parentElement !== tbody) return;
+        const rect = tbodyRow.getBoundingClientRect();
+        const before = (y - rect.top) < rect.height / 2;
+        tbody.insertBefore(tr, before ? tbodyRow : tbodyRow.nextSibling);
+      }
+      function onEnd() { endDrag(tr, onMove, onEnd); }
+      function onStart(e) {
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        draggedTr = tr;
+        tr.classList.add('dragging');
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+        document.addEventListener('touchcancel', onEnd);
+      }
+      handle.addEventListener('mousedown', onStart);
+      handle.addEventListener('touchstart', onStart, { passive: true });
+    }
+
+    const { rows: startRows, line: startLine } = orderedRows(startMinutes);
+    let divider = null;
+    startRows.forEach((row, i) => {
+      if (CS && i === startLine) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
+      const bio = biosData[row.SLUG] || {};
+      const jersey = bio.jersey_number ?? '';
+      // A pick that matches the default, or 'none' when there is none, is the
+      // same as leaving it, and shows as that.
+      const twoKSecRow = defaultSecondary(bio, attributesData[row.SLUG]);
+      const secondaryPos = (bio.secondary_pos === twoKSecRow || (bio.secondary_pos === 'none' && !twoKSecRow))
+        ? '' : (bio.secondary_pos || '');
+
+      const tr = tbody.insertRow();
+
+      if (CS) {
+        const handleTd = tr.insertCell();
+        handleTd.className = 'ts-handle';
+        const handle = document.createElement('span');
+        handle.className = 'drag-handle';
+        handle.textContent = '⠿';
+        handle.title = 'Drag to reorder — table order sets the depth chart slot';
+        handleTd.appendChild(handle);
+        attachDrag(tr, handle);
+      }
+
+      let slotTd = null;
+      if (CS) {
+        slotTd = tr.insertCell();
+        slotTd.className = 'ts-slot';
+      }
+
+      const numTd = tr.insertCell();
+      numTd.className = 'ts-num';
+      const jerseyInput = document.createElement('input');
+      jerseyInput.type = 'text';
+      jerseyInput.inputMode = 'numeric';
+      jerseyInput.maxLength = 2;
+      jerseyInput.pattern = '\\d{1,2}';
+      jerseyInput.value = jersey;
+      jerseyInput.placeholder = '#';
+      jerseyInput.className = 'ts-input ts-num-input';
+      jerseyInput.setAttribute('aria-label', 'Jersey number');
+      numTd.appendChild(jerseyInput);
+
+      nameCell(tr, row, bio);
+
+      const posTd = tr.insertCell();
+      posTd.className = 'ts-pos';
+      const posWrap = document.createElement('span');
+      posWrap.className = 'ts-pos-edit';
+      const rowPrimary = primaryPos(bio, attributesData[row.SLUG]);
+      posWrap.appendChild(document.createTextNode(rowPrimary));
+      // Rulebook § 2.3: the secondary is one step either side of the primary,
+      // or any position 2K has listed for him. Any other position can still
+      // be picked, marked as an exception: one the streamer has to OK.
+      // Blank keeps the default secondary; 'none' removes it.
+      const eligiblePos = secondaryPool(bio, attributesData[row.SLUG]);
+      const otherPos = POSITION_ORDER.includes(rowPrimary)
+        ? POSITION_ORDER.filter(p => p !== rowPrimary && !eligiblePos.includes(p)) : [];
+      const twoKSec = twoKSecRow;
+      const secSel = document.createElement('select');
+      secSel.className = 'ts-input ts-sec-select';
+      secSel.setAttribute('aria-label', 'Secondary position');
+      [{ value: '', label: twoKSec ? `/ ${twoKSec} (2K)` : '/ – (2K)' },
+       ...(twoKSec ? [{ value: 'none', label: '/ none' }] : []),
+       ...eligiblePos.filter(p => p !== twoKSec).map(p => ({ value: p, label: `/ ${p}` })),
+       ...otherPos.map(p => ({ value: p, label: `/ ${p} · exception` }))].forEach(o => {
+        secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
+      });
+      // Keep a saved exception selectable even if the primary has moved.
+      if (secondaryPos && ![...secSel.options].some(o => o.value === secondaryPos)) {
+        secSel.appendChild(new Option(`/ ${secondaryPos} · exception`, secondaryPos, false, true));
+      }
+      secSel.addEventListener('change', () => refreshSecNote());
+      posWrap.appendChild(secSel);
+      // The pin: check this position before every game. With no secondary it
+      // means "make sure 2K has none", since 2K can add one back.
+      const pinLabel = document.createElement('label');
+      pinLabel.className = 'ts-pin';
+      pinLabel.title = 'Have the streamer check this position before every game';
+      const pinCheck = document.createElement('input');
+      pinCheck.type = 'checkbox';
+      pinCheck.checked = posLocked(row.SLUG);
+      pinCheck.setAttribute('aria-label', 'Check position before every game');
+      const pinIcon = document.createElement('span');
+      pinIcon.className = 'ui-icon ui-icon--pin';
+      pinIcon.setAttribute('aria-hidden', 'true');
+      pinLabel.append(pinCheck, pinIcon);
+      posWrap.appendChild(pinLabel);
+      posTd.appendChild(posWrap);
+
+      if (CS) {
+        const slot = i < startLine ? CS.MINUTES_SLOTS[i] : '';
+        const existing = slot ? startMinutes[slot] : null;
+        markRow(tr, i, !!slot);
+        slotTd.textContent = slot ? slotLabel(i) : '—';
+
+        // Minutes and RES share one cell — a reserve player has no minutes
+        // figure to show alongside, so they were never independent columns.
+        // The stepper dims while RES is on (CSS, off the checkbox).
+        const minWrap = document.createElement('div');
+        minWrap.className = 'ts-min-edit';
+        const stepper = document.createElement('div');
+        stepper.className = 'ts-stepper';
+        const minInput = document.createElement('input');
+        minInput.type = 'number'; minInput.min = '0'; minInput.max = '48';
+        minInput.inputMode = 'numeric';
+        minInput.value = String(existing ? (existing.minutes || 0) : 0);
+        minInput.disabled = !slot;
+        minInput.setAttribute('aria-label', 'Minutes');
+        minInput.addEventListener('input', () => { minutesDirty = true; refreshMinutesTotal(); });
+        // Plus/minus steppers so a coach can nudge a player's minutes by one
+        // without having to type over the field each time.
+        function stepMinutes(delta) {
+          const next = Math.min(48, Math.max(0, (+minInput.value || 0) + delta));
+          if (next === +minInput.value) return;
+          minInput.value = String(next);
+          minutesDirty = true;
+          refreshMinutesTotal();
+        }
+        const minusBtn = document.createElement('button');
+        minusBtn.type = 'button';
+        minusBtn.textContent = '−';
+        minusBtn.setAttribute('aria-label', 'Decrease minutes');
+        minusBtn.disabled = !slot;
+        minusBtn.addEventListener('click', () => stepMinutes(-1));
+        const plusBtn = document.createElement('button');
+        plusBtn.type = 'button';
+        plusBtn.textContent = '+';
+        plusBtn.setAttribute('aria-label', 'Increase minutes');
+        plusBtn.disabled = !slot;
+        plusBtn.addEventListener('click', () => stepMinutes(1));
+        stepper.append(minusBtn, minInput, plusBtn);
+
+        const resLabel = document.createElement('label');
+        resLabel.className = 'ts-res';
+        resLabel.title = 'Reserve — dressed, but gets no minutes';
+        const resCheck = document.createElement('input');
+        resCheck.type = 'checkbox';
+        resCheck.checked = !!(existing && existing.res);
+        resCheck.disabled = !slot;
+        resCheck.addEventListener('change', () => { minutesDirty = true; refreshMinutesTotal(); });
+        resLabel.append(resCheck, document.createTextNode('RES'));
+
+        minWrap.append(stepper, resLabel);
+        const minTd = tr.insertCell();
+        minTd.className = 'ts-min';
+        minTd.appendChild(minWrap);
+
+        tr._rosterCtl = { slug: row.SLUG, slotTd, minInput, minusBtn, plusBtn, resCheck };
+      }
+
+      fields.push({
+        slug: row.SLUG, primary: rowPrimary, jerseyInput, secSel, pinCheck,
+        originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
+      });
+    });
+    if (CS) {
+      if (!divider) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
+      attachDrag(divider, divider._handle);
+    }
+
+    refreshMinutesTotal();
+    mountTable(table, meter);
+    refreshSecNote();
+    wrapEl.insertBefore(secNote, wrapEl.lastChild);
+    wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
+    wrapEl.insertBefore(startersNote, wrapEl.lastChild);
+
+    cancelBtn.addEventListener('click', () => renderReadView());
+
+    saveBtn.addEventListener('click', async () => {
+      const changed = fields.filter(({ jerseyInput, secSel, originalJersey, originalSecondaryPos }) =>
+        String(jerseyInput.value.trim()) !== originalJersey || secSel.value !== originalSecondaryPos
+      );
+      // Send only the pins that changed.
+      const pins = {};
+      fields.forEach(f => {
+        if (f.pinCheck.checked !== posLocked(f.slug)) pins[f.slug] = f.pinCheck.checked;
+      });
+      const pinsDirty = Object.keys(pins).length > 0;
+      if (!changed.length && !minutesDirty && !pinsDirty) { renderReadView(); return; }
+
+      saveBtn.disabled = true;
+      cancelBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+
+      try {
+        const token = getToken();
+        const requests = changed.map(({ slug, jerseyInput, secSel }) => {
+          const val = jerseyInput.value.trim();
+          const jersey_number = val === '' ? null : val;
+          const secondary_pos = secSel.value === '' ? null : secSel.value;
+          return fetch(`/api/players/${slug}/team-settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ jersey_number, secondary_pos }),
+          });
+        });
+        // Minutes live on the coaching-settings record alongside `values`
+        // (points of emphasis, sliders, pools — edited in the Coaching
+        // Profile section, untouched here). PUT replaces both fields
+        // together, so this always resends the team's current `values` as
+        // loaded — saving a jersey number alone must not wipe them.
+        let coachingReq = null;
+        if (minutesDirty && CS) {
+          const values = (coachingTab.record && coachingTab.record.values) || CS.emptyValues();
+          coachingReq = fetch(`/api/coaching-settings/${abbr}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ values, minutes: minutesFromDom() }),
+          });
+          requests.push(coachingReq);
+        }
+        // The pins go after the positions, so a refused position leaves the
+        // pins unsaved too.
+        const results = await Promise.all(requests);
+        if (pinsDirty && results.every(r => r.ok)) {
+          results.push(await fetch(`/api/position-checks/${abbr}/pins`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ pins }),
+          }));
+        }
+
+        const failed = results.find(r => !r.ok);
+        if (failed) {
+          if (failed.status === 401) {
+            localStorage.removeItem(TOKEN_KEY);
+            statusEl.textContent = 'Invalid token — cleared. Try again.';
+          } else {
+            const err = await failed.json().catch(() => ({}));
+            statusEl.textContent = `Error: ${err.detail || failed.status}`;
+          }
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          return;
+        }
+
+        // A reload would drop the Coaching Profile's unsaved edits, so while
+        // it is open, apply what was saved here and redraw this section only.
+        if (coachingTab.editing.profile) {
+          if (coachingReq) coachingTab.record = await (await coachingReq).json();
+          changed.forEach(({ slug, jerseyInput, secSel }) => {
+            const bio = biosData[slug] || (biosData[slug] = {});
+            const val = jerseyInput.value.trim();
+            bio.jersey_number = val === '' ? null : val;
+            bio.secondary_pos = secSel.value === '' ? null : secSel.value;
+          });
+          if (pinsDirty) posChecks = await results[results.length - 1].json();
+          renderReadView();
+          return;
+        }
+
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => location.reload(), 700);
+      } catch {
+        statusEl.textContent = 'Network error';
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+      }
+    });
+  }
+
+  renderReadView();
+}
+
+// Note to the streamer — one free-text note per team, for whoever streams
+// its games. A streamer marks it clear on /committees/stream; saving it
+// again reopens it. Stored apart from the coach profile
+// (GET/PUT /api/coaching-notes), private the same way.
+const STREAMER_NOTE_MAX = 1000;
+function setupStreamerNote() {
+  const wrapEl = document.getElementById('streamer-note-wrap');
+  const actionsEl = document.getElementById('streamer-note-actions');
+  if (!wrapEl) return;
+  const canEdit = canEditCoachingSettings(abbr);
+  let note = null;
+
+  const authHeaders = () => {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+  const fmtWhen = iso => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+
+  function btn(label, variant) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `ui-btn ui-btn--sm${variant ? ` ui-btn--${variant}` : ''}`;
+    b.textContent = label;
+    return b;
+  }
+
+  function renderRead() {
+    wrapEl.innerHTML = '';
+    actionsEl.innerHTML = '';
+    if (!note || !note.text) {
+      const empty = document.createElement('div');
+      empty.className = 'sn-meta';
+      empty.textContent = 'No note.';
+      wrapEl.appendChild(empty);
+    } else {
+      const text = document.createElement('div');
+      text.className = 'sn-text';
+      text.textContent = note.text;
+      const meta = document.createElement('div');
+      meta.className = 'sn-meta ' + (note.cleared_at ? 'clear' : 'open');
+      if (note.cleared_at) meta.dataset.icon = 'check';
+      meta.textContent = note.cleared_at
+        ? `Marked clear by ${note.cleared_by || 'a streamer'}, ${fmtWhen(note.cleared_at)}`
+        : `Waiting for the streamer · saved ${fmtWhen(note.updated_at)} by ${note.updated_by || 'unknown'}`;
+      wrapEl.append(text, meta);
+    }
+    if (canEdit) {
+      const b = btn(note && note.text ? 'Edit' : 'Write note');
+      b.addEventListener('click', () => withToken(() => renderEdit()));
+      actionsEl.appendChild(b);
+    }
+  }
+
+  async function save(text, statusEl, buttons) {
+    buttons.forEach(b => { b.disabled = true; });
+    statusEl.textContent = 'Saving…';
+    try {
+      const r = await fetch(`/api/coaching-notes/${abbr}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ text }),
+      });
+      if (!r.ok) {
+        if (r.status === 401) localStorage.removeItem(TOKEN_KEY);
+        const err = await r.json().catch(() => ({}));
+        statusEl.textContent = r.status === 401 ? 'Invalid token — cleared. Try again.' : `Error: ${err.detail || r.status}`;
+        buttons.forEach(b => { b.disabled = false; });
+        return;
+      }
+      const rec = await r.json();
+      note = rec && rec.text ? rec : null;
+      renderRead();
+    } catch {
+      statusEl.textContent = 'Network error';
+      buttons.forEach(b => { b.disabled = false; });
+    }
+  }
+
+  function renderEdit() {
+    wrapEl.innerHTML = '';
+    actionsEl.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'sn-edit';
+    const ta = document.createElement('textarea');
+    ta.className = 'ui-textarea';
+    ta.maxLength = STREAMER_NOTE_MAX;
+    ta.value = (note && note.text) || '';
+    ta.placeholder = 'Anything the streamer should know before your games';
+    ta.setAttribute('aria-label', 'Note to the streamer');
+    const count = document.createElement('span');
+    count.className = 'sn-count';
+    const syncCount = () => { count.textContent = `${ta.value.length} / ${STREAMER_NOTE_MAX}`; };
+    ta.addEventListener('input', syncCount);
+    syncCount();
+    box.appendChild(ta);
+    wrapEl.appendChild(box);
+
+    const saveBtn = btn('Save', 'primary');
+    const cancelBtn = btn('Cancel', 'ghost');
+    const buttons = [saveBtn, cancelBtn];
+    actionsEl.append(count);
+    if (note && note.text) {
+      const delBtn = btn('Delete', 'ghost');
+      delBtn.addEventListener('click', () => save('', count, buttons.concat(delBtn)));
+      buttons.push(delBtn);
+      actionsEl.appendChild(delBtn);
+    }
+    actionsEl.append(cancelBtn, saveBtn);
+    cancelBtn.addEventListener('click', () => renderRead());
+    saveBtn.addEventListener('click', () => save(ta.value, count, buttons));
+    ta.focus();
+  }
+
+  fetch('/api/coaching-notes', { headers: authHeaders() })
+    .then(r => r.ok ? r.json() : {})
+    .catch(() => ({}))
+    .then(data => { note = (data && data[abbr]) || null; renderRead(); });
+}
+
+// Coaching Settings tab — a team's 2K coach profile (schema in
+// /coaching-config.js), entered into the game by a streamer from
+// /committees/stream. Structurally mirrors setupTeamSettingsTab just
+// above (read/edit toggle, withToken-gated Edit button, same 403 handling),
+// but every field renders off window.CoachingSettings' config rather than
+// being hand-written, since that vocabulary is expected to change yearly.
+function setupCoachingSettingsTab(wrapId, biosData) {
+  const wrapEl = document.getElementById(wrapId);
+  const CS = window.CoachingSettings;
+  if (!CS) {
+    wrapEl.innerHTML = '<div class="status">Coaching settings unavailable — /coaching-config.js failed to load.</div>';
+    return;
+  }
+  const canEdit = canEditCoachingSettings(abbr);
+  const actionsEl = document.getElementById('coaching-settings-actions');
+  const resolveName = slug => displayNameFromBio((biosData[slug] || {}).name || '') || slug;
+
+  function renderReadView() {
+    coachingTab.editing.profile = false;
+    const record = coachingTab.record;
+    // Minutes render merged into the roster table in the Roster Settings
+    // section above (setupTeamSettingsTab) — skip the standalone card here
+    // so a player's minutes aren't shown twice on the same team page.
+    CS.renderReadOnly(wrapEl, record, { resolveName, skipMinutesCard: true });
+    if (actionsEl) actionsEl.innerHTML = '';
+    if (canEdit && actionsEl) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ui-btn ui-btn--sm';
+      btn.textContent = record ? 'Edit' : 'Enter settings';
+      btn.addEventListener('click', () => withToken(() => { actionsEl.innerHTML = ''; renderEditView(); }));
+      actionsEl.appendChild(btn);
+    }
+  }
+
+  // `allowBlank`: the field may be left empty (an optional group's "keep the
+  // playbook default"). Blank shows as an empty box reading "Default" with a
+  // dimmed slider; moving the slider or typing a number sets a value, and the
+  // ↺ button clears it again.
+  function makeRangeNumberPair(min, max, step, initial, onChange, allowBlank) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;flex:1';
+    const blank = allowBlank && (initial === '' || initial == null);
+    const range = document.createElement('input');
+    range.type = 'range'; range.min = String(min); range.max = String(max); range.step = String(step);
+    range.value = String(blank ? Math.round((min + max) / 2) : initial);
+    range.style.cssText = 'flex:1';
+    const num = document.createElement('input');
+    num.type = 'number'; num.min = String(min); num.max = String(max); num.step = String(step);
+    num.value = blank ? '' : String(initial);
+    if (allowBlank) num.placeholder = 'Default';
+    num.style.cssText = 'width:4.5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);font-size:var(--text-xs);padding:0.15rem 0.3rem;font-family:inherit;text-align:right;outline:none';
+    const setDim = dim => { range.style.opacity = dim ? '0.35' : ''; };
+    setDim(blank);
+    range.addEventListener('input', () => { num.value = range.value; setDim(false); onChange(+range.value); });
+    num.addEventListener('input', () => {
+      if (allowBlank && num.value === '') { setDim(true); onChange(''); return; }
+      const v = Math.max(min, Math.min(max, +num.value || 0));
+      range.value = String(v);
+      setDim(false);
+      onChange(v);
+    });
+    wrap.appendChild(range);
+    wrap.appendChild(num);
+    if (allowBlank) {
+      const reset = document.createElement('button');
+      reset.type = 'button';
+      reset.className = 'ui-btn ui-btn--sm ui-btn--ghost';
+      reset.textContent = '↺';
+      reset.title = 'Use the playbook default';
+      reset.setAttribute('aria-label', 'Use the playbook default');
+      reset.addEventListener('click', () => { num.value = ''; setDim(true); onChange(''); });
+      wrap.appendChild(reset);
+    }
+    // A pool with oneFieldMax moves a field's ceiling as the others change.
+    wrap.setMax = newMax => {
+      max = newMax;
+      range.max = num.max = String(newMax);
+    };
+    return wrap;
+  }
+
+  function renderEditView() {
+    coachingTab.editing.profile = true;
+    const record = coachingTab.record;
+    const values = record && record.values ? JSON.parse(JSON.stringify(record.values)) : CS.emptyValues();
+    const minutes = record && record.minutes ? JSON.parse(JSON.stringify(record.minutes)) : CS.emptyMinutes();
+    // A field added to the schema after this record was saved starts empty.
+    CS.FIELD_GROUPS.forEach(g => g.fields.forEach(f => { if (!(f.key in values)) values[f.key] = CS.emptyFieldValue(g, f); }));
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'display:flex;gap:0.4rem;align-items:center;justify-content:flex-end;margin-bottom:0.75rem;position:sticky;top:0;background:var(--bg-card);padding:0.5rem 0;z-index:1';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'ui-btn ui-btn--sm ui-btn--primary';
+    saveBtn.textContent = 'Save';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'ui-btn ui-btn--sm ui-btn--ghost';
+    cancelBtn.textContent = 'Cancel';
+
+    const statusEl = document.createElement('span');
+    statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-right:auto';
+
+    toolbar.appendChild(statusEl);
+    toolbar.appendChild(cancelBtn);
+    toolbar.appendChild(saveBtn);
+
+    const body = document.createElement('div');
+    body.className = 'cs-cards-grid';
+
+    // Save is never blocked on an unbalanced pool — a team should never lose
+    // partial work because one slider is off. It's flagged instead, here and
+    // (via CS.validityIssues on the saved record) in the read view and the
+    // streamer dashboard, so an unbalanced save is obvious to both the person
+    // who entered it and whoever enters it into the game. Minutes aren't
+    // edited in this form any more (see Roster Settings above), so this uses
+    // CS.valuesIssues — everything but minutes — rather than the full
+    // CS.validityIssues, which would also flag an unrelated minutes imbalance.
+    function refreshSaveState() {
+      const issues = CS.valuesIssues(values);
+      if (issues.length) {
+        statusEl.style.color = 'var(--gold)';
+        statusEl.dataset.icon = 'warning';
+        statusEl.textContent = 'Not balanced — ' + issues.join(' · ');
+      } else {
+        statusEl.style.color = 'var(--text-muted)';
+        delete statusEl.dataset.icon;
+        statusEl.textContent = '';
+      }
+    }
+
+    function groupCard(title, note) {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem 1rem;margin-bottom:0.9rem';
+      const h = CS.labelWithNote(title, note, 'display:block;font-weight:700;font-size:var(--text-base);margin-bottom:0.6rem');
+      card.appendChild(h);
+      return card;
+    }
+
+    function fieldRow(labelText, control, note) {
+      const r = document.createElement('div');
+      r.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:0.3rem 0';
+      const l = CS.labelWithNote(labelText, note, 'font-size:var(--text-sm);color:var(--text-muted)');
+      r.appendChild(l);
+      r.appendChild(control);
+      return r;
+    }
+
+    // Plain select/slider field groups
+    CS.FIELD_GROUPS.forEach(group => {
+      const card = groupCard(group.label, group.note);
+      group.fields.forEach(f => {
+        let control;
+        if (f.type === 'select') {
+          const sel = makeSelect([{ value: '', label: '—' }, ...f.options.map(o => ({ value: o, label: o }))], values[f.key] || '');
+          sel.addEventListener('change', () => { values[f.key] = sel.value; });
+          control = sel;
+        } else {
+          const initial = group.optional ? values[f.key] : (values[f.key] || f.min);
+          control = makeRangeNumberPair(f.min, f.max, 1, initial, v => { values[f.key] = v; refreshSaveState(); }, group.optional);
+        }
+        card.appendChild(fieldRow(f.label, control, f.note));
+      });
+      body.appendChild(card);
+    });
+
+    // Point-buy pools — running total + Save gating, per pool. A record saved
+    // before a pool (or one field within it) existed in the schema is missing
+    // the key outright, not just holding a stale value — backfill it into
+    // `values` itself (not just the widget's initial display) so the total
+    // this pool starts at actually matches what's shown, rather than counting
+    // an untouched field as 0 while its slider visibly reads f.min.
+    CS.POINT_BUY_POOLS.forEach(pool => {
+      const card = groupCard(pool.label, pool.note);
+      const poolValues = values[pool.key] || (values[pool.key] = {});
+      pool.fields.forEach(f => { if (!(f.key in poolValues)) poolValues[f.key] = f.min || 0; });
+      const totalLine = document.createElement('div');
+      totalLine.style.cssText = 'font-size:var(--text-xs);font-weight:700;margin-top:0.5rem';
+      function syncTotal() {
+        const total = CS.poolTotal(pool, poolValues);
+        const ok = total === pool.budget;
+        totalLine.style.color = ok ? 'var(--success-light)' : 'var(--gold)';
+        totalLine.textContent = ok
+          ? `${total} of ${pool.budget} allocated`
+          : `${total} of ${pool.budget} allocated · ${pool.budget - total > 0 ? (pool.budget - total) + ' left to place' : (total - pool.budget) + ' over'}`;
+        controls.forEach((control, i) => control.setMax(CS.fieldMax(pool, pool.fields[i], poolValues)));
+        refreshSaveState();
+      }
+      const controls = pool.fields.map(f => {
+        const control = makeRangeNumberPair(f.min, pool.oneFieldMax || f.max, 1, poolValues[f.key] || f.min, v => { poolValues[f.key] = v; syncTotal(); });
+        card.appendChild(fieldRow(f.label, control, f.note));
+        return control;
+      });
+      card.appendChild(totalLine);
+      syncTotal();
+      body.appendChild(card);
+    });
+
+    // Player minutes are edited in the Roster Settings section above
+    // (setupTeamSettingsTab) now, merged into its per-player table — not
+    // here. `minutes` itself is still carried through this form's Save
+    // payload untouched, since PUT /api/coaching-settings/{team} replaces
+    // both fields together and this form must not clobber it.
+
+    wrapEl.innerHTML = '';
+    wrapEl.appendChild(toolbar);
+    wrapEl.appendChild(body);
+    refreshSaveState();
+
+    cancelBtn.addEventListener('click', () => renderReadView());
+
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      cancelBtn.disabled = true;
+      statusEl.textContent = 'Saving…';
+      try {
+        const token = getToken();
+        const resp = await fetch(`/api/coaching-settings/${abbr}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          // Minutes are edited in Roster Settings, which may have saved
+          // since this form opened, so send the record's current ones.
+          body: JSON.stringify({ values, minutes: (coachingTab.record && coachingTab.record.minutes) || minutes }),
+        });
+        if (!resp.ok) {
+          if (resp.status === 401) {
+            localStorage.removeItem(TOKEN_KEY);
+            statusEl.textContent = 'Invalid token — cleared. Try again.';
+          } else {
+            const err = await resp.json().catch(() => ({}));
+            statusEl.textContent = `Error: ${err.detail || resp.status}`;
+          }
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          return;
+        }
+        // A reload would drop Roster Settings' unsaved lineup, so while it
+        // is open, keep the saved record and redraw this section only.
+        if (coachingTab.editing.roster) {
+          coachingTab.record = await resp.json();
+          renderReadView();
+          return;
+        }
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => location.reload(), 700);
+      } catch {
+        statusEl.textContent = 'Network error';
+        saveBtn.disabled = false;
+        cancelBtn.disabled = false;
+      }
+    });
+  }
+
+  renderReadView();
+}
+
+function setupDeadCapEditable(wrapEl, deadCapRows, biosData, curYr, onSave) {
+  if (!canEditRosters()) return;
+
+  // Seasons to show: curYr + next 2, plus any already in data
+  const seasons = new Set([curYr, nextSalaryYear(curYr), nextSalaryYear(nextSalaryYear(curYr))]);
+  deadCapRows.forEach(r => Object.keys(r).forEach(k => { if (/^\d{2}-\d{2}$/.test(k)) seasons.add(k); }));
+  const seasonList = [...seasons].sort();
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'edit-toggle-btn';
+  editBtn.style.cssText = 'margin-top:0.5rem;font-size:var(--text-xs);padding:0.15rem 0.45rem';
+  editBtn.textContent = 'Edit Dead Cap';
+  wrapEl.appendChild(editBtn);
+
+  let formEl = null;
+  let formDl = null;
+
+  editBtn.addEventListener('click', () => {
+    if (formEl) { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; return; }
+    editBtn.textContent = 'Close';
+
+    let rows = deadCapRows.map(r => ({ ...r }));
+
+    const nameToSlug = new Map();
+    const slugToDisplay = new Map();
+    const dlId = `dc-pdl-${Date.now()}`;
+    const dl = document.createElement('datalist');
+    dl.id = dlId;
+    Object.entries(biosData).sort(([, a], [, b]) =>
+      displayNameFromBio(a.name || '').localeCompare(displayNameFromBio(b.name || ''))
+    ).forEach(([slug, bio]) => {
+      const dn = displayNameFromBio(bio.name || '');
+      if (!dn) return;
+      nameToSlug.set(dn.toLowerCase(), slug);
+      slugToDisplay.set(slug, dn);
+      const opt = document.createElement('option');
+      opt.value = dn;
+      dl.appendChild(opt);
+    });
+    document.body.appendChild(dl);
+    formDl = dl;
+
+    formEl = document.createElement('div');
+    formEl.style.cssText = 'margin-top:0.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.75rem;overflow-x:auto';
+
+    function render() {
+      formEl.innerHTML = '';
+
+      const tbl = document.createElement('table');
+      tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm)';
+      const thead = tbl.createTHead();
+      const hr = thead.insertRow();
+      ['Player', ...seasonList, ''].forEach((lbl, i) => {
+        const th = document.createElement('th');
+        th.textContent = lbl;
+        th.style.cssText = `padding:3px 8px;color:var(--text-muted);text-align:${i === 0 ? 'left' : 'right'}`;
+        hr.appendChild(th);
+      });
+
+      const tbody = tbl.createTBody();
+
+      rows.forEach((row, ri) => {
+        const tr = tbody.insertRow();
+        // Player name
+        const nameTd = tr.insertCell();
+        const bio = biosData[row.SLUG] || {};
+        nameTd.textContent = displayNameFromBio(bio.name || '') || row.SLUG;
+        nameTd.style.cssText = 'padding:3px 8px';
+
+        // Season amounts
+        seasonList.forEach(s => {
+          const td = tr.insertCell();
+          td.style.cssText = 'padding:3px 6px;text-align:right';
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.value = row[s] || '';
+          inp.placeholder = '—';
+          inp.style.cssText = 'width:90px;text-align:right;background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 4px;font-size:var(--text-xs)';
+          inp.addEventListener('input', () => { row[s] = inp.value.trim(); });
+          td.appendChild(inp);
+        });
+
+        // Delete
+        const delTd = tr.insertCell();
+        delTd.style.cssText = 'padding:3px 6px;text-align:right';
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+        delBtn.setAttribute('aria-label', 'Remove row');
+        delBtn.style.cssText = 'background:none;border:none;color:var(--danger);cursor:pointer;padding:0 4px';
+        delBtn.addEventListener('click', () => { rows.splice(ri, 1); render(); });
+        delTd.appendChild(delBtn);
+      });
+
+      // Add-entry row
+      const addTr = tbody.insertRow();
+      addTr.style.borderTop = '1px solid var(--border)';
+      const addTd = addTr.insertCell();
+      addTd.colSpan = seasonList.length + 2;
+      addTd.style.cssText = 'padding:6px 8px';
+
+      const nameInp = document.createElement('input');
+      nameInp.type = 'text'; nameInp.placeholder = 'Player name';
+      nameInp.setAttribute('list', dlId);
+      nameInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:var(--text-xs);width:160px;margin-right:6px';
+
+      const seasonInp = document.createElement('input');
+      seasonInp.type = 'text'; seasonInp.placeholder = currentSeasonYr();
+      seasonInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:var(--text-xs);width:70px;margin-right:6px';
+
+      const amtInp = document.createElement('input');
+      amtInp.type = 'text'; amtInp.placeholder = '$X,XXX,XXX';
+      amtInp.style.cssText = 'background:var(--bg-page);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px 6px;font-size:var(--text-xs);width:110px;margin-right:6px';
+
+      const addBtn = document.createElement('button');
+      addBtn.textContent = '+ Add';
+      addBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:2px 8px;font-size:var(--text-xs);cursor:pointer';
+      addBtn.addEventListener('click', () => {
+        const typed = nameInp.value.trim();
+        const slug = nameToSlug.get(typed.toLowerCase()) || '';
+        const season = seasonInp.value.trim();
+        const amt = amtInp.value.trim();
+        if (!slug || !season || !amt) return;
+        const existing = rows.find(r => r.SLUG === slug);
+        if (existing) {
+          existing[season] = amt;
+        } else {
+          rows.push({ SLUG: slug, [season]: amt });
+          if (!seasons.has(season)) { seasons.add(season); seasonList.length = 0; [...seasons].sort().forEach(s => seasonList.push(s)); }
+        }
+        nameInp.value = ''; seasonInp.value = ''; amtInp.value = '';
+        render();
+      });
+
+      addTd.append(nameInp, seasonInp, amtInp, addBtn);
+      formEl.appendChild(tbl);
+
+      // Save / Cancel
+      const btns = document.createElement('div');
+      btns.style.cssText = 'margin-top:0.5rem;display:flex;gap:0.5rem';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.style.cssText = 'background:var(--accent-dark);color:var(--text-on-accent);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:var(--text-xs)';
+      saveBtn.addEventListener('click', () => {
+        withToken(token => {
+          const payload = rows
+            .filter(r => r.SLUG && Object.keys(r).some(k => /^\d{2}-\d{2}$/.test(k) && r[k]))
+            .map(r => {
+              const out = { SLUG: r.SLUG };
+              Object.keys(r).forEach(k => { if (/^\d{2}-\d{2}$/.test(k) && r[k]) out[k] = r[k]; });
+              return out;
+            });
+          fetch(`/api/deadcap/${abbr}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload),
+          })
+          .then(r => { if (!r.ok) throw r; return r.json(); })
+          .then(() => {
+            formEl.remove(); formEl = null; formDl?.remove(); formDl = null;
+            editBtn.textContent = 'Edit Dead Cap';
+            onSave(payload);
+          })
+          .catch(r => {
+            if (r.status === 401) localStorage.removeItem('nbn_token');
+            saveBtn.textContent = 'Error — retry';
+            setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
+          });
+        });
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.cssText = 'background:var(--border);color:var(--text-secondary);border:none;border-radius:var(--radius-sm);padding:4px 12px;cursor:pointer;font-size:var(--text-xs)';
+      cancelBtn.addEventListener('click', () => { formEl.remove(); formEl = null; formDl?.remove(); formDl = null; editBtn.textContent = 'Edit Dead Cap'; });
+
+      btns.append(saveBtn, cancelBtn);
+      formEl.appendChild(btns);
+    }
+
+    render();
+    wrapEl.appendChild(formEl);
+  });
+}
+
+// ─── What If Mode ────────────────────────────────────────────────────────────
+// A client-side-only sandbox: clones the real roster into local state, lets
+// the user add/remove players (any player in the league — one-sided, the
+// source team is never touched) and decline options / renounce holds, then
+// recomputes the same cap figures the real page shows via the exact same
+// pure functions (buildRosterTable, computeCapSummary, renderHardCapBanner,
+// renderExceptionsSection). Nothing here ever calls the API; exiting just
+// discards the local state, so the real roster/cap sections are untouched.
+
+// Dead-cap obligation on a hypothetical release (rulebook § 5.1-5.2), broken
+// out per season. Walks every salary-bearing season from `season` onward and
+// applies the guarantee rule for that year's cap-hold type: TEAM_OPT/UFA/RFA
+// years owe nothing (they're not real salary), PLAYER_OPT years owe the
+// guaranteed amount (or full salary if no partial guarantee is set — a
+// player option fully guarantees once the team can no longer decline it),
+// NON_GTD years owe only what's vested as of today (a step schedule, or a
+// single guarantee-date cutoff), and a plain guaranteed year owes the
+// guaranteed amount or full salary. Shared by simulateRelease (method 1: pay
+// the original schedule) and simulateStretch (method 2: spread the same
+// total over a longer one) — one obligation calculation, two payout shapes.
+function releaseObligationByYear(row, season, today = new Date()) {
+  const owed = {};
+  Object.keys(row._salaries || {}).filter(y => y >= season).forEach(y => {
+    const capType = (row._cap_holds || {})[y];
+    const salary = parseSalaryNum(row._salaries[y]);
+    if (!salary) return;
+    if (capType === 'TEAM_OPT' || capType === 'UFA' || capType === 'RFA') return;
+    if (capType === 'PLAYER_OPT') {
+      const gtd = (row._guaranteed || {})[y];
+      owed[y] = (gtd != null && gtd !== '') ? parseSalaryNum(gtd) : salary;
+      return;
+    }
+    if (capType === 'NON_GTD') {
+      const sched = (row._guarantee_schedule || {})[y];
+      if (sched && sched.length) {
+        const amt = sched.filter(s => !s.date || new Date(s.date) <= today)
+                          .reduce((sum, s) => sum + parseSalaryNum(s.amount), 0);
+        if (amt) owed[y] = amt;
+        return;
+      }
+      const gtdDate = (row._guarantee_dates || {})[y];
+      const gtdAmt  = (row._guaranteed || {})[y];
+      if (gtdDate && today < new Date(gtdDate + 'T00:00:00')) {
+        const amt = parseSalaryNum(gtdAmt);
+        if (amt) owed[y] = amt;
+        return;
+      }
+      owed[y] = salary;
+      return;
+    }
+    const gtdAmt = (row._guaranteed || {})[y];
+    owed[y] = (gtdAmt != null && gtdAmt !== '') ? parseSalaryNum(gtdAmt) : salary;
+  });
+  return owed;
+}
+
+function simulateRelease(row, season, today = new Date()) {
+  return Object.values(releaseObligationByYear(row, season, today)).reduce((a, b) => a + b, 0);
+}
+
+// Stretch provision (rulebook § 5.1, method 2): double the number of
+// remaining obligated years, add one, and spread the same total obligation
+// evenly across that many seasons starting now. Example from the rulebook:
+// 3 years remaining → 7-year stretch. Any rounding remainder from the
+// even split is absorbed into the final season so the schedule still sums
+// to exactly the original total.
+function simulateStretch(row, season, today = new Date()) {
+  const owed = releaseObligationByYear(row, season, today);
+  const years = Object.keys(owed).length;
+  const total = Object.values(owed).reduce((a, b) => a + b, 0);
+  if (!years || !total) return { schedule: {}, total: 0 };
+  const stretchYears = years * 2 + 1;
+  const perYear = Math.floor(total / stretchYears);
+  const schedule = {};
+  let yr = season;
+  for (let i = 0; i < stretchYears; i++) {
+    schedule[yr] = perYear;
+    yr = nextSalaryYear(yr);
+  }
+  schedule[Object.keys(schedule).pop()] += total - perYear * stretchYears; // rounding remainder → last year
+  return { schedule, total };
+}
+
+// Slug prefix for fictional (not-a-real-player) What-If additions — lets the
+// roster table skip the /stats/players/ link and OVR popup for a slug that will
+// never resolve to anything (see buildRosterTable's '_name'/OVR cells).
+const WHATIF_CUSTOM_PREFIX = '__whatif-custom-';
+
+// Minimum Salary Scale tiers (§ 3.12), keyed the same way as
+// capLevels[season].min_salary_scale (see cap-settings/index.html's
+// MIN_SCALE_FIELDS) — used to offer "1-yr vet min" presets in the custom
+// player form.
+const MIN_SALARY_EXP_TIERS = [
+  { key: '0',   label: '0 yrs (rookie)' },
+  { key: '1',   label: '1 yr' },
+  { key: '2',   label: '2 yrs' },
+  { key: '3',   label: '3 yrs' },
+  { key: '4',   label: '4 yrs' },
+  { key: '5',   label: '5 yrs' },
+  { key: '6',   label: '6 yrs' },
+  { key: '7',   label: '7 yrs' },
+  { key: '8',   label: '8 yrs' },
+  { key: '9',   label: '9 yrs' },
+  { key: '10+', label: '10+ yrs' },
+];
+
+// Layers What-If overrides on top of the real biosData without mutating it —
+// every existing pure function keeps working unmodified against this merged
+// object, so there's still only one client-side cap-math mirror, not a
+// second one built just for the sandbox.
+function buildWhatifBiosData(realBiosData, bioOverrides) {
+  const merged = { ...realBiosData };
+  Object.entries(bioOverrides).forEach(([slug, patch]) => {
+    const base = merged[slug] || {};
+    merged[slug] = {
+      ...base, ...patch,
+      salaries:        { ...(base.salaries || {}),        ...(patch.salaries || {}) },
+      cap_holds:       { ...(base.cap_holds || {}),       ...(patch.cap_holds || {}) },
+      guaranteed:      { ...(base.guaranteed || {}),      ...(patch.guaranteed || {}) },
+      guarantee_dates: { ...(base.guarantee_dates || {}), ...(patch.guarantee_dates || {}) },
+    };
+  });
+  return merged;
+}
+
+// Shared "Years" stepper + per-season salary/cap-type row builder used by
+// both What-If contract forms: signing an existing player to a fresh deal,
+// and adding a wholly fictional custom player.
+function buildContractYearsController(startSeason) {
+  const yearsLbl = document.createElement('label');
+  yearsLbl.textContent = 'Years';
+  const yearsInp = document.createElement('input');
+  yearsInp.type = 'number'; yearsInp.min = '1'; yearsInp.max = '5'; yearsInp.value = '1';
+  yearsLbl.appendChild(yearsInp);
+
+  const yearRowsWrap = document.createElement('div');
+  yearRowsWrap.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;width:100%';
+
+  function render() {
+    const prevValues = {};
+    yearRowsWrap.querySelectorAll('.whatif-year-salary').forEach(inp => { prevValues[inp.dataset.year] = inp.value; });
+    yearRowsWrap.innerHTML = '';
+    const n = Math.max(1, Math.min(5, parseInt(yearsInp.value, 10) || 1));
+    let yr = startSeason;
+    for (let i = 0; i < n; i++) {
+      const yBox = document.createElement('div');
+      yBox.className = 'whatif-contract-year';
+      const yLbl = document.createElement('span');
+      yLbl.textContent = yr;
+      yLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:700';
+      const salInp = document.createElement('input');
+      salInp.type = 'text'; salInp.placeholder = '$X,XXX,XXX'; salInp.dataset.year = yr;
+      salInp.className = 'whatif-year-salary';
+      salInp.value = prevValues[yr] || '';
+      const typeSel = makeSelect(CAP_OPTIONS, '');
+      typeSel.className = 'whatif-year-captype';
+      typeSel.dataset.year = yr;
+      yBox.append(yLbl, salInp, typeSel);
+      yearRowsWrap.appendChild(yBox);
+      yr = nextSalaryYear(yr);
+    }
+  }
+  yearsInp.addEventListener('input', render);
+  render();
+
+  function getValues() {
+    const salaries = {}, cap_holds = {};
+    yearRowsWrap.querySelectorAll('.whatif-year-salary').forEach(inp => {
+      const n = parseSalaryNum(inp.value);
+      if (n > 0) salaries[inp.dataset.year] = n;
+    });
+    yearRowsWrap.querySelectorAll('.whatif-year-captype').forEach(sel => {
+      if (sel.value) cap_holds[sel.dataset.year] = sel.value;
+    });
+    return { salaries, cap_holds };
+  }
+
+  // Vet-min presets: collapse to a single year and drop the amount straight
+  // into that year's salary box.
+  function setSingleYearSalary(amount) {
+    yearsInp.value = '1';
+    render();
+    const inp = yearRowsWrap.querySelector('.whatif-year-salary');
+    if (inp) inp.value = fmtDollars(amount);
+  }
+
+  return { yearsLbl, yearRowsWrap, getValues, setSingleYearSalary };
+}
+
+// Builds the "1-yr Vet Min" preset button row (§ 3.12) shared by both
+// What-If contract forms. A 1-year minimum deal's cap hit never exceeds the
+// 2-year veteran minimum, regardless of the player's actual experience tier
+// — the league reimburses the difference — so tiers at 2+ years all collapse
+// to the 2-yr scale amount here; only the 0/1-yr tiers (already at or below
+// that number) keep their own scale value. Returns null if no scale is
+// configured for `startSeason`.
+function buildMinSalaryPresetRow(capLevels, startSeason, yc) {
+  const scale = (capLevels?.[startSeason] || {}).min_salary_scale || {};
+  const twoYrAmt = parseSalaryNum(scale['2']) || 0;
+  const presetTiers = MIN_SALARY_EXP_TIERS
+    .map(t => {
+      const raw = parseSalaryNum(scale[t.key]);
+      if (raw <= 0) return null;
+      const capped = (t.key === '0' || t.key === '1' || !twoYrAmt) ? raw : Math.min(raw, twoYrAmt);
+      return { ...t, amt: capped, raw };
+    })
+    .filter(Boolean);
+  if (!presetTiers.length) return null;
+
+  const presetWrap = document.createElement('div');
+  presetWrap.style.cssText = 'display:flex;gap:0.3rem;flex-wrap:wrap;width:100%;align-items:center';
+  const presetLbl = document.createElement('span');
+  presetLbl.textContent = '1-yr Vet Min:';
+  presetLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:700;text-transform:uppercase';
+  presetWrap.appendChild(presetLbl);
+  presetTiers.forEach(t => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'whatif-row-action';
+    btn.textContent = `${t.label} (${fmtDollars(t.amt)})`;
+    if (t.amt < t.raw) {
+      btn.title = '1-yr deal cap hit capped at the 2-year veteran minimum (§ 3.12) — the league reimburses the difference.';
+    }
+    btn.addEventListener('click', () => yc.setSingleYearSalary(t.amt));
+    presetWrap.appendChild(btn);
+  });
+  return presetWrap;
+}
+
+function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDeadCapRows, seasonStates, attributesData, latestSeasonBySlug, teamState) {
+  const enterBtn = document.getElementById('whatif-enter-btn');
+  const panel = document.getElementById('whatif-panel');
+  if (!enterBtn || !panel) return;
+
+  // What-If Mode only understands the current SLUG-format roster CSV.
+  const hasSlug = realRosterRows.length && 'SLUG' in realRosterRows[0] && !('PLAYER' in realRosterRows[0]);
+  if (!hasSlug) { enterBtn.style.display = 'none'; return; }
+
+  const exitBtn      = document.getElementById('whatif-exit-btn');
+  const realRosterWrap = document.getElementById('roster-wrap');
+  const addWrap      = document.getElementById('whatif-add-wrap');
+  const contractSlot = document.getElementById('whatif-contract-form-slot');
+  const gridWrap     = document.getElementById('whatif-roster-wrap');
+  enableRangeSum(gridWrap); // same Sheets-style select-to-sum as the real roster table — delegated, so it survives every rerender
+  const warningsEl   = document.getElementById('whatif-warnings');
+  const hcBanner     = document.getElementById('whatif-hard-cap-banner');
+  const excSection   = document.getElementById('whatif-exceptions-section');
+  const excWrap      = document.getElementById('whatif-exceptions-wrap');
+  const logEl        = document.getElementById('whatif-log');
+  const attrImpactWrap = document.getElementById('whatif-attr-impact-wrap');
+  const attrImpactEl  = document.getElementById('whatif-attr-impact');
+
+  let state = null;
+  let datalist = null; // { listId, dl, nameToSlug, slugToDisplay } — rebuilt every render so just-added players drop out of the search
+  let realAttrTotals = null; // snapshot of the real roster's attribute totals, taken once on entry
+
+  function freshState() {
+    return {
+      rows: realRosterRows.map(r => ({ SLUG: r.SLUG, TYPE: r.TYPE || '' })),
+      deadCapRows: realDeadCapRows.map(r => ({ ...r })),
+      bioOverrides: {},
+      customCounter: 0, // bumped per custom-player add, to keep synthetic slugs unique within this session
+      log: [], // { id, label, undo() } — each entry reverses just its own change, independent of the others
+    };
+  }
+
+  // Every action pushes one of these; its `undo` closure captures whatever
+  // pre-mutation state it needs to put back exactly what it changed, so any
+  // entry can be reversed on its own regardless of what else happened after it.
+  function logAction(label, undo) {
+    state.log.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, label, undo });
+  }
+
+  function renderLog() {
+    logEl.innerHTML = '';
+    state.log.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'whatif-log-entry';
+      const lbl = document.createElement('span');
+      lbl.textContent = entry.label;
+      const xBtn = document.createElement('button');
+      xBtn.type = 'button';
+      xBtn.textContent = '×';
+      xBtn.title = 'Undo this change';
+      xBtn.addEventListener('click', () => {
+        entry.undo();
+        state.log = state.log.filter(e => e.id !== entry.id);
+        rerender();
+      });
+      row.append(lbl, xBtn);
+      logEl.appendChild(row);
+    });
+  }
+
+  function openDeclineForm(row, season) {
+    contractSlot.innerHTML = '';
+    const form = document.createElement('div');
+    form.className = 'whatif-contract-form';
+
+    const label = document.createElement('span');
+    label.textContent = `Decline ${row._name}'s ${season} option — becomes:`;
+    label.style.cssText = 'font-size:var(--text-sm);color:var(--text-secondary);font-weight:600';
+    form.appendChild(label);
+
+    const holdSel = makeSelect([{ value: 'UFA', label: 'UFA' }, { value: 'RFA', label: 'RFA' }], 'UFA');
+    form.appendChild(holdSel);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button'; applyBtn.className = 'whatif-row-action';
+    applyBtn.textContent = 'Apply';
+    applyBtn.addEventListener('click', () => {
+      // § 6.1 — declining sizes the resulting hold at the player's previous
+      // season's actual salary, not the declined option's own amount.
+      const prevYr = prevSalaryYear(season);
+      const nominal = parseSalaryNum(row._salaries[prevYr]) || parseSalaryNum(row._salaries[season]);
+      const prevOverride = state.bioOverrides[row.SLUG];
+      const patch = prevOverride || {};
+      state.bioOverrides[row.SLUG] = {
+        ...patch,
+        salaries:  { ...(patch.salaries || {}),  [season]: nominal },
+        cap_holds: { ...(patch.cap_holds || {}), [season]: holdSel.value },
+      };
+      logAction(`Declined ${row._name}'s ${season} option (→ ${holdSel.value})`, () => {
+        if (prevOverride) state.bioOverrides[row.SLUG] = prevOverride;
+        else delete state.bioOverrides[row.SLUG];
+      });
+      contractSlot.innerHTML = '';
+      rerender();
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'whatif-row-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { contractSlot.innerHTML = ''; });
+
+    form.append(applyBtn, cancelBtn);
+    contractSlot.appendChild(form);
+  }
+
+  function openCustomContractForm(slug) {
+    contractSlot.innerHTML = '';
+    const bio = biosData[slug] || {};
+    const startSeason = currentSeasonYr();
+
+    const form = document.createElement('div');
+    form.className = 'whatif-contract-form';
+
+    const title = document.createElement('span');
+    title.textContent = `${displayNameFromBio(bio.name || '') || slug} — new contract:`;
+    title.style.cssText = 'font-size:var(--text-sm);color:var(--text-secondary);font-weight:600;width:100%';
+    form.appendChild(title);
+
+    const yc = buildContractYearsController(startSeason);
+    form.append(yc.yearsLbl, yc.yearRowsWrap);
+
+    const presetRow = buildMinSalaryPresetRow(capLevels, startSeason, yc);
+    if (presetRow) form.appendChild(presetRow);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button'; applyBtn.className = 'whatif-row-action';
+    applyBtn.textContent = 'Add to roster';
+    applyBtn.addEventListener('click', () => {
+      const { salaries, cap_holds } = yc.getValues();
+      if (!Object.keys(salaries).length) return;
+      const prevOverride = state.bioOverrides[slug];
+      state.bioOverrides[slug] = { ...(prevOverride || {}), salaries, cap_holds };
+      state.rows.push({ SLUG: slug, TYPE: 'player' });
+      logAction(`Signed ${displayNameFromBio(bio.name || '') || slug} to a new contract`, () => {
+        state.rows = state.rows.filter(r => r.SLUG !== slug);
+        if (prevOverride) state.bioOverrides[slug] = prevOverride;
+        else delete state.bioOverrides[slug];
+      });
+      contractSlot.innerHTML = '';
+      rerender();
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'whatif-row-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { contractSlot.innerHTML = ''; });
+
+    form.append(applyBtn, cancelBtn);
+    contractSlot.appendChild(form);
+  }
+
+  function openNewCustomPlayerForm() {
+    contractSlot.innerHTML = '';
+    const startSeason = currentSeasonYr();
+
+    const form = document.createElement('div');
+    form.className = 'whatif-contract-form';
+
+    const title = document.createElement('span');
+    title.textContent = 'Add a custom player — not a real roster player, OVR/ratings won\'t apply:';
+    title.style.cssText = 'font-size:var(--text-sm);color:var(--text-secondary);font-weight:600;width:100%';
+    form.appendChild(title);
+
+    const nameLbl = document.createElement('label');
+    nameLbl.textContent = 'Name';
+    const nameInp = document.createElement('input');
+    nameInp.type = 'text'; nameInp.placeholder = 'Player name';
+    nameInp.value = `Custom Player #${state.customCounter + 1}`;
+    nameInp.addEventListener('focus', () => nameInp.select(), { once: true });
+    nameLbl.appendChild(nameInp);
+    form.appendChild(nameLbl);
+
+    const yc = buildContractYearsController(startSeason);
+    form.append(yc.yearsLbl, yc.yearRowsWrap);
+
+    const presetRow = buildMinSalaryPresetRow(capLevels, startSeason, yc);
+    if (presetRow) form.appendChild(presetRow);
+
+    const applyBtn = document.createElement('button');
+    applyBtn.type = 'button'; applyBtn.className = 'whatif-row-action';
+    applyBtn.textContent = 'Add to roster';
+    applyBtn.addEventListener('click', () => {
+      const name = nameInp.value.trim();
+      if (!name) { nameInp.focus(); return; }
+      const { salaries, cap_holds } = yc.getValues();
+      if (!Object.keys(salaries).length) return;
+      state.customCounter += 1;
+      const slug = `${WHATIF_CUSTOM_PREFIX}${state.customCounter}`;
+      state.bioOverrides[slug] = { name, pos: [], salaries, cap_holds };
+      state.rows.push({ SLUG: slug, TYPE: 'player' });
+      logAction(`Added custom player ${name}`, () => {
+        state.rows = state.rows.filter(r => r.SLUG !== slug);
+        delete state.bioOverrides[slug];
+      });
+      contractSlot.innerHTML = '';
+      rerender();
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'whatif-row-action';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => { contractSlot.innerHTML = ''; });
+
+    form.append(applyBtn, cancelBtn);
+    contractSlot.appendChild(form);
+  }
+
+  function rowActions(row, td, capMap) {
+    if (!row.SLUG || row._erc) return;
+    const season = currentSeasonYr();
+
+    if (row._type === 'dead') {
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button'; clearBtn.className = 'whatif-row-action danger';
+      clearBtn.textContent = 'Clear';
+      clearBtn.title = 'Remove this dead-cap line from the hypothetical roster';
+      clearBtn.addEventListener('click', () => {
+        const prevDeadRow = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+        const prevDeadRowClone = prevDeadRow ? { ...prevDeadRow } : null;
+        state.deadCapRows = state.deadCapRows.filter(r => r.SLUG !== row.SLUG);
+        logAction(`Cleared ${row._name}'s dead cap`, () => {
+          if (prevDeadRowClone) state.deadCapRows.push(prevDeadRowClone);
+        });
+        rerender();
+      });
+      td.appendChild(clearBtn);
+      return;
+    }
+
+    const hasSalary = !!row._salaries[season];
+    const capType = capMap[season];
+
+    // A UFA/RFA row is a bare cap hold, not a real contract — even though it
+    // carries a nominal $ figure (same convention real FA holds use, see the
+    // tfoot's UFA/RFA Hold buckets), the only valid action is Renounce, never
+    // Release (there's no dead cap concept for a hold that was never a deal).
+    if (capType === 'UFA' || capType === 'RFA') {
+      const renounceBtn = document.createElement('button');
+      renounceBtn.type = 'button'; renounceBtn.className = 'whatif-row-action danger';
+      renounceBtn.textContent = 'Renounce';
+      renounceBtn.title = 'Removes the hold — no dead cap (rulebook § 3.10)';
+      renounceBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        logAction(`Renounced ${row._name}'s hold`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+        });
+        rerender();
+      });
+      td.appendChild(renounceBtn);
+      return;
+    }
+
+    if (capType === 'PLAYER_OPT' || capType === 'TEAM_OPT') {
+      const declineBtn = document.createElement('button');
+      declineBtn.type = 'button'; declineBtn.className = 'whatif-row-action';
+      declineBtn.textContent = 'Decline Option';
+      declineBtn.addEventListener('click', () => openDeclineForm(row, season));
+      td.appendChild(declineBtn);
+    }
+
+    if (hasSalary) {
+      // "Remove" models the player leaving cleanly (e.g. traded away — their
+      // salary follows them to the other side of the deal) with no dead cap.
+      // "Release" models actually waiving them, which does leave a dead-cap
+      // remainder per § 5.1-5.2. Same starting point, different real move.
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button'; removeBtn.className = 'whatif-row-action';
+      removeBtn.textContent = 'Remove';
+      removeBtn.title = 'Take them off the roster with no dead cap — e.g. modeling a trade away';
+      removeBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        logAction(`Removed ${row._name}`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+        });
+        rerender();
+      });
+      td.appendChild(removeBtn);
+
+      const releaseBtn = document.createElement('button');
+      releaseBtn.type = 'button'; releaseBtn.className = 'whatif-row-action danger';
+      releaseBtn.textContent = 'Release';
+      releaseBtn.title = 'Waives the player — dead cap sized per rulebook § 5.1-5.2';
+      releaseBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        const deadAmt = simulateRelease(row, season);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        const existingDeadRow = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+        const prevDeadSeasonVal = existingDeadRow ? existingDeadRow[season] : undefined;
+        const isNewDeadRow = deadAmt > 0 && !existingDeadRow;
+        if (deadAmt > 0) {
+          if (existingDeadRow) existingDeadRow[season] = String(deadAmt);
+          else state.deadCapRows.push({ SLUG: row.SLUG, [season]: String(deadAmt) });
+        }
+        logAction(`Released ${row._name}`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+          if (deadAmt > 0) {
+            if (isNewDeadRow) {
+              state.deadCapRows = state.deadCapRows.filter(r => r.SLUG !== row.SLUG);
+            } else {
+              const dr = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+              if (dr) {
+                if (prevDeadSeasonVal === undefined) delete dr[season];
+                else dr[season] = prevDeadSeasonVal;
+              }
+            }
+          }
+        });
+        rerender();
+      });
+      td.appendChild(releaseBtn);
+
+      const stretchBtn = document.createElement('button');
+      stretchBtn.type = 'button'; stretchBtn.className = 'whatif-row-action danger';
+      stretchBtn.textContent = 'Stretch';
+      stretchBtn.title = 'Waives the player using the stretch provision — same total dead cap as Release, spread over 2x remaining years + 1 (rulebook § 5.1)';
+      stretchBtn.addEventListener('click', () => {
+        const raw = state.rows.find(r => r.SLUG === row.SLUG);
+        const { schedule } = simulateStretch(row, season);
+        state.rows = state.rows.filter(r => r.SLUG !== row.SLUG);
+        const scheduleYears = Object.keys(schedule);
+        const existingDeadRow = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+        const isNewDeadRow = scheduleYears.length > 0 && !existingDeadRow;
+        const prevDeadVals = {};
+        scheduleYears.forEach(y => { prevDeadVals[y] = existingDeadRow ? existingDeadRow[y] : undefined; });
+        if (scheduleYears.length) {
+          const target = existingDeadRow || { SLUG: row.SLUG };
+          scheduleYears.forEach(y => { target[y] = String(schedule[y]); });
+          if (!existingDeadRow) state.deadCapRows.push(target);
+        }
+        logAction(`Stretched ${row._name}`, () => {
+          state.rows.push({ SLUG: row.SLUG, TYPE: raw?.TYPE || '' });
+          if (scheduleYears.length) {
+            if (isNewDeadRow) {
+              state.deadCapRows = state.deadCapRows.filter(r => r.SLUG !== row.SLUG);
+            } else {
+              const dr = state.deadCapRows.find(r => r.SLUG === row.SLUG);
+              if (dr) {
+                scheduleYears.forEach(y => {
+                  if (prevDeadVals[y] === undefined) delete dr[y];
+                  else dr[y] = prevDeadVals[y];
+                });
+              }
+            }
+          }
+        });
+        rerender();
+      });
+      td.appendChild(stretchBtn);
+    }
+  }
+
+  function buildAddControl() {
+    addWrap.innerHTML = '';
+    if (datalist) { datalist.dl.remove(); datalist = null; }
+    const excludeSlugs = new Set(state.rows.map(r => r.SLUG));
+    // Real-life retirement (bio.retired) means there's no one to sign or
+    // trade for — exclude them from the What-If search regardless of
+    // whether they're already on the roster.
+    Object.entries(biosData).forEach(([slug, bio]) => { if (bio.retired) excludeSlugs.add(slug); });
+    datalist = buildPlayerDatalist(biosData, excludeSlugs);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Add a player (any team)…';
+    input.className = 'whatif-add-input';
+    input.setAttribute('list', datalist.listId);
+    input.addEventListener('change', () => {
+      const slug = datalist.nameToSlug.get(input.value.trim().toLowerCase());
+      input.value = '';
+      if (!slug) return;
+      const bio = biosData[slug] || {};
+      const season = currentSeasonYr();
+      const hasActiveContract = !!(bio.salaries || {})[season] || !!(bio.cap_holds || {})[season];
+      if (hasActiveContract) {
+        state.rows.push({ SLUG: slug, TYPE: bio.type || 'player' });
+        logAction(`Added ${displayNameFromBio(bio.name || '') || slug}`, () => {
+          state.rows = state.rows.filter(r => r.SLUG !== slug);
+        });
+        rerender();
+      } else {
+        openCustomContractForm(slug);
+      }
+    });
+    addWrap.appendChild(input);
+
+    const customBtn = document.createElement('button');
+    customBtn.type = 'button'; customBtn.className = 'whatif-row-action';
+    customBtn.textContent = '+ Custom Player';
+    customBtn.title = 'Add a made-up player with your own contract — not a real roster player';
+    customBtn.addEventListener('click', () => openNewCustomPlayerForm());
+    addWrap.appendChild(customBtn);
+  }
+
+  // The same rules the Cap Health card runs, against the hypothetical roster
+  // instead of the real one — /cap-health.js, so a move can't read as legal
+  // here and illegal there. Unlike the card, this shows every severity: "Over
+  // the Salary Cap by $2M" is background noise on a team page and is the whole
+  // answer when you have just added a contract to see what it costs.
+  function renderWarnings(rows, mergedBios, teamSalaryFull, teamSalaryExHolds, season) {
+    warningsEl.innerHTML = '';
+    if (!window.CapHealth) return;
+    const counts = countRosterSlots(rows, mergedBios);
+    const { warnings } = CapHealth.standing({
+      season, capLevels, teamState, teamSalaryFull, teamSalaryExHolds,
+      standardCount: counts.standard, twoWayCount: counts.twoWay, inSeason: IN_SEASON,
+      erc: computeEmptyRosterCharge(rows, mergedBios, capLevels, season),
+      fmt: fmtDollars,
+    });
+    warnings.forEach(w => {
+      const line = document.createElement('div');
+      line.className = 'whatif-warning-line';
+      line.dataset.icon = 'warning';
+      line.textContent = w.text;
+      warningsEl.appendChild(line);
+    });
+  }
+
+  const ATTR_IMPACT_COLS = [
+    { key: 'all',   label: 'All' },
+    { key: 'top5',  label: 'Top 5' },
+    { key: 'top8',  label: 'Top 8' },
+    { key: 'top10', label: 'Top 10' },
+  ];
+
+  const round1 = n => Math.round(n * 10) / 10;
+
+  // Each cell shows the delta (bold, colored) as the headline, with the
+  // actual before → after totals underneath in smaller muted text so the
+  // magnitude of the underlying numbers is visible too, not just the swing.
+  function fillAttrCell(td, before, after) {
+    const b = round1(before), a = round1(after);
+    const d = round1(a - b);
+    td.className = 'right ' + (d > 0 ? 'whatif-attr-up' : d < 0 ? 'whatif-attr-down' : 'whatif-attr-zero');
+    const deltaLine = document.createElement('div');
+    deltaLine.className = 'whatif-attr-delta-line';
+    deltaLine.textContent = d > 0 ? `+${d}` : `${d}`;
+    const baLine = document.createElement('div');
+    baLine.className = 'whatif-attr-ba-line';
+    baLine.textContent = `${b} → ${a}`;
+    td.append(deltaLine, baLine);
+  }
+
+  function renderAttrImpact(mergedBios, season) {
+    if (!realAttrTotals) { attrImpactWrap.style.display = 'none'; return; }
+    attrImpactWrap.style.display = '';
+    const hypoTotals = computeAttrTotals(state.rows, mergedBios, attributesData, currentOvr, season);
+
+    const table = document.createElement('table');
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    const nameTh = document.createElement('th');
+    nameTh.textContent = 'Attribute';
+    hr.appendChild(nameTh);
+    ATTR_IMPACT_COLS.forEach(col => {
+      const th = document.createElement('th');
+      th.className = 'right';
+      th.textContent = col.label;
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+
+    const totalTr = tbody.insertRow();
+    totalTr.className = 'whatif-attr-total-row';
+    const totalNameTd = totalTr.insertCell();
+    totalNameTd.textContent = 'TOTAL';
+    ATTR_IMPACT_COLS.forEach(col => {
+      const before = RATING_ATTR_COLUMNS.reduce((s, c) => s + realAttrTotals[col.key][c.key], 0);
+      const after  = RATING_ATTR_COLUMNS.reduce((s, c) => s + hypoTotals[col.key][c.key], 0);
+      fillAttrCell(totalTr.insertCell(), before, after);
+    });
+
+    RATING_ATTR_COLUMNS.forEach(c => {
+      const tr = tbody.insertRow();
+      const nameTd = tr.insertCell();
+      nameTd.textContent = c.full;
+      ATTR_IMPACT_COLS.forEach(col => {
+        fillAttrCell(tr.insertCell(), realAttrTotals[col.key][c.key], hypoTotals[col.key][c.key]);
+      });
+    });
+
+    attrImpactEl.innerHTML = '';
+    attrImpactEl.appendChild(table);
+  }
+
+  function rerender() {
+    const mergedBios = buildWhatifBiosData(biosData, state.bioOverrides);
+    const season = currentSeasonYr();
+
+    gridWrap.innerHTML = '';
+    const t = buildRosterTable(
+      state.rows, mergedBios, capLevels, currentOvr, state.deadCapRows,
+      seasonStates, attributesData, 'contracts', latestSeasonBySlug, rowActions,
+    );
+    if (t) gridWrap.appendChild(t);
+    else gridWrap.innerHTML = '<div class="status">No players on this hypothetical roster.</div>';
+
+    const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(state.rows, state.deadCapRows, mergedBios, capLevels, season);
+    renderHardCapBanner(teamState, hcBanner);
+    renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season, excSection, excWrap);
+    renderWarnings(state.rows, mergedBios, teamSalaryFull, teamSalaryExHolds, season);
+    renderAttrImpact(mergedBios, season);
+    buildAddControl();
+    renderLog();
+  }
+
+  enterBtn.addEventListener('click', () => {
+    // Mutually exclusive with real roster Edit mode (same guard the mode
+    // tabs already use for the same reason — don't let two edit surfaces
+    // fight over the same underlying rows).
+    if (realRosterWrap.querySelector('.roster-edit-toolbar')) return;
+    state = freshState();
+    realAttrTotals = computeAttrTotals(realRosterRows, biosData, attributesData, currentOvr, currentSeasonYr());
+    realRosterWrap.closest('section').querySelectorAll(':scope > .roster-header-row, :scope > .table-wrap, :scope > #cap-edit-wrap, :scope > #dead-cap-edit-wrap').forEach(el => { el.style.display = 'none'; });
+    document.getElementById('exceptions-section').style.display = 'none';
+    panel.style.display = '';
+    enterBtn.disabled = true;
+    rerender();
+  });
+
+  exitBtn.addEventListener('click', () => {
+    state = null;
+    realAttrTotals = null;
+    contractSlot.innerHTML = '';
+    if (datalist) { datalist.dl.remove(); datalist = null; }
+    panel.style.display = 'none';
+    realRosterWrap.closest('section').querySelectorAll(':scope > .roster-header-row, :scope > .table-wrap, :scope > #cap-edit-wrap, :scope > #dead-cap-edit-wrap').forEach(el => { el.style.display = ''; });
+    enterBtn.disabled = false;
+    // Real roster/cap data was never touched — just recompute+show the real numbers again.
+    const season = currentSeasonYr();
+    const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(realRosterRows, realDeadCapRows, biosData, capLevels, season);
+    renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, season);
+  });
+}
+
+function setupEditable(titleId, wrapId, headers, rows, apiPath, buildView, cellConfig = {}) {
+  function renderView(currentRows) {
+    const wrapEl = document.getElementById(wrapId);
+    wrapEl.innerHTML = '';
+    const t = buildView(currentRows);
+    if (t) wrapEl.appendChild(t);
+    else wrapEl.innerHTML = '<div class="status">No data.</div>';
+    attachEditBtn(currentRows);
+  }
+
+  function attachEditBtn(currentRows) {
+    if (!canEditRosters()) return;
+    const titleEl = document.getElementById(titleId);
+    titleEl.querySelector('.section-edit-btn')?.remove();
+    const btn = document.createElement('button');
+    btn.className = 'section-edit-btn';
+    btn.textContent = 'Edit';
+    btn.style.cssText = 'font-size:var(--text-xs);padding:0.2rem 0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text-muted);cursor:pointer;font-weight:500;margin-left:0.6rem;font-family:inherit;vertical-align:middle';
+    btn.onmouseenter = () => { btn.style.color = 'var(--text-secondary)'; btn.style.borderColor = 'var(--text-muted)'; };
+    btn.onmouseleave = () => { btn.style.color = 'var(--text-muted)'; btn.style.borderColor = 'var(--border)'; };
+    btn.addEventListener('click', () => {
+      withToken(() => {
+        const wrapEl = document.getElementById(wrapId);
+        enterEditMode(wrapEl, headers, currentRows, apiPath, renderView, cellConfig);
+      });
+    });
+    titleEl.appendChild(btn);
+  }
+
+  attachEditBtn(rows);
+}
+
+// Team Identity — the team counterpart of the player archetype radar. How a
+// team plays, from its players' season totals in player_seasons.csv; each axis
+// is a percentile against the other 29 teams that season. Drawing and
+// nearest-match are /radar.js, shared with player pages.
+function buildTeamRadar(abbr, allSeasons, standingsRows) {
+  if (!window.Radar) return null;
+
+  // season -> team -> summed totals, plus who used the most plays.
+  const teams = {};
+  allSeasons.forEach(r => {
+    if (!r.SEASON || r.SEASON === 'NA' || !r.TEAM) return;
+    const t = ((teams[r.SEASON] ||= {})[r.TEAM] ||= { MIN: 0, FGA: 0, FGM: 0, FTA: 0, TOV: 0, AST: 0, STL: 0, BLK: 0, '3PA': 0, mins: [], top: null });
+    ['MIN', 'FGA', 'FGM', 'FTA', 'TOV', 'AST', 'STL', 'BLK', '3PA'].forEach(f => { t[f] += +r[f] || 0; });
+    t.mins.push(+r.MIN || 0);
+    const used = (+r.FGA || 0) + 0.44 * (+r.FTA || 0) + (+r.TOV || 0);
+    if (!t.top || used > t.top.used) t.top = { used, player: r.PLAYER };
+  });
+  // 240 player-minutes a game. Ten games before a season reads as a style.
+  const games = t => t.MIN / 240;
+  const plays = t => t.FGA + 0.44 * t.FTA + t.TOV;
+  const qualifies = t => games(t) >= 10;
+
+  const DIM_DEFS = [
+    { label: 'PACE',     angle: 90,  get: t => plays(t) / games(t),            fmt: v => `${v.toFixed(1)} plays a game` },
+    { label: '3P RATE',  angle: 45,  get: t => t['3PA'] / Math.max(1, t.FGA),  fmt: v => `${Math.round(v * 100)}% of shots from three` },
+    { label: 'FT RATE',  angle: 0,   get: t => t.FTA / Math.max(1, t.FGA),     fmt: v => `${Math.round(v * 100)} FTA per 100 shots` },
+    { label: 'AST RATE', angle: 315, get: t => t.AST / Math.max(1, t.FGM),     fmt: v => `${Math.round(v * 100)}% of baskets assisted` },
+    { label: 'BLK',      angle: 270, get: t => t.BLK / games(t),               fmt: v => `${v.toFixed(1)} blocks a game` },
+    { label: 'STL',      angle: 225, get: t => t.STL / games(t),               fmt: v => `${v.toFixed(1)} steals a game` },
+    // Minutes spread as evenly as an N-man rotation would (1 / Σ share²).
+    { label: 'DEPTH',    angle: 180, get: t => t.MIN ? 1 / t.mins.reduce((a, m) => a + (m / t.MIN) ** 2, 0) : 0,
+      fmt: v => `minutes spread like an even ${v.toFixed(1)}-man rotation` },
+    { label: 'STAR USG', angle: 135, get: t => t.top ? t.top.used / Math.max(1, plays(t)) : 0,
+      fmt: (v, t) => `${displayNameFromBio(t.top.player)} used ${Math.round(v * 100)}% of plays` },
+  ];
+
+  // Target percentile per axis, in DIM_DEFS order. Seeded from a clustering
+  // of every team-season 20-21 to 25-26.
+  const ARCHETYPES = {
+    //                        PACE 3PR FTR AST BLK STL DEP STAR
+    'Seven Seconds or Less': [ 79, 60, 71, 32, 70, 62, 43, 69],
+    'Showtime':              [ 70, 26, 73, 77, 30, 61, 30, 69],
+    'Heliocentric':          [ 13, 42, 63, 54, 33, 35, 27, 81],
+    'Old School':            [ 37, 15, 62, 72, 52, 63, 60, 30],
+    'Beautiful Game':        [ 55, 45, 31, 75, 74, 53, 16, 58],
+    'Bombs Away':            [ 27, 82, 21, 28, 24, 20, 48, 36],
+    'Hockey Subs':           [ 56, 58, 52, 30, 25, 20, 76, 34],
+    'Grit and Grind':        [ 43, 55, 26, 29, 64, 59, 74, 25],
+  };
+
+  // How good, by point differential rank that season: better than record
+  // at saying who was really good.
+  const diffRank = {};
+  const bySeason = {};
+  standingsRows.forEach(r => { (bySeason[r.SEASON] ||= []).push(r); });
+  Object.entries(bySeason).forEach(([season, rows]) => {
+    rows.sort((a, b) => +b.DIFF - +a.DIFF).forEach((r, i) => { (diffRank[season] ||= {})[r.TEAM] = i + 1; });
+  });
+  function tierFor(rank) {
+    if (!rank) return null;
+    if (rank <= 2)  return 'Juggernaut';
+    if (rank <= 6)  return 'Contender';
+    if (rank <= 16) return 'Playoff Team';
+    if (rank <= 20) return 'Bubble';
+    return 'Lottery';
+  }
+
+  function buildSvg(season) {
+    const me = teams[season]?.[abbr];
+    if (!me || !qualifies(me)) return null;
+    const peers = Object.values(teams[season]).filter(qualifies);
+    const dims = DIM_DEFS.map(d => {
+      const v = d.get(me);
+      return { label: d.label, angle: d.angle, tip: d.fmt(v, me), pct: Radar.percentile(v, peers.map(d.get)) };
+    });
+    const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
+    const tier = tierFor(diffRank[season]?.[abbr]);
+    const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season` });
+
+    // The players who made that season's shape, beside it. Ranked by total
+    // Game Score, not per game, so a ten-game cameo doesn't top the list.
+    const box = document.createElement('div');
+    box.className = 'identity-season';
+    box.appendChild(svg);
+    const top = allSeasons
+      .filter(r => r.SEASON === season && r.TEAM === abbr)
+      .sort((a, b) => (+b.GMSC || 0) - (+a.GMSC || 0))
+      .slice(0, 6);
+    if (top.length) {
+      const list = document.createElement('ol');
+      list.className = 'identity-players';
+      top.forEach(r => {
+        const g = Math.max(1, +r.G || 1);
+        const pg = k => ((+r[k] || 0) / g).toFixed(1);
+        const li = document.createElement('li');
+        const nameEl = document.createElement('span');
+        nameEl.className = 'ip-name';
+        const label = r.SLUG ? document.createElement('a') : nameEl;
+        label.textContent = displayNameFromBio(r.PLAYER);
+        if (r.SLUG) { label.href = `/stats/players/?p=${encodeURIComponent(r.SLUG)}`; nameEl.appendChild(label); }
+        const gEl = document.createElement('span');
+        gEl.className = 'ip-g';
+        gEl.textContent = `${r.G} G`;
+        const lineEl = document.createElement('span');
+        lineEl.className = 'ip-line';
+        lineEl.textContent = `${pg('PTS')} pts · ${pg('REB')} reb · ${pg('AST')} ast`;
+        li.append(nameEl, gEl, lineEl);
+        list.appendChild(li);
+      });
+      const col = document.createElement('div');
+      col.className = 'identity-players-col';
+      col.innerHTML = '<div class="identity-players-title">Top players</div>';
+      col.appendChild(list);
+      box.appendChild(col);
+    }
+    return box;
+  }
+
+  const seasons = Object.keys(teams).filter(s => teams[s][abbr] && qualifies(teams[s][abbr])).sort().reverse();
+  return Radar.withSeasons(seasons, buildSvg);
+}
+
+// slug -> that player's most recent season (any team), used by the roster
+// table's Stats and Overview modes. A player traded mid-season has one
+// player_seasons.csv row per team; those are summed into one line, as the
+// Stats mode would otherwise show whichever stint came first. Season strings
+// ("24-25") sort correctly with plain string comparison, same convention used
+// for the Historical Rosters season dropdown below.
+//
+// `starts` is GET /api/game-starters/counts (one season). It stamps `_GS` on a
+// row from that season, counting only teams whose starters were recorded;
+// otherwise `_GS` is left unset and reads as unknown.
+const STAT_SUM_KEYS = ['G', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PF',
+  'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'GMSC'];
+function computeLatestSeasonBySlug(allSeasons, starts = null) {
+  const bySlug = {};
+  allSeasons.forEach(r => {
+    const slug = (r.SLUG || '').trim();
+    if (!slug) return;
+    const existing = bySlug[slug];
+    if (!existing || r.SEASON > existing.SEASON) {
+      bySlug[slug] = { ...r, _teams: [r.TEAM] };
+    } else if (r.SEASON === existing.SEASON) {
+      STAT_SUM_KEYS.forEach(k => {
+        existing[k] = String((parseFloat(existing[k]) || 0) + (parseFloat(r[k]) || 0));
+      });
+      existing._teams.push(r.TEAM);
+      existing.TEAM = existing._teams.join('/');
+    }
+  });
+  if (starts && starts.season) {
+    const known = starts.team_games_known || {};
+    Object.entries(bySlug).forEach(([slug, row]) => {
+      if (row.SEASON !== starts.season) return;
+      const teams = row._teams.filter(t => known[t]);
+      if (!teams.length) return;
+      const byTeam = ((starts.players || {})[slug] || {}).by_team || {};
+      row._GS = teams.reduce((n, t) => n + (byTeam[t] || 0), 0);
+    });
+  }
+  return bySlug;
+}
+
+function buildHistoricalRoster(allSeasons, teamAbbr, season) {
+  const rows = allSeasons.filter(r => r.TEAM === teamAbbr && r.SEASON === season);
+  if (!rows.length) return null;
+
+  const augmented = rows.map(r => {
+    const g   = Math.max(1, parseInt(r.G) || 1);
+    const pg  = k => +(parseFloat(r[k]) || 0) / g;
+    const fmt = k => Math.round(pg(k) * 10) / 10;
+    return {
+      ...r,
+      _mpg:    fmt('MIN'),
+      _ppg:    fmt('PTS'),
+      _rpg:    fmt('REB'),
+      _apg:    fmt('AST'),
+      _spg:    fmt('STL'),
+      _bpg:    fmt('BLK'),
+      _3pmpg:  fmt('3PM'),
+      _gmscpg: fmt('GMSC'),
+    };
+  });
+
+  const HIST_COLS = [
+    { key: 'PLAYER',  label: 'Player',  cls: 'bold',        sortField: 'PLAYER',  defaultDir:  1 },
+    { key: 'G',       label: 'G',       cls: 'right',       sortField: 'G',       defaultDir: -1 },
+    { key: '_mpg',    label: 'MPG',     cls: 'right muted', sortField: '_mpg',    defaultDir: -1 },
+    { key: '_ppg',    label: 'PPG',     cls: 'right',       sortField: '_ppg',    defaultDir: -1 },
+    { key: '_rpg',    label: 'RPG',     cls: 'right',       sortField: '_rpg',    defaultDir: -1 },
+    { key: '_apg',    label: 'APG',     cls: 'right',       sortField: '_apg',    defaultDir: -1 },
+    { key: '_spg',    label: 'SPG',     cls: 'right muted', sortField: '_spg',    defaultDir: -1 },
+    { key: '_bpg',    label: 'BPG',     cls: 'right muted', sortField: '_bpg',    defaultDir: -1 },
+    { key: '_3pmpg',  label: '3PM/G',   cls: 'right muted', sortField: '_3pmpg',  defaultDir: -1 },
+    { key: '_gmscpg', label: 'GMSC/G',  cls: 'right',       sortField: '_gmscpg', defaultDir: -1 },
+  ];
+
+  return buildTable(HIST_COLS, augmented, '_gmscpg', -1, (td, col, row) => {
+    if (col.key === 'PLAYER') {
+      if (row.SLUG) {
+        const a = document.createElement('a');
+        a.href = `/stats/players/?p=${row.SLUG}`;
+        a.textContent = row.PLAYER;
+        td.appendChild(a);
+      } else {
+        td.textContent = row.PLAYER || '—';
+      }
+    } else {
+      td.textContent = row[col.key] ?? '—';
+    }
+  });
+}
+
+(async () => {
+  const seasonsWrap  = document.getElementById('seasons-wrap');
+  const playersWrap  = document.getElementById('players-wrap');
+  const rosterWrap   = document.getElementById('roster-wrap');
+  enableRangeSum(rosterWrap);
+  attachCopyBtn('roster-title', 'roster-wrap');
+  const picksWrap    = document.getElementById('picks-wrap');
+  const draftedWrap  = document.getElementById('drafted-wrap');
+
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr] = await Promise.allSettled([
+    fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch(`/api/picks/${abbr}`).then(r => { if (!r.ok) throw r; return r.json(); }),
+    fetch('/api/players').then(r => r.ok ? r.json() : {}),
+    fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
+    fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+    fetch(`/api/team-state/${abbr}`).then(r => r.ok ? r.json() : null),
+    fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
+    fetch('/api/picks').then(r => r.ok ? r.json() : []),
+    fetch('/api/members/public').then(r => r.ok ? r.json() : []),
+    fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null),
+    fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
+    fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
+    fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
+    fetch('/api/attributes/current').then(r => r.ok ? r.json() : {}),
+    fetch('/api/trading-block').then(r => r.ok ? r.json() : {}),
+    fetch(`/api/offer-sheets/open?team=${abbr}`).then(r => r.ok ? r.json() : []),
+    fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
+    fetch('/api/coaching-settings', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : {}),
+    fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/rotations').then(r => r.ok ? r.json() : {}),
+    fetch('/api/game-starters/counts').then(r => r.ok ? r.json() : null),
+  ]);
+
+  await namesReady;
+  await ratingsPopupReady;
+  await lineupReady;
+  await contractReady;
+  await capHealthReady;
+  await coachingConfigReady;
+  await radarReady;
+
+  // Set the league year before any render so currentSeasonYr() is consistent everywhere.
+  if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
+  if (lyr.status === 'fulfilled' && typeof lyr.value?.in_season === 'boolean') IN_SEASON = lyr.value.in_season;
+  if (lyr.status === 'fulfilled') SEASON_LAST_GAME = lyr.value?.calendar?.last_regular_season_game || null;
+
+  // Roles drive which edit buttons render below; default to none if the call failed.
+  AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];
+  AUTH_OWNER_OF = (authr.status === 'fulfilled' && Array.isArray(authr.value?.owner_of)) ? authr.value.owner_of : [];
+
+  // The Coaching tab is private to the team. It starts hidden; show it now
+  // that we know who is looking, and open it if the hash asked for it.
+  if (canViewCoachingSettings(abbr)) {
+    const coachingTab = document.querySelector('.tab[data-tab="coaching"]');
+    coachingTab.hidden = false;
+    if (location.hash === '#coaching') showTab(coachingTab);
+  }
+
+  // Signing in is the header's job (token-badge.js's Sign in button). This
+  // page had its own, which also showed for a signed-in member with no roles
+  // and told them to "sign in again".
+
+  const biosData    = biosr.status === 'fulfilled' ? biosr.value : {};
+  const capLevels   = capr.status === 'fulfilled'  ? capr.value  : {};
+  const currentOvr  = ovrr.status === 'fulfilled'  ? ovrr.value  : {};
+  const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
+  const seasonStates = teamState?.seasons || {};
+  const deadCapRows = dcr.status  === 'fulfilled'  ? dcr.value : [];
+  const allTxns     = txnsr.status === 'fulfilled' ? (txnsr.value.transactions || []) : [];
+  const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
+  const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
+  const tradeExceptions = ter.status === 'fulfilled' ? ter.value : [];
+  const attributesData = attrr.status === 'fulfilled' ? attrr.value : {};
+  const myBlockEntries = ((blockr.status === 'fulfilled' ? blockr.value : {})[abbr] || {}).players || [];
+  // slug -> {eligible, reason}, filtered to this team — GET /api/poext/eligible
+  // is league-wide, so the roster Moves menu only needs its own team's slice.
+  const poextEligible = {};
+  if (poextr.status === 'fulfilled' && Array.isArray(poextr.value)) {
+    poextr.value.forEach(e => { if (e.team === abbr) poextEligible[e.player] = e; });
+  }
+  // GET /api/coaching-settings returns the teams the caller may see (every
+  // team for a streamer); this page only needs its own team's record, which
+  // is absent (undefined) until the team has ever saved one.
+  const coachingRecord = (coachr.status === 'fulfilled' && coachr.value && typeof coachr.value === 'object')
+    ? coachr.value[abbr] : undefined;
+  // The public half of that record: who holds each depth-chart slot, never
+  // the minutes. Drives the Overview tab's starting five for every visitor.
+  const rotation = (rotr.status === 'fulfilled' && rotr.value && rotr.value[abbr]) || null;
+  const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
+  renderOfferSheetBanner(openOffers);
+  renderTradeRequestBanner(biosData);
+  const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
+  const currentSlugs = computeCurrentSlugSet(currentRosterRowsParsed);
+
+  let seasonRows = [];
+  if (sr.status === 'fulfilled') {
+    seasonsWrap.innerHTML = '';
+    seasonRows = parseCSV(sr.value);
+    buildTimeline(seasonRows);
+    seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
+  } else {
+    seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
+  }
+
+  _teamGamesResolve(allGames);
+  buildPersonnelSection(membersData, allGames);
+  renderRivalries(allGames);
+  renderHeaderFacts(seasonRows, membersData);
+
+  if (pr.status === 'fulfilled') {
+    playersWrap.innerHTML = '';
+    playersWrap.appendChild(buildTable(PLAYER_COLS, parseCSV(pr.value), 'GMSC_TOT', -1, makePlayerRenderCell(currentSlugs)));
+  } else {
+    playersWrap.innerHTML = '<div class="status">Failed to load player data.</div>';
+  }
+
+  // Franchise Records — best single games by anyone who played for this team.
+  // Sourced from data/franchise-records.csv (top 5 per stat per team), which the
+  // build writes alongside the league-wide game-highs; a franchise with no
+  // all-time great never cracks those, but still has its own record book.
+  {
+    const recordsWrap = document.getElementById('records-wrap');
+    const escAttr = s => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    const REC_STATS = [
+      ['P', 'Points'], ['R', 'Rebounds'], ['A', 'Assists'], ['S', 'Steals'],
+      ['B', 'Blocks'], ['3PM', '3-Pointers'], ['GMSC', 'Game Score'],
+    ];
+
+    if (recr.status !== 'fulfilled') {
+      recordsWrap.innerHTML = '<div class="status">Failed to load franchise records.</div>';
+    } else {
+      const mine = parseCSV(recr.value).filter(r => r.TEAM === abbr);
+      const byStat = new Map();
+      for (const r of mine) {
+        if (!byStat.has(r.STAT)) byStat.set(r.STAT, []);
+        byStat.get(r.STAT).push(r);
+      }
+      for (const arr of byStat.values()) arr.sort((a, b) => (+a.RANK) - (+b.RANK));
+
+      // OPP is stored "@DEN" for road games, "DEN" for home.
+      const opponent = opp => (opp || '').startsWith('@')
+        ? `@ ${opp.slice(1)}` : `vs ${opp || '—'}`;
+      // Playoff rows carry SEASON "20-21 Playoffs"; the PO badge already says
+      // that, so show the bare season and don't print it twice.
+      const seasonOf = r => r.SEASON.replace(' Playoffs', '');
+      const po = r => r.gametype === 'PLAYOFF' ? ' <span class="rec-po">PO</span>' : '';
+      const whenFull = r => `${opponent(r.OPP)} · ${seasonOf(r)}${po(r)}`;
+      // Sub-rows are narrow — the opponent is dropped so the name isn't clipped.
+      const whenShort = r => `${seasonOf(r)}${po(r)}`;
+      const nameLink = r =>
+        `<a href="/stats/players/?p=${encodeURIComponent(r.SLUG)}">${escAttr(displayNameFromBio(r.PLAYER))}</a>`;
+      // Values are whole numbers except Game Score, which carries two decimals.
+      const val = r => r.STAT === 'GMSC' ? (+r.VALUE).toFixed(1) : String(+r.VALUE);
+
+      const cards = REC_STATS.map(([key, label]) => {
+        const rows = byStat.get(key) || [];
+        if (!rows.length) return '';
+        const [top, ...rest] = rows;
+        return `
+          <div class="rec-card">
+            <div class="rec-stat">${escAttr(label)}</div>
+            <div class="rec-top">
+              <span class="val">${escAttr(val(top))}</span>
+              <span class="who">${nameLink(top)}</span>
+            </div>
+            <div class="rec-when">${whenFull(top)}</div>
+            ${rest.length ? `<div class="rec-rest">${rest.map(r => `
+              <div class="rec-row">
+                <span class="val">${escAttr(val(r))}</span>
+                <span class="who">${nameLink(r)}</span>
+                <span class="when">${whenShort(r)}</span>
+              </div>`).join('')}</div>` : ''}
+          </div>`;
+      }).filter(Boolean).join('');
+
+      recordsWrap.innerHTML = cards
+        ? `<div class="rec-grid">${cards}</div>`
+        : '<div class="status">No games recorded for this franchise yet.</div>';
+    }
+  }
+
+  const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
+  const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons,
+    gsr.status === 'fulfilled' ? gsr.value : null);
+  TWO_WAY_GAMES = computeSeasonGames(allSeasons, currentSeasonYr());
+
+  {
+    const standingsRows = stdr.status === 'fulfilled' ? parseCSV(stdr.value) : [];
+    const radarEl = buildTeamRadar(abbr, allSeasons, standingsRows);
+    if (radarEl) {
+      document.getElementById('identity-wrap').appendChild(radarEl);
+      document.getElementById('identity-section').style.display = '';
+    }
+  }
+
+  // Season Records — the season-total analog of the single-game records above:
+  // this franchise's best regular season, and the best single season by any
+  // player who wore its jersey, per stat. Built entirely from data the build
+  // already computes and this page already fetches for other tabs —
+  // `seasonRows` (Season History) and `allSeasons`/player_seasons.csv (Draft
+  // History's career join) — so no new build output was needed for this.
+  {
+    const seasonRecordsWrap = document.getElementById('season-records-wrap');
+    const escAttr = s => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+    // Best team season: highest win% among seasons this team actually played
+    // (guards the 0-0 row a season-in-progress or expansion year can leave in
+    // {abbr}-seasons.csv), point differential as the tiebreak.
+    const playedSeasons = seasonRows.filter(r => (parseInt(r.W) || 0) + (parseInt(r.L) || 0) > 0);
+    const bestSeasons = [...playedSeasons].sort((a, b) => {
+      const pctDiff = (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0);
+      return pctDiff || ((parseFloat(b.DIFF) || 0) - (parseFloat(a.DIFF) || 0));
+    });
+
+    const teamSeasonCard = (() => {
+      if (!bestSeasons.length) return '';
+      const [top, ...rest] = bestSeasons.slice(0, 3);
+      const badges = r => `${r.FOTY === 'TRUE' ? ' <i class="ui-icon ui-icon--star rec-badge" aria-hidden="true"></i>' : ''}${r.COTY === 'TRUE' ? ' <i class="ui-icon ui-icon--medal rec-badge" aria-hidden="true"></i>' : ''}`;
+      const line = r => `${escAttr(r.W)}-${escAttr(r.L)} (${fmtPct(r.PCT)}) · ${escAttr(r.PLAYOFF_RESULT || '—')}${badges(r)}`;
+      return `
+        <div class="rec-card">
+          <div class="rec-stat">Best Regular Season</div>
+          <div class="rec-top">
+            <span class="val">${escAttr(top.SEASON)}</span>
+            <span class="who">${line(top)}</span>
+          </div>
+          ${rest.length ? `<div class="rec-rest">${rest.map(r => `
+            <div class="rec-row">
+              <span class="val">${escAttr(r.SEASON)}</span>
+              <span class="who">${line(r)}</span>
+            </div>`).join('')}</div>` : ''}
+        </div>`;
+    })();
+
+    // Best individual seasons: season *totals* (not per-game averages), same
+    // counting-stat flavor as the single-game cards above — "most points in a
+    // season for this franchise", not a rate stat.
+    const SEASON_REC_STATS = [
+      ['PTS', 'Points'], ['REB', 'Rebounds'], ['AST', 'Assists'], ['STL', 'Steals'],
+      ['BLK', 'Blocks'], ['3PM', '3-Pointers'], ['GMSC', 'Game Score'],
+    ];
+    const mySeasons = allSeasons.filter(r => r.TEAM === abbr && (parseInt(r.G) || 0) > 0);
+    const seasonNameLink = r =>
+      `<a href="/stats/players/?p=${encodeURIComponent(r.SLUG)}">${escAttr(displayNameFromBio(r.PLAYER))}</a>`;
+
+    const seasonCards = SEASON_REC_STATS.map(([key, label]) => {
+      const withValue = mySeasons
+        .map(r => ({ r, v: parseFloat(r[key]) }))
+        .filter(x => !isNaN(x.v));
+      if (!withValue.length) return '';
+      // LAST_DATE as the tiebreak keeps ordering stable and deterministic,
+      // same role it plays for single-game ties in franchise_records().
+      withValue.sort((a, b) => b.v - a.v || (a.r.LAST_DATE || '').localeCompare(b.r.LAST_DATE || ''));
+      const [top, ...rest] = withValue.slice(0, 5);
+      const val = v => key === 'GMSC' ? v.toFixed(1) : String(Math.round(v));
+      return `
+        <div class="rec-card">
+          <div class="rec-stat">${escAttr(label)}</div>
+          <div class="rec-top">
+            <span class="val">${escAttr(val(top.v))}</span>
+            <span class="who">${seasonNameLink(top.r)}</span>
+          </div>
+          <div class="rec-when">${escAttr(top.r.SEASON)}</div>
+          ${rest.length ? `<div class="rec-rest">${rest.map(x => `
+            <div class="rec-row">
+              <span class="val">${escAttr(val(x.v))}</span>
+              <span class="who">${seasonNameLink(x.r)}</span>
+              <span class="when">${escAttr(x.r.SEASON)}</span>
+            </div>`).join('')}</div>` : ''}
+        </div>`;
+    }).filter(Boolean).join('');
+
+    const groups = [];
+    if (teamSeasonCard) groups.push(`<div class="rec-group-title">Best Team Season</div><div class="rec-grid">${teamSeasonCard}</div>`);
+    if (seasonCards) groups.push(`<div class="rec-group-title">Best Individual Seasons</div><div class="rec-grid">${seasonCards}</div>`);
+
+    seasonRecordsWrap.innerHTML = groups.length
+      ? groups.join('')
+      : '<div class="status">No season data recorded for this franchise yet.</div>';
+  }
+
+  // Draft History tab — sourced from player bios (/api/players via biosData),
+  // the canonical per-player draft record: draft_team (who made the pick) plus
+  // draft_year / draft_round / draft_pick (the slot). This covers every season,
+  // pre- and post- the live draft shows; draft_team is stamped on the bio when a
+  // pick is entered "for real" (transactions / Article VII). Career stats are
+  // joined from player_seasons by SLUG; a just-drafted rookie with no games yet
+  // still appears (with zeroed stats).
+  {
+    draftedWrap.innerHTML = '';
+    {
+      // Build rights-trade map from transactions (same logic as /history/draft page):
+      // a player's rights were traded if a trade txn moved them as an asset
+      // after their pick txn and before their first sign txn.
+      const draftPickTxnTime = {}, signTxnTime = {}, rightsHolder = {};
+      for (const t of allTxns) {
+        if (t.type === 'pick') {
+          const s = t.details?.player;
+          if (s) draftPickTxnTime[s] = t.created_at;
+        }
+        if (t.type === 'sign') {
+          const s = t.details?.player;
+          if (s && !signTxnTime[s]) signTxnTime[s] = t.created_at;
+        }
+      }
+      for (const t of [...allTxns].sort((a, b) => a.created_at.localeCompare(b.created_at))) {
+        if (t.type === 'trade') {
+          for (const transfer of t.details?.transfers || []) {
+            for (const asset of transfer.assets || []) {
+              const s = asset.type === 'player' && asset.slug;
+              if (s && draftPickTxnTime[s]) {
+                const afterPick = t.created_at > draftPickTxnTime[s];
+                const beforeSign = !signTxnTime[s] || t.created_at < signTxnTime[s];
+                if (afterPick && beforeSign) rightsHolder[s] = transfer.to_team;
+              }
+            }
+          }
+        }
+      }
+
+      // Career totals per drafted player, keyed by slug.
+      const careerBySlug = {};
+      for (const row of allSeasons) {
+        const s = (row.SLUG || '').trim();
+        if (!s) continue;
+        const c = careerBySlug[s] || (careerBySlug[s] = { G: 0, PTS: 0, REB: 0, AST: 0, GMSC: 0, name: row.PLAYER });
+        c.G    += parseInt(row.G) || 0;
+        c.PTS  += parseFloat(row.PTS)  || 0;
+        c.REB  += parseFloat(row.REB)  || 0;
+        c.AST  += parseFloat(row.AST)  || 0;
+        c.GMSC += parseFloat(row.GMSC) || 0;
+      }
+
+      const makeDraftRow = (slug, bio) => {
+        const c = careerBySlug[slug] || { G: 0, PTS: 0, REB: 0, AST: 0, GMSC: 0, name: '' };
+        const round = parseInt(bio.draft_round) || 0;
+        const pick  = bio.draft_pick != null && bio.draft_pick !== '' ? parseInt(bio.draft_pick) : null;
+        const draftTeam = (bio.draft_team || '').toUpperCase();
+        return {
+          SLUG:        slug,
+          PLAYER:      displayNameFromBio(bio.name || '') || c.name || slug,
+          YEAR:        parseInt(bio.draft_year) || 0,
+          ROUND:       round,
+          PICK:        pick ?? 0,
+          PICK_LABEL:  `R${round || '?'} · #${pick ?? '?'}`,
+          // RIGHTS_TO: rights traded away from this team to another
+          // RIGHTS_FROM: rights acquired by this team (drafted by another team)
+          RIGHTS_TO:   (draftTeam === abbr && rightsHolder[slug]) ? rightsHolder[slug] : null,
+          RIGHTS_FROM: (draftTeam !== abbr) ? draftTeam : null,
+          GP:          c.G,
+          GMSC_TOT:    Math.round(c.GMSC * 10) / 10,
+          PPG:         c.G ? Math.round(c.PTS / c.G * 10) / 10 : 0,
+          RPG:         c.G ? Math.round(c.REB / c.G * 10) / 10 : 0,
+          APG:         c.G ? Math.round(c.AST / c.G * 10) / 10 : 0,
+        };
+      };
+
+      const draftedRows = Object.entries(biosData)
+        .filter(([slug, bio]) => {
+          const draftTeam = (bio.draft_team || '').toUpperCase();
+          // Players this team drafted, plus players whose rights were acquired by this team
+          return draftTeam === abbr || (rightsHolder[slug] || '').toUpperCase() === abbr;
+        })
+        .map(([slug, bio]) => makeDraftRow(slug, bio));
+      draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
+
+      const DRAFTED_COLS = [
+        { key: 'PLAYER',    label: 'Player',  cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
+        { key: 'YEAR',      label: 'Year',    cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
+        { key: 'PICK_LABEL',label: 'Pick',    cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
+        { key: 'RIGHTS_TO', label: 'Rights',  cls: 'muted',       sortField: 'RIGHTS_TO', defaultDir:  1 },
+        { key: 'GP',        label: 'GP',      cls: 'right',       sortField: 'GP',        defaultDir: -1 },
+        { key: 'GMSC_TOT',  label: 'GMSC',    cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
+        { key: 'PPG',       label: 'PPG',     cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
+        { key: 'RPG',       label: 'RPG',     cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
+        { key: 'APG',       label: 'APG',     cls: 'right',       sortField: 'APG',       defaultDir: -1 },
+      ];
+      const renderDraftedCell = (td, col, row) => {
+        if (col.key === 'PLAYER') {
+          const a = document.createElement('a');
+          a.href = `/stats/players/?p=${row.SLUG}`;
+          a.textContent = row.PLAYER;
+          td.appendChild(a);
+        } else if (col.key === 'RIGHTS_TO') {
+          if (row.RIGHTS_TO) {
+            const arrow = document.createElement('span');
+            arrow.style.cssText = 'color:var(--link);font-style:italic';
+            arrow.textContent = `→ ${row.RIGHTS_TO}`;
+            attachTooltip(arrow, 'Draft rights traded away');
+            td.appendChild(arrow);
+          } else if (row.RIGHTS_FROM) {
+            const arrow = document.createElement('span');
+            arrow.style.cssText = 'color:var(--link);font-style:italic';
+            arrow.textContent = `← ${row.RIGHTS_FROM}`;
+            attachTooltip(arrow, 'Draft rights acquired from another team');
+            td.appendChild(arrow);
+          } else {
+            td.textContent = '—';
+          }
+        } else {
+          td.textContent = row[col.key] ?? '—';
+        }
+      };
+      if (draftedRows.length) {
+        draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', 1, renderDraftedCell));
+      } else {
+        draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
+      }
+    }
+  }
+
+  // Historical Rosters tab
+  {
+    const histWrap     = document.getElementById('hist-roster-wrap');
+    const histControls = document.getElementById('hist-controls');
+    const availableSeasons = [...new Set(allSeasons.filter(r => r.TEAM === abbr).map(r => r.SEASON))]
+      .sort((a, b) => b.localeCompare(a));
+    if (availableSeasons.length) {
+      const sel = document.createElement('select');
+      availableSeasons.forEach(s => {
+        const o = document.createElement('option');
+        o.value = s; o.textContent = s;
+        sel.appendChild(o);
+      });
+      histControls.appendChild(sel);
+      const renderHistSeason = season => {
+        histWrap.innerHTML = '';
+        const t = buildHistoricalRoster(allSeasons, abbr, season);
+        if (t) {
+          const wrap = document.createElement('div');
+          wrap.className = 'ui-table-wrap table-wrap';
+          wrap.appendChild(t);
+          histWrap.appendChild(wrap);
+        } else {
+          histWrap.innerHTML = '<div class="status">No stats found for this season.</div>';
+        }
+      };
+      sel.addEventListener('change', () => renderHistSeason(sel.value));
+      renderHistSeason(availableSeasons[0]);
+    } else {
+      const histWrap = document.getElementById('hist-roster-wrap');
+      histWrap.innerHTML = '<div class="status">No historical data available.</div>';
+    }
+  }
+
+  const capEditWrap = document.getElementById('cap-edit-wrap');
+
+  if (rr.status === 'fulfilled') {
+    rosterWrap.innerHTML = '';
+    const rosterRows = currentRosterRowsParsed;
+    const rosterHeaders = parseLine(rr.value.trim().split('\n')[0]);
+
+    // Overview / Contracts / Stats / Ratings mode switch. `liveRosterRows` tracks the
+    // freshest row set (updated after a contracts-mode save) so switching
+    // modes afterwards doesn't fall back to stale data. Overview (the depth
+    // chart) is the default view; it must match the .active mode-tab above.
+    let rosterMode = 'depth';
+    let liveRosterRows = rosterRows;
+    // Per-player move menu, only for a viewer who actually has a move available.
+    // Offered on both roster views: Overview is the default tab, so gating it to
+    // Contracts alone made the feature invisible to the owners it exists for.
+    // Stats and Ratings are analytical views where an actions column is noise.
+    const moveActions = makeRosterMoveActions(abbr, biosData, myBlockEntries, poextEligible);
+    const MOVE_MODES = ['depth', 'contracts'];
+    const renderRoster = rowsForDisplay => buildRosterTable(
+      rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug,
+      MOVE_MODES.includes(rosterMode) ? moveActions : null,
+      rotation,
+    );
+    function rerenderRosterWrap() {
+      rosterWrap.innerHTML = '';
+      const t = renderRoster(liveRosterRows);
+      if (t) rosterWrap.appendChild(t);
+      else rosterWrap.innerHTML = '<div class="status">Couldn’t load the roster. Refresh to try again.</div>';
+    }
+
+    const t = renderRoster(rosterRows);
+    if (t) rosterWrap.appendChild(t);
+    else rosterWrap.innerHTML = '<div class="status">Couldn’t load the roster. Refresh to try again.</div>';
+
+    const modeTabsEl = document.getElementById('roster-mode-tabs');
+    if (modeTabsEl) {
+      modeTabsEl.querySelectorAll('.mode-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Switching modes mid-edit would silently discard unsaved changes.
+          if (rosterWrap.querySelector('.roster-edit-toolbar')) return;
+          if (btn.classList.contains('active')) return;
+          modeTabsEl.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          rosterMode = btn.dataset.mode;
+          rerenderRosterWrap();
+        });
+      });
+    }
+
+    // Hard cap banner + exceptions section. Apron-level (NTMLE/TMLE) comparisons
+    // exclude pure free-agent cap holds (UFA/RFA) — rulebook § 1.3/1.4 — while
+    // Room Exception eligibility stays Cap-based and still counts them (§ 3.2).
+    // Mirror both figures from the backend's _compute_team_salary(_ex_holds).
+    const curYr = currentSeasonYr();
+    const { teamSalaryFull, teamSalaryExHolds } = computeCapSummary(rosterRows, deadCapRows, biosData, capLevels, curYr);
+    renderCapHealth({
+      rosterRows, biosData, capLevels, season: curYr, teamState,
+      teamSalaryFull, teamSalaryExHolds,
+      erc: computeEmptyRosterCharge(rosterRows, biosData, capLevels, curYr),
+    });
+    renderExceptionsSection(teamState, capLevels, teamSalaryFull, teamSalaryExHolds, curYr);
+    renderTradeExceptionsSection(tradeExceptions);
+
+    setupWhatIfMode(rosterRows, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, latestSeasonBySlug, teamState);
+
+    setupEditable('roster-title', 'roster-wrap', rosterHeaders, rosterRows, `/roster/${abbr}`, rows => {
+      liveRosterRows = rows;
+      return renderRoster(rows);
+    }, rosterCellConfig(rosterHeaders, biosData));
+    coachingTab.record = coachingRecord;
+    setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, currentOvr);
+    setupCoachingSettingsTab('coaching-settings-wrap', biosData);
+    if (canViewCoachingSettings(abbr)) setupStreamerNote();
+
+    setupDeadCapEditable(
+      document.getElementById('dead-cap-edit-wrap'),
+      deadCapRows, biosData, currentSeasonYr(),
+      newRows => {
+        deadCapRows.length = 0;
+        newRows.forEach(r => deadCapRows.push(r));
+        rerenderRosterWrap();
+      }
+    );
+
+    // Cap numbers edit button (rosters role)
+    const token = localStorage.getItem('nbn_token');
+    if (canEditRosters()) {
+      const season = currentSeasonYr();
+      const editCapBtn = document.createElement('button');
+      editCapBtn.className = 'edit-toggle-btn';
+      editCapBtn.style.cssText = 'margin-top:0.75rem;font-size:var(--text-xs);padding:0.15rem 0.45rem';
+      editCapBtn.textContent = 'Edit Team State';
+      capEditWrap.appendChild(editCapBtn);
+
+      let capFormEl = null;
+      editCapBtn.addEventListener('click', () => {
+        if (capFormEl) { capFormEl.remove(); capFormEl = null; editCapBtn.textContent = 'Edit Team State'; return; }
+        capFormEl = document.createElement('div');
+        capFormEl.className = 'cap-edit-form';
+
+        const curState = teamState || {};
+
+        // ── Per-season hard cap controls ──────────────────────────────────────
+        // Seasons displayed in the roster table: any salary season >= current.
+        const capSeasonSet = new Set([season]);
+        rosterRows.forEach(r => {
+          const bio = biosData[r.SLUG] || {};
+          Object.keys(bio.salaries || {}).forEach(k => {
+            if (/^\d{2}-\d{2}$/.test(k) && k >= season) capSeasonSet.add(k);
+          });
+        });
+        deadCapRows.forEach(r => Object.keys(r).forEach(k => {
+          if (/^\d{2}-\d{2}$/.test(k) && k >= season) capSeasonSet.add(k);
+        }));
+        const capSeasons = [...capSeasonSet].sort();
+
+        const hcBlock = document.createElement('div');
+        hcBlock.style.cssText = 'display:flex;flex-direction:column;gap:0.35rem;width:100%';
+        const hcTitle = document.createElement('div');
+        hcTitle.textContent = 'Hard Cap (per season)';
+        hcTitle.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:600';
+        hcBlock.appendChild(hcTitle);
+
+        // season → { sel, reason } controls, for diffing on save
+        const hcControls = {};
+        capSeasons.forEach(s => {
+          const st = seasonStates[s] || {};
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:0.4rem;align-items:center';
+          const lbl = document.createElement('span');
+          lbl.textContent = s;
+          lbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);width:3.2rem';
+          const sel = document.createElement('select');
+          [['', 'None'], ['first_apron', 'First Apron'], ['second_apron', 'Second Apron']].forEach(([v, l]) => {
+            const o = document.createElement('option');
+            o.value = v; o.textContent = l;
+            if (v === (st.hard_cap || '')) o.selected = true;
+            sel.appendChild(o);
+          });
+          const reason = document.createElement('input');
+          reason.type = 'text'; reason.placeholder = 'reason';
+          reason.value = st.hard_cap_reason || '';
+          reason.style.width = '12rem';
+          row.appendChild(lbl); row.appendChild(sel); row.appendChild(reason);
+          hcBlock.appendChild(row);
+          hcControls[s] = { sel, reason };
+        });
+        capFormEl.appendChild(hcBlock);
+
+        const fMleTypeLbl = document.createElement('label');
+        fMleTypeLbl.textContent = 'MLE Type';
+        const fMleType = document.createElement('select');
+        const curMleType = curState.mle_type === 'room_exception' ? 'room' : curState.mle_type;
+        [['', 'Auto (calculated)'], ['room', 'Room Exception'], ['ntmle', 'Non-Taxpayer MLE'], ['tmle', 'Taxpayer MLE']].forEach(([v, l]) => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = l;
+          if (v === (curMleType || '')) o.selected = true;
+          fMleType.appendChild(o);
+        });
+        fMleTypeLbl.appendChild(fMleType);
+        capFormEl.appendChild(fMleTypeLbl);
+
+        const fMleUsedLbl = document.createElement('label');
+        fMleUsedLbl.textContent = 'MLE Used ($)';
+        const fMleUsed = document.createElement('input');
+        fMleUsed.type = 'number'; fMleUsed.placeholder = '0';
+        fMleUsed.value = curState.mle_used || 0;
+        fMleUsedLbl.appendChild(fMleUsed);
+        capFormEl.appendChild(fMleUsedLbl);
+
+        const fBaeUsedLbl = document.createElement('label');
+        fBaeUsedLbl.style.cssText = 'flex-direction:row;align-items:center;gap:0.4rem;cursor:pointer';
+        const fBaeUsed = document.createElement('input');
+        fBaeUsed.type = 'checkbox'; fBaeUsed.checked = !!curState.bae_used;
+        fBaeUsedLbl.appendChild(fBaeUsed);
+        fBaeUsedLbl.appendChild(document.createTextNode('BAE Used'));
+        capFormEl.appendChild(fBaeUsedLbl);
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'edit-btn edit-btn-primary';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.cssText = 'align-self:flex-end;margin-top:0.6rem';
+        const statusEl = document.createElement('span');
+        statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--danger);align-self:flex-end';
+        capFormEl.appendChild(saveBtn);
+        capFormEl.appendChild(statusEl);
+
+        saveBtn.addEventListener('click', async () => {
+          saveBtn.disabled = true; statusEl.textContent = 'Saving…';
+
+          // One PUT per season that needs writing. Each season's MLE/BAE state is
+          // preserved from its existing slot; only the current season's MLE/BAE
+          // fields are editable here.
+          const puts = [];
+          capSeasons.forEach(s => {
+            const st = seasonStates[s] || {};
+            const newCap = hcControls[s].sel.value || null;
+            const newReason = hcControls[s].reason.value.trim();
+            const isCur = s === season;
+            const capChanged = (st.hard_cap || null) !== newCap || (st.hard_cap_reason || '') !== newReason;
+            if (!isCur && !capChanged) return;  // nothing to write for this season
+            puts.push({
+              season: s,
+              body: {
+                hard_cap: newCap,
+                hard_cap_reason: newReason,
+                mle_type: isCur ? (fMleType.value || null) : (st.mle_type || null),
+                mle_used: isCur ? (+fMleUsed.value || 0) : (st.mle_used || 0),
+                bae_used: isCur ? fBaeUsed.checked : !!st.bae_used,
+              },
+            });
+          });
+
+          try {
+            for (const { season: s, body } of puts) {
+              const resp = await fetch(`/api/team-state/${abbr}?season=${encodeURIComponent(s)}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              if (resp.status === 403) { statusEl.textContent = 'Not authorized.'; saveBtn.disabled = false; return; }
+              if (!resp.ok) throw new Error(`Save failed for ${s}.`);
+            }
+            location.reload();
+          } catch (e) {
+            statusEl.textContent = e.message; saveBtn.disabled = false;
+          }
+        });
+
+        editCapBtn.after(capFormEl);
+        editCapBtn.textContent = 'Cancel';
+      });
+    }
+  } else {
+    rosterWrap.innerHTML = '<div class="status">Failed to load roster data.</div>';
+  }
+
+  if (pkr.status === 'fulfilled') {
+    picksWrap.innerHTML = '';
+    const allPicks = allpkr.status === 'fulfilled' ? allpkr.value : [];
+    const t = buildPicksTable(pkr.value, abbr, allPicks);
+    if (t) picksWrap.appendChild(t);
+    else picksWrap.innerHTML = '<div class="status">No picks on file.</div>';
+    setupPicksEditable('picks-title', picksWrap, pkr.value, abbr, biosData, allPicks);
+  } else {
+    picksWrap.innerHTML = '<div class="status">Failed to load picks data.</div>';
+  }
+
+  const retired = RETIRED_JERSEYS[abbr];
+  if (retired?.length) {
+    document.getElementById('retired-section').style.display = '';
+    const bannersEl = document.getElementById('retired-banners');
+    retired.forEach(({ no, player, date }) => {
+      const banner = document.createElement('div');
+      banner.className = 'retired-banner';
+      const [y, m, d] = date.split('-');
+      banner.innerHTML = `
+        <span class="retired-no">${no}</span>
+        <span class="retired-name">${player}</span>
+        <span class="retired-date">Ret. ${y}</span>
+      `;
+      bannersEl.appendChild(banner);
+    });
+  }
+})();
+
+// The Front Office Ledger's line on this franchise (Franchise tab). Flavor,
+// from data/franchise-finances.csv; the full books are /finances. Fetched on
+// its own so a missing file costs the page nothing.
+(function renderFrontOffice() {
+  const money = v => {
+    const a = Math.abs(v), sign = v < 0 ? '-' : '';
+    return a >= 1e9 ? `${sign}NB¥${(a / 1e9).toFixed(2)}B` : `${sign}NB¥${Math.round(a / 1e6)}M`;
+  };
+  const signed = v => `<span class="${v >= 0 ? 'fo-up' : 'fo-down'}">${v >= 0 ? '+' : ''}${money(v)}</span>`;
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  fetch('/data/franchise-finances.csv')
+    .then(r => r.ok ? r.text() : Promise.reject())
+    .then(text => {
+      const rows = parseCSV(text);
+      const seasons = [...new Set(rows.map(r => r.SEASON))].sort();
+      const latest = seasons[seasons.length - 1];
+      const mine = s => rows.find(r => r.SEASON === s && r.TEAM === abbr);
+      const now = mine(latest);
+      if (!now) return;
+      const rank = rows.filter(r => r.SEASON === latest).sort((a, b) => b.VALUE - a.VALUE).findIndex(r => r.TEAM === abbr) + 1;
+      const done = [...seasons].reverse().find(s => mine(s)?.IN_PROGRESS === 'FALSE');
+      const last = done && mine(done);
+      const profit = [...seasons].reverse().map(mine).find(r => r && r.PROFIT && r.PROFIT !== 'NA');
+      const item = (label, body, sub) => `<div class="fo-item"><span class="fo-label">${label}</span>${body}${sub ? `<span class="fo-sub">${sub}</span>` : ''}</div>`;
+      document.getElementById('frontoffice-wrap').innerHTML = [
+        item('Franchise value', `<span class="ui-statline"><b>${money(+now.VALUE)}</b></span>`, `#${rank} of 30 · ${signed(+now.VALUE_CHANGE)} this season`),
+        last ? item(`${done} crowds`, `<span class="ui-statline"><b>${(+last.AVG_ATTENDANCE).toLocaleString()}</b><small>a night</small></span>`, `${last.SELLOUTS} sellouts`) : '',
+        profit ? item(`${profit.SEASON} profit`, `<span class="ui-statline"><b>${signed(+profit.PROFIT)}</b></span>`, profit.IN_PROGRESS === 'TRUE' ? 'projected' : '') : '',
+        now.JERSEY_PATCH && now.JERSEY_PATCH !== 'NA' ? item('Jersey patch', `<span class="fo-patch">${esc(now.JERSEY_PATCH)}</span>`) : '',
+        '<div class="fo-item" id="fo-arena" hidden></div>',
+      ].join('');
+      document.getElementById('frontoffice-section').style.display = '';
+      // Arena naming rights: bought with NB¥ by any member (GET /api/arenas/{team}).
+      fetch(`/api/arenas/${abbr}`).then(r => r.ok ? r.json() : Promise.reject()).then(a => {
+        const el = document.getElementById('fo-arena');
+        if (!el || !a.name) return;
+        el.innerHTML = `<span class="fo-label">Arena</span><a class="fo-patch" href="/fo/finances/?team=${abbr}#arenas">${esc(a.name)}</a>`
+          + `<span class="fo-sub">${a.by ? `named by ${esc(a.by)} · ` : ''}NB¥${a.to_beat.toLocaleString()} to rename</span>`;
+        el.hidden = false;
+      }).catch(() => {});
+    })
+    .catch(() => {});
+})();

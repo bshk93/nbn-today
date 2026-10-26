@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/stats/players/subpage.css">
+  <title>NBN | Player Injuries</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Player Injuries">
+  <meta property="og:description" content="One NBN player’s injuries: who he missed games for, how long, and every 2K report along the way.">
+  <meta property="og:url" content="https://nbn.today/stats/players/injuries/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .section { margin-top: var(--space-6); }
+    .section:first-of-type { margin-top: 0; }
+
+    /* Injured now: the one card that matters most, so it leads. */
+    .now { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); align-items: center;
+           border-left: 4px solid var(--warning); margin-bottom: var(--space-5); }
+    .now.out { border-left-color: var(--danger); }
+    .now-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .now-what { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); margin-top: 0.15rem; }
+    .now-facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-size: var(--text-sm); color: var(--text-secondary); }
+    .now-facts b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+    /* The career line, the same tile as the player page's hero. */
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: var(--space-3); }
+    .tile { display: flex; flex-direction: column; gap: 0.3rem; padding: var(--space-3) var(--space-4);
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .tile-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .tile-value { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .tile-value small { font-size: var(--text-base); font-weight: 600; color: var(--text-muted); margin-left: 0.2rem; }
+    .tile-sub { font-size: var(--text-xs); color: var(--text-muted); min-height: 1em; }
+
+    /* Body map: the figure faces you, so his right is on your left. */
+    /* The figures on the left, the list beside them; stacked on a phone. */
+    .body { display: grid; grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+    .body-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    @media (max-width: 760px) {
+      .body { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+      .body-figs { max-width: 26rem; width: 100%; margin: 0 auto; gap: var(--space-3); }
+    }
+    .body-figs figure { margin: 0; }
+    .body-figs svg { width: 100%; height: auto; display: block; }
+    .body-figs figcaption { text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-1); }
+    .body .bm { fill: color-mix(in srgb, var(--text-muted) 32%, var(--bg-card)); stroke: var(--bg-page); stroke-width: 2; }
+    .body .bm.hair { fill: color-mix(in srgb, var(--text-muted) 18%, var(--bg-card)); }
+    /* Severity, light to dark: one scale for the body, the list and the legend. */
+    #content { --sev1: color-mix(in srgb, var(--gold) 60%, white); --sev2: var(--warning);
+            --sev3: color-mix(in srgb, var(--warning) 40%, var(--danger)); --sev4: color-mix(in srgb, var(--danger) 82%, black); }
+    #content .sev1 { fill: var(--sev1); background-color: var(--sev1); } #content .sev2 { fill: var(--sev2); background-color: var(--sev2); }
+    #content .sev3 { fill: var(--sev3); background-color: var(--sev3); } #content .sev4 { fill: var(--sev4); background-color: var(--sev4); }
+    .sev-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1) var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-secondary); }
+    .sev-legend i { display: inline-block; width: 0.75rem; height: 0.5rem; border-radius: var(--radius-sm); margin-right: 0.35rem; vertical-align: middle; }
+    .body .bm.hit { cursor: pointer; }
+    .body .bm.hit:hover { stroke: var(--text-primary); }
+    .body .bm.cur { animation: bm-pulse 1.6s ease-in-out infinite; }
+    @keyframes bm-pulse { 50% { fill-opacity: 0.35; } }
+    @media (prefers-reduced-motion: reduce) { .body .bm.cur { animation: none; } }
+    .body-figs.focus .bm.hit { fill-opacity: 0.2; animation: none; transition: fill-opacity 0.12s; }
+    .body-figs.focus .bm.hit.hl { fill-opacity: 1; stroke: var(--text-primary); stroke-width: 4; }
+    .parts li.hl { background: var(--bg-hover); }
+    .parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; font-size: var(--text-sm); }
+    .parts li { display: grid; grid-template-columns: 0.7rem 7.5rem 1.6rem minmax(0, 1fr); gap: var(--space-2); align-items: baseline;
+                padding: 0.3rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .parts li.click { cursor: pointer; }
+    .parts li.click:hover .part-name { text-decoration: underline; }
+    .parts .dot { width: 0.6rem; height: 0.6rem; border-radius: var(--radius-sm); align-self: center; }
+    .parts .dot.none { background: transparent; border: 1px solid var(--border); }
+    .parts .part-name { font-weight: 600; color: var(--text-primary); }
+    .parts .part-n { font-variant-numeric: tabular-nums; color: var(--text-secondary); text-align: right; }
+    .parts .part-what { color: var(--text-secondary); }
+    @media (max-width: 600px) { .parts li { grid-template-columns: 0.7rem minmax(0, 1fr) 1.4rem; } .parts .part-what { grid-column: 2 / -1; } }
+    .body-note { font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-3); }
+
+    /* Timeline: one lane per league year, July to June. */
+    .tl { display: grid; grid-template-columns: 3.2rem minmax(0, 1fr); gap: 0.35rem var(--space-3); align-items: center; }
+    .tl-season { font-size: var(--text-sm); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .tl-track { position: relative; height: 1.25rem; background: var(--bg-subtle); border-radius: var(--radius-sm); }
+    .tl-month { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--border-subtle); }
+    .tl-bar { position: absolute; top: 3px; bottom: 3px; min-width: 5px; border-radius: var(--radius-sm); cursor: pointer; border: 0; padding: 0; }
+    .tl-bar.open { background-image: repeating-linear-gradient(135deg, transparent 0 4px, rgba(0,0,0,0.22) 4px 8px); }
+    .tl-bar:hover, .tl-bar:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+    .tl-today { position: absolute; top: -2px; bottom: -2px; border-left: 2px dashed var(--text-muted); }
+    .tl-axis { position: relative; height: 1rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .tl-axis span { position: absolute; transform: translateX(-50%); }
+    .tl-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .tl-legend i { display: inline-block; width: 0.8rem; height: 0.55rem; border-radius: var(--radius-sm); margin-right: 0.35rem; vertical-align: middle; }
+    .tl-legend i.open { background-color: var(--sev2); background-image: repeating-linear-gradient(135deg, transparent 0 3px, rgba(0,0,0,0.22) 3px 6px); }
+
+    /* The log. */
+    .log td { white-space: nowrap; }
+    .log td.what { white-space: normal; min-width: 9rem; }
+    .log tr.stint { cursor: pointer; }
+    .log tr.stint:hover td { background: var(--bg-hover); }
+    .log tr.stint.flash td { background: var(--bg-hover); }
+    .log .caret { color: var(--text-muted); display: inline-block; transition: transform 0.15s; }
+    .log tr.stint[aria-expanded="true"] .caret { transform: rotate(90deg); }
+    .log tr.detail td { background: var(--bg-subtle); white-space: normal; padding-top: var(--space-2); padding-bottom: var(--space-3); }
+    .reports { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; font-size: var(--text-sm); }
+    .reports li { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; }
+    .reports .when { color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 6.5rem; }
+    .log .sm-only, .log .d-short { display: none; }
+    .neg { color: var(--danger); }
+    .dim { color: var(--text-muted); }
+    .source { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
+    .source a { color: var(--link); }
+    @media (max-width: 600px) {
+      .log .sm-hide { display: none; }
+      .log .sm-only { display: block; margin-top: 0.25rem; }
+      .log .d-long { display: none; }
+      .log .d-short { display: inline; }
+      .log td.what { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page ui-page ui-page--wide">
+  <nav class="nav" id="nav"></nav>
+  <header class="ui-header">
+    <div class="psub-head">
+      <img class="psub-photo" id="photo" alt="" hidden>
+      <div>
+        <h1 class="ui-title" id="page-title">Injuries</h1>
+        <p class="ui-subtitle" id="page-sub"></p>
+      </div>
+    </div>
+  </header>
+  <nav id="player-tabs" style="display:none"></nav>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script src="/names.js"></script>
+<script src="/injury-history.js"></script>
+<script src="/stats/players/subpage.js"></script>
+<script src="/vendor/body-highlighter-3.2.0.js"></script>
+<script>
+(function () {
+  const IH = window.InjuryHistory;
+  const slug = new URLSearchParams(location.search).get('p') || '';
+  const content = document.getElementById('content');
+  const profile = `/stats/players/?p=${encodeURIComponent(slug)}`;
+  const today = new Date().toLocaleDateString('en-CA');
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  // A table date: in full, or 3/31/26 on a phone so the log fits.
+  const tdate = iso => iso ? `<span class="d-long">${fmt(iso)}</span><span class="d-short">${iso.slice(5, 7).replace(/^0/, '')}/${iso.slice(8).replace(/^0/, '')}/${iso.slice(2, 4)}</span>` : '—';
+  const badge = s => s ? `<span class="ui-badge ${IH.isOut(s) ? 'ui-badge--danger' : 'ui-badge--warning'}">${esc(s)}</span>` : '<span class="dim">—</span>';
+  const ovr = s => s.ovr == null && !s.ovr_delta ? '<span class="dim">—</span>'
+    : `${s.ovr != null ? esc(s.ovr) : ''}${s.ovr_delta ? ` <span class="neg">(${s.ovr_delta > 0 ? '+' : '−'}${Math.abs(s.ovr_delta)})</span>` : ''}`;
+  const what = s => s.injury ? esc(s.injury) : '<span class="dim">Not recorded</span>';
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+  function setCrumbs(name) {
+    const nav = document.getElementById('nav');
+    nav.innerHTML = `<a href="/">Home</a><span class="nav-crumb-sep">/</span><a href="/stats/players/">Players</a>`
+      + `<span class="nav-crumb-sep">/</span><a href="${profile}">${esc(name)}</a>`
+      + `<span class="nav-crumb-sep">/</span><span class="nav-crumb-current">Injuries</span>`;
+    if (typeof _initNav === 'function') _initNav();
+  }
+
+  if (!slug) {
+    content.innerHTML = '<div class="ui-empty">No player named. Open this page from a player’s profile.</div>';
+    return;
+  }
+
+  Promise.all([
+    json('/api/players'),
+    json('/api/team-map'),
+    json(`/api/injuries/history?slug=${encodeURIComponent(slug)}`),
+  ]).then(([bios, teamMap, events]) => {
+    const bio = (bios || {})[slug];
+    const name = bio && bio.name ? nbnPlayerName(bio.name) : slug;
+    const team = (teamMap || {})[slug] || '';
+    document.title = `NBN | ${name} Injuries`;
+    document.getElementById('page-title').textContent = name;
+    document.getElementById('page-sub').innerHTML = `Injury history${team ? ` · <a href="/stats/teams/${esc(team)}/">${esc(team)}</a>` : ''}`;
+    // The same team band as the profile (components.css § Player pages).
+    const header = document.getElementById('page-sub').closest('.ui-header');
+    if (header && team && !(bio && bio.retired)) header.dataset.team = team;
+    if (bio && bio.photo_url) {
+      const img = document.getElementById('photo');
+      img.src = bio.photo_url;
+      img.hidden = false;
+      img.onerror = () => { img.hidden = true; };
+    }
+    setCrumbs(name);
+    PlayerSubpage.renderTabs(document.getElementById('player-tabs'), slug, 'injuries');
+
+    const stints = IH.fold(Array.isArray(events) ? events : []);
+    render(stints, null);
+    if (!stints.length) return;
+
+    // Games missed: every team the injuries touched, and his own game log.
+    const teams = [...new Set(stints.flatMap(s => s.teams.map(t => t.team)).filter(Boolean))];
+    Promise.all([
+      json(`/api/players/${encodeURIComponent(slug)}/gamelog`),
+      ...teams.map(t => json(`/api/boxscores/games?team=${encodeURIComponent(t)}`)),
+    ]).then(([log, ...games]) => {
+      if (!Array.isArray(log) || games.some(g => !Array.isArray(g))) return;
+      const byTeam = Object.fromEntries(teams.map((t, i) => [t, games[i]]));
+      const played = new Set(log.map(g => g.date));
+      stints.forEach(s => Object.assign(s, IH.gamesMissed(s, byTeam, played, today)));
+      render(stints, true);
+    });
+  });
+
+  // known: whether games missed have been counted (null while loading).
+  function render(stints, known) {
+    const open = new Set([...content.querySelectorAll('tr.stint[aria-expanded="true"]')].map(r => r.dataset.i));
+    const sum = IH.summary(stints, today);
+    const parts = [];
+    if (sum.current) parts.push(renderNow(sum.current, known));
+    parts.push(renderTiles(sum, stints, known));
+    if (stints.length) {
+      parts.push(renderBody(stints));
+      parts.push(renderTimeline(stints));
+      parts.push(renderLog(stints, known));
+    } else {
+      parts.push('<div class="section ui-empty">No injuries on record.</div>');
+    }
+    parts.push(`<div class="source">Source: 2K injury reports (older ones from #injury-report on Discord). Games missed are games his team played during the injury that he has no box score line for. <a href="/season/injuries/#history">League injury history</a></div>`);
+    content.innerHTML = parts.join('');
+    open.forEach(i => toggle(content.querySelector(`tr.stint[data-i="${i}"]`), true));
+    wire();
+  }
+
+  function renderNow(s, known) {
+    const n = IH.length(s, today);
+    const facts = [
+      s.duration ? `Expected <b>${esc(s.duration)}</b>` : '',
+      `Since <b>${fmt(s.start)}</b>${n != null ? ` (${plural(n, 'day')})` : ''}`,
+      s.ovr_delta ? `OVR <b class="neg">${s.ovr_delta > 0 ? '+' : '−'}${Math.abs(s.ovr_delta)}</b>${s.ovr != null ? ` to ${esc(s.ovr)}` : ''}` : '',
+      known && s.missed != null ? `<b>${s.missed}</b> missed${s.playedThrough ? `, <b>${s.playedThrough}</b> played through` : ''}` : '',
+    ].filter(Boolean);
+    return `<div class="ui-card now${IH.isOut(s.status) ? ' out' : ''}">
+      <div><div class="now-label">Injured now</div><div class="now-what">${badge(s.status)} ${what(s)}</div></div>
+      <div class="now-facts">${facts.map(f => `<span>${f}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  function renderTiles(sum, stints, known) {
+    const outs = stints.filter(s => IH.isOut(s.worst)).length;
+    const missed = known ? (sum.missed ?? '—') : '…';
+    const games = known && sum.missed != null
+      ? `${stints.reduce((n, s) => n + (s.playedThrough || 0), 0)} played through` : '';
+    const L = sum.longest;
+    const tile = (label, value, sub) => `<div class="tile"><div class="tile-label">${label}</div>
+      <div class="tile-value">${value}</div><div class="tile-sub">${sub || ''}</div></div>`;
+    return `<div class="tiles">
+      ${tile('Injuries', sum.count, sum.count ? `${outs} Out · ${sum.count - outs} Hurt` : '')}
+      ${tile('Games missed', missed, games)}
+      ${tile('Days injured', sum.days, sum.last ? `Last ${fmt(sum.last.start || sum.last.end)}` : '')}
+      ${tile('Longest', L ? `${L.days}<small>days</small>` : '—', L ? esc(L.stint.injury || L.stint.duration || '') : '')}
+    </div>`;
+  }
+
+  // Where each place on the body is drawn on the outline (/vendor/body-highlighter-3.2.0.js):
+  // [view, part] pairs, narrowed by the injury's own words where they say more
+  // (a hamstring is the back of the thigh, a quad the front).
+  const OUTLINE = {
+    head: [['front', 'head'], ['back', 'head']],
+    neck: [['front', 'neck'], ['back', 'neck']],
+    shoulder: [['front', 'deltoids'], ['back', 'deltoids']],
+    arm: t => /bicep/.test(t) ? [['front', 'biceps']] : /tricep/.test(t) ? [['back', 'triceps']] : [['front', 'biceps'], ['back', 'triceps']],
+    elbow: [['front', 'forearm'], ['back', 'forearm']],
+    forearm: [['front', 'forearm'], ['back', 'forearm']],
+    wrist: [['front', 'hands'], ['back', 'hands']],
+    hand: [['front', 'hands'], ['back', 'hands']],
+    chest: [['front', 'chest']],
+    back: t => /lower|lumbar/.test(t) ? [['back', 'lower-back']] : /upper/.test(t) ? [['back', 'upper-back']] : [['back', 'upper-back'], ['back', 'lower-back']],
+    abdomen: t => /oblique/.test(t) ? [['front', 'obliques']] : [['front', 'abs'], ['front', 'obliques']],
+    hip: t => /glute/.test(t) ? [['back', 'gluteal']] : /groin|adductor/.test(t) ? [['front', 'adductors']] : [['front', 'adductors'], ['back', 'gluteal']],
+    thigh: t => /hamstring/.test(t) ? [['back', 'hamstring']] : /quad/.test(t) ? [['front', 'quadriceps']] : [['front', 'quadriceps'], ['back', 'hamstring']],
+    knee: [['front', 'knees']],
+    leg: t => /calf/.test(t) ? [['back', 'calves']] : /shin|tibia/.test(t) ? [['front', 'tibialis']] : [['front', 'tibialis'], ['back', 'calves']],
+    ankle: t => /achilles/.test(t) ? [['back', 'ankles']] : [['front', 'ankles'], ['back', 'ankles']],
+    foot: [['front', 'feet'], ['back', 'feet']],
+  };
+  // The outline's left and right are the drawing's, so his right is its left
+  // from the front and its right from the back.
+  const drawnSide = (view, side) => (side == null ? null : view === 'front' ? (side === 'R' ? 'left' : 'right') : (side === 'R' ? 'right' : 'left'));
+  // Cropped to the drawing (its own boxes are 724 × 1448 with room to spare).
+  const VIEWBOX = { front: '40 84 648 1270', back: '760 84 648 1270' };
+
+  function renderBody(stints) {
+    // One entry per place he's been hurt. A paired part with no side given
+    // lights both sides, and says so.
+    const places = new Map();
+    let illness = [], unplaced = 0;
+    stints.forEach((s, i) => {
+      const at = IH.locate(s.injury);
+      if (!at) { unplaced++; return; }
+      if (at.part === 'illness') { illness.push({ s, i }); return; }
+      const key = at.pair && at.side ? `${at.part}-${at.side}` : at.part;
+      const label = at.pair ? (at.side ? `${at.side === 'L' ? 'Left' : 'Right'} ${at.label.toLowerCase()}` : `${at.label} (side not given)`) : at.label;
+      if (!places.has(key)) places.set(key, { key, label, part: at.part, pair: at.pair && !at.side, list: [] });
+      places.get(key).list.push({ s, i });
+    });
+    // Which places paint which outline parts: `view|part|side`, side null for both.
+    const region = new Map();
+    places.forEach(p => {
+      const at = IH.locate(p.list[0].s.injury);
+      const m = OUTLINE[p.part];
+      const spots = typeof m === 'function' ? m((p.list.map(x => x.s.injury).join(' ')).toLowerCase()) : m;
+      spots.forEach(([view, part]) => {
+        const k = `${view}|${part}|${p.pair ? '' : drawnSide(view, at.side) || ''}`;
+        const r = region.get(k) || { list: [], labels: [] };
+        r.list.push(...p.list);
+        r.labels.push(p.label);
+        region.set(k, r);
+      });
+    });
+    // A place takes the colour of the worst injury it has had.
+    const worst = list => Math.max(...list.map(x => IH.severity(x.s, today)));
+    const lit = (view, part, side) => region.get(`${view}|${part}|${side}`) || region.get(`${view}|${part}|`);
+    const outline = window.BodyOutline;
+    const figure = view => {
+      const paths = outline ? outline[view].flatMap(part => Object.entries(part.path).flatMap(([side, ds]) => {
+        const r = part.slug === 'hair' ? null : lit(view, part.slug, side === 'common' ? '' : side);
+        return ds.map(d => {
+          if (!r) return `<path class="bm${part.slug === 'hair' ? ' hair' : ''}" d="${d}"/>`;
+          const sev = worst(r.list), cur = r.list.some(x => !x.s.end);
+          const newest = r.list.reduce((a, b) => (b.i > a.i ? b : a));
+          const tip = `${r.labels[0]}: ${r.list.map(x => `${x.s.injury} (${IH.SEVERITY[IH.severity(x.s, today)].toLowerCase()}, ${fmt(x.s.start || x.s.end)})`).join('; ')}`;
+          return `<path class="bm hit sev${sev}${cur ? ' cur' : ''}" data-i="${newest.i}" data-stints="${r.list.map(x => x.i).join(' ')}" d="${d}"><title>${esc(tip)}</title></path>`;
+        });
+      })).join('') : '';
+      return `<figure><svg viewBox="${VIEWBOX[view]}" role="img" aria-label="${view === 'front' ? 'Front' : 'Back'} of the body">${paths}</svg>
+        <figcaption>${view === 'front' ? 'Front' : 'Back'}</figcaption></figure>`;
+    };
+    const legend = `<div class="sev-legend">${[1, 2, 3, 4].map(n => `<span><i class="sev${n}"></i>${IH.SEVERITY[n]}</span>`).join('')}
+      <span class="dim">by how long he was out</span></div>`;
+    const svg = `<div><div class="body-figs">${figure('front')}${figure('back')}</div>${legend}</div>`;
+
+    const row = (dot, name, n, what, i, list) => `<li${i != null ? ` class="click" data-i="${i}" data-stints="${list.map(x => x.i).join(' ')}"` : ''}><span class="dot ${dot}"></span>
+      <span class="part-name">${name}</span><span class="part-n">${n}</span><span class="part-what">${what}</span></li>`;
+    const whatOf = list => list.slice().reverse().map(x => `${esc(x.s.injury)} <span class="dim">· ${IH.SEVERITY[IH.severity(x.s, today)]} · ${x.s.start ? fmt(x.s.start).replace(/ \d+,/, '') : 'date unknown'}${x.s.end ? '' : ' · now'}</span>`).join('<br>');
+    const items = [...places.values()]
+      .sort((a, b) => b.list.length - a.list.length || b.list.at(-1).i - a.list.at(-1).i)
+      .map(p => row(`sev${worst(p.list)}`, esc(p.label), p.list.length, whatOf(p.list), p.list.at(-1).i, p.list));
+    if (illness.length) items.push(row(`sev${worst(illness)}`, 'Illness', illness.length, whatOf(illness), illness.at(-1).i, illness));
+    if (unplaced) items.push(row('none', '<span class="dim">Not recorded</span>', unplaced,
+      '<span class="dim">The report gave no injury, only Out or Hurt</span>'));
+
+    const placed = stints.length - unplaced;
+    const note = placed ? '' : `<div class="body-note">None of his injuries on record say where. Older reports were backfilled from Discord, which kept only Out or Hurt; new 2K reports name the injury, so this fills in from here.</div>`;
+    return `<div class="section">
+      <h2 class="ui-section-title">Where he’s been hurt</h2>
+      <div class="body">${svg}<div><ul class="parts">${items.join('')}</ul>${note}</div></div>
+    </div>`;
+  }
+
+  // One lane per league year (July 1 – June 30) that has an injury in it.
+  function renderTimeline(stints) {
+    const dated = stints.map((s, i) => ({ s, i })).filter(x => x.s.start);
+    if (!dated.length) return '';
+    const yearStart = season => `20${season.slice(0, 2)}-07-01`;
+    const pct = (season, date) => {
+      const a = Date.parse(yearStart(season)), b = Date.parse(`20${season.slice(3)}-07-01`);
+      return Math.max(0, Math.min(100, (Date.parse(date) - a) / (b - a) * 100));
+    };
+    const seasons = new Set(dated.map(x => IH.seasonOf(x.s.start)));
+    dated.forEach(x => { if (x.s.end) seasons.add(IH.seasonOf(x.s.end)); });
+    const months = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+    const lanes = [...seasons].sort().reverse().map(season => {
+      const ticks = months.map((m, k) => k ? `<span class="tl-month" style="left:${(k / 12 * 100).toFixed(2)}%"></span>` : '').join('');
+      const bars = dated.map(({ s, i }) => {
+        const end = s.end || today;
+        if (IH.seasonOf(s.start) > season || IH.seasonOf(end) < season) return '';
+        const from = IH.seasonOf(s.start) === season ? pct(season, s.start) : 0;
+        const to = IH.seasonOf(end) === season ? pct(season, end) : 100;
+        const label = `${s.injury || s.duration || s.status} (${IH.SEVERITY[IH.severity(s, today)].toLowerCase()}): ${fmt(s.start)} – ${s.end ? fmt(s.end) : 'now'}`;
+        return `<button class="tl-bar sev${IH.severity(s, today)}${s.end ? '' : ' open'}" data-i="${i}"
+          style="left:${from.toFixed(2)}%;width:${Math.max(0.6, to - from).toFixed(2)}%" title="${esc(label)}" aria-label="${esc(label)}"></button>`;
+      }).join('');
+      const now = IH.seasonOf(today) === season ? `<span class="tl-today" style="left:${pct(season, today).toFixed(2)}%" title="Today"></span>` : '';
+      return `<div class="tl-season">${season}</div><div class="tl-track">${ticks}${bars}${now}</div>`;
+    }).join('');
+    const axis = months.map((m, k) => k % 2 ? '' : `<span style="left:${((k + 0.5) / 12 * 100).toFixed(2)}%">${m}</span>`).join('');
+    return `<div class="section">
+      <h2 class="ui-section-title">Timeline</h2>
+      <div class="tl">${lanes}<div></div><div class="tl-axis">${axis}</div></div>
+      <div class="tl-legend">${[1, 2, 3, 4].map(n => `<span><i class="sev${n}"></i>${IH.SEVERITY[n]}</span>`).join('')}<span><i class="open"></i>Still injured</span></div>
+    </div>`;
+  }
+
+  function renderLog(stints, known) {
+    const loading = '<span class="dim">…</span>';
+    const rows = stints.map((s, i) => ({ s, i })).reverse().map(({ s, i }) => {
+      const status = s.worst && s.worst !== s.status ? `${badge(s.worst)} → ${badge(s.status)}` : badge(s.status);
+      const cleared = s.end
+        ? `${tdate(s.end)}${s.closed === 'season-end' ? ' <span class="dim d-long">(season end)</span>' : ''}`
+        : '<span class="ui-badge ui-badge--accent">Current</span>';
+      const n = IH.length(s, today);
+      const missed = !known ? loading : s.missed == null ? '<span class="dim">—</span>' : s.missed;
+      const through = !known ? loading : s.playedThrough == null ? '<span class="dim">—</span>' : s.playedThrough;
+      return `<tr class="stint" data-i="${i}" aria-expanded="false" tabindex="0">
+          <td><span class="caret">▸</span> ${tdate(s.start)}</td>
+          <td class="sm-hide">${esc(s.teams.map(t => t.team).join(' → '))}</td>
+          <td class="what">${what(s)}<div class="sm-only">${status}</div></td>
+          <td class="sm-hide">${status}</td>
+          <td class="sm-hide">${esc(s.duration || '—')}</td>
+          <td class="num sm-hide">${n != null ? n : '<span class="dim">—</span>'}</td>
+          <td class="num">${missed}</td>
+          <td class="num sm-hide">${through}</td>
+          <td class="num sm-hide">${ovr(s)}</td>
+          <td>${cleared}</td>
+        </tr>
+        <tr class="detail" data-for="${i}" hidden><td colspan="10">${renderReports(s)}</td></tr>`;
+    }).join('');
+    return `<div class="section">
+      <h2 class="ui-section-title">Injury log</h2>
+      <div class="ui-table-wrap"><table class="ui-table ui-table--dense log">
+        <thead><tr><th>Injured</th><th class="sm-hide">Team</th><th>Injury</th><th class="sm-hide">Status</th><th class="sm-hide">Duration</th>
+          <th class="num sm-hide">Days</th><th class="num">Missed</th><th class="num sm-hide">Played</th><th class="num sm-hide">OVR</th><th>Cleared</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </div>`;
+  }
+
+  function renderReports(s) {
+    const items = s.reports.map(r => `<li><span class="when">${fmt(r.date)}</span>
+      <span>${r.kind === 'new' ? 'Reported' : 'Updated'}</span> ${badge(r.status)}
+      <span>${what(r)}</span>${r.duration ? `<span class="dim">· ${esc(r.duration)}</span>` : ''}
+      ${r.ovr_delta ? `<span class="neg">OVR ${r.ovr_delta > 0 ? '+' : '−'}${Math.abs(r.ovr_delta)}</span>` : ''}</li>`);
+    if (!s.start) items.push(`<li><span class="when">—</span><span class="dim">The report before ${fmt(s.end)} isn’t on record; only his return is.</span></li>`);
+    if (s.end) items.push(`<li><span class="when">${fmt(s.end)}</span><span>Off the report</span>${s.closed === 'season-end' ? '<span class="dim">· closed at season end</span>' : ''}</li>`);
+    return `<ul class="reports">${items.join('')}</ul>`;
+  }
+
+  function toggle(row, force) {
+    if (!row) return;
+    const on = force ?? row.getAttribute('aria-expanded') !== 'true';
+    row.setAttribute('aria-expanded', String(on));
+    content.querySelector(`tr.detail[data-for="${row.dataset.i}"]`).hidden = !on;
+  }
+
+  function wire() {
+    // Hovering an injury (a row of the list or the log, or a highlighted area)
+    // lights the places on the body it hurt and dims the rest, and marks its
+    // rows in the list.
+    const figs = content.querySelector('.body-figs');
+    const has = (el, ids) => (el.dataset.stints || '').split(' ').some(i => ids.includes(i));
+    const focus = ids => {
+      if (!figs) return;
+      figs.classList.toggle('focus', !!ids);
+      content.querySelectorAll('.bm.hit').forEach(p => p.classList.toggle('hl', !!ids && has(p, ids)));
+      content.querySelectorAll('.parts li.click').forEach(li => li.classList.toggle('hl', !!ids && has(li, ids)));
+    };
+    content.querySelectorAll('.parts li.click, .bm.hit').forEach(el => {
+      el.addEventListener('mouseenter', () => focus(el.dataset.stints.split(' ')));
+      el.addEventListener('mouseleave', () => focus(null));
+    });
+    content.querySelectorAll('tr.stint').forEach(tr => {
+      tr.addEventListener('mouseenter', () => focus([tr.dataset.i]));
+      tr.addEventListener('mouseleave', () => focus(null));
+    });
+    content.querySelectorAll('tr.stint').forEach(row => {
+      row.addEventListener('click', () => toggle(row));
+      row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(row); } });
+    });
+    content.querySelectorAll('.tl-bar, .bm.hit, .parts li.click').forEach(bar => bar.addEventListener('click', () => {
+      const row = content.querySelector(`tr.stint[data-i="${bar.dataset.i}"]`);
+      toggle(row, true);
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('flash');
+      setTimeout(() => row.classList.remove('flash'), 1200);
+    }));
+  }
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

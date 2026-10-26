@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Injuries</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Injuries">
+  <meta property="og:description" content="Who is hurt in the NBN 2K sim right now, and every injury since — from the injury report the streamer shows each stream day.">
+  <meta property="og:url" content="https://nbn.today/season/injuries/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .note { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 var(--space-4); }
+    .note a { color: var(--link); }
+    .filters { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
+    .count { font-size: var(--text-sm); color: var(--text-muted); }
+
+    .team-cell { white-space: nowrap; font-weight: 600; }
+    .team-cell a { color: inherit; text-decoration: none; border-left: 3px solid var(--team-primary, var(--border)); padding-left: var(--space-2); }
+    .team-cell a:hover { text-decoration: underline; }
+    .player-link { color: inherit; text-decoration: none; font-weight: 500; }
+    .player-link:hover { text-decoration: underline; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .neg { color: var(--danger); }
+    .dim { color: var(--text-muted); }
+    .ts { color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; }
+    .nowrap { white-space: nowrap; }
+
+    .day { margin-bottom: var(--space-4); }
+    .day h3 { font-size: var(--text-sm); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 var(--space-2); }
+    .event { display: flex; gap: var(--space-2); align-items: baseline; padding: var(--space-1) 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); flex-wrap: wrap; }
+    .event .what { color: var(--text-secondary); }
+
+    @media (max-width: 560px) { .hide-sm { display: none; } }
+  </style>
+</head>
+<body>
+<script src="/nav.js"></script>
+
+<div class="page ui-page">
+  <nav class="nav"></nav>
+
+  <header class="ui-header">
+    <div>
+      <h1 class="ui-title">Injuries</h1>
+      <div class="ui-subtitle" id="last-report"></div>
+    </div>
+  </header>
+
+  <p class="note">In-game injuries from the 2K sim, taken from the injury screen the
+    streamer shows each stream day. Changes are posted to <b>#injury-report</b> on Discord.</p>
+
+  <div class="ui-tabs" role="tablist">
+    <button class="ui-tab active" data-tab="current">Current</button>
+    <button class="ui-tab" data-tab="history">History</button>
+  </div>
+
+  <div class="filters">
+    <select class="ui-select" id="f-team"><option value="">All teams</option></select>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script>
+const TEAM_ABBRS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM',
+  'MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
+const params = new URLSearchParams(location.search);
+let tab = location.hash === '#history' ? 'history' : 'current';
+let team = (params.get('team') || '').toUpperCase();
+let current = null;
+let history_ = null;
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const day = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+const short = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const teamCell = t => t
+  ? `<span class="team-cell" data-team="${esc(t)}"><a href="/stats/teams/${esc(t)}/">${esc(t)}</a></span>`
+  : '<span class="dim">—</span>';
+// To the player's own injury page, which links on to the profile.
+const playerLink = (slug, name) => `<a class="player-link" href="/stats/players/injuries/?p=${encodeURIComponent(slug)}">${esc(name || slug)}</a>`;
+const statusBadge = s => `<span class="ui-badge ${/^out$/i.test(s || '') ? 'ui-badge--danger' : 'ui-badge--warning'}">${esc(s)}</span>`;
+const ovr = v => v.ovr == null ? '' : `${v.ovr}${v.ovr_delta ? ` <span class="neg">(${v.ovr_delta > 0 ? '+' : '−'}${Math.abs(v.ovr_delta)})</span>` : ''}`;
+
+function syncUrl() {
+  const p = new URLSearchParams();
+  if (team) p.set('team', team);
+  const url = location.pathname + (p.toString() ? '?' + p : '') + (tab === 'history' ? '#history' : '');
+  history.replaceState(null, '', url);
+}
+
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll('.ui-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  syncUrl();
+  render();
+}
+
+function render() {
+  if (tab === 'current') renderCurrent();
+  else renderHistory();
+}
+
+function renderCurrent() {
+  const content = document.getElementById('content');
+  const rows = current.players.filter(p => !team || p.team === team);
+  document.getElementById('count').textContent = `${rows.length} injured`;
+  if (!rows.length) {
+    content.innerHTML = `<div class="ui-empty">${team ? 'Nobody on ' + esc(team) + ' is injured.' : 'Nobody is injured.'}</div>`;
+    return;
+  }
+  content.innerHTML = `<div class="ui-table-wrap"><table class="ui-table">
+    <thead><tr><th>Team</th><th>Player</th><th>Status</th><th>Injury</th><th>Duration</th>
+      <th class="num hide-sm">OVR</th><th class="hide-sm">Since</th></tr></thead>
+    <tbody>${rows.map(p => `<tr>
+      <td>${teamCell(p.team)}</td>
+      <td>${playerLink(p.slug, p.name)}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td>${esc(p.injury)}</td>
+      <td class="nowrap">${esc(p.duration)}</td>
+      <td class="num hide-sm">${ovr(p)}</td>
+      <td class="ts hide-sm">${p.since ? short(p.since) : ''}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function eventText(e) {
+  const a = e.after || {}, b = e.before || {};
+  if (e.kind === 'healed') return `<span class="ui-badge ui-badge--success">Cleared</span> <span class="what">back from ${esc(b.injury || 'injury')}</span>`;
+  if (e.kind === 'new') return `${statusBadge(a.status)} <span class="what">${esc(a.injury)} · ${esc(a.duration)}</span>`;
+  const status = (b.status || '') !== (a.status || '') ? `${esc(b.status)} → ${esc(a.status)}` : esc(a.status);
+  return `<span class="ui-badge ui-badge--accent">Updated</span> <span class="what">${status} · ${esc(a.injury)} · ${esc(a.duration)}</span>`;
+}
+
+async function renderHistory() {
+  const content = document.getElementById('content');
+  if (!history_) {
+    content.innerHTML = '<div class="ui-loading">Loading…</div>';
+    try {
+      const r = await fetch('/api/injuries/history');
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      history_ = await r.json();
+    } catch (err) {
+      content.innerHTML = `<div class="ui-empty">Could not load the history: ${esc(err.message)}</div>`;
+      return;
+    }
+    if (tab !== 'history') return;
+  }
+  const events = history_.filter(e => !team || e.team === team);
+  document.getElementById('count').textContent = `${events.length} change${events.length === 1 ? '' : 's'}`;
+  if (!events.length) { content.innerHTML = '<div class="ui-empty">Nothing yet.</div>'; return; }
+  const byDay = new Map();
+  for (const e of events) {
+    if (!byDay.has(e.date)) byDay.set(e.date, []);
+    byDay.get(e.date).push(e);
+  }
+  content.innerHTML = [...byDay].map(([d, list]) => `<div class="day"><h3>${day(d)}</h3>
+    ${list.map(e => `<div class="event">${teamCell(e.team)} ${playerLink(e.slug, e.name)} ${eventText(e)}</div>`).join('')}
+  </div>`).join('');
+}
+
+async function boot() {
+  document.querySelectorAll('.ui-tab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  document.querySelectorAll('.ui-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  try {
+    const [inj, shots] = await Promise.all([
+      fetch('/api/injuries').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }),
+      fetch('/api/injuries/screenshots').then(r => r.ok ? r.json() : []).catch(() => []),
+    ]);
+    current = inj;
+    const last = inj.last_report;
+    if (last) {
+      const shot = shots.find(s => s.id === last.id && s.images.length);
+      document.getElementById('last-report').innerHTML = `Last report: ${day(last.date)}`
+        + (shot ? ` · <a href="${esc(shot.images[0].url)}" target="_blank" rel="noopener">screenshot</a>` : '');
+    }
+  } catch (err) {
+    document.getElementById('content').innerHTML = `<div class="ui-empty">Could not load injuries: ${esc(err.message)}</div>`;
+    return;
+  }
+  const sel = document.getElementById('f-team');
+  const teams = [...new Set([...current.players.map(p => p.team), ...TEAM_ABBRS].filter(Boolean))].sort();
+  sel.innerHTML += teams.map(t => `<option${t === team ? ' selected' : ''}>${esc(t)}</option>`).join('');
+  if (team && !teams.includes(team)) sel.innerHTML += `<option selected>${esc(team)}</option>`;
+  sel.onchange = () => { team = sel.value; syncUrl(); render(); };
+  render();
+}
+
+boot();
+</script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

@@ -58,7 +58,7 @@ Three lifecycles, distinguished by gitignore rather than by folder:
 | `poopoo` | every 10 min | regenerates the cap-sheet diff behind `/committees/rosters` | those tabs go stale; nothing else |
 | `nbn-achievements` | every 10 min | awards NB¥ for newly unlocked achievements | awards pause; the snapshot is monotonic so nothing double-fires. **Fails silently** — no Discord, no page, and "awarded nothing" reads the same as a quiet week; it was dead for six weeks in 2026. `build/test_achievement_inputs.js` (in the pre-commit hook) is the guard |
 | `nbs-drive-backup` | Sundays 04:00 | tarball of the tracked set to Google Drive | third backup tier stops; the other two continue |
-| `nbn-irl` | hourly | refreshes the ESPN game logs behind the IRL tabs (`/nbnfl`, team pages) into `irl/` (not backed up; refetchable). NFL every run, NBA every third. Also maps newly rostered NBN players to ESPN | the IRL tabs go stale; nothing else. Exits non-zero if any player failed |
+| `nbn-irl` | hourly | refreshes the ESPN game logs behind the IRL tabs (`/media/nbnfl`, team pages) into `irl/` (not backed up; refetchable). NFL every run, NBA every third. Also maps newly rostered NBN players to ESPN | the IRL tabs go stale; nothing else. Exits non-zero if any player failed |
 | `nbn-2k-sync` | Tuesdays 06:00 | pulls 2K ratings, positions and badges from nba2kapi.com (a mirror of 2kratings, which blocks us directly) into `player-attributes.json` and `ovr-history.json` — `build/scrape_2k_attributes.py`. Key in `~/.config/nbn/nba2kapi.key`. To pick up a new signing sooner: `sudo systemctl start nbn-2k-sync.service` | ratings and Roster Settings' primary positions go stale. Exits non-zero and alerts if the feed fails, shrinks or goes 14 days without an update; also alerts on newly unmatched rostered players and on a new 2K primary that makes a secondary position illegal |
 | `nbs-integrity` | Mondays 09:00 | box score row counts + closed-season hashes | **investigate immediately** — see below |
 
@@ -72,7 +72,7 @@ triggered by a box score commit.
 **A box score becomes site data.**
 
 ```
-/boxscores/submit  →  API appends to allstats-{season}.csv   (append-only guard)
+/stats/boxscores/submit  →  API appends to allstats-{season}.csv   (append-only guard)
                    →  triggers build/build.sh
                    →  stats_build reads the raw CSVs, writes derived/
                    →  link-public.sh republishes public/
@@ -88,7 +88,7 @@ from.
 **An injury report becomes site data.** The streamer uploads the 2K injury
 screen from `/committees/stream` (🚑 on the day) → `/parse-boxscores` commits it as its last step
 (`/parse-injuries` alone does just this part)
-→ `injuries.json` + `injury-history.jsonl` update, `/injuries` shows it, and the
+→ `injuries.json` + `injury-history.jsonl` update, `/season/injuries` shows it, and the
 changes post to `#injury-report` tagging each team. Anyone not on the report
 is cleared, but a player on a 2+ week injury who vanishes is confirmed with
 the user first, in case the parse missed a row.
@@ -180,7 +180,7 @@ in a code checkout.
 |---|---|
 | Why is the layout like this? | `docs/dev-deploy-setup-spec.md` |
 | How do I work in this repo? | `CLAUDE.md` (both repos) |
-| What are the league rules? | `rulebook/index.html` |
+| What are the league rules? | `about/rulebook/index.html` |
 | How does a transaction apply? | `nbn-api/docs/transactions.md` |
 | How do draft picks convey? | `nbn-api/docs/picks-conveyance.md` |
 | How was the stats build ported off R? | `docs/stats-pipeline-port-spec.md` |

@@ -1,4 +1,4 @@
-// A game's YouTube video, as the homepage card and /calendar show it.
+// A game's YouTube video, as the homepage card and /season/calendar show it.
 //
 // A streamed game goes through three looks: the stream tag before it's played (each page
 // draws its own), ⏳ once it's final with no video yet, then the YouTube button.

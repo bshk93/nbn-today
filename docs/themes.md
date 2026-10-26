@@ -56,7 +56,7 @@ Five things to know before touching it:
   disappears whenever the API hiccups. Everything else comes from
   `GET /api/themes`, cached in `localStorage` so it paints on first load. **No
   price is ever written in the page**, and the 402 refusal string is the
-  server's — the same rule `/free-agency` follows. The member's own team's
+  server's — the same rule `/fo/free-agency` follows. The member's own team's
   theme is cached separately (`nbn_themes_free`) from the bought ones
   (`nbn_themes_owned`), for the same reason the server keeps them apart: one is
   a purchase and one is a tenure.
@@ -123,6 +123,6 @@ colours most likely to break a recipe: pale accents, near-black primaries,
 cream.
 
 > `build/team-colors.json` is the generator's colour source. Three older
-> hardcoded copies of team colours still exist (`champions/index.html`,
-> `frivolities/index.html`, `nbn-api/routers/discord.py`) and are **not** fed
+> hardcoded copies of team colours still exist (`history/champions/index.html`,
+> `stats/frivolities/index.html`, `nbn-api/routers/discord.py`) and are **not** fed
 > from it — unifying them is a separate job.

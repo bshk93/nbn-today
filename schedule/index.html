@@ -21,20 +21,20 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
-  <!-- The game list moved to /calendar (public, read-only — who's streaming a
+  <!-- The game list moved to /season/calendar (public, read-only — who's streaming a
        game now shows there too) and claiming/flagging moved to /stream (the
        streamer role's own page). Shared /schedule links are still in Discord
        threads, so this stub keeps them working instead of 404ing. Query
-       params are carried through even though /calendar doesn't read them
+       params are carried through even though /season/calendar doesn't read them
        today, same reasoning as the /trade-sim stub. -->
   <script>
-    location.replace('/calendar/' + location.search + location.hash);
+    location.replace('/season/calendar/' + location.search + location.hash);
   </script>
-  <meta http-equiv="refresh" content="0; url=/calendar/">
+  <meta http-equiv="refresh" content="0; url=/season/calendar/">
 </head>
 <body>
   <p style="font-family:var(--font-sans);padding:2rem">
-    The Schedule is now the <a href="/calendar/">Calendar</a>. To claim a game as streamer, see the <a href="/committees/stream/">Stream committee</a>.
+    The Schedule is now the <a href="/season/calendar/">Calendar</a>. To claim a game as streamer, see the <a href="/committees/stream/">Stream committee</a>.
   </p>
 </body>
 </html>

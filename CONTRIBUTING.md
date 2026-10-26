@@ -51,7 +51,7 @@ whole file, or every entry gets reformatted.
 - **This repo has no league data.** The pages fetch it from `/api` and from
   CSV files the server builds. A page opened from a local file server will
   load with no data.
-- Team pages are all `teams/team.js`. Never edit `teams/{ABB}/index.html`.
+- Team pages are all `stats/teams/team.js`. Never edit `stats/teams/{ABB}/index.html`.
 - Use the shared styles in `css/components.css` and `css/theme.css` rather
   than styling a page from scratch. `docs/design-system.md` explains them.
 - Tabs and anything else that feels like "going somewhere" go into browser
@@ -69,5 +69,5 @@ that gets pushed has to be revoked, even if it's deleted straight away.
   you use Claude Code, it reads this file automatically.
 - `docs/` has the detail for each feature.
 - `BACKLOG.md` lists open work, if you're looking for something to pick up.
-- The league's rules are in `rulebook/index.html`
-  ([nbn.today/rulebook](https://nbn.today/rulebook)).
+- The league's rules are in `about/rulebook/index.html`
+  ([nbn.today/about/rulebook](https://nbn.today/about/rulebook)).

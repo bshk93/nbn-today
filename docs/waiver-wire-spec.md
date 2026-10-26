@@ -16,7 +16,7 @@ claim window, a priority rule, or a claim itself — that sentence has never had
 code behind it.
 
 This spec adds the missing piece: every `release` opens a **48-hour claim
-window**. During it the player shows on `/free-agency` as "on waivers" with a
+window**. During it the player shows on `/fo/free-agency` as "on waivers" with a
 countdown, other teams can submit a claim (assuming the existing contract, not
 offering a new one), and at expiry the highest-priority valid claim — worst
 qualifying record, tie broken by head-to-head — takes over the contract. No
@@ -216,7 +216,7 @@ seen live:
 - **Phase 1** — `_validate_waiver_claim`, `POST /api/waivers/{txn_id}/claim`,
   `_sweep_waivers()` + priority resolution (§ 5), `GET /api/waivers`.
 - **Phase 2** — the three Discord feeds (§ 6).
-- **Phase 3** — `/free-agency` UI: "on waivers" status + countdown, the ⋯-menu
+- **Phase 3** — `/fo/free-agency` UI: "on waivers" status + countdown, the ⋯-menu
   claim action, fact sheet display.
 - **Phase 4** — PDC dashboard visibility (mirrors how offer sheets show up
   there today).

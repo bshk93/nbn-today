@@ -1,4 +1,4 @@
-Parse a pending 2K injury report and commit it — the list on `/injuries` and the post to `#injury-report`.
+Parse a pending 2K injury report and commit it — the list on `/season/injuries` and the post to `#injury-report`.
 
 Run with no arguments to process every pending report, oldest first.
 `/parse-boxscores` runs this as its last step, so a stream night is one sweep;

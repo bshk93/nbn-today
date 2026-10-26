@@ -16,7 +16,7 @@
 # which is what makes `git pull` a safe deploy).
 #
 # Still not a substitute for dev.nbn.today: there is no /api here, so anything
-# authenticated — /pdc, /free-agency, team edit mode — needs the real dev host.
+# authenticated — /pdc, /fo/free-agency, team edit mode — needs the real dev host.
 # This is for read-path and visual work.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."

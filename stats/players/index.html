@@ -1,0 +1,3568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Players</title>
+  <!-- NBN:og -->
+  <meta name="description" content="Every player in NBN — career stats, contracts, ratings, awards and game logs.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Players">
+  <meta property="og:description" content="Every player in NBN — career stats, contracts, ratings, awards and game logs.">
+  <meta property="og:url" content="https://nbn.today/stats/players/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+
+    
+        .header-main { display: flex; align-items: center; gap: 1.25rem; flex: 1; }
+    .header-text { display: flex; flex-direction: column; }
+    .player-nav-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 2rem; height: 2rem; border-radius: 50%;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: var(--text-base); cursor: pointer;
+      text-decoration: none; flex-shrink: 0; line-height: 1;
+    }
+    .player-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+        
+    .profile-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    #status { color: var(--text-muted); font-size: var(--text-base); padding: 2rem 0; }
+
+    /* index grid */
+    .player-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .player-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-size: var(--text-base);
+      font-weight: 500;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .player-card:hover { background: var(--bg-hover); border-color: var(--muted-border); text-decoration: none; }
+    .player-card.champion { border-color: var(--warning); }
+    .player-card.champion:hover { border-color: var(--gold); }
+
+    .player-photo {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .player-photo-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* bio line */
+    .bio-line {
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      margin-bottom: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 0.5rem;
+      align-items: center;
+    }
+    .bio-sep { color: var(--text-dim); }
+
+    /* accolades */
+    .accolades {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1.1rem;
+    }
+
+    .badge {
+      padding: 0.15rem 0.45rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-display);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      cursor: default;
+    }
+    /* Accolades read as one set: one neutral chip, the count in bold, and
+       gold kept for the two that are the point of a career (rings, MVP). */
+    .accolades .badge {
+      font-weight: 500; color: var(--text-secondary);
+      background: var(--bg-subtle); border: 1px solid var(--border);
+    }
+    .accolades .badge b { font-weight: 700; color: var(--text-primary); margin-right: 0.2em; }
+    .accolades .badge.badge-gold { color: var(--gold); border-color: var(--gold-border); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+    .accolades .badge.badge-gold b { color: var(--gold); }
+
+
+    /* toggle */
+    
+    
+        
+    /* section headings */
+    .toggle-bar { margin-bottom: var(--space-4); }   /* the view switch (By Team / By Season / …) */
+
+    /* Same as .ui-section-title (css/components.css); kept as its own class
+       because the page builds these in a dozen places. */
+    .section-heading {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: var(--space-6) 0 var(--space-3);
+    }
+
+    /* table wrapper */
+    
+    
+    
+    thead th .sort-arrow { margin-left: 4px; opacity: 0; font-size: var(--text-xs); }
+    thead th[data-active="true"] .sort-arrow { opacity: 1; }
+
+    
+        
+    
+        
+    td.league-leader {
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .row-icon { font-size: 0.95em; margin-left: 4px; color: var(--gold); }
+
+    .career-row { border-top: 2px solid var(--border) !important; }
+
+    /* Career Totals: each total carries its all-time rank underneath. */
+    .ct-cell { white-space: nowrap; }
+    .ct-rank { display: block; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); }
+    .ct-rank a { color: inherit; text-decoration: none; }
+    .ct-rank a:hover { text-decoration: underline; }
+    .ct-rank .ct-active { opacity: 0.8; }
+    .ct-top10 .ct-rank { color: var(--gold); font-weight: 700; }
+    .ct-top50 .ct-rank { color: var(--accent-light); }
+    .ct-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
+    .career-row td { font-weight: 600; color: var(--text-primary); }
+    /* Playoff rows sit in the same tables as the regular season, so they
+       carry a gold tint and edge to stand apart. */
+    .po-row td { background: color-mix(in srgb, var(--gold) 7%, transparent); }
+    .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
+    .career-row + .career-row { border-top: none !important; }
+
+    /* Headline tiles (OVR, Hall of Fame, Contract, History, Health): the same card, label,
+       figure and one line of context, so they read as a set rather than
+       unrelated widgets. */
+    .hero-tiles { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-4); }
+    .hero-tile {
+      display: flex; flex-direction: column; gap: 0.3rem; flex: 1 1 10.5rem; min-width: 0;
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      color: inherit; text-decoration: none; transition: border-color 0.15s;
+    }
+    a.hero-tile:hover { border-color: var(--text-muted); text-decoration: none; }
+    .tile-label { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    .tile-main { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
+    .tile-value { font-size: var(--text-xl); line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .tile-value small { margin-left: 0.25rem; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); }
+    .tile-sub { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .tile-sub b { color: var(--text-secondary); font-weight: 600; }
+    .tile-up { color: var(--success); }
+    .tile-down { color: var(--danger); }
+    .tile-spark { display: block; }
+    .hof-bar { height: 3px; border-radius: var(--radius-sm); background: var(--border); overflow: hidden; margin-top: 0.15rem; }
+    .hof-bar i { display: block; height: 100%; background: var(--text-muted); }
+    .hof-top10 .tile-label, .hof-top10 .tile-sub b:first-child { color: var(--gold); }
+    .hof-top10 .hof-bar i { background: var(--gold); }
+    /* Contract: the shorthand is words, not a figure, so it runs smaller in the same line box. */
+    .tile-value--text { font-size: var(--text-lg); line-height: 1.9rem; font-weight: 600; white-space: nowrap; }
+    /* Health: green when healthy, the injury badge's colour when not. */
+    .health-tile .tile-value { color: var(--success); }
+    .health-tile.hurt { border-left: 3px solid var(--warning); }
+    .health-tile.hurt .tile-value { color: var(--warning); }
+    .health-tile.out { border-left: 3px solid var(--danger); }
+    .health-tile.out .tile-value { color: var(--danger); }
+    .health-tile .tile-sub .neg { color: var(--danger); }
+
+    /* Compare / Edit Bio, quiet, top right of the header. */
+    .player-actions { margin-left: auto; display: flex; gap: var(--space-2); align-items: center; }
+    .player-actions a, .player-actions button {
+      padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent;
+      border: 1px solid var(--border); color: var(--text-muted);
+      font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; text-decoration: none;
+    }
+    .player-actions a:hover, .player-actions button:hover { color: var(--text-secondary); border-color: var(--text-muted); text-decoration: none; }
+    @media (max-width: 600px) {
+      .header-main { flex-wrap: wrap; gap: 0.75rem 1rem; }
+      .header-main .profile-photo { width: 56px; height: 56px; }
+      .header-text { flex: 1; min-width: 0; }
+      .player-actions { order: 3; margin-left: 0; flex-basis: 100%; }
+    }
+
+    /* Subtitle: positions · team · seasons */
+    .identity { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
+    .identity .pos { font-weight: 700; color: var(--text-secondary); letter-spacing: 0.02em; }
+    .identity a.team { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-weight: 600; text-decoration: none; }
+    .player-actions .player-compare { font-size: var(--text-md); line-height: 1; padding: 0.2rem 0.5rem; }
+    .identity .team-abbr { display: none; }
+    .identity a.team:hover { color: var(--text-primary); }
+    @media (max-width: 600px) {
+      /* Compare (the only action left on a phone) sits in the header's
+         top-right corner instead of taking a row of its own. */
+      header.ui-header { position: relative; }
+      .player-actions { position: absolute; top: 0; right: 0; }
+      .ui-header[data-team] .player-actions { top: var(--space-3); right: var(--space-3); }
+      .header-text { padding-right: 2.5rem; }
+      /* One row on a phone: "PG / SG · ORL · 7 NBN seasons", the team as its
+         abbreviation so the line fits. */
+      .identity { flex-wrap: nowrap; white-space: nowrap; }
+      .identity .team-full { display: none; }
+      .identity .team-abbr { display: inline; }
+    }
+    .identity a.team img { width: 18px; height: 18px; object-fit: contain; }
+    .identity .retired { font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: var(--text-xs); letter-spacing: 0.06em; }
+
+    .page-tabs {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+    }
+
+    .page-tab {
+      padding: 0.3rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .page-tab:hover { background: var(--bg-hover); color: var(--text-secondary); }
+    .page-tab.active { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
+
+    .missing-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .missing-bar-label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-right: 0.1rem;
+    }
+
+    .missing-btn {
+      padding: 0.3rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .missing-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+    .missing-btn.active { background: color-mix(in srgb, var(--warning) 16%, transparent); border-color: var(--champion-border); color: var(--gold); }
+
+    .rostered-btn {
+      padding: 0.3rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .rostered-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+    .rostered-btn.active { background: var(--success-bg); border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success-light); }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-search,
+    .filter-team {
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: var(--text-base);
+      font-family: inherit;
+      outline: none;
+    }
+
+    .filter-search { flex: 1; min-width: 180px; }
+    .filter-search::placeholder { color: var(--text-muted); }
+    .filter-search:focus,
+    .filter-team:focus { border-color: var(--accent); }
+
+    .filter-team { cursor: pointer; min-width: 140px; }
+
+    .filter-count { color: var(--text-muted); font-size: var(--text-sm); align-self: center; white-space: nowrap; }
+
+    .no-results { color: var(--text-muted); font-size: var(--text-base); padding: 1.5rem 0; }
+
+    /* player index table */
+    .idx-team { display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; font-weight: 600; }
+    .idx-team img { width: 18px; height: 18px; object-fit: contain; }
+    .player-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .player-photo-sm {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: top center;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .player-placeholder-sm {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .champion-name { color: var(--warning); }
+
+    tbody tr.clickable-row { cursor: pointer; }
+
+    /* bio edit form */
+    .bio-edit-form {
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 0.9rem 1.1rem; margin-top: 0.5rem; margin-bottom: 0.75rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem;
+    }
+    @media (max-width: 500px) { .bio-edit-form { grid-template-columns: 1fr; } }
+
+    .bio-edit-form label {
+      display: flex; flex-direction: column; gap: 0.2rem;
+      font-size: var(--text-sm); color: var(--text-secondary); font-weight: 500;
+    }
+    .bio-edit-form input {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
+      padding: 0.32rem 0.55rem; outline: none;
+    }
+    .bio-edit-form input:focus { border-color: var(--accent); }
+    .bio-edit-form select {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
+      padding: 0.32rem 0.55rem; outline: none; cursor: pointer;
+    }
+    .bio-edit-form select:focus { border-color: var(--accent); }
+    .salary-rows { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.25rem; }
+    .salary-row { display: flex; flex-direction: column; gap: 0.2rem; }
+    .salary-row-main { display: flex; gap: 0.4rem; align-items: center; }
+    .salary-row-main input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.32rem 0.55rem; outline: none; }
+    .salary-row-main input:focus { border-color: var(--accent); }
+    .salary-row-main .season-input { width: 5.5rem; flex: 0 0 auto; }
+    .salary-row-main .amount-input { flex: 1; }
+    .salary-row-main .hold-select {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-muted); font-size: var(--text-sm); font-family: inherit;
+      padding: 0.32rem 0.4rem; outline: none; cursor: pointer; flex: 0 0 auto;
+    }
+    .salary-row-main .hold-select:focus { border-color: var(--accent); }
+    /* Guarantee steps */
+    .gtd-steps { display: none; flex-direction: column; gap: 0.3rem; margin-left: 1rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.2); border-left: 2px solid var(--border); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .gtd-steps.visible { display: flex; }
+    .gtd-steps-desc { font-size: var(--text-xs); color: var(--text-muted); font-style: italic; margin-bottom: 0.15rem; }
+    .gtd-step { display: flex; gap: 0.35rem; align-items: center; }
+    .gtd-step-conn { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+    .gtd-step input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.28rem 0.5rem; outline: none; }
+    .gtd-step input:focus { border-color: var(--accent); }
+    .gtd-step .gtd-step-amount { width: 9rem; }
+    .gtd-step .gtd-step-date { width: 9.5rem; }
+    .gtd-step .gtd-step-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--text-base); padding: 0 0.2rem; line-height: 1; }
+    .gtd-step .gtd-step-remove:hover { color: var(--danger); }
+    .add-step-btn { align-self: flex-start; background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; font-size: var(--text-xs); padding: 0.1rem 0.5rem; font-family: inherit; }
+    .add-step-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+    .bio-edit-form .full-col { grid-column: 1 / -1; }
+    .field-hint { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; line-height: 1.4; }
+    .bio-edit-actions {
+      grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; padding-top: 0.1rem;
+    }
+    .edit-btn {
+      padding: 0.28rem 0.7rem; border-radius: var(--radius-sm); font-size: var(--text-xs);
+      font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
+    }
+    .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
+    .edit-btn-primary:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+    .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+    .edit-status { font-size: var(--text-xs); color: var(--danger); }
+    .btn-add-player {
+      padding: 0.35rem 0.75rem; background: var(--accent-panel-bg); border: 1px solid var(--accent);
+      border-radius: var(--radius-sm); color: var(--accent-light); font-size: var(--text-xs); font-weight: 600;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .btn-add-player:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+    }
+    .modal-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.5rem; width: min(540px, 92vw); max-height: 88vh; overflow-y: auto;
+    }
+    .modal-card h3 { font-size: var(--text-base); font-weight: 700; margin-bottom: 1rem; }
+    .slug-field {
+      display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 0.75rem;
+      font-size: var(--text-xs); color: var(--text-muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .slug-field input {
+      background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit;
+      padding: 0.32rem 0.55rem; outline: none;
+    }
+    .slug-field input:focus { border-color: var(--accent); }
+    .slug-exists-warn {
+      display: none; margin-top: 0.3rem; padding: 0.4rem 0.6rem;
+      background: var(--danger-alt-bg); border: 1px solid var(--danger-alt-border); border-radius: var(--radius-sm);
+      color: var(--danger-light); font-size: var(--text-xs); font-weight: 400;
+      text-transform: none; letter-spacing: 0;
+    }
+    .slug-exists-warn a { color: var(--danger-light); text-decoration: underline; }
+    .pos-picker { display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.25rem; }
+    .pos-pill {
+      padding: 0.18rem 0.5rem; border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 700;
+      cursor: pointer; font-family: inherit; border: 1px solid var(--border);
+      background: transparent; color: var(--text-muted);
+    }
+    .pos-pill.selected { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
+    .pos-pill:hover:not(.selected) { border-color: var(--text-muted); color: var(--text-muted); }
+
+    /* The top of a player page: the bio line and the tiles across the full
+       width, then the career card and the archetype radar side by side, the
+       same height, so neither hangs beside empty space. */
+    .player-hero { margin-bottom: var(--space-5); }
+    .hero-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-3); align-items: stretch; }
+    .career-card {
+      display: flex; flex-direction: column; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .career-card .career-line-note { margin-top: 0; }
+    .career-card .career-line { margin-top: 0; }
+    .career-card .accolades { margin: auto 0 0; }
+    /* The radar card lies on its side here: the chart on the left, the
+       season picker and the similar seasons on the right. */
+    .hero-row > .ui-radar--card {
+      display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto 1fr;
+      column-gap: var(--space-4); align-items: start; padding: var(--space-3) var(--space-4);
+    }
+    /* radar.js nests the chart (and the page's similar list) in wrappers;
+       let them through so both sit on the card's grid. */
+    .hero-row > .ui-radar--card > div:nth-child(2),
+    .hero-row > .ui-radar--card > div:nth-child(2) > div { display: contents; }
+    .hero-row > .ui-radar--card svg { grid-column: 1; grid-row: 1 / span 2; }
+    .hero-row > .ui-radar--card .ui-radar-head { grid-column: 2; grid-row: 1; }
+    .hero-row > .ui-radar--card .similar { grid-column: 2; grid-row: 2; margin-top: var(--space-3); }
+    .hero-row > .ui-radar svg { width: 210px !important; height: auto; }  /* radar.js sets 280px inline */
+    @media (max-width: 900px) {
+      .hero-row { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .hero-row > .ui-radar--card { display: flex; }
+      .hero-row > .ui-radar--card .similar { align-self: stretch; }
+    }
+    /* Feats & Streaks, side by side on a wide screen. */
+    .ins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-4); align-items: start; }
+    .ins-grid .ui-table-wrap { margin: 0; }
+    .ins-top10 a { color: var(--gold); font-weight: 700; }
+    .ins-when { white-space: nowrap; font-size: var(--text-sm); }
+    .ins-active { color: var(--success) !important; font-weight: 600; }
+    .ins-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
+    .splits-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+    .splits-head .ui-select { width: auto; }
+    .splits-opp { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+    .splits-opp img { width: 18px; height: 18px; object-fit: contain; }
+    /* Most similar seasons, under the archetype radar. */
+    .similar { margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border-subtle); }
+    .similar-label { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem; }
+    .similar-row { display: flex; justify-content: space-between; gap: var(--space-3); padding: 0.2rem 0; font-size: var(--text-sm); text-decoration: none; color: var(--text-secondary); }
+    .similar-row:hover { color: var(--link); text-decoration: none; }
+    .similar-season { color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .career-line-note { margin-top: var(--space-4); font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    .career-line { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); margin-top: var(--space-2); }
+    .career-fig-value { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .career-fig-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.2rem; }
+
+    .gamelog-pagination {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .gl-page-btn {
+      padding: 0.3rem 0.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, color 0.12s;
+    }
+    .gl-page-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-secondary); }
+    .gl-page-btn:disabled { opacity: 0.35; cursor: default; }
+    .po-badge {
+      display: inline-block;
+      padding: 0.1rem 0.32rem;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      background: var(--accent-panel-bg);
+      color: var(--accent-light);
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+      margin-left: 3px;
+    }
+  </style>
+</head>
+<body>
+<div class="page ui-page ui-page--wide">
+  <nav class="nav" id="nav"></nav>
+  <header class="ui-header" style="align-items:center">
+    <div class="header-main">
+      <div class="header-text">
+        <h1 class="ui-title" id="page-title">Players</h1>
+        <p class="ui-subtitle" id="page-sub"></p>
+      </div>
+    </div>
+  </header>
+  <nav class="ui-tabs" id="players-tabs" aria-label="Player pages">
+    <a class="ui-tab active" aria-current="page" href="/stats/players">All Players</a>
+    <a class="ui-tab" href="/stats/compare/">Compare</a>
+    <a class="ui-tab" href="/stats/ratings-changes/">Ratings Changes</a>
+  </nav>
+  <div id="content"><div id="status">Loading...</div></div>
+</div>
+
+<script src="/country-iso.js"></script>
+<script src="/ratings-popup.js"></script>
+<script src="/league-time.js"></script>
+<script src="/names.js"></script>
+<script src="/radar.js"></script>
+<script src="/injury-history.js"></script>
+<script src="/contract.js"></script>
+<script src="/stats/players/subpage.js"></script>
+<script>
+(function () {
+  const slug = new URLSearchParams(location.search).get('p');
+  // The strip links the player index's sibling pages; on a profile it
+  // becomes the player's own: Profile, 2K Ratings, Contract, History, Injuries.
+  if (slug) PlayerSubpage.renderTabs(document.getElementById('players-tabs'), slug, 'profile');
+
+  let biosData = {};
+  let teamMap = {};
+  const slugByName = new Map();  // UPPERCASE player name → slug, for hof.csv
+  let currentOvr = {};
+  let allOvrHistory = {};
+  let allAttributes = {};
+  let allPlayerSeasons = [];
+
+  // allAttributes is {slug: [snapshot, …]} oldest-first — current is the last entry.
+  function currentAttributes(playerSlug) {
+    const history = allAttributes[playerSlug];
+    return history && history.length ? history[history.length - 1] : null;
+  }
+
+  // The current league year (cap/contract clock). Set from GET /api/league-year at
+  // page load; falls back to the date-based season if that fetch fails. Drives the
+  // default starting season offered in the contract editor.
+  let LEAGUE_YEAR = null;
+
+  function currentSeasonStr() {
+    if (LEAGUE_YEAR) return LEAGUE_YEAR;
+    const now = new Date();
+    const y = now.getFullYear() % 100;
+    const m = now.getMonth() + 1;
+    return m < 7
+      ? `${String(y - 1).padStart(2, '0')}-${String(y).padStart(2, '0')}`
+      : `${String(y).padStart(2, '0')}-${String((y + 1) % 100).padStart(2, '0')}`;
+  }
+
+  const TEAM_NAMES = {
+    ATL:'Atlanta Hawks', BKN:'Brooklyn Nets', BOS:'Boston Celtics', CHA:'Charlotte Hornets',
+    CHI:'Chicago Bulls', CLE:'Cleveland Cavaliers', DAL:'Dallas Mavericks', DEN:'Denver Nuggets',
+    DET:'Detroit Pistons', GSW:'Golden State Warriors', HOU:'Houston Rockets', IND:'Indiana Pacers',
+    LAC:'LA Clippers', LAL:'Los Angeles Lakers', MEM:'Memphis Grizzlies', MIA:'Miami Heat',
+    MIL:'Milwaukee Bucks', MIN:'Minnesota Timberwolves', NOP:'New Orleans Pelicans', NYK:'New York Knicks',
+    OKC:'Oklahoma City Thunder', ORL:'Orlando Magic', PHI:'Philadelphia 76ers', PHX:'Phoenix Suns',
+    POR:'Portland Trail Blazers', SAC:'Sacramento Kings', SAS:'San Antonio Spurs', TOR:'Toronto Raptors',
+    UTA:'Utah Jazz', WAS:'Washington Wizards',
+  };
+
+  // ── Bio name helpers ─────────────────────────────────────────────────────────
+
+  // "CURRY, STEPHEN" → "Stephen Curry". Shared with every page via /names.js.
+  function displayName(canonical) {
+    return nbnPlayerName(canonical);
+  }
+
+  // Home / Players / <name>. Built as elements: .nav is a flex row with a gap,
+  // so bare " / " text between links got the gap on one side only, and the
+  // name went in as raw HTML.
+  function setCrumbs(name) {
+    const nav = document.getElementById('nav');
+    nav.textContent = '';
+    const add = (tag, text, href, cls) => {
+      const el = document.createElement(tag);
+      el.textContent = text;
+      if (href) el.href = href;
+      if (cls) el.className = cls;
+      nav.appendChild(el);
+    };
+    add('a', 'Home', '/');
+    add('span', '/', null, 'nav-crumb-sep');
+    add('a', 'Players', '/stats/players/');
+    add('span', '/', null, 'nav-crumb-sep');
+    add('span', name, null, 'nav-crumb-current');
+  }
+
+  // Canonical slug is LAST-FIRST ("CURRY, STEPHEN" → "curry-stephen"), i.e. the
+  // bio name slugified in place. Do NOT run displayName() first — that flips it
+  // to first-last and produces a key nothing else in the site agrees with.
+  function slugFromName(canonical) {
+    return canonical.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  // ── Token helpers ────────────────────────────────────────────────────────────
+
+  // Async because it may have to ask. Every caller is an event handler, so
+  // awaiting it costs nothing; the alternative is the browser's prompt box,
+  // which cannot mask a credential.
+  async function getToken() {
+    const stored = localStorage.getItem('nbn_token');
+    if (stored) return stored;
+    return await promptForToken();
+  }
+
+  function clearToken() { localStorage.removeItem('nbn_token'); }
+
+  // Roles for the current token, populated once on load from GET /api/auth/me.
+  // Gate which edit affordances render — the API still enforces permissions on
+  // write; this just hides controls the user couldn't actually use.
+  let AUTH_ROLES = [];
+  function hasAuthRole(role) {
+    if (AUTH_ROLES.includes('admin')) return true;
+    if (AUTH_ROLES.includes(role)) return true;
+    if (role === 'rosters' && AUTH_ROLES.includes('bod')) return true;  // bod implies rosters
+    return false;
+  }
+  // Bio + OVR edits require the rosters or curator role; adding players requires rosters.
+  const canEditBios  = () => hasAuthRole('rosters') || hasAuthRole('curator');
+  const canAddPlayer = () => hasAuthRole('rosters');
+
+  // ── CSV helpers ──────────────────────────────────────────────────────────────
+
+  // ── Sort helper ──────────────────────────────────────────────────────────────
+
+  function sortVal(row, field) {
+    const v = row[field];
+    if (v === undefined || v === '' || v === 'NA') return -Infinity;
+    if (field === 'SEASON') {
+      const n = parseFloat(v);
+      if (!isNaN(n)) return v.includes(' ') ? n + 0.5 : n;
+    }
+    const n = parseFloat(v);
+    return isNaN(n) ? v.toLowerCase() : n;
+  }
+
+  // ── Age helper ───────────────────────────────────────────────────────────────
+
+  function ageAtSeason(dob, season) {
+    if (!dob || dob === 'NA') return '';
+    const m = season && season.match(/\d{2}-(\d{2})/);
+    if (!m) return '';
+    const ref = new Date(2000 + parseInt(m[1], 10), 0, 1); // Jan 1 of end year
+    const d = new Date(dob + 'T00:00:00');
+    if (isNaN(d)) return '';
+    let age = ref.getFullYear() - d.getFullYear();
+    const mo = ref.getMonth() - d.getMonth();
+    if (mo < 0 || (mo === 0 && ref.getDate() < d.getDate())) age--;
+    return String(age);
+  }
+
+  // ── Season aggregation (toggle) ──────────────────────────────────────────────
+
+  const SUM_FIELDS  = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC'];
+  const HIGH_FIELDS = ['HIGH_P','HIGH_R','HIGH_A','HIGH_S','HIGH_B','HIGH_3PM','HIGH_GMSC'];
+
+  function aggregateBySeasonRows(rows) {
+    const map = new Map();
+    rows.forEach(r => {
+      if (!map.has(r.SEASON)) {
+        map.set(r.SEASON, { ...r, _teams: [r.TEAM] });
+      } else {
+        const s = map.get(r.SEASON);
+        s._teams.push(r.TEAM);
+        SUM_FIELDS.forEach(f  => { s[f] = String(+s[f] + +r[f]); });
+        HIGH_FIELDS.forEach(f => { s[f] = String(Math.max(+s[f], +r[f])); });
+        if (r.LAST_DATE > s.LAST_DATE) s.LAST_DATE = r.LAST_DATE;
+      }
+    });
+    return Array.from(map.values()).map(r => ({
+      ...r,
+      TEAM: r._teams.length > 1 ? `${r._teams.length}TM` : r._teams[0],
+    }));
+  }
+
+  // ── Career summary rows ──────────────────────────────────────────────────────
+
+  function careerStatsRow(rows) {
+    const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '' };
+    SUM_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => a + +row[f], 0)); });
+    return r;
+  }
+
+  function careerHighsRow(rows) {
+    const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '', G: String(rows.reduce((a, row) => a + +row.G, 0)) };
+    HIGH_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => Math.max(a, +row[f]), 0)); });
+    return r;
+  }
+
+  // ── Career totals with all-time ranks ────────────────────────────────────────
+
+  // Each key is also a board on /stats/totals (?stat=KEY), which the rank links to.
+  const CAREER_TOTAL_STATS = [
+    { key: 'G',    label: 'G' },
+    { key: 'MIN',  label: 'MIN' },
+    { key: 'PTS',  label: 'PTS' },
+    { key: 'REB',  label: 'REB' },
+    { key: 'AST',  label: 'AST' },
+    { key: 'STL',  label: 'STL' },
+    { key: 'BLK',  label: 'BLK' },
+    { key: '3PM',  label: '3PM' },
+    { key: 'FGM',  label: 'FGM' },
+    { key: 'FTM',  label: 'FTM' },
+    { key: 'TOV',  label: 'TOV' },
+    { key: 'PF',   label: 'PF' },
+    { key: 'GMSC', label: 'GMSC' },
+  ];
+
+  // Sums every season row into one career line per slug. Rows for seasons not
+  // played (G blank/NA, the build's bio-snapshot rows) are skipped.
+  function careerTotalsBySlug(seasonRows) {
+    const out = new Map();
+    seasonRows.forEach(r => {
+      if (!(+r.G > 0)) return;
+      let t = out.get(r.SLUG);
+      if (!t) { t = {}; CAREER_TOTAL_STATS.forEach(s => { t[s.key] = 0; }); out.set(r.SLUG, t); }
+      CAREER_TOTAL_STATS.forEach(s => { t[s.key] += +r[s.key] || 0; });
+    });
+    return out;
+  }
+
+  // Competition ranking: rank = 1 + number of players strictly ahead, so level
+  // totals share a rank. `pool` limits who is counted (null = everyone).
+  function careerRank(totals, slug, key, pool) {
+    const mine = totals.get(slug)?.[key];
+    if (mine == null) return null;
+    let ahead = 0, level = 0;
+    totals.forEach((t, s) => {
+      if (pool && !pool(s)) return;
+      if (t[key] > mine) ahead++;
+      else if (t[key] === mine && s !== slug) level++;
+    });
+    return { rank: ahead + 1, tied: level > 0 };
+  }
+
+  // The career in one line, under the accolades: per-game averages, games and
+  // the best scoring night. Regular season only, the same basis as the
+  // Career Totals table further down. It fills the hero's left column, which
+  // otherwise sits empty beside the taller archetype radar.
+  function renderCareerLine(container, rows, note = 'Career · regular season') {
+    const played = rows.filter(r => +r.G > 0);
+    if (!played.length) return;
+    const sum = k => played.reduce((s, r) => s + (+r[k] || 0), 0);
+    const g = sum('G');
+    const high = Math.max(...played.map(r => +r.HIGH_P || 0));
+    const figures = [
+      ['PTS', (sum('PTS') / g).toFixed(1)],
+      ['REB', (sum('REB') / g).toFixed(1)],
+      ['AST', (sum('AST') / g).toFixed(1)],
+      ['Games', g.toLocaleString()],
+      ...(high > 0 ? [['Career high', `${high} pts`]] : []),
+    ];
+    const el = (cls, text) => {
+      const n = document.createElement('div');
+      n.className = cls;
+      n.textContent = text;
+      return n;
+    };
+    const wrap = document.createElement('div');
+    wrap.className = 'career-line';
+    wrap.setAttribute('aria-label', `${note} averages`);
+    figures.forEach(([label, value]) => {
+      const f = document.createElement('div');
+      f.className = 'career-fig';
+      f.appendChild(el('career-fig-value', value));
+      f.appendChild(el('career-fig-label', label));
+      wrap.appendChild(f);
+    });
+    container.appendChild(el('career-line-note', note));
+    container.appendChild(wrap);
+  }
+
+  // Feats, streaks and teammates: GET /api/players/{slug}/insights, which
+  // ranks this player against every other one (the page alone only has its
+  // own games). Renders nothing if the call fails; the rest of the page
+  // doesn't depend on it.
+  function renderInsights(container, slug) {
+    const fmtDay = iso => {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+    };
+    const rankText = r => (r.tied ? 'T-' : '#') + r.rank;
+    const rankCell = (td, r, href) => {
+      if (!r.rank) { td.textContent = '—'; td.classList.add('muted'); return; }
+      const a = document.createElement('a');
+      a.textContent = rankText(r);
+      if (href) a.href = href;
+      td.appendChild(a);
+      if (r.rank <= 10) td.classList.add('ins-top10');
+    };
+    const table = (heads) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'ui-table-wrap';
+      const t = document.createElement('table');
+      t.className = 'ui-table ui-table--dense';
+      const hr = t.createTHead().insertRow();
+      heads.forEach(([label, cls]) => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        if (cls) th.className = cls;
+        hr.appendChild(th);
+      });
+      wrap.appendChild(t);
+      return { wrap, body: t.createTBody() };
+    };
+    const cell = (tr, text, cls) => {
+      const td = tr.insertCell();
+      if (text != null) td.textContent = text;
+      if (cls) td.className = cls;
+      return td;
+    };
+
+    fetch(`/api/players/${encodeURIComponent(slug)}/insights`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (!data) return;
+        const feats = (data.feats || []).filter(f => f.count > 0);
+        const streaks = (data.streaks || []).filter(s => s.length > 1);
+
+        if (feats.length || streaks.length) {
+          const h2 = document.createElement('h2');
+          h2.className = 'section-heading';
+          h2.textContent = 'Feats & Streaks';
+          container.appendChild(h2);
+          const grid = document.createElement('div');
+          grid.className = 'ins-grid';
+          container.appendChild(grid);
+
+          if (feats.length) {
+            const { wrap, body } = table([['Career', ''], ['Games', 'right'], ['All-time', 'right']]);
+            feats.forEach(f => {
+              const tr = body.insertRow();
+              cell(tr, f.name);
+              cell(tr, f.count.toLocaleString(), 'right strong');
+              rankCell(cell(tr, null, 'right'), f, `/stats/highs/?stat=${encodeURIComponent(f.key)}`);
+            });
+            grid.appendChild(wrap);
+          }
+          if (streaks.length) {
+            const { wrap, body } = table([['Longest run of', ''], ['Games', 'right'], ['When', ''], ['All-time', 'right']]);
+            streaks.forEach(s => {
+              const tr = body.insertRow();
+              cell(tr, s.name);
+              cell(tr, String(s.length), 'right strong');
+              const when = cell(tr, `${fmtDay(s.start)} – ${s.active ? 'now' : fmtDay(s.end)}`, 'muted ins-when');
+              if (s.active) when.classList.add('ins-active');
+              rankCell(cell(tr, null, 'right'), s, null);
+            });
+            grid.appendChild(wrap);
+            const note = document.createElement('div');
+            note.className = 'ins-note';
+            note.textContent = 'Streaks count regular-season games in a row, across seasons. Games a player missed don’t break a run.';
+            container.appendChild(note);
+          }
+        }
+
+        const mates = data.teammates || [];
+        if (mates.length) {
+          const h2 = document.createElement('h2');
+          h2.className = 'section-heading';
+          h2.textContent = 'Most Games Together';
+          container.appendChild(h2);
+          const { wrap, body } = table([['Teammate', ''], ['Games', 'right'], ['Record', 'right'], ['Win %', 'right']]);
+          mates.slice(0, 10).forEach(t => {
+            const tr = body.insertRow();
+            const a = document.createElement('a');
+            a.href = `/stats/players/?p=${encodeURIComponent(t.slug)}`;
+            a.textContent = typeof nbnPlayerName === 'function' ? nbnPlayerName(t.player) : t.player;
+            cell(tr).appendChild(a);
+            cell(tr, t.games.toLocaleString(), 'right');
+            cell(tr, `${t.w}–${t.l}`, 'right');
+            cell(tr, (t.w / Math.max(1, t.games)).toFixed(3).replace(/^0/, ''), 'right');
+          });
+          container.appendChild(wrap);
+          const note = document.createElement('div');
+          note.className = 'ins-note';
+          note.textContent = 'Games both played for the same team, playoffs included, and the team’s record in them.';
+          container.appendChild(note);
+        }
+      })
+      .catch(() => {});
+  }
+
+  function renderCareerTotals(container, slug, regRows, poRows) {
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'Career Totals';
+    container.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ui-table-wrap';
+    container.appendChild(wrap);
+    const table = document.createElement('table');
+    table.className = 'ui-table';
+    wrap.appendChild(table);
+
+    const hr = table.createTHead().insertRow();
+    ['', ...CAREER_TOTAL_STATS.map(s => s.label)].forEach((label, i) => {
+      const th = document.createElement('th');
+      th.textContent = label;
+      if (i) th.classList.add('right');
+      hr.appendChild(th);
+    });
+    const tbody = table.createTBody();
+
+    // "Active" means on a roster today.
+    const isActive = s => !!teamMap[s];
+    const fmtRank = r => (r.tied ? 'T-' : '#') + r.rank;
+
+    function addRow(label, seasonRows) {
+      const totals = careerTotalsBySlug(seasonRows);
+      const mine = totals.get(slug);
+      if (!mine) return;
+      const tr = tbody.insertRow();
+      const th = tr.insertCell();
+      th.textContent = label;
+      th.className = 'muted';
+      CAREER_TOTAL_STATS.forEach(s => {
+        const td = tr.insertCell();
+        td.className = 'right ct-cell';
+        td.appendChild(document.createTextNode(Math.round(mine[s.key]).toLocaleString()));
+        if (!(mine[s.key] > 0)) return;
+        const all = careerRank(totals, slug, s.key, null);
+        if (all.rank <= 10) td.classList.add('ct-top10');
+        else if (all.rank <= 50) td.classList.add('ct-top50');
+        const rk = document.createElement('span');
+        rk.className = 'ct-rank';
+        const rankEl = document.createElement('a');
+        rankEl.href = `/stats/totals/?stat=${encodeURIComponent(s.key)}${label === 'Playoffs' ? '&type=po' : ''}`;
+        rk.appendChild(rankEl);
+        rankEl.textContent = fmtRank(all);
+        rankEl.title = `${fmtRank(all)} all-time`;
+        if (isActive(slug)) {
+          const act = careerRank(totals, slug, s.key, isActive);
+          const a = document.createElement('span');
+          a.className = 'ct-active';
+          a.textContent = ` · ${fmtRank(act)} act`;
+          a.title = `${fmtRank(act)} among active players`;
+          rk.appendChild(a);
+        }
+        td.appendChild(rk);
+      });
+    }
+
+    addRow('Regular Season', regRows);
+    if (poRows) addRow('Playoffs', poRows);
+
+    const note = document.createElement('div');
+    note.className = 'ct-note';
+    note.textContent = isActive(slug)
+      ? 'Rank among every NBN player, then among players on a roster today.'
+      : 'Rank among every NBN player.';
+    container.appendChild(note);
+  }
+
+  // ── Season leaders ───────────────────────────────────────────────────────────
+
+  const LEADER_STATS = ['PTS', 'REB', 'AST', 'STL', 'BLK', '3PM', 'GMSC'];
+
+  function buildSeasonLeaders(allRows) {
+    const bySlugSeason = new Map();
+    allRows.forEach(r => {
+      if (!r.SLUG || !r.SEASON || r.SEASON.includes('Playoffs')) return;
+      const key = r.SLUG + '|' + r.SEASON;
+      if (!bySlugSeason.has(key)) {
+        bySlugSeason.set(key, { SLUG: r.SLUG, SEASON: r.SEASON, PTS: 0, REB: 0, AST: 0, STL: 0, BLK: 0, '3PM': 0, GMSC: 0 });
+      }
+      const s = bySlugSeason.get(key);
+      LEADER_STATS.forEach(f => { s[f] += +r[f] || 0; });
+    });
+    const leaders = {};
+    for (const row of bySlugSeason.values()) {
+      const season = row.SEASON;
+      if (!leaders[season]) leaders[season] = {};
+      LEADER_STATS.forEach(f => {
+        const v = row[f];
+        if (!leaders[season][f] || v > leaders[season][f].val) {
+          leaders[season][f] = { slug: row.SLUG, val: v };
+        }
+      });
+    }
+    return leaders;
+  }
+
+  // ── Column definitions ───────────────────────────────────────────────────────
+
+  const pg  = (f, d = 1) => r => (+r[f] && +r.G) ? (+r[f] / +r.G).toFixed(d) : '0';
+  const pct = (m, a)     => r => +r[a] ? (+r[m] / +r[a] * 100).toFixed(1) + '%' : '—';
+  const ts  = r => {
+    const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
+    return denom ? (+r.PTS / denom * 100).toFixed(1) + '%' : '—';
+  };
+  const R = 'right';
+
+  const SEASON_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir:  1, iconSlot: true },
+    { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
+    // Games started — known only from 26-27, when box score commits began
+    // recording the entered starting five (GET /api/game-starters/counts).
+    { key: 'GS',     label: 'GS',     sortField: 'GS',      defaultDir: -1, cls: R, display: r => r.GS ?? '—' },
+    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
+    { key: 'PPG',    label: 'PPG',    sortField: 'PTS',     defaultDir: -1, cls: R, display: pg('PTS') },
+    { key: 'RPG',    label: 'RPG',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
+    { key: 'APG',    label: 'APG',    sortField: 'AST',     defaultDir: -1, cls: R, display: pg('AST') },
+    { key: 'SPG',    label: 'SPG',    sortField: 'STL',     defaultDir: -1, cls: R, display: pg('STL') },
+    { key: 'BPG',    label: 'BPG',    sortField: 'BLK',     defaultDir: -1, cls: R, display: pg('BLK') },
+    { key: 'TOPG',   label: 'TOPG',   sortField: 'TOV',     defaultDir:  1, cls: R, display: pg('TOV') },
+    { key: 'PFPG',   label: 'PFPG',   sortField: 'PF',      defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: 'FG',     label: 'FG%',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pct('FGM','FGA') },
+    { key: '3P',     label: '3P%',    sortField: '3PM',     defaultDir: -1, cls: R, display: pct('3PM','3PA') },
+    { key: 'FT',     label: 'FT%',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pct('FTM','FTA') },
+    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts },
+    { key: 'GMSC',   label: 'GMSC',   sortField: 'GMSC',    defaultDir: -1, cls: R, display: pg('GMSC') },
+    { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pg('FGM') },
+    { key: 'FGAPG',  label: 'FGA',    sortField: 'FGA',     defaultDir: -1, cls: R, display: pg('FGA') },
+    { key: '3PMPG',  label: '3PM',    sortField: '3PM',     defaultDir: -1, cls: R, display: pg('3PM') },
+    { key: '3PAPG',  label: '3PA',    sortField: '3PA',     defaultDir: -1, cls: R, display: pg('3PA') },
+    { key: 'FTMPG',  label: 'FTM',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pg('FTM') },
+    { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',     defaultDir: -1, cls: R, display: pg('FTA') },
+  ];
+
+  const HIGHS_COLS = [
+    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir:  1, iconSlot: true },
+    { key: 'TEAM',      label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
+    { key: 'G',         label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
+    { key: 'HIGH_P',    label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
+    { key: 'HIGH_R',    label: 'REB',    sortField: 'HIGH_R',    defaultDir: -1, cls: R },
+    { key: 'HIGH_A',    label: 'AST',    sortField: 'HIGH_A',    defaultDir: -1, cls: R },
+    { key: 'HIGH_S',    label: 'STL',    sortField: 'HIGH_S',    defaultDir: -1, cls: R },
+    { key: 'HIGH_B',    label: 'BLK',    sortField: 'HIGH_B',    defaultDir: -1, cls: R },
+    { key: 'HIGH_3PM',  label: '3PM',    sortField: 'HIGH_3PM',  defaultDir: -1, cls: R },
+    { key: 'HIGH_GMSC', label: 'GMSC',   sortField: 'HIGH_GMSC', defaultDir: -1, cls: R,
+      display: r => (+r.HIGH_GMSC).toFixed(1) },
+  ];
+
+  // ── Table builder ────────────────────────────────────────────────────────────
+
+  const isPlayoffRow = row => !!row.SEASON && row.SEASON.includes('Playoffs');
+
+  // A small card under the accolades: HOF points, the all-time and active
+  // ranks, and a bar against the league's top score. hof.csv only lists the
+  // top 250, so a player outside it shows nothing.
+  function renderHofLine(container, playerName, hofRows) {
+    const key = (playerName || '').toUpperCase();
+    const idx = hofRows.findIndex(r => (r.PLAYER || '').toUpperCase() === key);
+    if (idx < 0) return;
+    const pts = +hofRows[idx].HOF_POINTS;
+    const top = Math.max(...hofRows.map(r => +r.HOF_POINTS || 0));
+    const rankOf = pool => {
+      let ahead = 0, level = 0;
+      hofRows.forEach((r, i) => {
+        if (i === idx || !pool(r)) return;
+        const p = +r.HOF_POINTS;
+        if (p > pts) ahead++; else if (p === pts) level++;
+      });
+      return { label: (level ? 'T-' : '#') + (ahead + 1), rank: ahead + 1 };
+    };
+    const el = (tag, cls, text) => {
+      const e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    };
+
+    const all = rankOf(() => true);
+    const card = el('a', 'hero-tile');
+    card.href = '/history/hof/';
+    card.title = 'Hall of Fame standings';
+    if (all.rank <= 10) card.classList.add('hof-top10');
+
+    card.appendChild(el('div', 'tile-label', 'Hall of Fame'));
+    const score = el('div', 'tile-value');
+    const num = el('span', null, pts.toFixed(1));
+    score.appendChild(num);
+    score.appendChild(el('small', null, 'pts'));
+    card.appendChild(score);
+
+    // "Active" means on a roster today, as in Career Totals.
+    const sub = el('div', 'tile-sub');
+    sub.appendChild(el('b', null, all.label));
+    sub.appendChild(document.createTextNode(' all-time'));
+    if (teamMap[slug]) {
+      sub.appendChild(document.createTextNode(' · '));
+      sub.appendChild(el('b', null, rankOf(r => !!teamMap[slugByName.get((r.PLAYER || '').toUpperCase())]).label));
+      sub.appendChild(document.createTextNode(' active'));
+    }
+    card.appendChild(sub);
+
+    const bar = el('div', 'hof-bar');
+    const fill = el('i');
+    fill.style.width = `${top > 0 ? Math.max(2, (pts / top) * 100) : 0}%`;
+    bar.appendChild(fill);
+    bar.title = `${Math.round((pts / top) * 100)}% of the top score (${top.toFixed(1)})`;
+    card.appendChild(bar);
+
+    container.appendChild(card);
+  }
+
+  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = title;
+    container.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ui-table-wrap';
+    container.appendChild(wrap);
+
+    let sortField = defaultSortField || cols[0].sortField;
+    let sortDir = (cols.find(c => c.sortField === sortField) || cols[0]).defaultDir ?? -1;
+
+    const table = document.createElement('table'); table.className = 'ui-table';
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    const thEls = [];
+
+    cols.forEach(col => {
+      const th = document.createElement('th');
+      if (col.cls && col.cls.includes('right')) th.classList.add('right');
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      th.appendChild(document.createTextNode(col.label ?? col.key));
+      th.appendChild(arrow);
+      th.addEventListener('click', () => {
+        if (sortField === col.sortField) {
+          sortDir *= -1;
+        } else {
+          sortField = col.sortField;
+          sortDir = col.defaultDir ?? -1;
+        }
+        updateHeaders();
+        rebuildBody();
+      });
+      thEls.push(th);
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    wrap.appendChild(table);
+
+    function updateHeaders() {
+      thEls.forEach((th, i) => {
+        const active = cols[i].sortField === sortField;
+        th.dataset.active = active;
+        th.querySelector('.sort-arrow').textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+      });
+    }
+
+    function renderRow(tr, row, isCareer) {
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        if (col.cls) td.className = col.cls;
+        td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
+        if (!isCareer && leaderCheck && leaderCheck(row, col)) {
+          td.classList.add('league-leader');
+        }
+        if (!isCareer && col.iconSlot && iconFn) {
+          iconFn(row).forEach(icon => {
+            const span = document.createElement('span');
+            span.className = `row-icon ui-icon ui-icon--${icon}`;
+            span.title = ICON_TITLE[icon];
+            span.setAttribute('role', 'img');
+            span.setAttribute('aria-label', ICON_TITLE[icon]);
+            td.appendChild(span);
+          });
+        }
+      });
+    }
+
+    function rebuildBody() {
+      const sorted = [...rows].sort((a, b) => {
+        const va = sortVal(a, sortField);
+        const vb = sortVal(b, sortField);
+        if (va < vb) return sortDir === 1 ? -1 : 1;
+        if (va > vb) return sortDir === 1 ? 1 : -1;
+        if (tiebreakerField) {
+          const ta = a[tiebreakerField] ?? '';
+          const tb = b[tiebreakerField] ?? '';
+          if (ta < tb) return sortDir === 1 ? -1 : 1;
+          if (ta > tb) return sortDir === 1 ? 1 : -1;
+        }
+        return 0;
+      });
+
+      tbody.innerHTML = '';
+      sorted.forEach(row => {
+        const tr = tbody.insertRow();
+        if (isPlayoffRow(row)) tr.className = 'po-row';
+        renderRow(tr, row, false);
+      });
+
+      [].concat(careerRow || []).forEach(cr => {
+        const tr = tbody.insertRow();
+        tr.className = isPlayoffRow(cr) ? 'career-row po-row' : 'career-row';
+        renderRow(tr, cr, true);
+      });
+    }
+
+    updateHeaders();
+    rebuildBody();
+  }
+
+  // ── Error helper ─────────────────────────────────────────────────────────────
+
+  function showError(msg) {
+    document.getElementById('content').innerHTML = `<div id="status">${msg}</div>`;
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  function makePlaceholder() {
+    const div = document.createElement('div');
+    div.className = 'player-photo-placeholder';
+    return div;
+  }
+
+  function bioVal(v) {
+    return (!v || v === 'NA' || v === 'None' || v === 'N/A') ? null : v;
+  }
+
+  // COUNTRY_ISO + flag helper come from /country-iso.js (shared with /history/draft).
+  const countryFlag = window.countryFlagImg;
+
+  // ── Bio edit form ────────────────────────────────────────────────────────────
+
+  function renderBioForm(initial, onSave, onCancel, onNameChange) {
+    const form = document.createElement('div');
+    form.className = 'bio-edit-form';
+
+    function field(labelText, key, type, cls) {
+      const lbl = document.createElement('label');
+      if (cls) lbl.className = cls;
+      lbl.textContent = labelText;
+      const inp = document.createElement('input');
+      inp.type = type || 'text';
+      inp.value = initial[key] != null ? String(initial[key]) : '';
+      lbl.appendChild(inp);
+      form.appendChild(lbl);
+      return inp;
+    }
+
+    const fName    = field('Name (Last, First)', 'name',       'text');
+
+    // Position multi-select pills. Only before his positions are frozen
+    // from 2K (bio.position): after that `pos` is derived from them, and the
+    // API ignores it on a bio edit.
+    const posLbl = document.createElement('label');
+    posLbl.textContent = 'Positions';
+    const posPicker = document.createElement('div');
+    posPicker.className = 'pos-picker';
+    const selectedPos = new Set(Array.isArray(initial.pos) ? initial.pos : []);
+    const posFrozen = !!(initial.position && initial.position.primary);
+    if (posFrozen) {
+      const rec = initial.position;
+      posPicker.textContent = `${rec.primary}${initial.pos && initial.pos[1] ? ' / ' + initial.pos[1] : ''}`
+        + ` (frozen from 2K on ${rec.set}; it changes only when he changes teams. The secondary is set in Roster Settings)`;
+    }
+    if (!posFrozen) ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pos-pill' + (selectedPos.has(p) ? ' selected' : '');
+      btn.textContent = p;
+      btn.addEventListener('click', () => {
+        if (selectedPos.has(p)) { selectedPos.delete(p); btn.classList.remove('selected'); }
+        else { selectedPos.add(p); btn.classList.add('selected'); }
+      });
+      posPicker.appendChild(btn);
+    });
+    posLbl.appendChild(posPicker);
+    form.appendChild(posLbl);
+
+    const fDob     = field('Date of Birth',     'dob',        'date');
+    const fCollege = field('College',           'college',    'text');
+    const fCountry = field('Country',           'country',    'text');
+    const fDftYr   = field('Draft Year',        'draft_year', 'number');
+    const fDftR    = field('Draft Round (1/2)', 'draft_round','number');
+    const fDftP    = field('Draft Pick #',      'draft_pick', 'number');
+    const fHeight  = field('Height (e.g. 6\'8")',  'height',   'text');
+    const fWeight  = field('Weight (lbs)',          'weight',   'number');
+    const fWingspan= field('Wingspan (e.g. 6\'11")', 'wingspan', 'text');
+    const fPhoto   = field('Photo URL',         'photo_url',  'text', 'full-col');
+
+    // Retired checkbox
+    const retiredLbl = document.createElement('label');
+    retiredLbl.style.cssText = 'display:flex;align-items:center;gap:0.45rem;cursor:pointer;';
+    const retiredCb = document.createElement('input');
+    retiredCb.type = 'checkbox';
+    retiredCb.checked = !!initial.retired;
+    retiredLbl.appendChild(retiredCb);
+    retiredLbl.appendChild(Object.assign(document.createElement('span'), { textContent: 'Retired' }));
+    form.appendChild(retiredLbl);
+
+    // Notes (free-form contract/roster notes shown as tooltip on roster table)
+    const notesLbl = document.createElement('label');
+    notesLbl.className = 'full-col';
+    notesLbl.textContent = 'Notes';
+    const fNotes = document.createElement('textarea');
+    fNotes.rows = 2;
+    fNotes.placeholder = 'e.g. Matched RFA offer, no trade clause';
+    fNotes.value = initial.notes || '';
+    fNotes.style.cssText = 'width:100%;resize:vertical;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.35rem 0.5rem;font-size:var(--text-sm);font-family:inherit;outline:none;box-sizing:border-box';
+    fNotes.addEventListener('focus', () => fNotes.style.borderColor = 'var(--accent)');
+    fNotes.addEventListener('blur',  () => fNotes.style.borderColor = 'var(--border)');
+    notesLbl.appendChild(fNotes);
+    form.appendChild(notesLbl);
+
+    // Contract type
+    const typeLbl = document.createElement('label');
+    typeLbl.textContent = 'Contract Type';
+    const typeSelect = document.createElement('select');
+    [['', '—'], ['player', 'Player'], ['two-way', 'Two-Way']].forEach(([v, l]) => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = l;
+      if ((initial.type || '') === v) opt.selected = true;
+      typeSelect.appendChild(opt);
+    });
+    typeLbl.appendChild(typeSelect);
+    form.appendChild(typeLbl);
+
+    // Two-way shorthand (shown in place of salary rows when contract type = two-way)
+    const twowayDiv = document.createElement('div');
+    twowayDiv.className = 'full-col';
+    twowayDiv.style.display = 'none';
+    const twHeader = Object.assign(document.createElement('span'), { textContent: 'Two-Way Contract' });
+    twHeader.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);display:block;margin-bottom:0.4rem';
+    const twRow = document.createElement('div');
+    twRow.style.cssText = 'display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap';
+    const twYearsWrap = document.createElement('label');
+    twYearsWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:var(--text-xs);color:var(--text-muted)';
+    twYearsWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Years' }));
+    const twYears = document.createElement('input');
+    twYears.type = 'number'; twYears.value = '2'; twYears.min = '1'; twYears.max = '10';
+    twYears.style.cssText = 'width:4rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:var(--text-sm);font-family:inherit;outline:none';
+    twYearsWrap.appendChild(twYears);
+    const twStartWrap = document.createElement('label');
+    twStartWrap.style.cssText = 'display:flex;flex-direction:column;gap:0.2rem;font-size:var(--text-xs);color:var(--text-muted)';
+    twStartWrap.appendChild(Object.assign(document.createElement('span'), { textContent: 'Starting Season' }));
+    const twStart = document.createElement('input');
+    twStart.type = 'text'; twStart.maxLength = 5; twStart.placeholder = currentSeasonStr();
+    twStart.value = currentSeasonStr();
+    twStart.style.cssText = 'width:5rem;background:var(--bg-page);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);padding:0.3rem 0.4rem;font-size:var(--text-sm);font-family:inherit;outline:none';
+    twStartWrap.appendChild(twStart);
+    twRow.appendChild(twYearsWrap); twRow.appendChild(twStartWrap);
+    twowayDiv.appendChild(twHeader); twowayDiv.appendChild(twRow);
+    form.appendChild(twowayDiv);
+
+    // Salaries
+    const salLbl = document.createElement('label');
+    salLbl.className = 'full-col';
+    salLbl.appendChild(Object.assign(document.createElement('span'), { textContent: 'Salaries' }));
+    const salRows = document.createElement('div');
+    salRows.className = 'salary-rows';
+
+    const HOLD_OPTIONS = [
+      ['', 'Guaranteed'],
+      ['UFA', 'UFA Hold'],
+      ['RFA', 'RFA Hold'],
+      ['PLAYER_OPT', 'Player Option'],
+      ['TEAM_OPT', 'Team Option'],
+      ['NON_GTD', 'Non-Guaranteed'],
+    ];
+
+    // steps: [{amount?, date?}, …] for NON_GTD; falls back to legacy gtdAmount/gtdDate if passed as string
+    function makeSalaryRow(season, amount, holdType, steps) {
+      const row = document.createElement('div');
+      row.className = 'salary-row';
+
+      // Main row
+      const main = document.createElement('div');
+      main.className = 'salary-row-main';
+
+      const seasonIn = document.createElement('input');
+      seasonIn.type = 'text'; seasonIn.className = 'season-input'; seasonIn.placeholder = currentSeasonStr(); seasonIn.value = season || '';
+      const amountIn = document.createElement('input');
+      amountIn.type = 'text'; amountIn.className = 'amount-input'; amountIn.placeholder = 'full salary (cap hit)'; amountIn.value = amount || '';
+      const holdSel = document.createElement('select');
+      holdSel.className = 'hold-select';
+      HOLD_OPTIONS.forEach(([v, l]) => {
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = l;
+        if (v === (holdType || '')) opt.selected = true;
+        holdSel.appendChild(opt);
+      });
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button'; removeBtn.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+      removeBtn.setAttribute('aria-label', 'Remove');
+      removeBtn.style.cssText = 'background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:var(--text-base);padding:0 0.2rem;font-family:inherit';
+      removeBtn.onmouseenter = () => { removeBtn.style.color = 'var(--danger)'; };
+      removeBtn.onmouseleave = () => { removeBtn.style.color = 'var(--text-dim)'; };
+      removeBtn.addEventListener('click', () => row.remove());
+
+      main.appendChild(seasonIn); main.appendChild(amountIn); main.appendChild(holdSel); main.appendChild(removeBtn);
+      row.appendChild(main);
+
+      // Guarantee steps section
+      const stepsDiv = document.createElement('div');
+      stepsDiv.className = 'gtd-steps' + ((holdType || '') === 'NON_GTD' ? ' visible' : '');
+
+      const stepsDesc = document.createElement('div');
+      stepsDesc.className = 'gtd-steps-desc';
+      stepsDesc.textContent = 'What\'s owed if released — separate from the cap hit above. Each step adds to the dead cap total on its date. Leave amount blank = full remaining salary becomes guaranteed.';
+      stepsDiv.appendChild(stepsDesc);
+
+      function addGuaranteeStep(amt, dt) {
+        const stepRow = document.createElement('div');
+        stepRow.className = 'gtd-step';
+
+        const amtIn = document.createElement('input');
+        amtIn.type = 'text'; amtIn.className = 'gtd-step-amount';
+        amtIn.placeholder = '$ partial amount';
+        amtIn.title = 'Dollar amount that vests on this date. Leave blank to guarantee the full remaining salary.';
+        amtIn.value = amt || '';
+
+        const connOn = document.createElement('span');
+        connOn.className = 'gtd-step-conn'; connOn.textContent = 'on';
+
+        const dateIn = document.createElement('input');
+        dateIn.type = 'date'; dateIn.className = 'gtd-step-date';
+        dateIn.title = 'Date this amount vests. Leave blank for "at signing".';
+        dateIn.value = dt || '';
+
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button'; rmBtn.className = 'gtd-step-remove'; rmBtn.textContent = '×';
+        rmBtn.addEventListener('click', () => stepRow.remove());
+
+        const dateHint = document.createElement('span');
+        dateHint.className = 'gtd-step-conn';
+        dateHint.textContent = '(blank = at signing)';
+
+        stepRow.appendChild(amtIn);
+        stepRow.appendChild(connOn);
+        stepRow.appendChild(dateIn);
+        stepRow.appendChild(dateHint);
+        stepRow.appendChild(rmBtn);
+        stepsDiv.insertBefore(stepRow, addStepBtn);
+      }
+
+      const addStepBtn = document.createElement('button');
+      addStepBtn.type = 'button'; addStepBtn.className = 'add-step-btn';
+      addStepBtn.textContent = '+ guarantee step';
+      addStepBtn.addEventListener('click', () => addGuaranteeStep());
+      stepsDiv.appendChild(addStepBtn);
+
+      holdSel.addEventListener('change', () => {
+        const on = holdSel.value === 'NON_GTD';
+        stepsDiv.classList.toggle('visible', on);
+        if (!on) stepsDiv.querySelectorAll('.gtd-step').forEach(s => s.remove());
+      });
+
+      // Pre-populate steps
+      if (Array.isArray(steps) && steps.length) {
+        steps.forEach(s => addGuaranteeStep(s.amount, s.date));
+      }
+
+      row.appendChild(stepsDiv);
+      return row;
+    }
+
+    const initCapMap = initial.cap_holds || {};
+    const initSalaries = (initial.salaries && typeof initial.salaries === 'object') ? initial.salaries : {};
+    const initGuaranteed = (initial.guaranteed && typeof initial.guaranteed === 'object') ? initial.guaranteed : {};
+    const initGuaranteeDates = (initial.guarantee_dates && typeof initial.guarantee_dates === 'object') ? initial.guarantee_dates : {};
+    const initGuaranteeSchedule = (initial.guarantee_schedule && typeof initial.guarantee_schedule === 'object') ? initial.guarantee_schedule : {};
+    Object.entries(initSalaries).sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([k, v]) => {
+        // Use guarantee_schedule if present; otherwise convert legacy guaranteed/guarantee_dates to steps
+        let steps = initGuaranteeSchedule[k] || null;
+        if (!steps) {
+          const oldAmt  = initGuaranteed[k];
+          const oldDate = initGuaranteeDates[k];
+          if (oldAmt || oldDate) {
+            steps = [];
+            if (oldAmt)  steps.push({ amount: oldAmt });
+            if (oldDate) steps.push({ date: oldDate });
+          }
+        }
+        salRows.appendChild(makeSalaryRow(k, v, initCapMap[k] || '', steps));
+      });
+
+    const addSalBtn = document.createElement('button');
+    addSalBtn.type = 'button'; addSalBtn.textContent = '+ Add season';
+    addSalBtn.style.cssText = 'background:none;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;font-size:var(--text-xs);padding:0.2rem 0.6rem;font-family:inherit;margin-top:0.25rem;width:fit-content';
+    addSalBtn.onmouseenter = () => { addSalBtn.style.color = 'var(--text-secondary)'; addSalBtn.style.borderColor = 'var(--text-muted)'; };
+    addSalBtn.onmouseleave = () => { addSalBtn.style.color = 'var(--text-muted)'; addSalBtn.style.borderColor = 'var(--border)'; };
+    addSalBtn.addEventListener('click', () => {
+      const existing = salRows.querySelectorAll('.season-input');
+      let next = '';
+      if (existing.length) {
+        const m = existing[existing.length - 1].value.match(/^(\d{2})-(\d{2})$/);
+        if (m) next = `${m[2]}-${String(+m[2] + 1).padStart(2, '0')}`;
+      } else {
+        next = currentSeasonStr();
+      }
+      salRows.appendChild(makeSalaryRow(next, ''));
+    });
+    salLbl.appendChild(salRows); salLbl.appendChild(addSalBtn);
+    form.appendChild(salLbl);
+
+    // Toggle salary rows vs two-way shorthand
+    typeSelect.addEventListener('change', () => {
+      const isTW = typeSelect.value === 'two-way';
+      twowayDiv.style.display = isTW ? '' : 'none';
+      salLbl.style.display = isTW ? 'none' : '';
+    });
+    if ((initial.type || '') === 'two-way') {
+      twowayDiv.style.display = '';
+      salLbl.style.display = 'none';
+      // Pre-fill years/start from existing salary data if it matches expected pattern
+      const zeroYears = Object.entries(initSalaries).filter(([, v]) => v === '$0').map(([k]) => k).sort();
+      if (zeroYears.length) { twStart.value = zeroYears[0]; twYears.value = String(zeroYears.length); }
+    }
+
+    if (onNameChange) fName.addEventListener('input', () => onNameChange(fName.value));
+
+    const actions = document.createElement('div');
+    actions.className = 'bio-edit-actions';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'edit-btn edit-btn-primary';
+    saveBtn.textContent = 'Save';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'edit-btn edit-btn-secondary';
+    cancelBtn.textContent = 'Cancel';
+    const status = document.createElement('span');
+    status.className = 'edit-status';
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    actions.appendChild(status);
+    form.appendChild(actions);
+
+    cancelBtn.addEventListener('click', onCancel);
+    saveBtn.addEventListener('click', async () => {
+      const token = await getToken();
+      if (!token) return;
+      const salaries = {};
+      const cap_holds = {};
+      const guaranteed = {};
+      const guarantee_schedule = {};
+      if (typeSelect.value === 'two-way') {
+        const yrs = parseInt(twYears.value) || 0;
+        let s = twStart.value.trim();
+        for (let i = 0; i < yrs; i++) {
+          salaries[s] = '$0'; guaranteed[s] = '$0';
+          const m = s.match(/^(\d{2})-(\d{2})$/);
+          s = m ? `${m[2]}-${String((+m[2] + 1) % 100).padStart(2, '0')}` : '';
+        }
+        if (s) { salaries[s] = '$1'; cap_holds[s] = 'RFA'; }
+      } else {
+        salRows.querySelectorAll('.salary-row').forEach(row => {
+          const season  = row.querySelector('.season-input').value.trim();
+          const amount  = row.querySelector('.amount-input').value.trim();
+          const hold    = row.querySelector('.hold-select').value;
+          if (season && amount) salaries[season] = amount;
+          if (season && hold)   cap_holds[season] = hold;
+          if (season && hold === 'NON_GTD') {
+            const steps = [];
+            row.querySelectorAll('.gtd-step').forEach(step => {
+              const sAmt  = step.querySelector('.gtd-step-amount').value.trim();
+              const sDate = step.querySelector('.gtd-step-date').value.trim();
+              const entry = {};
+              if (sAmt)  entry.amount = sAmt;
+              if (sDate) entry.date   = sDate;
+              steps.push(entry);
+            });
+            if (steps.length) guarantee_schedule[season] = steps;
+          }
+        });
+      }
+      const payload = {
+        // Canonical bio name is uppercase "LAST, FIRST" with the comma-space —
+        // normalize both here so a typed "Wallace,Keaton" can't land as-is and
+        // read differently from every other bio on the page.
+        name:        fName.value.trim().toUpperCase().replace(/\s*,\s*/, ', '),
+        ...(posFrozen ? {} : { pos: [...selectedPos] }),
+        dob:         fDob.value.trim(),
+        college:     fCollege.value.trim(),
+        country:     fCountry.value.trim(),
+        draft_year:  fDftYr.value  ? +fDftYr.value  : null,
+        draft_round: fDftR.value   ? +fDftR.value   : null,
+        draft_pick:  fDftP.value   ? +fDftP.value   : null,
+        height:      fHeight.value.trim(),
+        weight:      fWeight.value  ? +fWeight.value  : null,
+        wingspan:    fWingspan.value.trim(),
+        photo_url:   fPhoto.value.trim(),
+        retired:     retiredCb.checked,
+        notes:       fNotes.value.trim(),
+        jersey_number: initial.jersey_number ?? null,
+        type:        typeSelect.value,
+        cap_holds,
+        salaries,
+        guaranteed,
+        guarantee_schedule,
+      };
+      if (!payload.name) { status.textContent = 'Name is required.'; return; }
+      saveBtn.disabled = true;
+      status.textContent = 'Saving…';
+      try {
+        await onSave(token, payload);
+      } catch (e) {
+        status.textContent = e.message || 'Save failed.';
+        saveBtn.disabled = false;
+      }
+    });
+
+    return form;
+  }
+
+  // ── Add player modal ──────────────────────────────────────────────────────────
+
+  async function showAddPlayerModal() {
+    const token = await getToken();
+    if (!token) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const card = document.createElement('div');
+    card.className = 'modal-card';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Add Player';
+    card.appendChild(h3);
+
+    const slugLabel = document.createElement('label');
+    slugLabel.className = 'slug-field';
+    slugLabel.textContent = 'Slug (auto-derived, editable)';
+    const slugInput = document.createElement('input');
+    slugInput.type = 'text';
+
+    const slugWarn = document.createElement('div');
+    slugWarn.className = 'slug-exists-warn';
+
+    function checkSlugExists() {
+      const sl = slugInput.value.trim();
+      if (sl && biosData[sl]) {
+        const existing = biosData[sl];
+        const displayN = existing.name ? displayName(existing.name) : sl;
+        slugWarn.innerHTML = `<i class="ui-icon ui-icon--warning" aria-hidden="true"></i> <strong>${displayN}</strong> already exists — <a href="/stats/players/?p=${sl}" target="_blank">view profile</a>`;
+        slugWarn.style.display = '';
+        slugInput.style.borderColor = 'var(--danger)';
+      } else {
+        slugWarn.style.display = 'none';
+        slugInput.style.borderColor = '';
+      }
+    }
+
+    slugInput.addEventListener('input', checkSlugExists);
+    slugLabel.appendChild(slugInput);
+    slugLabel.appendChild(slugWarn);
+    card.appendChild(slugLabel);
+
+    const form = renderBioForm(
+      { name: '', pos: [], dob: '', college: '', country: '', draft_year: null, draft_round: null, draft_pick: null, photo_url: '', type: '', cap_holds: {}, salaries: {} },
+      async (token, payload) => {
+        const sl = slugInput.value.trim();
+        if (!sl) throw new Error('Slug is required.');
+        const resp = await fetch('/api/players', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, slug: sl }),
+        });
+        if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
+        if (resp.status === 409) throw new Error('A player with this slug already exists.');
+        if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+        location.reload();
+      },
+      () => overlay.remove(),
+      (nameVal) => { slugInput.value = slugFromName(nameVal); checkSlugExists(); }
+    );
+
+    card.appendChild(form);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  }
+
+  // ── Sub-page tiles ───────────────────────────────────────────────────────────
+  // Contract and History, beside OVR (→ 2K Ratings) and Health (→ Injuries):
+  // each is the one-line answer and a link to the sub-page with the rest
+  // (players/subpage.js).
+
+  // The deal as the shorthand (/contract.js), this season's figure under it.
+  // Off contract, what he is and what he earned.
+  function renderContractTile(container, bio, playerSlug) {
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile';
+    tile.href = PlayerSubpage.href('contract', playerSlug);
+    tile.title = 'Contract and salary history';
+    tile.innerHTML = '<div class="tile-label">Contract</div><div class="tile-value tile-value--text"></div><div class="tile-sub"></div>';
+    const val = tile.querySelector('.tile-value'), sub = tile.querySelector('.tile-sub');
+    const season = currentSeasonStr();
+    const sals = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
+    const caps = parseCapHoldMap(bio.cap_holds);
+    const now = parseContractMoney(sals[season]);
+    if ((bio.type === 'player' || bio.type === 'two-way') && now && !isFaHold(caps[season])) {
+      val.textContent = summarizeContract(bio, season);
+      const b = document.createElement('b');
+      b.textContent = compactContractMoney(now);
+      sub.appendChild(b);
+      sub.appendChild(document.createTextNode(` in ${season}${bio.type === 'two-way' ? ' · Two-way' : ''}`));
+    } else if (bio.type === 'draft-rights') {
+      val.textContent = 'Draft rights';
+      sub.textContent = 'Unsigned';
+    } else {
+      val.textContent = bio.retired ? 'Retired' : 'Free agent';
+      const earned = Object.keys(sals).filter(k => /^\d{2}-\d{2}$/.test(k) && !caps[k])
+        .reduce((sum, k) => sum + parseContractMoney(sals[k]), 0);
+      const parts = [];
+      if (!bio.retired && isFaHold(caps[season])) parts.push(caps[season]);
+      parts.push(earned ? `${compactContractMoney(earned)} career earnings` : 'No contract on record');
+      sub.textContent = parts.join(' · ');
+    }
+    container.appendChild(tile);
+  }
+
+  // How many moves the ledger has for him, and the latest.
+  function renderHistoryTile(container, playerSlug) {
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile';
+    tile.href = PlayerSubpage.href('history', playerSlug);
+    tile.title = 'Transactions and season-by-season history';
+    tile.innerHTML = '<div class="tile-label">History</div><div class="tile-value">&nbsp;</div><div class="tile-sub">&nbsp;</div>';
+    container.appendChild(tile);
+    const val = tile.querySelector('.tile-value'), sub = tile.querySelector('.tile-sub');
+    const TYPE_LABEL = { sign: 'Signed', pick: 'Drafted', sign_pick: 'Signed', option: 'Option', release: 'Released',
+      trade: 'Traded', convert_twoway: 'Two-way conversion', offer_sheet: 'Offer sheet', offer_sheet_decision: 'Offer sheet',
+      extension: 'Extended', renounce: 'Renounced', stash: 'Stashed', qualifying_offer: 'Qualifying offer' };
+    fetch(`/api/transactions?player=${encodeURIComponent(playerSlug)}&limit=500`)
+      .then(r => (r.ok ? r.json() : null)).catch(() => null)
+      .then(data => {
+        const txns = (data && data.transactions) || [];
+        val.innerHTML = `${txns.length}<small>move${txns.length === 1 ? '' : 's'}</small>`;
+        if (!txns.length) { sub.textContent = 'Season by season'; return; }
+        const last = txns.reduce((a, b) => (b.date > a.date ? b : a));
+        const when = last.date ? new Date(last.date + 'T12:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' }) : '';
+        sub.textContent = `Latest: ${TYPE_LABEL[last.type] || last.type}${when ? ` · ${when}` : ''}`;
+      });
+  }
+
+  // Health, the third hero tile: injured now, or healthy with the career
+  // line. Always shown, and always a link to /stats/players/injuries, which has the
+  // full history. Appended at once so it keeps its place beside OVR and HOF;
+  // its text arrives with GET /api/injuries/history, and games missed after
+  // that, from the game log (InjuryHistory in /injury-history.js).
+  function renderHealthTile(container, playerSlug) {
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile health-tile';
+    tile.href = `/stats/players/injuries/?p=${encodeURIComponent(playerSlug)}`;
+    tile.title = 'Injury history';
+    tile.innerHTML = '<div class="tile-label">Health</div><div class="tile-value">&nbsp;</div><div class="tile-sub">&nbsp;</div>';
+    container.appendChild(tile);
+    const IH = window.InjuryHistory;
+    if (!IH) return;
+    const val = tile.querySelector('.tile-value'), sub = tile.querySelector('.tile-sub');
+    const today = new Date().toLocaleDateString('en-CA');
+    const month = iso => new Date(iso + 'T12:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+    // "5 injuries · 8 games missed", the career line. Shown while hurt too,
+    // on its own line under the current injury, so the history doesn't
+    // vanish from the profile whenever he's on the report.
+    const career = (el, stints, sum) => {
+      const b = document.createElement('b');
+      b.textContent = `${stints.length} injur${stints.length === 1 ? 'y' : 'ies'}`;
+      el.appendChild(b);
+      if (sum.missed != null) el.appendChild(document.createTextNode(` · ${sum.missed} game${sum.missed === 1 ? '' : 's'} missed`));
+    };
+
+    const draw = (stints, sum) => {
+      tile.classList.remove('hurt', 'out');
+      sub.textContent = '';
+      tile.querySelector('.tile-sub.career')?.remove();
+      const c = sum.current;
+      if (c) {
+        tile.classList.add(IH.isOut(c.status) ? 'out' : 'hurt');
+        val.textContent = IH.isOut(c.status) ? 'Out' : 'Hurt';
+        const parts = [c.injury, c.duration].filter(Boolean);
+        sub.textContent = parts.join(' · ');
+        if (c.ovr_delta) {
+          const d = document.createElement('span');
+          d.className = 'neg';
+          d.textContent = `${c.ovr_delta > 0 ? '+' : '−'}${Math.abs(c.ovr_delta)} OVR`;
+          if (parts.length) sub.appendChild(document.createTextNode(' · '));
+          sub.appendChild(d);
+        }
+        if (stints.length > 1) {
+          const line = document.createElement('div');
+          line.className = 'tile-sub career';
+          career(line, stints, sum);
+          tile.appendChild(line);
+        }
+        return;
+      }
+      val.textContent = 'Healthy';
+      if (!stints.length) { sub.textContent = 'No injuries on record'; return; }
+      career(sub, stints, sum);
+      const last = sum.last.start || sum.last.end;
+      if (last) sub.appendChild(document.createTextNode(` · last ${month(last)}`));
+    };
+
+    json(`/api/injuries/history?slug=${encodeURIComponent(playerSlug)}`).then(events => {
+      if (!Array.isArray(events)) { val.textContent = '—'; sub.textContent = 'Injury history'; return; }
+      const stints = IH.fold(events);
+      draw(stints, IH.summary(stints, today));
+      if (!stints.length) return;
+      const teams = [...new Set(stints.flatMap(s => s.teams.map(t => t.team)).filter(Boolean))];
+      Promise.all([
+        json(`/api/players/${encodeURIComponent(playerSlug)}/gamelog`),
+        ...teams.map(t => json(`/api/boxscores/games?team=${encodeURIComponent(t)}`)),
+      ]).then(([log, ...games]) => {
+        if (!Array.isArray(log) || games.some(g => !Array.isArray(g))) return;
+        const byTeam = Object.fromEntries(teams.map((t, i) => [t, games[i]]));
+        const played = new Set(log.map(g => g.date));
+        stints.forEach(s => Object.assign(s, IH.gamesMissed(s, byTeam, played, today)));
+        draw(stints, IH.summary(stints, today));
+      });
+    });
+  }
+
+  function renderBioLine(container, row) {
+    const parts = [];
+
+    // DOB + age
+    const dob = bioVal(row.DOB);
+    if (dob) {
+      const d = new Date(dob + 'T00:00:00');
+      if (!isNaN(d)) {
+        const now = new Date();
+        let age = now.getFullYear() - d.getFullYear();
+        const m = now.getMonth() - d.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+        const mon = d.toLocaleString('en-US', { month: 'short' });
+        const day = d.getDate();
+        const yr  = d.getFullYear();
+        parts.push(`${mon} ${day}, ${yr} (age ${age})`);
+      }
+    }
+
+    // College
+    const college = bioVal(row.COLLEGE);
+    if (college) parts.push(college);
+
+    // Country
+    const country = bioVal(row.COUNTRY);
+    if (country) {
+      const flag = countryFlag(country);
+      parts.push(flag || country);
+    }
+
+    // NBN Draft
+    const dftYr = bioVal(row.NBN_DFT_YR);
+    if (dftYr) {
+      const dftR = bioVal(row.NBN_DFT_R);
+      const dftP = bioVal(row.NBN_DFT_P);
+      let draftStr = dftYr + ' Draft';
+      if (dftR || dftP) {
+        const rndPart  = dftR ? 'Round ' + dftR : '';
+        const pickPart = dftP ? 'Pick ' + dftP  : '';
+        draftStr += ' · ' + [rndPart, pickPart].filter(Boolean).join(', ');
+      }
+      parts.push(draftStr);
+    }
+
+    // Measurements
+    const measParts = [];
+    const height  = bioVal(row.HEIGHT);
+    const weight  = bioVal(row.WEIGHT);
+    const wingspan = bioVal(row.WINGSPAN);
+    if (height)   measParts.push(height);
+    if (weight)   measParts.push(weight + ' lbs');
+    if (wingspan) measParts.push(wingspan + ' ws');
+    if (measParts.length) parts.push(measParts.join(' · '));
+
+    if (!parts.length) return;
+
+    const p = document.createElement('p');
+    p.className = 'bio-line';
+    parts.forEach((item, i) => {
+      if (i > 0) {
+        const sep = document.createElement('span');
+        sep.className = 'bio-sep';
+        sep.textContent = '·';
+        p.appendChild(sep);
+      }
+      if (item instanceof Node) {
+        p.appendChild(item);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = item;
+        p.appendChild(span);
+      }
+    });
+    container.appendChild(p);
+  }
+
+  // ── Accolades strip ──────────────────────────────────────────────────────────
+
+  const BADGE_DEFS = [
+    { label: 'Ring',        award: null,                                  color: 'var(--warning)', rings: true },
+    { label: 'MVP',         award: 'Most Valuable Player',                color: 'var(--cat-violet)' },
+    { label: 'DPOY',        award: 'Defensive Player of the Year',        color: 'var(--cat-teal)' },
+    { label: 'ROY',         award: 'Rookie of the Year',                  color: 'var(--success-alt)' },
+    { label: 'MIP',         award: 'Most Improved Player',                color: 'var(--accent)' },
+    { label: '6MOY',        award: 'Sixth Man of the Year',               color: 'var(--cat-orange)' },
+    { label: 'All-Star',    award: 'All-Star',                            color: 'var(--cat-sky)' },
+    { label: 'All-NBN 1st', award: 'All-NBN First Team',                  color: 'var(--warning)' },
+    { label: 'All-NBN 2nd', award: 'All-NBN Second Team',                 color: 'var(--text-muted)' },
+    { label: 'All-NBN 3rd', award: 'All-NBN Third Team',                  color: 'var(--gold-dim)' },
+    { label: 'All-Defense', award: 'All-Defense',                         color: 'var(--danger)' },
+    { label: 'All-Rookie',  award: 'All-Rookie',                          color: 'var(--cat-lime)' },
+  ];
+
+  const LEADER_BADGE_DEFS = [
+    { label: 'Pts Ldr',  stat: 'PTS',  color: 'var(--warning)' },
+    { label: 'Reb Ldr',  stat: 'REB',  color: 'var(--success-alt)' },
+    { label: 'Ast Ldr',  stat: 'AST',  color: 'var(--cat-sky)' },
+    { label: 'Stl Ldr',  stat: 'STL',  color: 'var(--cat-violet)' },
+    { label: 'Blk Ldr',  stat: 'BLK',  color: 'var(--danger)' },
+    { label: '3PM Ldr',  stat: '3PM',  color: 'var(--cat-orange)' },
+    { label: 'GMSC Ldr', stat: 'GMSC', color: 'var(--cat-teal)' },
+  ];
+
+  function renderAccolades(container, playerSlug, rings, playerAwards, seasonLeaders) {
+    const awardsForPlayer = playerAwards[playerSlug] || [];
+    const awardCountByType = {};
+    awardsForPlayer.forEach(a => {
+      awardCountByType[a.AWARD] = (awardCountByType[a.AWARD] || 0) + 1;
+    });
+
+    const badges = [];
+
+    // Award badges
+    BADGE_DEFS.forEach(def => {
+      let count = 0;
+      if (def.rings) {
+        count = +rings || 0;
+      } else {
+        count = awardCountByType[def.award] || 0;
+      }
+      if (count > 0) {
+        const plural = def.rings && count > 1 ? 'Rings' : def.label;
+        badges.push({ count, label: plural, gold: def.rings || def.label === 'MVP' });
+      }
+    });
+
+    // League-leader badges
+    LEADER_BADGE_DEFS.forEach(def => {
+      let count = 0;
+      Object.entries(seasonLeaders).forEach(([, statMap]) => {
+        if (statMap[def.stat] && statMap[def.stat].slug === playerSlug) count++;
+      });
+      if (count > 0) {
+        badges.push({ count, label: def.label });
+      }
+    });
+
+    if (!badges.length) return;
+
+    const div = document.createElement('div');
+    div.className = 'accolades';
+    badges.forEach(b => {
+      const span = document.createElement('span');
+      span.className = 'badge' + (b.gold ? ' badge-gold' : '');
+      if (b.count > 1) {
+        const n = document.createElement('b');
+        n.textContent = `${b.count}×`;
+        span.appendChild(n);
+      }
+      span.appendChild(document.createTextNode(b.label));
+      div.appendChild(span);
+    });
+    container.appendChild(div);
+  }
+
+  // ── Row icon helper ──────────────────────────────────────────────────────────
+
+  // Icon names in css/ui-icons.css, and the award each one stands for.
+  const AWARD_ICONS = { 'Champion': 'ring', 'Most Valuable Player': 'crown', 'All-Star': 'star' };
+  const ICON_ORDER  = ['ring', 'crown', 'star'];
+  const ICON_TITLE  = { ring: 'Champion', crown: 'MVP', star: 'All-Star' };
+
+  function makeIconFn(regRows, poRows, playerAwards, slug, bySeasonMode) {
+    const awards = playerAwards[slug] || [];
+
+    // last team per season (rows already sorted by SEASON desc, LAST_DATE desc —
+    // so first entry per season is the chronologically latest team)
+    const regLastTeam = new Map();
+    regRows.forEach(r => { if (!regLastTeam.has(r.SEASON)) regLastTeam.set(r.SEASON, r.TEAM); });
+    const poLastTeam = new Map();
+    if (poRows) poRows.forEach(r => { if (!poLastTeam.has(r.SEASON)) poLastTeam.set(r.SEASON, r.TEAM); });
+
+    // teamIcons[season|team] and seasonIcons[season] — both keyed by SEASON string
+    const teamIcons = new Map();
+    const seasonIcons = new Map();
+
+    awards.forEach(a => {
+      const icon = AWARD_ICONS[a.AWARD];
+      if (!icon) return;
+      const isPlayoff = a.SEASON.includes('Playoffs');
+      const lastTeam = isPlayoff ? poLastTeam.get(a.SEASON) : regLastTeam.get(a.SEASON);
+      if (!lastTeam) return;
+
+      const teamKey = a.SEASON + '|' + lastTeam;
+      if (!teamIcons.has(teamKey)) teamIcons.set(teamKey, new Set());
+      teamIcons.get(teamKey).add(icon);
+
+      if (!seasonIcons.has(a.SEASON)) seasonIcons.set(a.SEASON, new Set());
+      seasonIcons.get(a.SEASON).add(icon);
+    });
+
+    const sorted = icons => ICON_ORDER.filter(i => icons.has(i));
+
+    return row => {
+      if (bySeasonMode) return sorted(seasonIcons.get(row.SEASON) ?? new Set());
+      return sorted(teamIcons.get(row.SEASON + '|' + row.TEAM) ?? new Set());
+    };
+  }
+
+  // ── Player prev/next navigation ──────────────────────────────────────────────
+
+  function renderPlayerNav(currentSlug) {
+    const slugs = Object.entries(biosData)
+      .sort(([, a], [, b]) => (a.name || '').localeCompare(b.name || ''))
+      .map(([s]) => s);
+    const idx = slugs.indexOf(currentSlug);
+    const prevSlug = idx > 0 ? slugs[idx - 1] : null;
+    const nextSlug = idx < slugs.length - 1 ? slugs[idx + 1] : null;
+
+    const header = document.querySelector('header');
+
+    if (prevSlug) {
+      const btn = document.createElement('a');
+      btn.className = 'player-nav-btn';
+      btn.href = `/stats/players/?p=${prevSlug}`;
+      btn.title = displayName(biosData[prevSlug].name || prevSlug);
+      btn.textContent = '‹';
+      header.insertBefore(btn, header.firstChild);
+    }
+
+    if (nextSlug) {
+      const btn = document.createElement('a');
+      btn.className = 'player-nav-btn';
+      btn.href = `/stats/players/?p=${nextSlug}`;
+      btn.title = displayName(biosData[nextSlug].name || nextSlug);
+      btn.textContent = '›';
+      header.appendChild(btn);
+    }
+  }
+
+  // ── OVR tile ────────────────────────────────────────────────
+
+  // An OVR on the heat scale (components.css .ui-heat): 60 and below is the
+  // bottom, 100 the top.
+  function ovrHeat(n) {
+    return Math.min(1, Math.max(0, (n - 60) / 40)).toFixed(3);
+  }
+
+  // Archetype radar. Drawing, ranking and nearest-match live in /radar.js,
+  // shared with team pages; the axes and archetypes here are the player's own.
+  function buildPlayerRadarChart(playerRows, allRows) {
+    if (!window.Radar) return null;
+    function rowP36(r, f) { return +r[f] * 36 / Math.max(1, +r.MIN); }
+    function rowTS(r) {
+      const denom = 2 * (+r.FGA + 0.44 * +r.FTA);
+      return denom > 0 ? +r.PTS / denom : 0;
+    }
+    function ratio(r, num, den) { return +r[den] > 0 ? +r[num] / +r[den] : 0; }
+    // Per-36 blows up tiny samples, so both the player and the peers they are
+    // ranked against need 20 games at 10+ minutes a game.
+    function qualifies(r) { return +r.G >= 20 && +r.MIN / Math.max(1, +r.G) >= 10; }
+
+    // Style axes, per 36 minutes: how a player plays, not how much. Usage says
+    // how much of the offense they run, 3P and FT rate where their shots come
+    // from. Points, FTA and 3PM per 36 were one scoring signal counted three
+    // times (r = 0.78 and 0.59 against points).
+    const DIM_DEFS = [
+      { label: 'USG',     angle: 90,  get: r => (+r.FGA + 0.44 * +r.FTA + +r.TOV) * 36 / Math.max(1, +r.MIN),
+        fmt: v => `${v.toFixed(1)} plays used/36` },
+      { label: '3P RATE', angle: 45,  get: r => ratio(r, '3PA', 'FGA'), fmt: v => `${Math.round(v*100)}% of shots from three` },
+      { label: 'TS%',     angle: 0,   get: r => rowTS(r),               fmt: v => `${(v*100).toFixed(1)}% TS` },
+      { label: 'FT RATE', angle: 315, get: r => ratio(r, 'FTA', 'FGA'), fmt: v => `${Math.round(v*100)} FTA per 100 shots` },
+      { label: 'BLK',     angle: 270, get: r => rowP36(r,'BLK'), fmt: v => `${v.toFixed(2)} BLK/36` },
+      { label: 'REB',     angle: 225, get: r => rowP36(r,'REB'), fmt: v => `${v.toFixed(1)} REB/36` },
+      { label: 'STL',     angle: 180, get: r => rowP36(r,'STL'), fmt: v => `${v.toFixed(2)} STL/36` },
+      { label: 'AST',     angle: 135, get: r => rowP36(r,'AST'), fmt: v => `${v.toFixed(1)} AST/36` },
+    ];
+
+    // Target percentile per axis, in DIM_DEFS order. Seeded from a clustering
+    // of every qualifying season 20-21 to 25-26.
+    const ARCHETYPES = {
+      //                   USG 3PR  TS  FTR BLK REB STL AST
+      'Floor General':    [ 79, 59, 78, 43, 26, 28, 51, 75],
+      'Swiss Army Knife': [ 80, 30, 75, 59, 65, 71, 64, 75],
+      'Pickpocket':       [ 64, 54, 23, 35, 30, 24, 71, 78],
+      'Shooter':          [ 56, 74, 46, 28, 17, 24, 22, 43],
+      '3-and-D':          [ 29, 72, 36, 37, 56, 39, 79, 46],
+      'Glue Guy':         [ 28, 68, 57, 78, 34, 42, 37, 42],
+      'Lob Threat':       [ 24, 10, 66, 73, 84, 86, 32, 20],
+      'Stretch Big':      [ 49, 51, 37, 33, 71, 69, 27, 28],
+      'Enforcer':         [ 41, 31, 26, 59, 73, 74, 76, 38],
+    };
+
+    // Tier is how good, archetype is how they play. Per game on purpose:
+    // earning minutes is part of being good.
+    function tierFor(p) {
+      if (p >= 0.97) return 'Superstar';
+      if (p >= 0.89) return 'Star';
+      if (p >= 0.58) return 'Starter';
+      if (p >= 0.30) return 'Rotation';
+      return 'Deep Bench';
+    }
+    const gsPerGame = r => +r.GMSC / Math.max(1, +r.G);
+
+    function buildSvg(season) {
+      const [agg] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === season));
+      if (!agg || !qualifies(agg)) return null;
+
+      const seasonMap = new Map();
+      allRows.filter(r => r.SEASON === season).forEach(r => {
+        if (!seasonMap.has(r.SLUG)) seasonMap.set(r.SLUG, { ...r });
+        else { const s = seasonMap.get(r.SLUG); SUM_FIELDS.forEach(f => { s[f] = String(+s[f] + +r[f]); }); }
+      });
+      const peers = [...seasonMap.values()].filter(qualifies);
+
+      const dims = DIM_DEFS.map(d => {
+        const v = d.get(agg);
+        return { label: d.label, angle: d.angle, tip: d.fmt(v), pct: Radar.percentile(v, peers.map(d.get)) };
+      });
+      const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
+      const prodPct = Radar.percentile(gsPerGame(agg), peers.map(gsPerGame));
+      const tier = tierFor(prodPct);
+      const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season · per 36 min` });
+
+      // The three closest seasons by three other players, any year: the same eight
+      // style percentiles plus how productive they were (Game Score per game,
+      // the tier's measure), so a bench shooter isn't matched to a star one.
+      const me = [...dims.map(d => d.pct), prodPct];
+      const near = seasonVectors()
+        .filter(v => v.slug !== slug)
+        .map(v => ({ ...v, dist: Math.hypot(...v.vec.map((x, i) => x - me[i])) }))
+        .sort((a, b) => a.dist - b.dist)
+        // One season per player: three Giannis seasons say less than three players.
+        .filter((v, i, all) => all.findIndex(o => o.slug === v.slug) === i)
+        .slice(0, 3);
+      if (!near.length) return svg;
+      const box = document.createElement('div');
+      box.appendChild(svg);
+      const list = document.createElement('div');
+      list.className = 'similar';
+      const label = document.createElement('div');
+      label.className = 'similar-label';
+      label.textContent = 'Most similar seasons';
+      list.appendChild(label);
+      near.forEach(v => {
+        const a = document.createElement('a');
+        a.href = `/stats/players/?p=${encodeURIComponent(v.slug)}`;
+        a.className = 'similar-row';
+        const nm = document.createElement('span');
+        nm.textContent = typeof nbnPlayerName === 'function' ? nbnPlayerName(v.name) : v.name;
+        const yr = document.createElement('span');
+        yr.className = 'similar-season';
+        yr.textContent = `${v.season}${v.team ? ' · ' + v.team : ''}`;
+        a.append(nm, yr);
+        list.appendChild(a);
+      });
+      box.appendChild(list);
+      return box;
+    }
+
+    // Every qualifying player-season's percentile vector, ranked within its
+    // own season. Built once on first use and kept: ~2,500 seasons.
+    let vectorCache = null;
+    function seasonVectors() {
+      if (vectorCache) return vectorCache;
+      vectorCache = [];
+      const bySeason = new Map();
+      allRows.forEach(r => {
+        if (!bySeason.has(r.SEASON)) bySeason.set(r.SEASON, new Map());
+        const m = bySeason.get(r.SEASON);
+        if (!m.has(r.SLUG)) m.set(r.SLUG, { ...r, _teams: [r.TEAM] });
+        else {
+          const x = m.get(r.SLUG);
+          SUM_FIELDS.forEach(f => { x[f] = String(+x[f] + +r[f]); });
+          x._teams.push(r.TEAM);
+        }
+      });
+      bySeason.forEach((m, season) => {
+        const peers = [...m.values()].filter(qualifies);
+        const cols = DIM_DEFS.map(d => peers.map(d.get).sort((a, b) => a - b));
+        const gs = peers.map(gsPerGame).sort((a, b) => a - b);
+        // Share of the season strictly below, by binary search on the sorted column.
+        const pct = (sorted, v) => {
+          let lo = 0, hi = sorted.length;
+          while (lo < hi) { const mid = (lo + hi) >> 1; if (sorted[mid] < v) lo = mid + 1; else hi = mid; }
+          return sorted.length ? lo / sorted.length : 0;
+        };
+        peers.forEach(p => vectorCache.push({
+          slug: p.SLUG, name: p.PLAYER, season,
+          team: [...new Set(p._teams)].filter(Boolean).join('/'),
+          vec: [...DIM_DEFS.map((d, i) => pct(cols[i], d.get(p))), pct(gs, gsPerGame(p))],
+        }));
+      });
+      return vectorCache;
+    }
+
+    // Only include qualifying seasons, newest first
+    const eligibleSeasons = [...new Set(playerRows.map(r => r.SEASON))]
+      .sort().reverse()
+      .filter(s => {
+        const [a] = aggregateBySeasonRows(playerRows.filter(r => r.SEASON === s));
+        return a && qualifies(a);
+      });
+    return Radar.withSeasons(eligibleSeasons, buildSvg, { card: true, label: 'Archetype' });
+  }
+
+  // OVR as a headline tile: the rating, its change since the last update, and
+  // a sparkline of the whole history. Colour goes on the figure only.
+  function renderOvrTile(container, playerSlug) {
+    const ovr = currentOvr[playerSlug];
+    if (ovr == null) return;
+    const hist = (allOvrHistory[playerSlug] || []).filter(e => e && e.ovr != null);
+    const tile = document.createElement('a');
+    tile.className = 'hero-tile';
+    tile.href = PlayerSubpage.href('ratings', playerSlug);
+    tile.title = '2K ratings, badges and their history';
+    tile.innerHTML = '<div class="tile-label">Overall</div><div class="tile-main"><div class="tile-value"></div></div><div class="tile-sub"></div>';
+    const val = tile.querySelector('.tile-value');
+    val.textContent = ovr;
+    val.classList.add('ui-heat-ink');
+    val.style.setProperty('--heat', ovrHeat(ovr));
+
+    const sub = tile.querySelector('.tile-sub');
+    if (hist.length >= 2) {
+      const d = hist.at(-1).ovr - hist.at(-2).ovr;
+      const since = hist.at(-2).date ? new Date(hist.at(-2).date + 'T00:00:00').toLocaleString('en-US', { month: 'short', year: 'numeric' }) : '';
+      const delta = document.createElement('b');
+      delta.className = d > 0 ? 'tile-up' : d < 0 ? 'tile-down' : '';
+      delta.textContent = d > 0 ? `▲ ${d}` : d < 0 ? `▼ ${-d}` : 'No change';
+      sub.appendChild(delta);
+      if (since) sub.appendChild(document.createTextNode(` since ${since}`));
+      tile.querySelector('.tile-main').appendChild(ovrSparkline(hist));
+    } else {
+      sub.textContent = hist.length ? `As of ${hist[0].date.slice(0, 7)}` : '';
+    }
+    container.appendChild(tile);
+  }
+
+  function ovrSparkline(entries) {
+    const W = 72, H = 26, P = 3;
+    const vals = entries.map(e => e.ovr);
+    const lo = Math.min(...vals), hi = Math.max(...vals), span = Math.max(1, hi - lo);
+    const pts = vals.map((v, i) => [P + i * (W - 2 * P) / (vals.length - 1), P + (1 - (v - lo) / span) * (H - 2 * P)]);
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('width', W); svg.setAttribute('height', H);
+    svg.classList.add('tile-spark');
+    const line = document.createElementNS(ns, 'polyline');
+    line.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'var(--text-muted)');
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(line);
+    const [lx, ly] = pts.at(-1);
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', lx); dot.setAttribute('cy', ly); dot.setAttribute('r', '2.5');
+    dot.classList.add('ui-heat-fill');
+    dot.style.setProperty('--heat', ovrHeat(vals.at(-1)));
+    svg.appendChild(dot);
+    const t = document.createElementNS(ns, 'title');
+    t.textContent = `OVR ${vals[0]} → ${vals.at(-1)} over ${entries.length} updates`;
+    svg.appendChild(t);
+    return svg;
+  }
+
+  // The subtitle under the name: eligible positions · current team · a count.
+  function renderIdentity(bio, playerSlug, tail) {
+    const sub = document.getElementById('page-sub');
+    sub.textContent = '';
+    sub.classList.add('identity');
+    const parts = [];
+    const pos = ['PG', 'SG', 'SF', 'PF', 'C'].filter(p => (bio.pos || []).includes(p));
+    if (pos.length) {
+      const e = document.createElement('span'); e.className = 'pos'; e.textContent = pos.join(' / ');
+      parts.push(e);
+    }
+    const team = teamMap[playerSlug];
+    // The header takes his team's band (components.css § Player pages).
+    const header = sub.closest('.ui-header');
+    if (header) team && !bio.retired ? (header.dataset.team = team) : delete header.dataset.team;
+    if (team) {
+      const a = document.createElement('a');
+      a.className = 'team';
+      a.href = `/stats/teams/${team}/`;
+      const img = document.createElement('img');
+      img.src = `/logos/sm/logo-${team.toLowerCase()}.webp`;
+      img.alt = '';
+      img.onerror = function() { this.remove(); };
+      a.appendChild(img);
+      // Full name where there's room; the abbreviation on a phone, so the
+      // line fits on one row there (CSS below).
+      const full = document.createElement('span'); full.className = 'team-full'; full.textContent = TEAM_NAMES[team] || team;
+      const short = document.createElement('span'); short.className = 'team-abbr'; short.textContent = team;
+      a.append(full, short);
+      parts.push(a);
+    }
+    if (bio.retired) {
+      const e = document.createElement('span'); e.className = 'retired'; e.textContent = 'Retired';
+      parts.push(e);
+    }
+    if (tail) parts.push(document.createTextNode(tail));
+    parts.forEach((p, i) => {
+      if (i) { const d = document.createElement('span'); d.className = 'bio-sep'; d.textContent = '·'; sub.appendChild(d); }
+      sub.appendChild(p);
+    });
+  }
+
+  // Photo to the left of the name; Compare / Edit Bio at the right of the header.
+  function renderHeaderChrome(photoUrl, playerSlug, editBioBtn) {
+    const headerMain = document.querySelector('.header-main');
+    headerMain.querySelectorAll('.profile-photo, .player-actions').forEach(el => el.remove());
+    if (photoUrl) {
+      const img = document.createElement('img');
+      img.className = 'profile-photo';
+      img.src = photoUrl;
+      img.alt = '';
+      img.onerror = function() { this.remove(); };
+      headerMain.insertBefore(img, headerMain.firstChild);
+    }
+    const actions = document.createElement('div');
+    actions.className = 'player-actions';
+    const cmp = document.createElement('a');
+    cmp.href = `/stats/compare/?a=${playerSlug}`;
+    // Just the mark: it's a recognisable icon, and on a phone it has to fit
+    // in the banner's corner (CSS below). The label is for screen readers.
+    cmp.className = 'player-compare';
+    cmp.textContent = '⇆';
+    cmp.title = 'Compare with another player';
+    cmp.setAttribute('aria-label', 'Compare with another player');
+    actions.appendChild(cmp);
+    const share = document.createElement('button');
+    share.type = 'button';
+    share.className = 'player-share';
+    share.textContent = 'Share';
+    share.title = 'Share this player';
+    // Always the canonical ?p= link, which unfurls with the player's own card.
+    share.onclick = () => nbnShare({ title: document.title, url: `${location.origin}/players/?p=${encodeURIComponent(playerSlug)}` }, share);
+    actions.appendChild(share);
+    if (editBioBtn && canEditBios()) actions.appendChild(editBioBtn);
+    headerMain.appendChild(actions);
+  }
+
+  // ── Render: bio-only player (no stats yet) ───────────────────────────────────
+
+  function renderBioOnlyPlayer(bioSlug, bio) {
+    const name = bio.name ? displayName(bio.name) : bioSlug;
+    document.title = `NBN | ${name}`;
+    setCrumbs(name);
+    // Rewriting .nav's innerHTML above wipes out the search/inbox/theme/profile
+    // icons nav.js already built into it — rebuild them (see the comment on
+    // _initNav in nav.js).
+    if (typeof _initNav === 'function') _initNav();
+    document.getElementById('page-title').textContent = name;
+    renderIdentity(bio, bioSlug, 'No NBN stats yet');
+    const editBioBtn = document.createElement('button');
+    editBioBtn.textContent = 'Edit Bio';
+    renderHeaderChrome(bio.photo_url, bioSlug, editBioBtn);
+    renderPlayerNav(bioSlug);
+
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+    renderBioLine(content, {
+      DOB:        bio.dob        || '',
+      COLLEGE:    bio.college    || '',
+      COUNTRY:    bio.country    || '',
+      NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : '',
+      NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : '',
+      NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
+      HEIGHT:     bio.height    || '',
+      WEIGHT:     bio.weight    != null ? String(bio.weight) : '',
+      WINGSPAN:   bio.wingspan  || '',
+    });
+
+    const tiles = document.createElement('div');
+    tiles.className = 'hero-tiles';
+    renderOvrTile(tiles, bioSlug);
+    renderContractTile(tiles, bio, bioSlug);
+    renderHistoryTile(tiles, bioSlug);
+    renderHealthTile(tiles, bioSlug);
+    content.appendChild(tiles);
+
+    let bioFormEl = null;
+    editBioBtn.addEventListener('click', async () => {
+      if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
+      const token = await getToken(); if (!token) return;
+      bioFormEl = renderBioForm(
+        { ...bio },
+        async (token, payload) => {
+          const resp = await fetch(`/api/players/${bioSlug}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
+          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+          location.reload();
+        },
+        () => { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; }
+      );
+      content.insertBefore(bioFormEl, content.firstChild);
+      editBioBtn.textContent = 'Close';
+    });
+  }
+
+  // ── Render: index (player directory) ─────────────────────────────────────────
+
+  function renderIndex(rows) {
+    document.title = 'NBN | Players';
+    document.getElementById('nav').innerHTML = '<a href="/">← Home</a>';
+    if (typeof _initNav === 'function') _initNav();
+
+    // Collect teams per player in chronological order
+    const playerFirstRow = new Map();
+    const playerTeamsList = new Map(); // slug -> ordered unique teams
+    const playerGamesMap = new Map();  // slug -> total G
+    const chronoRows = [...rows].sort((a, b) => {
+      const sa = parseFloat(a.SEASON) || 0, sb = parseFloat(b.SEASON) || 0;
+      if (sa !== sb) return sa - sb;
+      return (a.LAST_DATE || '') < (b.LAST_DATE || '') ? -1 : 1;
+    });
+    chronoRows.forEach(r => {
+      if (!r.SLUG) return;
+      if (!playerFirstRow.has(r.SLUG)) playerFirstRow.set(r.SLUG, r);
+      if (!playerTeamsList.has(r.SLUG)) playerTeamsList.set(r.SLUG, []);
+      const tl = playerTeamsList.get(r.SLUG);
+      if (r.TEAM && r.TEAM !== 'NA' && !tl.includes(r.TEAM)) tl.push(r.TEAM);
+      playerGamesMap.set(r.SLUG, (playerGamesMap.get(r.SLUG) || 0) + (+r.G || 0));
+    });
+
+    function fmtDOB(dob) {
+      const v = bioVal(dob);
+      if (!v) return null;
+      const d = new Date(v + 'T00:00:00');
+      return isNaN(d) ? null : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function fmtDraft(yr, rnd, pick) {
+      const y = bioVal(yr);
+      if (!y) return null;
+      let s = y;
+      const rn = bioVal(rnd); if (rn) { const m = rn.match(/\d+/); if (m) s += ' · R' + m[0]; }
+      const pn = bioVal(pick); if (pn) { const m = pn.match(/\d+/); if (m) s += ' · P' + m[0]; }
+      return s;
+    }
+
+    // Add bio-only players not yet in the CSV
+    Object.entries(biosData).forEach(([bioSlug, bio]) => {
+      if (!playerFirstRow.has(bioSlug)) {
+        playerFirstRow.set(bioSlug, {
+          SLUG: bioSlug, PLAYER: displayName(bio.name || bioSlug),
+          PHOTO_URL: bio.photo_url || '', RINGS: '0',
+          DOB: bio.dob || '', COUNTRY: bio.country || '', COLLEGE: bio.college || '',
+          NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : '',
+          NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : '',
+          NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : '',
+        });
+      }
+    });
+
+    // Build one display-object per player
+    const players = [...playerFirstRow.values()].map(r => {
+      const bio = biosData[r.SLUG] || {};
+      const dobRaw = bio.dob || bioVal(r.DOB);
+      const d = dobRaw ? new Date(dobRaw + 'T00:00:00') : null;
+      const dobOk = d && !isNaN(d);
+      let age = null;
+      if (dobOk) {
+        const now = new Date();
+        age = now.getFullYear() - d.getFullYear();
+        const mo = now.getMonth() - d.getMonth();
+        if (mo < 0 || (mo === 0 && now.getDate() < d.getDate())) age--;
+      }
+      const dftYr = bio.draft_year  ? String(bio.draft_year)  : r.NBN_DFT_YR;
+      const dftR  = bio.draft_round ? String(bio.draft_round) : r.NBN_DFT_R;
+      const dftP  = bio.draft_pick  ? String(bio.draft_pick)  : r.NBN_DFT_P;
+      const canonical = bio.name || r.PLAYER || '';
+      const lastName = canonical.indexOf(',') > 0
+        ? canonical.slice(0, canonical.indexOf(',')).trim()
+        : (canonical.trim().split(/\s+/).pop() || '');
+      return {
+        SLUG:       r.SLUG,
+        PLAYER:     bio.name ? displayName(bio.name) : r.PLAYER,
+        LAST:       lastName,
+        POS:        Array.isArray(bio.pos) ? bio.pos : [],
+        PHOTO_URL:  bio.photo_url || r.PHOTO_URL,
+        RINGS:      r.RINGS,
+        AGE:        age,
+        DOB_FMT:    fmtDOB(dobRaw),
+        DOB_SORT:   dobOk ? d.getTime() : null,
+        COUNTRY:    bio.country || bioVal(r.COUNTRY),
+        COLLEGE:    bio.college || bioVal(r.COLLEGE),
+        DRAFT_FMT:  fmtDraft(dftYr, dftR, dftP),
+        DRAFT_SORT: dftYr ? parseInt(dftYr, 10) : null,
+        TEAMS:      playerTeamsList.get(r.SLUG) || [],
+        // Whose roster he's on today (the live rosters, via /api/team-map),
+        // not a stats team: a signing who hasn't played yet still shows.
+        TEAM:       teamMap[r.SLUG] || null,
+        HEIGHT:     bio.height  || '',
+        WEIGHT:     bio.weight  != null ? bio.weight : null,
+        WINGSPAN:   bio.wingspan || '',
+        JERSEY:     bio.jersey_number ?? null,
+        TYPE:       bio.type || '',
+        G:          playerGamesMap.get(r.SLUG) ?? null,
+        OVR:        currentOvr[r.SLUG] ?? null,
+        RETIRED:    bio.retired || false,
+      };
+    });
+
+    // Every franchise, by name, whether or not it has stats yet.
+    const allTeams = Object.keys(TEAM_NAMES).sort((a, b) => TEAM_NAMES[a].localeCompare(TEAM_NAMES[b]));
+
+    const PAGES = [
+      { id: 'a-d', label: 'A – D', from: 'A', to: 'D' },
+      { id: 'e-k', label: 'E – K', from: 'E', to: 'K' },
+      { id: 'l-p', label: 'L – P', from: 'L', to: 'P' },
+      { id: 'q-z', label: 'Q – Z', from: 'Q', to: 'Z' },
+      { id: 'all', label: 'All', all: true },
+    ];
+    const tabParam = new URLSearchParams(location.search).get('tab');
+    let activePage = PAGES.find(p => p.id === tabParam) || PAGES.find(p => p.id === 'all');
+
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+
+    // Tab bar
+    const tabBar = document.createElement('div');
+    tabBar.className = 'page-tabs';
+    const tabBtns = PAGES.map(pg => {
+      const btn = document.createElement('button');
+      btn.className = 'page-tab' + (pg === activePage ? ' active' : '');
+      btn.textContent = pg.label;
+      btn.addEventListener('click', () => selectPage(pg, true));
+      return btn;
+    });
+    // A tab switch is a history entry, so Back returns to the last tab.
+    function selectPage(pg, push) {
+      if (activePage === pg && activeFilters.size === 0) return;
+      activePage = pg;
+      activeFilters.clear();
+      content.querySelectorAll('.missing-btn').forEach(b => b.classList.remove('active'));
+      tabBtns.forEach((b, i) => b.classList.toggle('active', PAGES[i] === pg));
+      if (push && location.search !== indexQuery()) history.pushState(null, '', indexQuery());
+      searchInput.value = '';
+      filterQ = '';
+      rebuildBody();
+    }
+    window.onpopstate = () => {
+      const q = new URLSearchParams(location.search);
+      setTeamFilter(parseTeams(q.get('team')));
+      selectPage(PAGES.find(p => p.id === q.get('tab')) || PAGES.find(p => p.id === 'all'), false);
+      rebuildBody();
+    };
+    // ?tab=all&team=BOS,LAL — the team filter rides in the URL so a filtered
+    // list can be shared and survives Back.
+    function indexQuery() {
+      const q = new URLSearchParams({ tab: activePage.id });
+      if (filterTeams.size) q.set('team', [...filterTeams].join(','));
+      return '?' + q.toString().replace(/%2C/g, ',');
+    }
+    function parseTeams(v) {
+      return new Set((v || '').split(',').map(t => t.trim().toUpperCase()).filter(t => TEAM_NAMES[t]));
+    }
+    tabBtns.forEach(b => tabBar.appendChild(b));
+    content.appendChild(tabBar);
+
+    // Filter bar
+    const filterBar = document.createElement('div');
+    filterBar.className = 'filter-bar';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Search players…';
+    searchInput.className = 'filter-search';
+    searchInput.setAttribute('autocomplete', 'off');
+    filterBar.appendChild(searchInput);
+
+    // Several teams at once: ui-select.js turns a <select multiple> into the
+    // site's checkbox menu with Clear / Apply. Matches today's roster (the Team
+    // column), not every team a player has ever played for.
+    const teamSelect = document.createElement('select');
+    teamSelect.multiple = true;
+    teamSelect.className = 'filter-team';
+    teamSelect.setAttribute('aria-label', 'Filter by team');
+    teamSelect.dataset.placeholder = 'All teams';
+    teamSelect.dataset.noun = 'teams';
+    allTeams.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = TEAM_NAMES[t];
+      opt.dataset.img = `/logos/sm/logo-${t.toLowerCase()}.webp`;
+      teamSelect.appendChild(opt);
+    });
+    filterBar.appendChild(teamSelect);
+
+    const rosteredBtn = document.createElement('button');
+    rosteredBtn.className = 'rostered-btn';
+    rosteredBtn.textContent = 'Rostered';
+    filterBar.appendChild(rosteredBtn);
+
+    const resultCount = document.createElement('span');
+    resultCount.className = 'filter-count';
+    filterBar.appendChild(resultCount);
+
+    if (canAddPlayer()) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-player';
+      addBtn.textContent = '+ Add Player';
+      addBtn.addEventListener('click', showAddPlayerModal);
+      filterBar.appendChild(addBtn);
+    }
+
+    content.appendChild(filterBar);
+
+    const MISSING_FILTERS = [
+      { id: 'pos',   label: 'Missing Pos',          test: p => !p.POS.length },
+      { id: 'dob',   label: 'Missing DOB',          test: p => !p.DOB_SORT },
+      { id: 'image', label: 'Missing Image',        test: p => !p.PHOTO_URL },
+      { id: 'meas',  label: 'Missing Measurements', test: p => !p.HEIGHT || p.WEIGHT == null || !p.WINGSPAN },
+      { id: 'ovr',   label: 'Missing OVR',          test: p => p.OVR == null },
+    ];
+    let activeFilters = new Set();
+
+    if (canEditBios()) {
+      const missingBar = document.createElement('div');
+      missingBar.className = 'missing-bar';
+      const lbl = document.createElement('span');
+      lbl.className = 'missing-bar-label';
+      lbl.textContent = 'Missing:';
+      missingBar.appendChild(lbl);
+      MISSING_FILTERS.forEach(f => {
+        const btn = document.createElement('button');
+        btn.className = 'missing-btn';
+        btn.textContent = f.label.replace('Missing ', '');
+        btn.addEventListener('click', () => {
+          if (activeFilters.has(f.id)) {
+            activeFilters.delete(f.id);
+            btn.classList.remove('active');
+          } else {
+            activeFilters.add(f.id);
+            btn.classList.add('active');
+          }
+          searchInput.value = '';
+          filterQ = '';
+          rebuildBody();
+        });
+        missingBar.appendChild(btn);
+      });
+      content.appendChild(missingBar);
+    }
+
+    // Table
+    const IDX_COLS = [
+      { label: '#',       field: 'JERSEY',     defaultDir:  1, cls: 'right muted', display: p => p.JERSEY != null ? `#${p.JERSEY}` : '—' },
+      { label: 'Player',  field: 'LAST',       defaultDir:  1 },
+      { label: 'Team',    field: 'TEAM',        defaultDir:  1, display: p => {
+          if (!p.TEAM) return '—';
+          const span = document.createElement('span');
+          span.className = 'idx-team';
+          span.title = TEAM_NAMES[p.TEAM] || p.TEAM;
+          const img = document.createElement('img');
+          img.src = `/logos/sm/logo-${p.TEAM.toLowerCase()}.webp`;
+          img.alt = '';
+          img.onerror = function() { this.remove(); };
+          span.append(img, document.createTextNode(p.TEAM));
+          return span;
+        }
+      },
+      { label: 'Pos',    field: null,          display: p => p.POS.length ? p.POS.join(' · ') : '—', cls: 'muted' },
+      { label: 'OVR',     field: 'OVR',         defaultDir: -1, cls: 'right', display: p => p.OVR ?? '—' },
+      { label: 'G',       field: 'G',           defaultDir: -1, cls: 'right', display: p => p.G ?? '—' },
+      { label: 'Age',     field: 'AGE',         defaultDir: -1, cls: 'right' },
+      { label: 'Born',    field: 'DOB_SORT',    defaultDir: -1, cls: 'right', display: p => p.DOB_FMT || '—' },
+      { label: 'Country', field: 'COUNTRY',     defaultDir:  1, display: p => {
+          if (!p.COUNTRY) return '—';
+          const flag = countryFlag(p.COUNTRY);
+          return flag || p.COUNTRY;
+        }
+      },
+      { label: 'College', field: 'COLLEGE',     defaultDir:  1, display: p => p.COLLEGE || '—' },
+      { label: 'Draft',   field: 'DRAFT_SORT',  defaultDir:  1, display: p => p.DRAFT_FMT || '—' },
+      { label: 'Teams',   field: null, display: p => {
+          if (!p.TEAMS.length) return '—';
+          const wrap = document.createElement('div');
+          wrap.style.cssText = 'display:flex;gap:3px;align-items:center;min-width:115px';
+          p.TEAMS.forEach(t => {
+            const img = document.createElement('img');
+            img.src = `/logos/sm/logo-${t.toLowerCase()}.webp`;
+            img.alt = t; img.title = t;
+            img.style.cssText = 'width:20px;height:20px;object-fit:contain';
+            img.onerror = function() { this.replaceWith(document.createTextNode(t)); };
+            wrap.appendChild(img);
+          });
+          return wrap;
+        }
+      },
+      { label: 'Ht',  field: 'HEIGHT',   defaultDir: 1, cls: 'right muted', display: p => p.HEIGHT   || '—' },
+      { label: 'Wt',  field: 'WEIGHT',   defaultDir:-1, cls: 'right muted', display: p => p.WEIGHT != null ? p.WEIGHT + ' lbs' : '—' },
+      { label: 'WS',  field: 'WINGSPAN', defaultDir: 1, cls: 'right muted', display: p => p.WINGSPAN  || '—' },
+      { label: 'Ret', field: 'RETIRED',  defaultDir:-1, cls: 'center muted', display: p => p.RETIRED ? 'Yes' : '—' },
+    ];
+
+    let sortField = 'LAST', sortDir = 1;
+
+    function idxSortVal(p, field) {
+      const v = p[field];
+      if (v == null) return Infinity;
+      if (typeof v === 'number') return v;
+      const n = parseFloat(v);
+      return isNaN(n) ? String(v).toLowerCase() : n;
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ui-table-wrap';
+    content.appendChild(wrap);
+
+    const table = document.createElement('table'); table.className = 'ui-table';
+    const thead = table.createTHead();
+    const headerRow = thead.insertRow();
+    const thEls = [];
+
+    IDX_COLS.forEach(col => {
+      const th = document.createElement('th');
+      if (col.cls) th.classList.add(...col.cls.split(' '));
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      th.appendChild(document.createTextNode(col.label));
+      th.appendChild(arrow);
+      if (col.field) {
+        th.addEventListener('click', () => {
+          if (sortField === col.field) sortDir *= -1;
+          else { sortField = col.field; sortDir = col.defaultDir ?? 1; }
+          updateHeaders();
+          rebuildBody();
+        });
+      } else {
+        th.style.cursor = 'default';
+      }
+      thEls.push(th);
+      headerRow.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    wrap.appendChild(table);
+
+    const noResults = document.createElement('p');
+    noResults.className = 'no-results';
+    noResults.textContent = 'No players match your search.';
+    noResults.style.display = 'none';
+    content.appendChild(noResults);
+
+    function updateHeaders() {
+      thEls.forEach((th, i) => {
+        const active = IDX_COLS[i].field === sortField;
+        th.dataset.active = active;
+        th.querySelector('.sort-arrow').textContent = active ? (sortDir === -1 ? '↓' : '↑') : '';
+      });
+    }
+
+    function buildRow(p) {
+      const tr = document.createElement('tr');
+      tr.className = 'clickable-row';
+      rowPlayer.set(tr, p);
+      tr.addEventListener('click', () => { location.href = `/stats/players/?p=${p.SLUG}`; });
+
+      // Jersey cell (IDX_COLS[0])
+      const tdJ = tr.insertCell();
+      const jerseyCol = IDX_COLS[0];
+      if (jerseyCol.cls) tdJ.className = jerseyCol.cls;
+      tdJ.textContent = jerseyCol.display(p);
+
+      // Player cell: photo + name (IDX_COLS[1])
+      const tdP = tr.insertCell();
+      const cell = document.createElement('div');
+      cell.className = 'player-name-cell';
+      if (p.PHOTO_URL) {
+        const img = document.createElement('img');
+        img.className = 'player-photo-sm';
+        img.src = p.PHOTO_URL;
+        img.alt = '';
+        img.onerror = function() {
+          const ph = document.createElement('div');
+          ph.className = 'player-placeholder-sm';
+          this.replaceWith(ph);
+        };
+        cell.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'player-placeholder-sm';
+        cell.appendChild(ph);
+      }
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = p.PLAYER;
+      if (+p.RINGS > 0) nameSpan.classList.add('champion-name');
+      cell.appendChild(nameSpan);
+      tdP.appendChild(cell);
+
+      // Remaining cells
+      IDX_COLS.slice(2).forEach(col => {
+        const td = tr.insertCell();
+        if (col.cls) td.className = col.cls;
+        const val = col.display ? col.display(p) : (p[col.field] ?? '—');
+        if (val instanceof Node) td.appendChild(val);
+        else td.textContent = val == null ? '—' : val;
+        if (col.field === 'OVR' && p.OVR != null) {
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', ovrHeat(p.OVR));
+          td.style.fontWeight = '700';
+          td.style.textAlign = 'center';
+          // Ratings breakdown on hover/tap. Only wired up when we actually hold
+          // attributes for this player, so the cue never promises an empty popup.
+          if (window.RatingsPopup && currentAttributes(p.SLUG)) {
+            RatingsPopup.attach(td, p.SLUG, { name: p.PLAYER });
+          }
+        }
+      });
+
+      return tr;
+    }
+
+    const rowPlayer = new WeakMap();  // <tr> → its player, so a filter change only hides rows
+    let filterQ = '', filterRostered = true;
+    let filterTeams = parseTeams(new URLSearchParams(location.search).get('team'));
+    function setTeamFilter(teams) {
+      filterTeams = teams;
+      [...teamSelect.options].forEach(o => { o.selected = teams.has(o.value); });
+      if (window.UiSelect) UiSelect.refresh(teamSelect);
+    }
+    setTeamFilter(filterTeams);
+    rosteredBtn.classList.toggle('active', filterRostered);
+
+    rosteredBtn.addEventListener('click', () => {
+      filterRostered = !filterRostered;
+      rosteredBtn.classList.toggle('active', filterRostered);
+      rebuildBody();
+    });
+
+    function visible(p) {
+      return (!filterQ || p.PLAYER.toLowerCase().includes(filterQ)) &&
+             (!filterTeams.size || filterTeams.has(p.TEAM)) &&
+             (!filterRostered || (!p.RETIRED && (p.TYPE === 'player' || p.TYPE === 'two-way')));
+    }
+
+    function rebuildBody() {
+      const pagePlayers = activeFilters.size > 0
+        ? players.filter(p => MISSING_FILTERS.some(f => activeFilters.has(f.id) && f.test(p)))
+        : players.filter(p => {
+            if (activePage.all) return true;
+            const l = (p.LAST[0] || '').toUpperCase();
+            return l >= activePage.from && l <= activePage.to;
+          });
+      const sorted = [...pagePlayers].sort((a, b) => {
+        const va = idxSortVal(a, sortField), vb = idxSortVal(b, sortField);
+        if (va === Infinity && vb === Infinity) return a.PLAYER.localeCompare(b.PLAYER);
+        if (va === Infinity) return 1;
+        if (vb === Infinity) return -1;
+        if (va < vb) return sortDir === 1 ? -1 : 1;
+        if (va > vb) return sortDir === 1 ? 1 : -1;
+        return a.PLAYER.localeCompare(b.PLAYER);
+      });
+      tbody.innerHTML = '';
+      let count = 0;
+      sorted.forEach(p => {
+        const show = visible(p);
+        const tr = buildRow(p);
+        if (!show) tr.style.display = 'none';
+        else count++;
+        tbody.appendChild(tr);
+      });
+      const total = pagePlayers.length;
+      resultCount.textContent = count === total ? `${total} players` : `${count} of ${total}`;
+      noResults.style.display = count === 0 ? '' : 'none';
+    }
+
+    // Same rule as rebuildBody (visible()), without rebuilding every row.
+    function applyFilters() {
+      filterQ = searchInput.value.trim().toLowerCase();
+      let count = 0, total = 0;
+      tbody.querySelectorAll('tr').forEach(tr => {
+        const p = rowPlayer.get(tr);
+        if (!p) return;
+        total++;
+        const show = visible(p);
+        tr.style.display = show ? '' : 'none';
+        if (show) count++;
+      });
+      resultCount.textContent = count === total ? `${total} players` : `${count} of ${total}`;
+      noResults.style.display = count === 0 ? '' : 'none';
+    }
+
+    searchInput.addEventListener('input', applyFilters);
+    teamSelect.addEventListener('change', () => {
+      filterTeams = new Set([...teamSelect.selectedOptions].map(o => o.value));
+      history.replaceState(null, '', indexQuery());
+      applyFilters();
+    });
+    updateHeaders();
+    rebuildBody();
+  }
+
+  // ── Render: player profile ────────────────────────────────────────────────────
+
+  function renderPlayer(playerName, rows, playerAwards, seasonLeaders, allPoRows, hofRows) {
+    rows = [...rows].sort((a, b) => {
+      const sa = parseFloat(a.SEASON) || 0;
+      const sb = parseFloat(b.SEASON) || 0;
+      if (sa !== sb) return sb - sa;
+      const ta = a.LAST_DATE ?? '';
+      const tb = b.LAST_DATE ?? '';
+      return ta < tb ? 1 : ta > tb ? -1 : 0;
+    });
+
+    document.title = `NBN | ${playerName}`;
+    setCrumbs(playerName);
+    if (typeof _initNav === 'function') _initNav();
+    document.getElementById('page-title').textContent = playerName;
+    const seasonCount = new Set(rows.map(r => r.SEASON)).size;
+    const bio = biosData[slug] || {};
+    renderIdentity(bio, slug, `${seasonCount} NBN season${seasonCount !== 1 ? 's' : ''}`);
+    const mergedRow = {
+      DOB:        bio.dob        || rows[0].DOB,
+      COLLEGE:    bio.college    || rows[0].COLLEGE,
+      COUNTRY:    bio.country    || rows[0].COUNTRY,
+      NBN_DFT_YR: bio.draft_year  ? String(bio.draft_year)  : rows[0].NBN_DFT_YR,
+      NBN_DFT_R:  bio.draft_round ? String(bio.draft_round) : rows[0].NBN_DFT_R,
+      NBN_DFT_P:  bio.draft_pick  ? String(bio.draft_pick)  : rows[0].NBN_DFT_P,
+      HEIGHT:     bio.height   || '',
+      WEIGHT:     bio.weight   != null ? String(bio.weight) : '',
+      WINGSPAN:   bio.wingspan || '',
+    };
+    const editBioBtn = document.createElement('button');
+    editBioBtn.textContent = 'Edit Bio';
+    renderHeaderChrome(bio.photo_url || rows[0].PHOTO_URL, slug, editBioBtn);
+    renderPlayerNav(slug);
+
+    const content = document.getElementById('content');
+    content.innerHTML = '';
+
+    const hero = document.createElement('div');
+    hero.className = 'player-hero';
+    const info = document.createElement('div');
+    hero.appendChild(info);
+    content.appendChild(hero);
+
+    // bio line
+    renderBioLine(info, mergedRow);
+    // OVR, Hall of Fame, Contract, History and Health as a row of tiles, then
+    // the accolades. All but HOF link to the sub-page with the detail.
+    const tiles = document.createElement('div');
+    tiles.className = 'hero-tiles';
+    info.appendChild(tiles);
+    renderOvrTile(tiles, slug);
+    renderHofLine(tiles, rows[0].PLAYER, hofRows);
+    renderContractTile(tiles, bio, slug);
+    renderHistoryTile(tiles, slug);
+    renderHealthTile(tiles, slug);
+
+    let bioFormEl = null;
+    editBioBtn.addEventListener('click', async () => {
+      if (bioFormEl) { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; return; }
+      const token = await getToken(); if (!token) return;
+      const cur = biosData[slug] || {};
+      bioFormEl = renderBioForm(
+        { name: cur.name || '', pos: cur.pos || [], position: cur.position || null, dob: cur.dob || rows[0].DOB || '', college: cur.college || rows[0].COLLEGE || '', country: cur.country || rows[0].COUNTRY || '', draft_year: cur.draft_year || null, draft_round: cur.draft_round || null, draft_pick: cur.draft_pick || null, height: cur.height || '', weight: cur.weight ?? null, wingspan: cur.wingspan || '', photo_url: cur.photo_url || rows[0].PHOTO_URL || '', retired: cur.retired || false, type: cur.type || '', cap_holds: cur.cap_holds || {}, salaries: cur.salaries || {}, guaranteed: cur.guaranteed || {}, guarantee_dates: cur.guarantee_dates || {}, guarantee_schedule: cur.guarantee_schedule || {} },
+        async (token, payload) => {
+          const resp = await fetch(`/api/players/${slug}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
+          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+          location.reload();
+        },
+        () => { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; }
+      );
+      content.insertBefore(bioFormEl, hero.nextSibling);
+      editBioBtn.textContent = 'Close';
+    });
+
+    // Under the tiles, two cards side by side: the career line with the
+    // accolades, and the archetype radar.
+    const heroRow = document.createElement('div');
+    heroRow.className = 'hero-row';
+    const careerCard = document.createElement('div');
+    careerCard.className = 'career-card';
+    heroRow.appendChild(careerCard);
+    hero.appendChild(heroRow);
+    renderCareerLine(careerCard, rows);
+    renderCareerLine(careerCard, allPoRows.filter(r => r.SLUG === slug), 'Career · playoffs');
+    renderAccolades(careerCard, slug, rows[0].RINGS, playerAwards, seasonLeaders);
+    const radarEl = buildPlayerRadarChart(rows, allPlayerSeasons);
+    if (radarEl) heroRow.appendChild(radarEl);
+
+    // toggle
+    const toggleBar = document.createElement('div');
+    toggleBar.className = 'toggle-bar ui-segmented';
+    toggleBar.setAttribute('role', 'group');
+    const btnTeam     = document.createElement('button');
+    const btnSeason   = document.createElement('button');
+    const btnGameLog  = document.createElement('button');
+    btnTeam.className     = 'toggle-btn active';
+    btnSeason.className   = 'toggle-btn';
+    btnGameLog.className  = 'toggle-btn';
+    btnTeam.textContent     = 'By Team';
+    btnSeason.textContent   = 'By Season';
+    btnGameLog.textContent  = 'Game Log';
+    const btnSplits = document.createElement('button');
+    btnSplits.className = 'toggle-btn';
+    btnSplits.textContent = 'Splits';
+    toggleBar.appendChild(btnTeam);
+    toggleBar.appendChild(btnSeason);
+    toggleBar.appendChild(btnGameLog);
+    toggleBar.appendChild(btnSplits);
+    content.appendChild(toggleBar);
+
+    // sections container
+    const sections = document.createElement('div');
+    content.appendChild(sections);
+    const careerTotalsEl = document.createElement('div');
+    content.appendChild(careerTotalsEl);
+    renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, allPoRows.length ? allPoRows : null);
+    const insightsEl = document.createElement('div');
+    content.appendChild(insightsEl);
+    renderInsights(insightsEl, slug);
+
+    let bySeasonMode = false;
+    let showGameLog  = false;
+    let showSplits   = false;
+    let splitsSeason = '';
+    const poRows = allPoRows.filter(r => r.SLUG === slug && +r.G > 0);
+    let gameLogRows = null;
+    let gameLogPage = 0;
+    const GL_PAGE_SIZE = 10;
+
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[+m - 1]} ${+d}, ${y}`;
+    }
+
+    function renderGameLogSection() {
+      sections.innerHTML = '';
+      if (!gameLogRows) {
+        const msg = document.createElement('div');
+        msg.id = 'status'; msg.textContent = 'Loading game log…';
+        sections.appendChild(msg);
+        return;
+      }
+      if (!gameLogRows.length) {
+        const msg = document.createElement('div');
+        msg.id = 'status'; msg.textContent = 'No games found.';
+        sections.appendChild(msg);
+        return;
+      }
+
+      const totalPages = Math.ceil(gameLogRows.length / GL_PAGE_SIZE);
+      const pageRows = gameLogRows.slice(gameLogPage * GL_PAGE_SIZE, (gameLogPage + 1) * GL_PAGE_SIZE);
+
+      const h2 = document.createElement('h2');
+      h2.className = 'section-heading';
+      h2.textContent = 'Game Log';
+      sections.appendChild(h2);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'ui-table-wrap';
+      sections.appendChild(wrap);
+
+      const table = document.createElement('table'); table.className = 'ui-table';
+      const thead = table.createTHead();
+      const hr = thead.insertRow();
+      [['Date',''], ['Season',''], ['Opp',''], ['W/L','right'], ['MIN','right'],
+       ['PTS','right'], ['REB','right'], ['AST','right'], ['STL','right'], ['BLK','right'],
+       ['TOV','right'], ['FGM/A','right'], ['3PM/A','right'], ['FTM/A','right']].forEach(([label, cls]) => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        if (cls) th.className = cls;
+        hr.appendChild(th);
+      });
+
+      const tbody = table.createTBody();
+      pageRows.forEach(r => {
+        const tr = tbody.insertRow();
+        const cells = [
+          () => { const td = tr.insertCell(); td.textContent = fmtDate(r.date); return td; },
+          () => {
+            const td = tr.insertCell();
+            td.className = 'muted';
+            td.textContent = r.season;
+            if (r.gametype === 'PLAYOFF') {
+              const b = document.createElement('span');
+              b.className = 'po-badge'; b.textContent = 'PO';
+              td.appendChild(b);
+            }
+            return td;
+          },
+          () => {
+            const td = tr.insertCell();
+            const prefix = r.home ? 'vs' : '@';
+            td.textContent = `${prefix} ${r.opp_raw}`;
+            return td;
+          },
+          () => {
+            const td = tr.insertCell();
+            td.className = 'right';
+            if (r.wl) {
+              const score = r.team_pts || r.opp_pts
+                ? ` ${r.team_pts}–${r.opp_pts}` : '';
+              td.textContent = r.wl + score;
+              td.style.color = r.wl === 'W' ? 'var(--market-positive)' : r.wl === 'L' ? 'var(--danger)' : '';
+            }
+            return td;
+          },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.min; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.pts; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.reb; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.ast; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.stl; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.blk; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = r.tov; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = `${r.fgm}/${r.fga}`; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = `${r.tpm}/${r.tpa}`; return td; },
+          () => { const td = tr.insertCell(); td.className = 'right'; td.textContent = `${r.ftm}/${r.fta}`; return td; },
+        ];
+        cells.forEach(fn => fn());
+      });
+      wrap.appendChild(table);
+
+      const pg = document.createElement('div');
+      pg.className = 'gamelog-pagination';
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'gl-page-btn';
+      prevBtn.textContent = 'Prev';
+      prevBtn.disabled = gameLogPage === 0;
+      prevBtn.addEventListener('click', () => { gameLogPage--; renderGameLogSection(); });
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'gl-page-btn';
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = gameLogPage >= totalPages - 1;
+      nextBtn.addEventListener('click', () => { gameLogPage++; renderGameLogSection(); });
+      const info = document.createElement('span');
+      const start = gameLogPage * GL_PAGE_SIZE + 1;
+      const end = Math.min((gameLogPage + 1) * GL_PAGE_SIZE, gameLogRows.length);
+      info.textContent = `${start}–${end} of ${gameLogRows.length}`;
+      pg.appendChild(prevBtn);
+      pg.appendChild(info);
+      pg.appendChild(nextBtn);
+      sections.appendChild(pg);
+    }
+
+    // Games started, per "season|REG" or "season|PLAYOFF" → {by: {TEAM: gs},
+    // known: {TEAM: games with recorded starters}}, for
+    // the seasons that record starters. A row with none stays '—'.
+    const starts = {};
+    function startsFor(r) {
+      const po = isPlayoffRow(r);
+      const s = starts[`${r.SEASON.replace(' Playoffs', '')}|${po ? 'PLAYOFF' : 'REG'}`];
+      const teams = r._teams || [r.TEAM];
+      // A team whose starters were never recorded is unknown, not 0 starts.
+      if (!s || !teams.some(t => s.known[t])) return undefined;
+      return teams.reduce((n, t) => n + (s.by[t] || 0), 0);
+    }
+    function getDisplayRows() {
+      const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
+      const po = bySeasonMode ? aggregateBySeasonRows(poRows) : poRows;
+      const dob = rows[0].DOB;
+      return [...reg, ...po].map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON), GS: startsFor(r) }));
+    }
+
+    function makeLeaderCheck() {
+      return (row, col) => {
+        if (!col.sortField || !LEADER_STATS.includes(col.sortField)) return false;
+        if (!row.SEASON || row.SEASON.includes('Playoffs')) return false;
+        const leaders = seasonLeaders[row.SEASON];
+        if (!leaders || !leaders[col.sortField]) return false;
+        return leaders[col.sortField].slug === slug;
+      };
+    }
+
+    function rebuildSections() {
+      if (showGameLog) { renderGameLogSection(); return; }
+      if (showSplits) { renderSplitsSection(); return; }
+      const displayRows = getDisplayRows();
+      sections.innerHTML = '';
+      const iconFn = makeIconFn(rows, poRows, playerAwards, slug, bySeasonMode);
+      // Regular season and playoffs each get their own career line.
+      const reg = displayRows.filter(r => !isPlayoffRow(r));
+      const po  = displayRows.filter(isPlayoffRow);
+      const careerLines = build => po.length
+        ? [build(reg), { ...build(po), SEASON: 'Career Playoffs' }]
+        : build(reg);
+      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn);
+      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn);
+    }
+
+    function setStatsMode() {
+      showGameLog = false;
+      showSplits = false;
+      btnGameLog.classList.remove('active');
+      btnSplits.classList.remove('active');
+    }
+
+    // Always rebuild: coming back from the game log must leave it even when
+    // the mode clicked is the one that was already selected.
+    function setMode(bySeason) {
+      setStatsMode();
+      bySeasonMode = bySeason;
+      btnTeam.classList.toggle('active', !bySeason);
+      btnSeason.classList.toggle('active', bySeason);
+      rebuildSections();
+    }
+    btnTeam.addEventListener('click', () => setMode(false));
+    btnSeason.addEventListener('click', () => setMode(true));
+
+    // The game log is fetched once, on first use, by either view that needs it.
+    let gameLogFetch = null;
+    function loadGameLog() {
+      if (gameLogRows !== null || gameLogFetch) return;
+      gameLogFetch = fetch(`/api/players/${slug}/gamelog`)
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(data => { gameLogRows = data; })
+        .catch(() => { gameLogRows = []; })
+        .then(() => rebuildSections());
+    }
+
+    function showOnly(btn) {
+      [btnTeam, btnSeason, btnGameLog, btnSplits].forEach(b => b.classList.toggle('active', b === btn));
+    }
+
+    btnGameLog.addEventListener('click', () => {
+      if (showGameLog) return;
+      showSplits = false;
+      showGameLog = true;
+      showOnly(btnGameLog);
+      gameLogPage = 0;
+      renderGameLogSection();
+      loadGameLog();
+    });
+
+    btnSplits.addEventListener('click', () => {
+      if (showSplits) return;
+      showGameLog = false;
+      showSplits = true;
+      showOnly(btnSplits);
+      renderSplitsSection();
+      loadGameLog();
+    });
+
+    // Splits: the game log cut by home/away, win/loss, regular season and
+    // playoffs, then by opponent. Averages per game, from the same rows the
+    // Game Log view lists, for every season or one.
+    function renderSplitsSection() {
+      sections.innerHTML = '';
+      if (!gameLogRows || !gameLogRows.length) {
+        const msg = document.createElement('div');
+        msg.id = 'status';
+        msg.textContent = gameLogRows ? 'No games found.' : 'Loading game log…';
+        sections.appendChild(msg);
+        return;
+      }
+      const won = g => (g.team_pts || g.opp_pts) ? g.team_pts > g.opp_pts : g.wl === 'W';
+      const seasons = [...new Set(gameLogRows.map(g => g.season))].sort().reverse();
+      if (splitsSeason && !seasons.includes(splitsSeason)) splitsSeason = '';
+      const games = gameLogRows.filter(g => !splitsSeason || g.season === splitsSeason);
+
+      const head = document.createElement('div');
+      head.className = 'splits-head';
+      const h2 = document.createElement('h2');
+      h2.className = 'section-heading';
+      h2.textContent = 'Splits';
+      const sel = document.createElement('select');
+      sel.className = 'ui-select';
+      sel.setAttribute('aria-label', 'Season');
+      sel.appendChild(new Option('All seasons', ''));
+      seasons.forEach(x => sel.appendChild(new Option(x, x)));
+      sel.value = splitsSeason;
+      sel.addEventListener('change', () => { splitsSeason = sel.value; renderSplitsSection(); });
+      head.append(h2, sel);
+      sections.appendChild(head);
+
+      const COLS = [['G', 'right'], ['W–L', 'right'], ['MIN', 'right'], ['PTS', 'right'], ['REB', 'right'],
+        ['AST', 'right'], ['STL', 'right'], ['BLK', 'right'], ['TOV', 'right'],
+        ['FG%', 'right'], ['3P%', 'right'], ['FT%', 'right'], ['High', 'right']];
+      const line = list => {
+        const n = list.length;
+        const sum = k => list.reduce((a, g) => a + (+g[k] || 0), 0);
+        const avg = k => (sum(k) / n).toFixed(1);
+        const pct = (m, a) => sum(a) ? (sum(m) / sum(a) * 100).toFixed(1) : '—';
+        const w = list.filter(won).length;
+        return [n, `${w}–${n - w}`, avg('min'), avg('pts'), avg('reb'), avg('ast'), avg('stl'), avg('blk'), avg('tov'),
+          pct('fgm', 'fga'), pct('tpm', 'tpa'), pct('ftm', 'fta'), Math.max(...list.map(g => +g.pts || 0))];
+      };
+      const table = (first, rows) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'ui-table-wrap';
+        const t = document.createElement('table');
+        t.className = 'ui-table ui-table--sticky-first';
+        const hr = t.createTHead().insertRow();
+        [[first, ''], ...COLS].forEach(([label, cls]) => {
+          const th = document.createElement('th');
+          th.textContent = label;
+          if (cls) th.className = cls;
+          hr.appendChild(th);
+        });
+        const body = t.createTBody();
+        rows.forEach(([label, list, cls]) => {
+          if (!list.length) return;
+          const tr = body.insertRow();
+          if (cls) tr.className = cls;
+          const th = tr.insertCell();
+          if (label instanceof Node) th.appendChild(label); else th.textContent = label;
+          line(list).forEach((v, i) => {
+            const td = tr.insertCell();
+            td.className = 'right' + (i === 3 ? ' strong' : '');
+            td.textContent = v;
+          });
+        });
+        wrap.appendChild(t);
+        return wrap;
+      };
+
+      const reg = games.filter(g => g.gametype !== 'PLAYOFF');
+      const po = games.filter(g => g.gametype === 'PLAYOFF');
+      sections.appendChild(table('', [
+        ['All games', games, 'career-row'],
+        ['Regular season', reg],
+        ['Playoffs', po],
+        ['Home', games.filter(g => g.home)],
+        ['Away', games.filter(g => !g.home)],
+        ['Wins', games.filter(won)],
+        ['Losses', games.filter(g => !won(g))],
+      ]));
+
+      const h3 = document.createElement('h2');
+      h3.className = 'section-heading';
+      h3.textContent = 'By Opponent';
+      sections.appendChild(h3);
+      const byOpp = new Map();
+      games.forEach(g => {
+        const k = g.opp_raw || String(g.opp || '').replace('@', '');
+        if (!byOpp.has(k)) byOpp.set(k, []);
+        byOpp.get(k).push(g);
+      });
+      const oppLabel = abbr => {
+        const a = document.createElement('a');
+        a.href = `/stats/teams/${encodeURIComponent(abbr)}/`;
+        a.className = 'splits-opp';
+        const img = document.createElement('img');
+        img.src = `/logos/sm/logo-${abbr.toLowerCase()}.webp`;
+        img.alt = '';
+        img.onerror = function () { this.remove(); };
+        a.append(img, document.createTextNode(abbr));
+        return a;
+      };
+      // Most points per game first: "who does he light up" is the question.
+      const opps = [...byOpp.entries()]
+        .sort((a, b) => b[1].reduce((s, g) => s + g.pts, 0) / b[1].length - a[1].reduce((s, g) => s + g.pts, 0) / a[1].length);
+      sections.appendChild(table('Opponent', opps.map(([abbr, list]) => [oppLabel(abbr), list])));
+    }
+
+    rebuildSections();
+
+    // Starts arrive after the first draw; redraw once they're in.
+    const startSeasons = [...new Set([...rows, ...poRows].map(r => r.SEASON.replace(' Playoffs', '')))]
+      .filter(s => s >= '26-27');
+    Promise.all(startSeasons.flatMap(season => ['REG', 'PLAYOFF'].map(type =>
+      fetch(`/api/game-starters/counts?season=${season}&game_type=${type}`)
+        .then(r => (r.ok ? r.json() : null)).catch(() => null)
+        .then(d => {
+          // Only a season that has any known starters at all: otherwise every
+          // row would read 0 starts, which is a claim, not an unknown.
+          if (d && Object.keys(d.team_games_known || {}).length) {
+            starts[`${season}|${type}`] = { by: (d.players[slug] || {}).by_team || {}, known: d.team_games_known };
+          }
+        }))))
+      .then(() => { if (Object.keys(starts).length && !showGameLog && !showSplits) rebuildSections(); });
+  }
+
+  // ── Main ─────────────────────────────────────────────────────────────────────
+
+  Promise.all([
+    fetch('/players/player_seasons.csv').then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+    fetch('/players/player_awards.csv').then(r => r.text()).catch(() => ''),
+    fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/team-map').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/ovr').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/attributes').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    fetch('/api/auth/me', { headers: localStorage.getItem('nbn_token') ? { Authorization: `Bearer ${localStorage.getItem('nbn_token')}` } : {} }).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
+    slug ? fetch('/players/player_seasons_playoffs.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
+    slug ? fetch('/data/hof.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
+  ])
+    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson, poText, hofText]) => {
+      biosData = biosJson;
+      teamMap = teamMapJson;
+      currentOvr = ovrJson;
+      allOvrHistory = ovrHistoryJson;
+      allAttributes = attributesJson;
+      // This page already holds every snapshot, so serve the popup from memory
+      // instead of letting it fetch per player.
+      if (window.RatingsPopup) RatingsPopup.setSource(currentAttributes);
+      AUTH_ROLES = Array.isArray(authJson?.roles) ? authJson.roles : [];
+      if (leagueYearJson?.current_season) LEAGUE_YEAR = leagueYearJson.current_season;
+
+      const rows = parseCSV(seasonsText);
+      allPlayerSeasons = rows;
+      const awards = awardsText ? parseCSV(awardsText) : [];
+
+      const playerAwards = {};
+      awards.forEach(a => {
+        if (!playerAwards[a.SLUG]) playerAwards[a.SLUG] = [];
+        playerAwards[a.SLUG].push(a);
+      });
+
+      const seasonLeaders = buildSeasonLeaders(rows);
+
+      if (!slug) {
+        renderIndex(rows);
+        return;
+      }
+
+      // Only rows for seasons actually played count as stats. The build emits a
+      // bio-snapshot row (SEASON/G all NA) for any drafted player so draft info
+      // flows through, but a player who hasn't played yet should render as a
+      // clean bio-only page, not an empty season table.
+      const playerRows = rows.filter(r => r.SLUG === slug && +r.G > 0);
+      if (!playerRows.length) {
+        // Player exists in bios but has no played seasons yet
+        const bio = biosData[slug];
+        if (bio) {
+          renderBioOnlyPlayer(slug, bio);
+        } else {
+          showError(`Player not found: <strong>${slug}</strong>`);
+        }
+        return;
+      }
+
+      const bio = biosData[slug] || {};
+      const playerName = bio.name ? displayName(bio.name) : playerRows[0].PLAYER;
+      rows.forEach(r => { if (r.PLAYER && r.SLUG) slugByName.set(r.PLAYER.toUpperCase(), r.SLUG); });
+      renderPlayer(playerName, playerRows, playerAwards, seasonLeaders,
+                   poText ? parseCSV(poText) : [], hofText ? parseCSV(hofText) : []);
+    })
+    .catch(() => showError('Failed to load data.'));
+})();
+</script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

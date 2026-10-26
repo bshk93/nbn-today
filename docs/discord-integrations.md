@@ -57,7 +57,7 @@ won't fix itself. A draft day drains in about two minutes.
 replaying all 2,241 entries sends zero messages, and that a 429'd message is
 delivered rather than dropped.
 
-**Contract shorthand mirrors `teams/team.js`'s `summarizeContract`** — `2+1 PO`,
+**Contract shorthand mirrors `stats/teams/team.js`'s `summarizeContract`** — `2+1 PO`,
 `1 NG+1 TO`, tags PO/TO/NG. Divergent shorthand for the same deal is worse than
 none, so `_contract_str` reimplements that function's rules, including treating a
 trailing UFA/RFA line as the hold the deal *rolls into* rather than a contract year
@@ -229,7 +229,7 @@ It relays, it never interprets — no summarizing and no deciding whether a mess
 four anti-dump gates, and the admin endpoints for carrying an older message
 across (`GET/POST /api/roster-log/*`) are in `nbn-api/CLAUDE.md`.
 
-**Per-transaction opt-out.** The office form at `/transactions` has a "Also post
+**Per-transaction opt-out.** The office form at `/fo/transactions` has a "Also post
 to #roster-log" checkbox, **off by default** — most transactions are typed into
 #roster-log by hand as part of working them, so mirroring by default would
 double every one up. Checking it sends `relay_to_roster_log: true` on
@@ -284,7 +284,7 @@ already posted, so it stays quiet. Pinned by `tests/test_roster_move_notify.py`.
 
 ## Trade Block Discord notifications
 
-`/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
+`/fo/tradeblock`'s edit panel has an "Also post to Discord" checkbox, **off by
 default**, next to Save. Checked, it sends `notify_discord: true` on
 `PUT /api/trading-block/{team}`; `roster_picks.put_trading_block` diffs the
 save against the block as it was before writing, and — only if something
@@ -298,7 +298,7 @@ acquired.
 that true — it falls out of who calls the notify function.** A player also
 comes off the block automatically when they're traded away
 (`_scrub_trading_block`, called from `transactions.py`'s apply paths), and
-that path never touches `tradeblock_notify` — only the `/tradeblock` save
+that path never touches `tradeblock_notify` — only the `/fo/tradeblock` save
 button does, and only when the box is checked. Extending notification to any
 other write path (the roster-page ⋯ menu's scoped `PUT`/`DELETE
 /api/trading-block/{team}/player/{slug}`, say) means adding a call there

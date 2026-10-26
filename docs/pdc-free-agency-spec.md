@@ -22,7 +22,7 @@ nobody had used. Live stage census on deploy: 27 decided, 16 awaiting an agent,
 questions outstanding. **All eight phases are built** — the roles, the
 server-side FA pool, the whole offer/ballot API, the shared lineup helper, the
 `.nbn.today` session cookie, the dashboard, its own host at **`pdc.nbn.today`**,
-the two Discord feeds, the team-facing ⋯ menu and offer form on `/free-agency`,
+the two Discord feeds, the team-facing ⋯ menu and offer form on `/fo/free-agency`,
 and the 1,000-ball ballot with per-player finalize. Both Discord env vars are
 set and both feeds are live (verified in the running process, 2026-08-09).
 
@@ -53,12 +53,12 @@ would box them in.
 
 | Thing | Where | Why it matters here |
 |---|---|---|
-| Owner self-serve moves (renounce, trade block) | `teams/team.js` → `makeRosterMoveActions` / `openMovesMenu`; `POST /api/self/renounce` | The offer form's entry point is the same ⋯-menu pattern, and `self_renounce` is the exact template for an owner-authenticated write: team derived not supplied, no `force`, server-stamped date |
+| Owner self-serve moves (renounce, trade block) | `stats/teams/team.js` → `makeRosterMoveActions` / `openMovesMenu`; `POST /api/self/renounce` | The offer form's entry point is the same ⋯-menu pattern, and `self_renounce` is the exact template for an owner-authenticated write: team derived not supplied, no `force`, server-stamped date |
 | Signing legality | `_validate_sign` + `_signing_fact_sheet` (`nbn-api/routers/transactions.py`), exposed at `POST /api/validate/sign` | The offer *is* a `SignDetails`. Legality is not reimplemented — it is this call |
 | Offer sheets (§ 3.15) | `_apply_offer_sheet` / `_open_offer_sheets` / `_pending_offer_hold` | Prior art for "a pending thing that is enumerable, costs cap room, and is loud". FA offers are **not** offer sheets — see § 5.3 |
 | Discord posting | `routers/discord_notify.py` — paced queue, freshness gate, burst cap, no-op without env channel | New channels reuse this module's transport, not a new `httpx.post` |
-| FA pool derivation | `free-agency/index.html` (cap-hold scan over `player-bios.json`) | Today this lives only in page JS. The FAC needs the same list server-side (§ 3.1) |
-| Projected lineup | `computeStartingFive` in `teams/team.js` | The dashboard shows each offering team's lineup; extract, don't fork (§ 8.4) |
+| FA pool derivation | `fo/free-agency/index.html` (cap-hold scan over `player-bios.json`) | Today this lives only in page JS. The FAC needs the same list server-side (§ 3.1) |
+| Projected lineup | `computeStartingFive` in `stats/teams/team.js` | The dashboard shows each offering team's lineup; extract, don't fork (§ 8.4) |
 | Role gating | `routers/auth.py` (`VALID_ROLES`, `ROLE_IMPLIES`, `require_role`, `is_team_owner`) | New committee roles are additions here |
 | Monotonic ids | `suggestions.py` `seq` | Offer numbers must survive deletion |
 
@@ -130,7 +130,7 @@ sign-in. Two more consequences of a separate origin:
 A `pdc.nbn.today` server block whose `root` is the same `/var/www/nbn.today`
 docroot, with `location = /` mapping to `/committees/pdc/index.html` (it was
 `/pdc/index.html` until the committees move on 2026-09-19) and the identical
-`/api/` proxy block. Then `/api/...`, `/data/*.csv` and `/teams/*` all resolve
+`/api/` proxy block. Then `/api/...`, `/data/*.csv` and `/stats/teams/*` all resolve
 under `pdc.nbn.today` itself — **no cross-origin request is ever made**, so
 neither the CORS allowlist nor the missing static CORS header is in play.
 
@@ -311,7 +311,7 @@ committee of a few people.
 **The pool is not the offerable set** (learned the hard way, pinned by a test).
 `_fa_pool` returns every player with an actionable cap hold on file, keyed by the
 year that hold lands, so it spans future league years by design — it is what
-`/free-agency`'s year chips are built from, and on the day this was written it
+`/fo/free-agency`'s year chips are built from, and on the day this was written it
 held **570 players of whom only 209 had actually reached free agency**. Read
 literally, "every player in the pool accepts offers" in FFA mode offers a
 contract to someone under contract for three more years.
@@ -886,7 +886,7 @@ the claim is gated, and it gates in both directions:
 - **The barred team is told on the board, not by a 422.** `GET /api/fa/board`
   carries `your_block` — the same composed string, `accepting` forced to false
   with it as the `reason` — so § 8.1's ⋯ menu greys out with an explanation
-  through the machinery it already uses, and `/free-agency` needed no change at
+  through the machinery it already uses, and `/fo/free-agency` needed no change at
   all (the § 6.3 payoff). It is the one authenticated field on an otherwise
   public payload, and it is **scoped to the team it stops**: *which agent
   claimed whom* is committee information, announced on `pdc-alerts` and nowhere
@@ -924,7 +924,7 @@ and frees the team's one-offer slot, all of it falling out of `_is_live` with no
 second rule to keep in step (§ 4.3b). It also answers *how the team finds out*,
 which needed no new machinery: a void's reason is required and is already shown
 to the team in their ⋯ menu and above the form when they bid again,
-server-composed like every other refusal string on `/free-agency`. `void.by`
+server-composed like every other refusal string on `/fo/free-agency`. `void.by`
 records the agent, so the team is told who dropped the bid and why.
 
 **Negotiation happens in Discord; the site models the moving parts.** No message
@@ -961,7 +961,7 @@ offers and closes the player. With no ballots cast, the record is one surviving
 offer and empty totals, which reads correctly as *this was uncontested*. The
 finalize record stamps `path: "agent"` or `"committee"` so the two are never
 confused later, and **nothing signs itself** here either: the FAC still enters
-the signing on `/transactions` by hand (§ 11.1).
+the signing on `/fo/transactions` by hand (§ 11.1).
 
 An agent who has advanced a player cannot finalize him. That decision belongs to
 the round they handed over.
@@ -1179,7 +1179,7 @@ re-deriving a rule the server already owns — the same reasoning as § 6.2:
 - **`GET /api/fa/board` now lists every player in the pool**, accepting or not,
   instead of only the accepting ones plus those with a board entry. `reason` is
   the copy § 8.1 puts verbatim into the disabled ⋯-menu entry — with the closed
-  players omitted, `/free-agency` would have had to compose those strings itself
+  players omitted, `/fo/free-agency` would have had to compose those strings itself
   from `mode`, and the site would then explain the rule in two places. The pool
   is already public, so listing it with a status leaks nothing.
 
@@ -1189,7 +1189,7 @@ re-deriving a rule the server already owns — the same reasoning as § 6.2:
 
 ### 7.1 Move the rule server-side
 
-`free-agency/index.html` currently derives the pool in page JS: earliest
+`fo/free-agency/index.html` currently derives the pool in page JS: earliest
 actionable `cap_holds` entry, plus renounced (has salary history, no hold, not
 rostered) and never-signed players. The API needs the identical rule, so the
 board and the page can't disagree about who is a free agent.
@@ -1214,7 +1214,7 @@ The ballot needs a QO line for RFAs. Qualifying offers have been real since
 
 ## 8. UI
 
-### 8.1 Owner side — `/free-agency`
+### 8.1 Owner side — `/fo/free-agency`
 
 **Built (Phase 7.)** A ⋯ menu per row, built exactly like
 `makeRosterMoveActions`: the column is not pushed onto `COLS` at all unless the
@@ -1388,9 +1388,9 @@ above, plus:
 
 ### 8.4 Shared lineup helper
 
-`computeStartingFive` (and `DEPTH_SLOTS`) are today buried in `teams/team.js`,
+`computeStartingFive` (and `DEPTH_SLOTS`) are today buried in `stats/teams/team.js`,
 which injects an entire page into `document.body` on load — unusable from
-another page. Extract both into `teams/lineup.js` as globals, have `team.js`
+another page. Extract both into `stats/teams/lineup.js` as globals, have `team.js`
 consume them, change nothing else. Behaviour-preserving, ships alone, and is
 verifiable by diffing a rendered team page before/after.
 
@@ -1623,14 +1623,14 @@ runner, not pytest — pytest isn't installed).
 | Phase | Work | Who can see it |
 |---|---|---|
 | **0** ✅ | `VALID_ROLES` + `ROLE_IMPLIES` additions **and `NAMED_ROLES` in `members/index.html`** — without the latter an admin cannot grant the roles at all; then grant `fac_head` to the head, `fac` to members | Nobody (roles do nothing yet) |
-| **1** ✅ | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `free-agency/index.html` to consume it | Nobody — page output unchanged |
+| **1** ✅ | `_fa_pool` server-side + `GET /api/fa/pool`; rewrite `fo/free-agency/index.html` to consume it | Nobody — page output unchanged |
 | **2** ✅ | `free_agency.py`: state/offers/ballots storage, full endpoint set, validation wiring, tests. No UI anywhere | API only, role-gated |
-| **3** ✅ | Extract `teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
+| **3** ✅ | Extract `stats/teams/lineup.js`; `team.js` consumes it | Nobody — identical render |
 | **4** ✅ | Session cookie: `sessions.json`, `POST /api/auth/session` + `/logout`, `_resolve_session` accepted on `/api/fa/*` + `/api/auth/me`, `token-badge.js` mints it on load | Nobody — no behaviour changes on any existing page |
 | **5** ✅ | Dashboard at **`nbn.today/pdc`**, unlinked from `nav.js`. Build and review the whole thing here | Anyone with the URL — and it shows only the forbidden screen without a role |
 | **5b** ✅ | nginx `pdc.nbn.today` block (same docroot, `/` → `/committees/pdc/index.html` since 2026-09-19, `/api/` proxy) + certbot | Committee |
 | **6** ✅ | `discord_transport` + `fa_notify`, wired into every FA write path, shipped with both channels **unset**. Rollout is then two env vars, in order: `DISCORD_PDC_CHANNEL`, verify in the private channel, then `DISCORD_FA_NEWS_CHANNEL` | Nobody until an env var is set — then committee, then league |
-| **7** ✅ | Team-facing ⋯ menu + offer form on `/free-agency`, gated on the team's role (draft and submit alike since 2026-08-10 — § 6.0), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
+| **7** ✅ | Team-facing ⋯ menu + offer form on `/fo/free-agency`, gated on the team's role (draft and submit alike since 2026-08-10 — § 6.0), plus `GET /api/fa/commitment/{team}` and the board listing closed players (§ 6.3) | Team front offices |
 | **8** ✅ | Ball allocation + finalize/unlock UI; role-aware instructions (§ 8.5) | Committee |
 | **9a** ✅ | `agent` in `VALID_ROLES`/`ROLE_IMPLIES`/`NAMED_ROLES`. Nothing granted yet | Nobody |
 | **9b** ✅ | Backend § 4.7: claim/release/advance/return-to-agent, the `blocked_teams` gate on create+submit, remand/void re-gating, agent finalize, `returned_since`, derived stage on `GET /api/fa/state`, tests | API only — and inert until a claim exists |

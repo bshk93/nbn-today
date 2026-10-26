@@ -70,7 +70,7 @@
 .dlg-details + .dlg-confirm-text { margin-top: 0.9rem; }
 
 /* The flagged-check list. This is the case that most needed real markup:
-   forced overrides in /transactions were passing "\n\n"-joined rule text
+   forced overrides in /fo/transactions were passing "\n\n"-joined rule text
    through confirm(), where it rendered as an undifferentiated blob. */
 .dlg-details {
   list-style: none; display: flex; flex-direction: column; gap: 0.4rem;

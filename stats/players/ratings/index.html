@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/stats/players/subpage.css">
+  <title>NBN | 2K Ratings</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN player’s 2K ratings: every attribute and badge, and how they have moved.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | 2K Ratings">
+  <meta property="og:description" content="One NBN player’s 2K ratings: every attribute and badge, and how they have moved.">
+  <meta property="og:url" content="https://nbn.today/stats/players/ratings/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    /* 2K attribute categories */
+    .attr-categories-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem 2rem;
+    }
+    @media (max-width: 700px) { .attr-categories-grid { grid-template-columns: 1fr; } }
+    .edit-btn {
+      padding: 0.28rem 0.7rem; border-radius: var(--radius-sm); font-size: var(--text-xs);
+      font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid;
+    }
+    .edit-btn-primary { background: var(--accent-panel-bg); border-color: var(--accent); color: var(--accent-light); }
+    .edit-btn-primary:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+    .edit-btn-secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }
+    .edit-btn-secondary:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+    .ovr-chart { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem 0.25rem; margin-bottom: 0.75rem; }
+    .ovr-edit-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    .ovr-edit-row input { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-primary); font-size: var(--text-sm); font-family: inherit; padding: 0.28rem 0.45rem; outline: none; }
+    .ovr-edit-row input:focus { border-color: var(--accent); }
+    .ovr-edit-row input[type=number] { width: 4.5rem; }
+  </style>
+</head>
+<body>
+<div class="page ui-page ui-page--wide">
+  <nav class="nav" id="nav"></nav>
+  <header class="ui-header">
+    <div class="psub-head">
+      <img class="psub-photo" id="photo" alt="" hidden>
+      <div>
+        <h1 class="ui-title" id="page-title">2K Ratings</h1>
+        <p class="ui-subtitle" id="page-sub"></p>
+      </div>
+    </div>
+  </header>
+  <nav id="player-tabs" style="display:none"></nav>
+
+  <div id="content"><div class="ui-loading">Loading…</div></div>
+</div>
+
+<script src="/names.js"></script>
+<script src="/ratings-popup.js"></script>
+<script src="/league-time.js"></script>
+<script src="/stats/players/subpage.js"></script>
+<script>
+(function () {
+  const json = url => fetch(url).then(r => (r.ok ? r.json() : null)).catch(() => null);
+
+  // "CURRY, STEPHEN" → "Stephen Curry". Shared with every page via /names.js.
+  function displayName(canonical) {
+    return nbnPlayerName(canonical);
+  }
+
+  let allOvrHistory = {};
+  let currentOvr = {};
+  let allAttributes = {};
+
+  // allAttributes is {slug: [snapshot, …]} oldest-first — current is the last entry.
+  function currentAttributes(playerSlug) {
+    const history = allAttributes[playerSlug];
+    return history && history.length ? history[history.length - 1] : null;
+  }
+
+  // ── Token helpers ────────────────────────────────────────────────────────────
+
+  // Async because it may have to ask. Every caller is an event handler, so
+  // awaiting it costs nothing; the alternative is the browser's prompt box,
+  // which cannot mask a credential.
+  async function getToken() {
+    const stored = localStorage.getItem('nbn_token');
+    if (stored) return stored;
+    return await promptForToken();
+  }
+
+  function clearToken() { localStorage.removeItem('nbn_token'); }
+
+  // Roles for the current token, populated once on load from GET /api/auth/me.
+  // Gate which edit affordances render — the API still enforces permissions on
+  // write; this just hides controls the user couldn't actually use.
+  let AUTH_ROLES = [];
+  function hasAuthRole(role) {
+    if (AUTH_ROLES.includes('admin')) return true;
+    if (AUTH_ROLES.includes(role)) return true;
+    if (role === 'rosters' && AUTH_ROLES.includes('bod')) return true;  // bod implies rosters
+    return false;
+  }
+  // Bio + OVR edits require the rosters or curator role; adding players requires rosters.
+  const canEditBios  = () => hasAuthRole('rosters') || hasAuthRole('curator');
+  const canAddPlayer = () => hasAuthRole('rosters');
+
+  // An OVR on the heat scale (components.css .ui-heat): 60 and below is the
+  // bottom, 100 the top.
+  function ovrHeat(n) {
+    return Math.min(1, Math.max(0, (n - 60) / 40)).toFixed(3);
+  }
+
+  function buildOvrChart(entries) {
+    const W = 480, H = 72;
+    const PAD = { top: 16, right: 10, bottom: 18, left: 10 };
+    const iW = W - PAD.left - PAD.right;
+    const iH = H - PAD.top - PAD.bottom;
+
+    const ovrs = entries.map(e => e.ovr);
+    const lo = Math.max(50, Math.min(...ovrs) - 4);
+    const hi = Math.min(99, Math.max(...ovrs) + 4);
+
+    const xOf = i => PAD.left + (entries.length < 2 ? iW / 2 : (i / (entries.length - 1)) * iW);
+    const yOf = v => PAD.top + (1 - (v - lo) / (hi - lo)) * iH;
+
+    // Everything but the date labels sits in one group on the heat scale, so
+    // the line, dots and figures take the latest rating's colour (--heat-c).
+    const latest = entries.at(-1).ovr;
+
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.style.cssText = 'width:100%;height:72px;display:block;overflow:visible;';
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'ui-heat-fill');
+    g.style.setProperty('--heat', ovrHeat(latest));
+    svg.appendChild(g);
+
+    // Area fill under line
+    if (entries.length >= 2) {
+      const areaPoints = entries.map((e, i) => `${xOf(i)},${yOf(e.ovr)}`).join(' ');
+      const lastX = xOf(entries.length - 1), firstX = xOf(0), baseY = PAD.top + iH;
+      const area = document.createElementNS(ns, 'polygon');
+      area.setAttribute('points', `${firstX},${baseY} ${areaPoints} ${lastX},${baseY}`);
+      area.setAttribute('opacity', '0.18');
+      g.appendChild(area);
+
+      // Line
+      const poly = document.createElementNS(ns, 'polyline');
+      poly.setAttribute('points', areaPoints);
+      poly.setAttribute('fill', 'none');
+      poly.style.stroke = 'var(--heat-c)';
+      poly.setAttribute('stroke-width', '2');
+      poly.setAttribute('stroke-linejoin', 'round');
+      poly.setAttribute('stroke-linecap', 'round');
+      g.appendChild(poly);
+    }
+
+    // Dots + endpoint labels
+    entries.forEach((e, i) => {
+      const cx = xOf(i), cy = yOf(e.ovr);
+      const isFirst = i === 0, isLast = i === entries.length - 1;
+      const r = isLast ? 4 : 2.5;
+
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', r);
+      g.appendChild(dot);
+
+      if (isFirst || isLast) {
+        const label = document.createElementNS(ns, 'text');
+        label.setAttribute('x', cx);
+        label.setAttribute('y', cy - 6);
+        label.setAttribute('text-anchor', isFirst ? 'start' : 'end');
+        label.setAttribute('font-size', '10');
+        label.setAttribute('font-weight', '600');
+        label.textContent = e.ovr;
+        g.appendChild(label);
+
+        const dateLabel = document.createElementNS(ns, 'text');
+        dateLabel.setAttribute('x', cx);
+        dateLabel.setAttribute('y', H - 2);
+        dateLabel.setAttribute('text-anchor', isFirst ? 'start' : 'end');
+        dateLabel.setAttribute('fill', 'var(--text-muted)');
+        dateLabel.setAttribute('font-size', '8');
+        dateLabel.textContent = e.date.slice(0, 7);
+        svg.appendChild(dateLabel);
+      }
+    });
+
+    const wrap = document.createElement('div');
+    wrap.className = 'ovr-chart';
+    wrap.appendChild(svg);
+    return wrap;
+  }
+
+  const ATTR_CATEGORIES = [
+    { label: 'Shooting', keys: ['three_point_shot', 'mid_range_shot', 'close_shot', 'free_throw', 'shot_iq', 'offensive_consistency'] },
+    { label: 'Finishing', keys: ['layup', 'driving_dunk', 'standing_dunk', 'post_hook', 'post_fade', 'post_control', 'draw_foul', 'hands'] },
+    { label: 'Athleticism', keys: ['speed', 'strength', 'agility', 'vertical', 'hustle', 'stamina', 'overall_durability'] },
+    { label: 'Playmaking', keys: ['ball_handle', 'speed_with_ball', 'pass_accuracy', 'pass_vision', 'pass_iq'] },
+    { label: 'Defense & Rebounding', keys: ['block', 'steal', 'pass_perception', 'interior_defense', 'perimeter_defense', 'defensive_consistency', 'help_defense_iq', 'defensive_rebound', 'offensive_rebound'] },
+    { label: 'Intangibles', keys: ['intangibles'] },
+  ];
+
+  const ATTR_LABELS = {
+    three_point_shot: '3PT Shot', mid_range_shot: 'Mid-Range Shot', close_shot: 'Close Shot',
+    free_throw: 'Free Throw', shot_iq: 'Shot IQ', offensive_consistency: 'Offensive Consistency',
+    layup: 'Layup', driving_dunk: 'Driving Dunk', standing_dunk: 'Standing Dunk',
+    post_hook: 'Post Hook', post_fade: 'Post Fade', post_control: 'Post Control',
+    draw_foul: 'Draw Foul', hands: 'Hands',
+    speed: 'Speed', strength: 'Strength', agility: 'Agility', vertical: 'Vertical',
+    hustle: 'Hustle', stamina: 'Stamina', overall_durability: 'Durability',
+    ball_handle: 'Ball Handle', speed_with_ball: 'Speed With Ball', pass_accuracy: 'Pass Accuracy',
+    pass_vision: 'Pass Vision', pass_iq: 'Pass IQ',
+    block: 'Block', steal: 'Steal', pass_perception: 'Pass Perception',
+    interior_defense: 'Interior Defense', perimeter_defense: 'Perimeter Defense',
+    defensive_consistency: 'Defensive Consistency', help_defense_iq: 'Help Defense IQ',
+    defensive_rebound: 'Defensive Rebound', offensive_rebound: 'Offensive Rebound',
+    intangibles: 'Intangibles',
+  };
+
+  // Abbreviated column headers for the history table (renderAttributeHistory)
+  // only -- renderAttributes' progress-bar labels keep the full ATTR_LABELS text.
+  const ATTR_ABBR = {
+    three_point_shot: '3PT', mid_range_shot: 'MID', close_shot: 'CS',
+    free_throw: 'FT', shot_iq: 'SIQ', offensive_consistency: 'OCON',
+    layup: 'LAY', driving_dunk: 'DDK', standing_dunk: 'SDK',
+    post_hook: 'PHK', post_fade: 'PFD', post_control: 'PCTL',
+    draw_foul: 'DF', hands: 'HND',
+    speed: 'SPD', strength: 'STR', agility: 'AGL', vertical: 'VERT',
+    hustle: 'HUS', stamina: 'STA', overall_durability: 'DUR',
+    ball_handle: 'BHD', speed_with_ball: 'SWB', pass_accuracy: 'PACC',
+    pass_vision: 'PVIS', pass_iq: 'PIQ',
+    block: 'BLK', steal: 'STL', pass_perception: 'PPER',
+    interior_defense: 'IDEF', perimeter_defense: 'PDEF',
+    defensive_consistency: 'DCON', help_defense_iq: 'HDIQ',
+    defensive_rebound: 'DREB', offensive_rebound: 'OREB',
+    intangibles: 'INT',
+  };
+
+  function renderAttributes(container, playerSlug) {
+    const data = currentAttributes(playerSlug);
+    if (!data || !data.attributes) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = '2K Attributes';
+    container.appendChild(h2);
+
+    const outer = document.createElement('div');
+
+    const wrap = document.createElement('div');
+    wrap.className = 'attr-categories-grid';
+    outer.appendChild(wrap);
+
+    ATTR_CATEGORIES.forEach(cat => {
+      const present = cat.keys.filter(k => data.attributes[k] != null);
+      if (!present.length) return;
+
+      const catBlock = document.createElement('div');
+
+      const catTitle = document.createElement('div');
+      catTitle.textContent = cat.label;
+      catTitle.style.cssText = 'font-size:var(--text-xs);font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-secondary);padding-bottom:0.35rem;margin-bottom:0.5rem;border-bottom:1px solid var(--border);';
+      catBlock.appendChild(catTitle);
+
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display:flex;flex-direction:column;gap:0.4rem;';
+
+      present.forEach(key => {
+        const val = data.attributes[key];
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;';
+
+        const label = document.createElement('span');
+        label.textContent = ATTR_LABELS[key] || key;
+        label.style.cssText = 'width:9rem;flex-shrink:0;font-size:var(--text-sm);color:var(--text-secondary);';
+
+        const bar = document.createElement('div');
+        bar.style.cssText = 'flex:1;height:6px;border-radius:var(--radius-sm);background:var(--border);position:relative;overflow:hidden;';
+        const fill = document.createElement('div');
+        fill.className = 'ui-heat-fill';
+        fill.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:${Math.max(0, Math.min(100, val))}%;--heat:${ovrHeat(val)};`;
+        bar.appendChild(fill);
+
+        const valEl = document.createElement('span');
+        valEl.textContent = val;
+        valEl.className = 'ui-heat-ink';
+        valEl.style.cssText = `font-size:var(--text-sm);font-weight:600;width:1.8rem;text-align:right;--heat:${ovrHeat(val)};`;
+
+        row.appendChild(label);
+        row.appendChild(bar);
+        row.appendChild(valEl);
+        grid.appendChild(row);
+      });
+
+      catBlock.appendChild(grid);
+      wrap.appendChild(catBlock);
+    });
+
+    if (data.badges && data.badges.length) {
+      const tierColors = (window.RatingsPopup && window.RatingsPopup.TIER_COLORS) || {};
+      const tierOrder = (window.RatingsPopup && window.RatingsPopup.TIER_ORDER) || [];
+      const sorted = data.badges.slice().sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier));
+
+      const badgeTitle = document.createElement('div');
+      badgeTitle.textContent = `Badges (${data.badges.length})`;
+      badgeTitle.style.cssText = 'font-size:var(--text-xs);font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-secondary);padding-bottom:0.35rem;margin:1rem 0 0.5rem;border-bottom:1px solid var(--border);';
+      outer.appendChild(badgeTitle);
+
+      const badgeList = document.createElement('div');
+      badgeList.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.4rem;';
+      sorted.forEach(b => {
+        const chip = document.createElement('span');
+        chip.title = `${b.tier} · ${b.category}`;
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;background:var(--bg-card);border-radius:var(--radius-sm);padding:0.2rem 0.65rem 0.2rem 0.5rem;font-size:var(--text-xs);color:var(--text-secondary);';
+
+        const dot = document.createElement('span');
+        dot.style.cssText = `width:0.55rem;height:0.55rem;border-radius:50%;flex-shrink:0;background:${tierColors[b.tier] || 'var(--text-muted)'};`;
+        chip.appendChild(dot);
+        chip.appendChild(document.createTextNode(b.name));
+        badgeList.appendChild(chip);
+      });
+      outer.appendChild(badgeList);
+    }
+
+    if (data['2k_pos'] && data['2k_pos'].length) {
+      const posRow = document.createElement('div');
+      posRow.style.cssText = 'font-size:var(--text-sm);color:var(--text-muted);margin-top:0.75rem;';
+      posRow.textContent = `Position: ${data['2k_pos'].join(' / ')}`;
+      outer.appendChild(posRow);
+    }
+
+    if (data.attributes.potential) {
+      const potRow = document.createElement('div');
+      potRow.style.cssText = 'font-size:var(--text-sm);color:var(--text-muted);margin-top:0.75rem;';
+      potRow.textContent = `Potential: ${data.attributes.potential}`;
+      outer.appendChild(potRow);
+    }
+
+    const source = document.createElement('div');
+    source.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-top:0.4rem;';
+    source.textContent = `Source: 2kratings.com (as of ${data.date})`;
+    outer.appendChild(source);
+
+    container.appendChild(outer);
+  }
+
+  function renderAttributeHistory(container, playerSlug) {
+    const history = allAttributes[playerSlug] || [];
+    if (!history.length) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = '2K Attribute History';
+    container.appendChild(h2);
+
+    const cols = [
+      { key: '2k_ovr', label: 'OVR', full: 'Overall', top: true },
+      { key: '2k_pos', label: 'POS', full: 'Position', top: true },
+      { key: 'potential', label: 'POT', full: 'Potential' },
+      ...ATTR_CATEGORIES.flatMap(cat => cat.keys.map(k => ({ key: k, label: ATTR_ABBR[k] || k, full: ATTR_LABELS[k] || k }))),
+    ];
+
+    const scrollWrap = document.createElement('div');
+    scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
+
+    const table = document.createElement('table'); table.className = 'ui-table';
+    table.className = 'salary-table';
+    table.style.cssText = 'min-width:1500px;';
+
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    [{ label: 'Date' }, ...cols].forEach(c => {
+      const th = document.createElement('th');
+      th.textContent = c.label;
+      th.style.whiteSpace = 'nowrap';
+      if (c.full) th.title = c.full;
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    // Oldest first is how snapshots are stored; show newest first for reading convenience.
+    const newestFirst = [...history].reverse();
+    newestFirst.forEach((entry, idx) => {
+      const prev = idx < newestFirst.length - 1 ? newestFirst[idx + 1] : null;
+      const tr = tbody.insertRow();
+
+      const dateTd = tr.insertCell();
+      const [y, m, d] = entry.date.split('-').map(Number);
+      dateTd.textContent = `${months[m - 1]} ${d}, ${y}`;
+      dateTd.style.whiteSpace = 'nowrap';
+
+      cols.forEach(col => {
+        const td = tr.insertCell();
+        td.style.whiteSpace = 'nowrap';
+        td.style.textAlign = 'right';
+        const rawVal = col.top ? entry[col.key] : (entry.attributes || {})[col.key];
+        const val = Array.isArray(rawVal) ? rawVal.join(' / ') : rawVal;
+        td.textContent = val != null && val !== '' ? val : '—';
+
+        if (typeof val === 'number') {
+          td.classList.add('ui-heat');
+          td.style.setProperty('--heat', ovrHeat(val));
+        }
+
+        if (prev) {
+          const rawPrevVal = col.top ? prev[col.key] : (prev.attributes || {})[col.key];
+          const prevVal = Array.isArray(rawPrevVal) ? rawPrevVal.join(' / ') : rawPrevVal;
+          if (prevVal != null && val != null && prevVal !== val) {
+            if (typeof val === 'number' && typeof prevVal === 'number') {
+              td.style.color = val > prevVal ? 'var(--success)' : 'var(--danger)';
+            } else {
+              td.style.color = 'var(--gold-alt)';
+            }
+            td.style.fontWeight = '700';
+          }
+        }
+      });
+    });
+
+    scrollWrap.appendChild(table);
+    container.appendChild(scrollWrap);
+
+    const source = document.createElement('div');
+    source.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-top:0.4rem;';
+    source.textContent = 'Source: 2kratings.com · colored cells changed since the previous snapshot';
+    container.appendChild(source);
+  }
+
+  function renderBadgeHistory(container, playerSlug) {
+    const history = allAttributes[playerSlug] || [];
+    if (!history.some(e => e.badges && e.badges.length)) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'Badge History';
+    container.appendChild(h2);
+
+    // Union of every badge name ever held, grouped by category (last-seen
+    // category wins), sorted category then name -- same grouping intent as
+    // ATTR_CATEGORIES above, just derived from the data since badges don't
+    // have a fixed category list.
+    const badgeCategory = new Map();
+    history.forEach(entry => {
+      (entry.badges || []).forEach(b => badgeCategory.set(b.name, b.category));
+    });
+    const cols = [...badgeCategory.keys()].sort((a, b) => {
+      const catA = badgeCategory.get(a), catB = badgeCategory.get(b);
+      return catA !== catB ? (catA < catB ? -1 : 1) : (a < b ? -1 : 1);
+    });
+
+    const tierColors = (window.RatingsPopup && window.RatingsPopup.TIER_COLORS) || {};
+
+    const scrollWrap = document.createElement('div');
+    scrollWrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;';
+
+    const table = document.createElement('table'); table.className = 'ui-table';
+    table.className = 'salary-table';
+    table.style.cssText = `min-width:${Math.max(600, 90 + cols.length * 34)}px;`;
+
+    const thead = table.createTHead();
+    const hr = thead.insertRow();
+    const dateTh = document.createElement('th');
+    dateTh.textContent = 'Date';
+    dateTh.style.whiteSpace = 'nowrap';
+    hr.appendChild(dateTh);
+    cols.forEach(name => {
+      const th = document.createElement('th');
+      th.textContent = name;
+      th.title = `${name} (${badgeCategory.get(name)})`;
+      th.style.whiteSpace = 'nowrap';
+      hr.appendChild(th);
+    });
+
+    const tbody = table.createTBody();
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const newestFirst = [...history].reverse();
+    newestFirst.forEach(entry => {
+      const tr = tbody.insertRow();
+      const dateTd = tr.insertCell();
+      const [y, m, d] = entry.date.split('-').map(Number);
+      dateTd.textContent = `${months[m - 1]} ${d}, ${y}`;
+      dateTd.style.whiteSpace = 'nowrap';
+
+      const tierByName = {};
+      (entry.badges || []).forEach(b => { tierByName[b.name] = b.tier; });
+
+      cols.forEach(name => {
+        const td = tr.insertCell();
+        td.style.textAlign = 'center';
+        const tier = tierByName[name];
+        const dot = document.createElement('span');
+        if (tier) {
+          dot.title = tier;
+          dot.style.cssText = `display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;background:${tierColors[tier] || 'var(--text-muted)'};`;
+        } else {
+          dot.style.cssText = 'display:inline-block;width:0.6rem;height:0.6rem;border-radius:50%;border:1px solid var(--border);';
+        }
+        td.appendChild(dot);
+      });
+    });
+
+    scrollWrap.appendChild(table);
+    container.appendChild(scrollWrap);
+
+    const source = document.createElement('div');
+    source.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-top:0.4rem;';
+    source.textContent = 'Source: 2kratings.com · dot color = badge tier held on that date';
+    container.appendChild(source);
+  }
+
+  function renderHistorySection(container, playerSlug) {
+    const attrHistory = allAttributes[playerSlug];
+    if (attrHistory && attrHistory.length) {
+      renderAttributeHistory(container, playerSlug);
+      renderBadgeHistory(container, playerSlug);
+    } else {
+      renderOvrHistory(container, playerSlug);
+    }
+  }
+
+  function renderOvrHistory(container, playerSlug) {
+    const hasToken = canEditBios();
+    const entries = allOvrHistory[playerSlug] || [];
+    if (!entries.length && !hasToken) return;
+
+    const h2 = document.createElement('h2');
+    h2.className = 'section-heading';
+    h2.textContent = 'OVR History';
+    container.appendChild(h2);
+
+    const wrap = document.createElement('div');
+    container.appendChild(wrap);
+
+    function rebuild() {
+      wrap.innerHTML = '';
+      const current = allOvrHistory[playerSlug] || [];
+      const loggedIn = canEditBios();
+      const hasChange = current.length > 1;
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const inputCss = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:var(--text-sm);padding:0.2rem 0.35rem;font-family:inherit;outline:none;';
+
+      if (current.length) {
+        if (current.length >= 2) wrap.appendChild(buildOvrChart(current));
+
+        const table = document.createElement('table'); table.className = 'ui-table';
+        table.className = 'salary-table';
+        const thead = table.createTHead();
+        const hr = thead.insertRow();
+        ['Date', 'OVR', ...(hasChange ? ['Change'] : []), ...(loggedIn ? [''] : [])].forEach((h, i) => {
+          const th = document.createElement('th');
+          th.textContent = h;
+          if (i === 1) th.className = 'right';
+          hr.appendChild(th);
+        });
+        const tbody = table.createTBody();
+        current.forEach((entry, i) => {
+          const tr = tbody.insertRow();
+          const [y, m, d] = entry.date.split('-').map(Number);
+          const dateTd = tr.insertCell();
+          dateTd.textContent = `${months[m-1]} ${d}, ${y}`;
+          const ovrTd = tr.insertCell();
+          ovrTd.className = 'right';
+          ovrTd.textContent = entry.ovr;
+          ovrTd.classList.add('ui-heat');
+          ovrTd.style.setProperty('--heat', ovrHeat(entry.ovr));
+          if (hasChange) {
+            const changeTd = tr.insertCell();
+            changeTd.className = 'right';
+            if (i === 0) {
+              changeTd.textContent = '—';
+              changeTd.style.color = 'var(--text-muted)';
+            } else {
+              const delta = entry.ovr - current[i - 1].ovr;
+              changeTd.textContent = delta > 0 ? `+${delta}` : String(delta);
+              changeTd.style.color = delta > 0 ? 'var(--success)' : delta < 0 ? 'var(--danger)' : 'var(--text-muted)';
+            }
+          }
+          if (loggedIn) {
+            const actionTd = tr.insertCell();
+            actionTd.style.textAlign = 'right';
+            const editRowBtn = document.createElement('button');
+            editRowBtn.className = 'edit-btn edit-btn-secondary';
+            editRowBtn.textContent = 'Edit';
+            editRowBtn.style.cssText = 'font-size:var(--text-xs);padding:0.1rem 0.35rem;';
+            actionTd.appendChild(editRowBtn);
+
+            editRowBtn.addEventListener('click', () => {
+              if (tr.dataset.editing) { rebuild(); return; }
+              table.querySelectorAll('tr[data-editing]').forEach(r => { delete r.dataset.editing; });
+              tr.dataset.editing = '1';
+
+              dateTd.innerHTML = '';
+              const dateIn = document.createElement('input');
+              dateIn.type = 'date';
+              dateIn.value = entry.date;
+              dateIn.style.cssText = inputCss;
+              dateTd.appendChild(dateIn);
+
+              ovrTd.innerHTML = '';
+              ovrTd.className = '';
+              ovrTd.removeAttribute('style');
+              const ovrIn = document.createElement('input');
+              ovrIn.type = 'number';
+              ovrIn.min = '50'; ovrIn.max = '99';
+              ovrIn.value = entry.ovr;
+              ovrIn.style.cssText = inputCss + 'width:4.5rem;text-align:right;';
+              ovrTd.appendChild(ovrIn);
+
+              actionTd.innerHTML = '';
+              const saveRowBtn = document.createElement('button');
+              saveRowBtn.className = 'edit-btn edit-btn-primary';
+              saveRowBtn.textContent = 'Save';
+              saveRowBtn.style.cssText = 'font-size:var(--text-xs);padding:0.1rem 0.35rem;';
+              const cancelRowBtn = document.createElement('button');
+              cancelRowBtn.className = 'edit-btn edit-btn-secondary';
+              cancelRowBtn.textContent = 'Cancel';
+              cancelRowBtn.style.cssText = 'font-size:var(--text-xs);padding:0.1rem 0.35rem;';
+              const rowStatus = document.createElement('span');
+              rowStatus.style.cssText = 'font-size:var(--text-xs);color:var(--danger);margin-left:0.25rem;';
+              actionTd.appendChild(saveRowBtn);
+              actionTd.appendChild(cancelRowBtn);
+              actionTd.appendChild(rowStatus);
+
+              cancelRowBtn.addEventListener('click', () => rebuild());
+
+              saveRowBtn.addEventListener('click', async () => {
+                const token = await getToken();
+                if (!token) return;
+                const dateVal = dateIn.value.trim();
+                const ovrVal = parseInt(ovrIn.value, 10);
+                if (!dateVal) { rowStatus.textContent = 'Date required.'; return; }
+                if (isNaN(ovrVal) || ovrVal < 50 || ovrVal > 99) { rowStatus.textContent = 'OVR must be 50–99.'; return; }
+                saveRowBtn.disabled = true;
+                rowStatus.textContent = 'Saving…';
+                const updated = current.map((e, j) => j === i ? { date: dateVal, ovr: ovrVal } : e);
+                try {
+                  const resp = await fetch(`/api/ovr/${playerSlug}/history`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated),
+                  });
+                  if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
+                  if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+                  allOvrHistory[playerSlug] = updated.slice().sort((a, b) => a.date < b.date ? -1 : 1);
+                  currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
+                  rebuild();
+                } catch (e) {
+                  rowStatus.textContent = e.message || 'Save failed.';
+                  saveRowBtn.disabled = false;
+                }
+              });
+            });
+          }
+        });
+        wrap.appendChild(table);
+      }
+
+      if (!loggedIn) return;
+
+      const formRow = document.createElement('div');
+      formRow.className = 'ovr-edit-row';
+      formRow.style.marginTop = '0.6rem';
+
+      const today = nbnToday();
+      const dateIn = document.createElement('input');
+      dateIn.type = 'date';
+      dateIn.value = today;
+
+      const ovrIn = document.createElement('input');
+      ovrIn.type = 'number';
+      ovrIn.min = '50'; ovrIn.max = '99';
+      ovrIn.placeholder = 'OVR';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'edit-btn edit-btn-primary';
+      saveBtn.textContent = 'Add Entry';
+
+      const statusEl = document.createElement('span');
+      statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--danger)';
+
+      saveBtn.addEventListener('click', async () => {
+        const token = await getToken();
+        if (!token) return;
+        const dateVal = dateIn.value.trim();
+        const ovrVal = parseInt(ovrIn.value, 10);
+        if (!dateVal) { statusEl.textContent = 'Date required.'; return; }
+        if (isNaN(ovrVal) || ovrVal < 50 || ovrVal > 99) { statusEl.textContent = 'OVR must be 50–99.'; return; }
+        saveBtn.disabled = true;
+        statusEl.textContent = 'Saving…';
+        try {
+          const resp = await fetch(`/api/ovr/${playerSlug}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: dateVal, ovr: ovrVal }),
+          });
+          if (resp.status === 401) { clearToken(); throw new Error('Token rejected.'); }
+          if (!resp.ok) { const d = await resp.json().catch(() => ({})); throw new Error(d.detail || 'Save failed.'); }
+          if (!allOvrHistory[playerSlug]) allOvrHistory[playerSlug] = [];
+          allOvrHistory[playerSlug].push({ date: dateVal, ovr: ovrVal });
+          allOvrHistory[playerSlug].sort((a, b) => a.date < b.date ? -1 : 1);
+          currentOvr[playerSlug] = allOvrHistory[playerSlug].at(-1).ovr;
+          rebuild();
+        } catch (e) {
+          statusEl.textContent = e.message || 'Save failed.';
+          saveBtn.disabled = false;
+        }
+      });
+
+      formRow.appendChild(dateIn);
+      formRow.appendChild(ovrIn);
+      formRow.appendChild(saveBtn);
+      formRow.appendChild(statusEl);
+      wrap.appendChild(formRow);
+    }
+
+    rebuild();
+  }
+
+  PlayerSubpage.mount('ratings').then(ctx => {
+    if (!ctx) return;
+    const { slug, content } = ctx;
+    const token = localStorage.getItem('nbn_token');
+    Promise.all([
+      json('/api/attributes'),
+      json('/api/ovr'),
+      json('/api/ovr/current'),
+      fetch('/api/auth/me', { headers: token ? { Authorization: `Bearer ${token}` } : {} }).then(r => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([attributes, ovrHistory, ovr, auth]) => {
+      allAttributes = attributes || {};
+      allOvrHistory = ovrHistory || {};
+      currentOvr = ovr || {};
+      AUTH_ROLES = Array.isArray(auth?.roles) ? auth.roles : [];
+      content.innerHTML = '';
+      renderAttributes(content, slug);
+      renderHistorySection(content, slug);
+      if (!content.children.length) content.innerHTML = '<div class="ui-empty">No 2K ratings on record for this player.</div>';
+    });
+  });
+})();
+</script>
+<script src="/nav.js"></script>
+<script src="/token-badge.js"></script>
+</body>
+</html>

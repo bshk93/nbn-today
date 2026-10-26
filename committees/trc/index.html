@@ -168,7 +168,7 @@
       <details class="help">
         <summary>How this works</summary>
         <p>
-          A team proposes a trade from <a href="/tradeblock/">the tradeblock</a>'s "Propose a Trade"
+          A team proposes a trade from <a href="/fo/tradeblock/">the tradeblock</a>'s "Propose a Trade"
           builder (or, for reference, the transaction simulator's trade mode), using the "Submit to
           TRC" button. Every team named in the trade, the proposer's included, must consent here
           before it opens for a vote. Only a team's owner can consent, and each owner gets an inbox
@@ -396,7 +396,7 @@
         return `
           <div class="asset">
             <div class="asset-top">
-              <a href="/players/?p=${encodeURIComponent(a.slug)}">${esc(playerName(a.slug))}</a>
+              <a href="/stats/players/?p=${encodeURIComponent(a.slug)}">${esc(playerName(a.slug))}</a>
               ${sal ? `<span class="sal" title="${fullMoney(sal)} in ${esc(season)}">${money(sal)}</span>` : ''}
             </div>
             <div class="asset-meta">${meta.join(' · ')}</div>
@@ -604,7 +604,7 @@
       if (canWithdraw) actions.push(`<button type="button" data-act="withdraw" data-id="${item.id}">Withdraw</button>`);
       if (actions.length) body += `<div class="req-actions">${actions.join('')}</div>`;
 
-      if (item.finalized) body += `<p class="sub">Finalized by ${esc(item.finalized.by)}${item.finalized.trade_number ? ` as Trade ${item.finalized.trade_number}` : ''} — <a href="/transactions#${esc(item.finalized.txn_id)}">view transaction</a></p>`;
+      if (item.finalized) body += `<p class="sub">Finalized by ${esc(item.finalized.by)}${item.finalized.trade_number ? ` as Trade ${item.finalized.trade_number}` : ''} — <a href="/fo/transactions#${esc(item.finalized.txn_id)}">view transaction</a></p>`;
       if (item.rejected) body += `<p class="sub">Rejected by ${esc(item.rejected.by)}: ${esc(item.rejected.reason)}</p>`;
       if (item.withdrawn) body += `<p class="sub">Withdrawn by ${esc(item.withdrawn.by)}${item.withdrawn.reason ? ': ' + esc(item.withdrawn.reason) : ''}</p>`;
       body += `<p class="sub">Proposed by ${esc(item.created_by)} on ${esc((item.created_at || '').slice(0, 10))}</p>`;

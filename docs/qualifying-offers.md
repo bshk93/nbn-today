@@ -1,6 +1,6 @@
 # Qualifying offers (§ 3.1)
 
-Adopted 2026-10-02. The rule text is `rulebook/index.html` § 3.1; this is how
+Adopted 2026-10-02. The rule text is `about/rulebook/index.html` § 3.1; this is how
 the system carries it.
 
 ## Why it exists

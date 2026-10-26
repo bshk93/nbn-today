@@ -655,7 +655,7 @@ function renderSummary() {
     gridEl.innerHTML = TEAM_ABBRS.map(abbr => {
       const s = teamStaff[abbr];
       return `<div class="team-staff-card">
-        <a class="ts-abbr" href="/teams/${abbr.toLowerCase()}/">${abbr}</a>
+        <a class="ts-abbr" href="/stats/teams/${abbr.toLowerCase()}/">${abbr}</a>
         <div class="ts-dots">
           ${staffDot('O', s.owner, 'owner')}
           ${staffDot('G', s.gm, 'gm')}
@@ -717,9 +717,9 @@ function renderTable() {
     // Team
     const tdTeam = tr.insertCell();
     if (cur) {
-      tdTeam.innerHTML = `<span class="team-badge ui-chip ui-chip--team" data-team="${cur.team}"><a href="/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
+      tdTeam.innerHTML = `<span class="team-badge ui-chip ui-chip--team" data-team="${cur.team}"><a href="/stats/teams/${cur.team.toLowerCase()}/">${cur.team}</a></span>`;
     } else if (last) {
-      tdTeam.innerHTML = `<span class="team-badge ui-chip ui-chip--team" data-team="${last.team}" style="opacity:0.6"><a href="/teams/${last.team.toLowerCase()}/">${last.team}</a></span>`;
+      tdTeam.innerHTML = `<span class="team-badge ui-chip ui-chip--team" data-team="${last.team}" style="opacity:0.6"><a href="/stats/teams/${last.team.toLowerCase()}/">${last.team}</a></span>`;
     } else {
       tdTeam.innerHTML = '<span style="color:var(--text-dim)">—</span>';
     }

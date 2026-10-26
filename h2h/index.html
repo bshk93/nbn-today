@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/css/shared.css">
-  <title>NBN | Head to Head</title>
+  <title>NBN | Moved</title>
   <!-- NBN:og -->
   <meta name="description" content="All-time head-to-head records between every NBN team and every owner.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="NBN | Head to Head">
   <meta property="og:description" content="All-time head-to-head records between every NBN team and every owner.">
-  <meta property="og:url" content="https://nbn.today/h2h/">
+  <meta property="og:url" content="https://nbn.today/stats/h2h/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -23,302 +21,18 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
-  <style>
-
-    .page {
-      max-width: 1800px;
-      margin: 0 auto;
-    }
-
-    
-    
-    
-    .section {
-      margin-bottom: 2.5rem;
-    }
-
-
-    .table-scroll { overflow: auto; max-height: 72vh; }
-
-    
-    
-    thead th:first-child {
-      position: sticky;
-      left: 0;
-      z-index: 3;
-      background: var(--bg-page);
-      min-width: 40px;
-      text-align: left;
-      padding-left: 0.6rem;
-    }
-
-    
-    
-    tbody tr:hover td { background: var(--bg-hover); }
-    tbody tr:hover td:first-child { background: var(--bg-hover); }
-
-    
-    td:first-child {
-      position: sticky;
-      left: 0;
-      z-index: 1;
-      background: var(--bg-page);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      color: var(--text-secondary);
-      text-align: left;
-      padding-left: 0.6rem;
-      border-right: 1px solid var(--border);
-      min-width: 40px;
-    }
-
-    thead th:first-child {
-      border-right: 1px solid var(--border);
-    }
-
-    .cell-record {
-      font-size: var(--text-xs);
-      font-weight: 500;
-      line-height: 1.25;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .cell-pct {
-      font-size: var(--text-xs);
-      line-height: 1.2;
-      opacity: 0.8;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .cell-dash {
-      font-size: var(--text-xs);
-      color: var(--text-dim);
-    }
-
-    #status {
-      text-align: center;
-      padding: 3rem;
-      color: var(--text-muted);
-      font-size: var(--text-base);
-    }
-
-    .owner-table td:first-child,
-    .owner-table thead th:first-child {
-      min-width: 130px;
-    }
-  </style>
+  <meta name="nbn-moved" content="/stats/h2h/">
+  <!-- This page moved to /stats/h2h/ when every page was nested under its sidebar
+       section (docs/route-migration.md). Old links live on in Discord, so the
+       old path forwards, keeping its query string and #tab. -->
+  <script>
+    location.replace('/stats/h2h/' + location.search + location.hash);
+  </script>
+  <meta http-equiv="refresh" content="0; url=/stats/h2h/">
 </head>
 <body>
-  <div class="page ui-page">
-    <nav class="nav"></nav>
-
-    <header class="ui-header">
-      <div>
-        <h1 class="ui-title">Head to Head</h1>
-        <p class="ui-subtitle">Row team's record against column team.</p>
-      </div>
-    </header>
-
-    <div class="section">
-      <h2 class="ui-section-title">All-Time (Regular Season + Playoffs)</h2>
-      <div class="ui-table-wrap table-scroll" id="alltime-wrap">
-        <div id="alltime-status">Loading…</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 class="ui-section-title">Playoffs Only</h2>
-      <div class="ui-table-wrap table-scroll" id="playoffs-wrap">
-        <div id="playoffs-status">Loading…</div>
-      </div>
-    </div>
-
-    <div class="section">
-      <h2 class="ui-section-title">By Owner (All-Time)</h2>
-      <div class="ui-table-wrap table-scroll" id="owners-wrap">
-        <div id="owners-status">Loading…</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    function buildH2HTable(rows) {
-      if (!rows.length) return null;
-      const teams = Object.keys(rows[0]).filter(k => k !== 'TEAM').sort();
-
-      const table = document.createElement('table'); table.className = 'ui-table ui-table--dense ui-table--sticky-first';
-
-      // Header row
-      const thead = table.createTHead();
-      const hr = thead.insertRow();
-      const corner = document.createElement('th');
-      hr.appendChild(corner);
-      teams.forEach(t => {
-        const th = document.createElement('th');
-        th.textContent = t;
-        hr.appendChild(th);
-      });
-
-      // Body rows
-      const tbody = table.createTBody();
-      rows.forEach(row => {
-        const tr = tbody.insertRow();
-
-        // Row label
-        const label = tr.insertCell();
-        const teamLink = document.createElement('a');
-        teamLink.href = `/teams/${row.TEAM.toLowerCase()}/`;
-        teamLink.textContent = row.TEAM;
-        label.appendChild(teamLink);
-
-        teams.forEach(colTeam => {
-          const td = tr.insertCell();
-          const record = row[colTeam] ?? '';
-
-          if (!record || record === '0-0' || colTeam === row.TEAM) {
-            if (colTeam === row.TEAM || !record) {
-              td.innerHTML = '<span class="cell-dash">—</span>';
-              return;
-            }
-          }
-
-          const parts = record.split('-');
-          const w = parseInt(parts[0], 10);
-          const l = parseInt(parts[1], 10);
-
-          if (isNaN(w) || isNaN(l) || w + l === 0) {
-            td.innerHTML = '<span class="cell-dash">—</span>';
-            return;
-          }
-
-          const pct = w / (w + l);
-          td.classList.add('ui-heat');
-          td.style.setProperty('--heat', pct.toFixed(3));
-
-          const recDiv = document.createElement('div');
-          recDiv.className = 'cell-record';
-          recDiv.textContent = record;
-
-          const pctDiv = document.createElement('div');
-          pctDiv.className = 'cell-pct';
-          pctDiv.textContent = (pct * 100).toFixed(1) + '%';
-
-          td.appendChild(recDiv);
-          td.appendChild(pctDiv);
-        });
-      });
-
-      return table;
-    }
-
-    function buildOwnerTable(rows) {
-      if (!rows.length) return null;
-      const teams = Object.keys(rows[0]).filter(k => k !== 'OWNER').sort();
-
-      const table = document.createElement('table'); table.className = 'ui-table ui-table--dense ui-table--sticky-first';
-      table.classList.add('owner-table');
-
-      const thead = table.createTHead();
-      const hr = thead.insertRow();
-      const corner = document.createElement('th');
-      hr.appendChild(corner);
-      teams.forEach(t => {
-        const th = document.createElement('th');
-        th.textContent = t;
-        hr.appendChild(th);
-      });
-
-      const tbody = table.createTBody();
-      rows.forEach(row => {
-        const tr = tbody.insertRow();
-        const label = tr.insertCell();
-        const ownerLink = document.createElement('a');
-        ownerLink.href = `/members/${encodeURIComponent(row.OWNER)}/`;
-        ownerLink.textContent = row.OWNER;
-        label.appendChild(ownerLink);
-
-        teams.forEach(colTeam => {
-          const td = tr.insertCell();
-          const record = row[colTeam] ?? '';
-
-          if (!record || record === '0-0') {
-            td.innerHTML = '<span class="cell-dash">—</span>';
-            return;
-          }
-
-          const parts = record.split('-');
-          const w = parseInt(parts[0], 10);
-          const l = parseInt(parts[1], 10);
-
-          if (isNaN(w) || isNaN(l) || w + l === 0) {
-            td.innerHTML = '<span class="cell-dash">—</span>';
-            return;
-          }
-
-          const pct = w / (w + l);
-          td.classList.add('ui-heat');
-          td.style.setProperty('--heat', pct.toFixed(3));
-
-          const recDiv = document.createElement('div');
-          recDiv.className = 'cell-record';
-          recDiv.textContent = record;
-
-          const pctDiv = document.createElement('div');
-          pctDiv.className = 'cell-pct';
-          pctDiv.textContent = (pct * 100).toFixed(1) + '%';
-
-          td.appendChild(recDiv);
-          td.appendChild(pctDiv);
-        });
-      });
-
-      return table;
-    }
-
-    (async () => {
-      const alltimeStatus = document.getElementById('alltime-status');
-      const alltimeWrap = document.getElementById('alltime-wrap');
-      const playoffsStatus = document.getElementById('playoffs-status');
-      const playoffsWrap = document.getElementById('playoffs-wrap');
-      const ownersStatus = document.getElementById('owners-status');
-      const ownersWrap = document.getElementById('owners-wrap');
-
-      try {
-        const [r1, r2, r3] = await Promise.all([
-          fetch('/data/h2h-alltime.csv'),
-          fetch('/data/h2h-playoffs.csv'),
-          fetch('/data/h2h-owners.csv'),
-        ]);
-        if (!r1.ok) throw new Error('alltime: ' + r1.statusText);
-        if (!r2.ok) throw new Error('playoffs: ' + r2.statusText);
-
-        const [t1, t2] = await Promise.all([r1.text(), r2.text()]);
-
-        alltimeStatus.remove();
-        const alltimeTable = buildH2HTable(parseCSV(t1));
-        if (alltimeTable) alltimeWrap.appendChild(alltimeTable);
-
-        playoffsStatus.remove();
-        const playoffsTable = buildH2HTable(parseCSV(t2));
-        if (playoffsTable) playoffsWrap.appendChild(playoffsTable);
-
-        if (r3.ok) {
-          const t3 = await r3.text();
-          ownersStatus.remove();
-          const ownersTable = buildOwnerTable(parseCSV(t3));
-          if (ownersTable) ownersWrap.appendChild(ownersTable);
-        } else {
-          ownersStatus.textContent = 'Owner data not yet available.';
-        }
-
-      } catch (e) {
-        alltimeStatus.textContent = 'Failed to load data: ' + e.message;
-        playoffsStatus.textContent = 'Failed to load data: ' + e.message;
-        ownersStatus.textContent = 'Failed to load data: ' + e.message;
-      }
-    })();
-  </script>
-  <script src="/nav.js"></script>
-  <script src="/token-badge.js"></script>
+  <p style="font-family:system-ui,sans-serif;padding:2rem">
+    This page has moved to <a href="/stats/h2h/">/stats/h2h/</a>.
+  </p>
 </body>
 </html>

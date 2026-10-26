@@ -11,7 +11,7 @@ feature is inert until then, same as PDC's own rollout.
 Trades were the one transaction type teams could never submit themselves —
 `POST /api/transactions` gates every type, trade included, behind `rosters`.
 The only trace of a trade committee anywhere in the codebase was a line in
-`draft/guide/index.html`: "reach out to TRC with the details, they'll stage
+`history/draft/guide/index.html`: "reach out to TRC with the details, they'll stage
 the trade and announce it on the live board." This builds that committee for
 real, reusing PDC's shape (a committee role, a head role, a pending-request
 store, a dashboard) — `pdc-free-agency-spec.md` § (scope note) already said
@@ -128,7 +128,7 @@ count, not a share of the committee.
 
     The team page shows the same requests while they're open, as a "Trade
     with … submitted, awaiting approval" card above the roster
-    (`renderTradeRequestBanner` in `teams/team.js`). Only the team's own front
+    (`renderTradeRequestBanner` in `stats/teams/team.js`). Only the team's own front
     office sees it.
 
 11. **Illegal-trade override, added 2026-09-20.** Two gaps closed together:
@@ -239,17 +239,17 @@ Endpoints — all under `/api/trade-requests`:
 ## Site
 
 - **The builder itself now lives in `trade-builder.js`** (repo root), extracted
-  2026-09-21 so it isn't duplicated. `transaction-sim/index.html` (trade mode)
-  mounts it. `tradeblock/index.html` mounted it too, in a modal, until
+  2026-09-21 so it isn't duplicated. `fo/transaction-sim/index.html` (trade mode)
+  mounts it. `fo/tradeblock/index.html` mounted it too, in a modal, until
   2026-10-21; its "Propose a trade" button is now a link to
-  `/transaction-sim/?teams=<your team>` instead. `loadMe()`, `renderResults()`'s party-gated "Submit to TRC" button,
+  `/fo/transaction-sim/?teams=<your team>` instead. `loadMe()`, `renderResults()`'s party-gated "Submit to TRC" button,
   and `submitToTRC(tradeBody)`'s token-prompt/POST are unchanged — just moved
   out of the page-inline script into the shared file. This is the first real
   step toward decision 1's stated "one place to mock and submit any
   transaction type" direction: trade now has two, not one.
 
   The extraction left the simulator's own inline copy behind, so until
-  2026-10-02 `/transaction-sim` still ran it rather than mounting the module.
+  2026-10-02 `/fo/transaction-sim` still ran it rather than mounting the module.
   It had already drifted: it never got "Release after the trade". The sim now
   mounts `trade-builder.js`, and its inline trade code is
   gone. Don't reintroduce a page-local copy.

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Season Recap</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Season Recap">
+  <meta property="og:description" content="One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.">
+  <meta property="og:url" content="https://nbn.today/history/recap/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .rc-controls { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+    .rc-band {
+      display: flex; align-items: center; gap: var(--space-5);
+      padding: var(--space-6) var(--space-5); margin-bottom: var(--space-5); border-radius: var(--radius);
+      background: var(--team-primary, var(--accent));
+      border-bottom: 5px solid var(--team-accent, var(--gold));
+      color: white;
+    }
+    .rc-band img { width: 88px; height: 88px; padding: 10px; border-radius: 50%; background: white; flex-shrink: 0; }
+    .rc-season { font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.8); }
+    .rc-name { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1.05; }
+    .rc-name a { color: inherit; text-decoration: none; }
+    .rc-result { margin-top: var(--space-1); font-size: var(--text-md); color: rgba(255,255,255,0.9); }
+    .rc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-5); }
+    .rc-tile { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
+    .rc-tile span { display: block; font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .rc-tile b { display: block; margin-top: 2px; font-family: var(--font-display); font-size: var(--text-lg); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .rc-tile small { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+    .rc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: var(--space-4); }
+    .rc-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4) var(--space-5); min-width: 0; }
+    .rc-card h2 { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-bottom: var(--space-3); }
+    .rc-row { display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: var(--text-sm); text-decoration: none; }
+    .rc-row:first-of-type { border-top: none; padding-top: 0; }
+    a.rc-row:hover .rc-main { color: var(--link); }
+    .rc-main { flex: 1; min-width: 0; }
+    .rc-main b { color: var(--text-primary); font-weight: 600; }
+    .rc-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+    .rc-num { font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 600; white-space: nowrap; }
+    .rc-hero { font-size: var(--text-md); color: var(--text-primary); }
+    .rc-hero b { font-size: var(--text-lg); }
+    .rc-row img.rc-logo { width: 18px; height: 18px; object-fit: contain; align-self: center; }
+    .rc-empty { font-size: var(--text-sm); color: var(--text-muted); }
+    @media (max-width: 520px) {
+      .rc-grid { grid-template-columns: 1fr; }
+      .rc-band { padding: var(--space-5) var(--space-4); gap: var(--space-4); }
+      .rc-band img { width: 64px; height: 64px; }
+      .rc-name { font-size: var(--text-xl); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page ui-page ui-page--wide">
+    <nav class="nav"></nav>
+    <header class="ui-header">
+      <h1 class="ui-title">Season Recap</h1>
+      <div class="ui-header-actions rc-controls">
+        <select class="ui-select" id="team" aria-label="Team"></select>
+        <select class="ui-select" id="season" aria-label="Season"></select>
+        <button class="ui-btn ui-btn--sm" id="share" type="button">Share</button>
+      </div>
+    </header>
+    <div id="content"><div class="ui-loading">Loading…</div></div>
+  </div>
+
+  <script src="/league-time.js"></script>
+  <script src="/names.js"></script>
+  <script src="/contract.js"></script>
+  <script src="/feed-types.js"></script>
+  <script src="/nav.js"></script>
+  <script>
+    // One team's season on one page, from data the site already serves:
+    // {abbr}-seasons.csv (record, seed, result), player_seasons (who led),
+    // /api/game-highs (its best games), /api/boxscores/games (wins, losses,
+    // streaks, opponents), the ledger's trades, and player_awards.csv.
+    // Nothing is stored for it. ?team=BOS&season=25-26; nginx sends link
+    // unfurlers to /api/og/recap for a card with the same headline.
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const $ = id => document.getElementById(id);
+    const seasonLabel = s => `20${s.slice(0, 2)}–${s.slice(3)}`;
+    const jget = url => fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
+    const text = url => fetch(url).then(r => (r.ok ? r.text() : ''));
+    const logo = t => `<img class="rc-logo" src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="" onerror="this.style.visibility='hidden'">`;
+    const f1 = v => (+v).toFixed(1);
+    const shortDate = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    const boxHref = g => `/stats/boxscores/?date=${g.date}&game=${g.away_team}-${g.home_team}`;
+    const RESULT = {
+      'Champion': 'Won the championship', 'Runner-Up': 'Lost in the Finals',
+      'Conf Finals': 'Reached the conference finals', 'Second Round': 'Reached the second round',
+      'First Round': 'Lost in the first round', 'Missed': 'Missed the playoffs',
+    };
+    // The season's July 1 – June 30 league year, for dating trades.
+    const yearBounds = s => [`20${s.slice(0, 2)}-07-01`, `20${s.slice(3)}-06-30`];
+
+    const params = new URLSearchParams(location.search);
+    const teams = Object.keys(TEAM_LIST).sort();
+    let team = (params.get('team') || '').toUpperCase();
+    if (!teams.includes(team)) team = teams[0];
+    $('team').innerHTML = teams.map(t => `<option value="${t}">${esc(TEAM_LIST[t])}</option>`).join('');
+    $('team').value = team;
+
+    let season = params.get('season') || '';
+    let seasonRows = [];
+
+    async function loadTeam() {
+      document.documentElement.dataset.team = team;
+      seasonRows = parseCSV(await text(`/data/${team.toLowerCase()}-seasons.csv`) || 'SEASON\n');
+      const seasons = seasonRows.map(r => r.SEASON).sort().reverse();
+      $('season').innerHTML = seasons.map(s => `<option value="${s}">${seasonLabel(s)}</option>`).join('');
+      if (!seasons.includes(season)) {
+        // Default to the last finished season: a recap of three games isn't one.
+        const current = await nbnCurrentSeason();
+        season = seasons.find(s => s < current) || seasons[0] || '';
+      }
+      $('season').value = season;
+    }
+
+    // Each recap is a history entry, so Back returns to the last one.
+    const go = () => {
+      const url = `?team=${team}&season=${season}`;
+      if (location.search !== url) history.pushState(null, '', url);
+      render();
+    };
+    // No params means the defaults the page opened on: the first team, and
+    // loadTeam's pick of season.
+    window.addEventListener('popstate', async () => {
+      const p = new URLSearchParams(location.search);
+      const t = (p.get('team') || '').toUpperCase();
+      team = teams.includes(t) ? t : teams[0];
+      $('team').value = team;
+      season = p.get('season') || '';
+      await loadTeam();
+      render();
+    });
+    $('team').onchange = async () => { team = $('team').value; await loadTeam(); go(); };
+    $('season').onchange = () => { season = $('season').value; go(); };
+    $('share').onclick = e => nbnShare({
+      title: document.title, url: `${location.origin}/recap/?team=${team}&season=${season}`,
+    }, e.currentTarget);
+
+    let shared = null;   // league-wide files, fetched once
+    const sharedData = () => shared || (shared = Promise.all([
+      text('/players/player_seasons.csv').then(parseCSV),
+      text('/players/player_seasons_playoffs.csv').then(t => (t ? parseCSV(t) : [])),
+      text('/players/player_awards.csv').then(t => (t ? parseCSV(t) : [])),
+    ]));
+
+    async function render() {
+      const content = $('content');
+      const row = seasonRows.find(r => r.SEASON === season);
+      if (!row) { content.innerHTML = '<div class="ui-empty">No season on file for this team.</div>'; return; }
+      content.innerHTML = '<div class="ui-loading">Loading…</div>';
+      document.title = `NBN | ${seasonLabel(season)} ${TEAM_LIST[team]} | Season Recap`;
+
+      const [[ps, pso, awards], highs, games, txns] = await Promise.all([
+        sharedData(),
+        jget(`/api/game-highs?team=${team}&season=${season}&type=all&stat=GMSC&limit=1`).catch(() => null),
+        jget(`/api/boxscores/games?team=${team}&season=${season}`).catch(() => []),
+        jget(`/api/transactions?team=${team}&type=trade&limit=500`).catch(() => ({ transactions: [] })),
+      ]);
+
+      // ── Results: margins, streaks, opponents
+      const reg = (games || []).filter(g => g.gametype !== 'PLAYOFF').sort((a, b) => a.date.localeCompare(b.date));
+      const po = (games || []).filter(g => g.gametype === 'PLAYOFF').sort((a, b) => a.date.localeCompare(b.date));
+      const side = g => {
+        const home = g.home_team === team;
+        return { home, opp: home ? g.away_team : g.home_team,
+                 us: home ? g.home_score : g.away_score, them: home ? g.away_score : g.home_score };
+      };
+      const withSide = reg.map(g => ({ ...g, ...side(g) }));
+      const bigWin = withSide.filter(g => g.us > g.them).sort((a, b) => (b.us - b.them) - (a.us - a.them))[0];
+      const badLoss = withSide.filter(g => g.us < g.them).sort((a, b) => (b.them - b.us) - (a.them - a.us))[0];
+      let best = 0, run = 0, bestEnd = null, worst = 0, lrun = 0;
+      withSide.forEach(g => {
+        if (g.us > g.them) { run++; lrun = 0; if (run > best) { best = run; bestEnd = g.date; } }
+        else { lrun++; run = 0; worst = Math.max(worst, lrun); }
+      });
+      const vs = {};
+      withSide.forEach(g => { const v = vs[g.opp] || (vs[g.opp] = { w: 0, l: 0 }); g.us > g.them ? v.w++ : v.l++; });
+      const opps = Object.entries(vs).filter(([, v]) => v.w + v.l >= 2);
+      const owned = opps.filter(([, v]) => v.l === 0).sort((a, b) => b[1].w - a[1].w)[0]
+        || opps.sort((a, b) => (b[1].w - b[1].l) - (a[1].w - a[1].l))[0];
+      const nemesis = opps.filter(([, v]) => v.w === 0).sort((a, b) => b[1].l - a[1].l)[0]
+        || opps.slice().sort((a, b) => (a[1].w - a[1].l) - (b[1].w - b[1].l))[0];
+
+      // ── Players: the season's leaders for this team, by total Game Score
+      const mine = ps.filter(r => r.SEASON === season && r.TEAM === team && +r.G > 0)
+        .sort((a, b) => +b.GMSC - +a.GMSC);
+      const poMine = pso.filter(r => r.SEASON === `${season} Playoffs` && r.TEAM === team && +r.G > 0)
+        .sort((a, b) => +b.GMSC - +a.GMSC);
+      const slugs = new Set(mine.map(r => r.SLUG));
+      const myAwards = awards.filter(a => a.SEASON === season && slugs.has(a.SLUG) && a.AWARD !== 'Champion');
+
+      // ── Trades in the league year
+      const [from, to] = yearBounds(season);
+      const trades = (txns.transactions || []).filter(t => !t.voided && t.date >= from && t.date <= to)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const tSlugs = new Set();
+      trades.forEach(t => (t.details?.transfers || []).forEach(tr => (tr.assets || []).forEach(a => a.slug && tSlugs.add(a.slug))));
+      const bios = tSlugs.size ? await jget('/api/players?slugs=' + encodeURIComponent([...tSlugs].join(','))).catch(() => ({})) : {};
+      const ctx = {
+        esc,
+        name: s => nbnPlayerName((bios[s] || {}).name || s),
+        team: a => `<b>${esc(a)}</b>`,
+      };
+
+      // ── Draw
+      const result = RESULT[row.PLAYOFF_RESULT] || row.PLAYOFF_RESULT || '';
+      const seed = (row.SEED || '').replace('-', ' ');
+      const honours = [row.FOTY === 'TRUE' && 'Franchise of the Year', row.COTY === 'TRUE' && 'Coach of the Year'].filter(Boolean);
+      let html = `<div class="rc-band">
+        <img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">
+        <div>
+          <div class="rc-season">${seasonLabel(season)} season</div>
+          <div class="rc-name"><a href="/stats/teams/${team}/">${esc(TEAM_LIST[team])}</a></div>
+          <div class="rc-result">${row.W}–${row.L}${seed ? ` · ${esc(seed)} seed` : ''}${result ? ` · ${esc(result)}` : ''}${honours.length ? ` · ${esc(honours.join(', '))}` : ''}</div>
+        </div>
+      </div>`;
+
+      const diff = +row.DIFF;
+      html += `<div class="rc-tiles">
+        <div class="rc-tile"><span>Record</span><b>${row.W}–${row.L}</b><small>${(+row.PCT).toFixed(3).replace(/^0/, '')}</small></div>
+        <div class="rc-tile"><span>Point diff</span><b>${diff >= 0 ? '+' : ''}${f1(diff)}</b><small>${f1(row.PPG)} for · ${f1(row.OPPG)} against</small></div>
+        <div class="rc-tile"><span>Longest win streak</span><b>${best}</b><small>${bestEnd ? `ended ${shortDate(bestEnd)}` : '—'}</small></div>
+        <div class="rc-tile"><span>Longest skid</span><b>${worst}</b><small>losses in a row</small></div>
+        ${po.length ? `<div class="rc-tile"><span>Playoffs</span><b>${po.filter(g => side(g).us > side(g).them).length}–${po.filter(g => side(g).us < side(g).them).length}</b><small>${esc(result)}</small></div>` : ''}
+      </div><div class="rc-grid">`;
+
+      // Best game
+      const top = highs?.board?.rows?.[0];
+      if (top) {
+        const L = top.line;
+        const away = top.home ? top.opp : top.team, home = top.home ? top.team : top.opp;
+        html += `<section class="rc-card"><h2>Game of the season</h2>
+          <a class="rc-row rc-hero" href="${boxHref({ date: top.date, away_team: away, home_team: home })}">
+            <span class="rc-main"><b>${esc(nbnPlayerName(top.player))}</b>: ${L.P} pts, ${L.R} reb, ${L.A} ast
+              <span class="rc-sub">${top.home ? 'vs' : '@'} ${esc(top.opp)} · ${shortDate(top.date)}${top.playoff ? ' · playoffs' : ''} · ${top.wl} ${top.team_pts}–${top.opp_pts} · Game Score ${f1(L.GMSC)}</span></span>
+          </a></section>`;
+      }
+
+      // Leaders
+      html += `<section class="rc-card"><h2>Who carried them</h2>${mine.slice(0, 4).map(r => `
+        <a class="rc-row" href="/stats/players/?p=${encodeURIComponent(r.SLUG)}">
+          <span class="rc-main"><b>${esc(nbnPlayerName(r.PLAYER))}</b>
+            <span class="rc-sub">${r.G} games · ${f1(r.MIN / r.G)} min</span></span>
+          <span class="rc-num">${f1(r.PTS / r.G)} / ${f1(r.REB / r.G)} / ${f1(r.AST / r.G)}</span>
+        </a>`).join('') || '<div class="rc-empty">No games on file.</div>'}
+        ${mine.length ? '<span class="rc-sub" style="margin-top:var(--space-2)">pts / reb / ast per game, ranked by total Game Score</span>' : ''}</section>`;
+
+      // Results
+      const gameRow = (label, g) => g ? `<a class="rc-row" href="${boxHref(g)}">${logo(g.opp)}
+          <span class="rc-main"><b>${label}</b> ${g.home ? 'vs' : '@'} ${esc(g.opp)}<span class="rc-sub">${shortDate(g.date)}</span></span>
+          <span class="rc-num">${g.us}–${g.them}</span></a>` : '';
+      const oppRow = (label, e) => e ? `<a class="rc-row" href="/stats/teams/${e[0]}/">${logo(e[0])}
+          <span class="rc-main"><b>${label}</b> ${esc(TEAM_LIST[e[0]] || e[0])}</span>
+          <span class="rc-num">${e[1].w}–${e[1].l}</span></a>` : '';
+      const resultsHtml = gameRow('Biggest win', bigWin) + gameRow('Toughest loss', badLoss)
+        + oppRow('Owned', owned) + (nemesis && nemesis !== owned ? oppRow('Nemesis', nemesis) : '');
+      if (resultsHtml) html += `<section class="rc-card"><h2>Results</h2>${resultsHtml}</section>`;
+
+      // Playoff leaders
+      if (poMine.length) {
+        html += `<section class="rc-card"><h2>In the playoffs</h2>${poMine.slice(0, 3).map(r => `
+          <a class="rc-row" href="/stats/players/?p=${encodeURIComponent(r.SLUG)}">
+            <span class="rc-main"><b>${esc(nbnPlayerName(r.PLAYER))}</b><span class="rc-sub">${r.G} games</span></span>
+            <span class="rc-num">${f1(r.PTS / r.G)} / ${f1(r.REB / r.G)} / ${f1(r.AST / r.G)}</span>
+          </a>`).join('')}</section>`;
+      }
+
+      // Awards
+      if (myAwards.length) {
+        const by = {};
+        myAwards.forEach(a => { (by[a.SLUG] = by[a.SLUG] || { name: a.PLAYER, list: [] }).list.push(a.AWARD); });
+        html += `<section class="rc-card"><h2>Honours</h2>${Object.entries(by).map(([slug, v]) => `
+          <a class="rc-row" href="/stats/players/?p=${encodeURIComponent(slug)}">
+            <span class="rc-main"><b>${esc(nbnPlayerName(v.name))}</b><span class="rc-sub">${esc(v.list.join(' · '))}</span></span>
+          </a>`).join('')}</section>`;
+      }
+
+      // Trades
+      const tradeRows = trades.map(t => {
+        const h = FeedTypes.headline(t, ctx);
+        return h ? `<a class="rc-row" href="/fo/transactions"><span class="rc-main">${h.html}<span class="rc-sub">${shortDate(t.date)}, ${t.date.slice(0, 4)}</span></span></a>` : '';
+      }).filter(Boolean);
+      html += `<section class="rc-card"><h2>Trades</h2>${tradeRows.join('') || '<div class="rc-empty">No trades this league year.</div>'}</section>`;
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    loadTeam().then(render).catch(e => {
+      $('content').innerHTML = `<div class="ui-empty">Couldn’t load this recap: ${esc(e.message)}</div>`;
+    });
+  </script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

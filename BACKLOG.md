@@ -1,13 +1,13 @@
 # NBN — Backlog
 
 Internal working list of what needs doing and what would be nice to have.
-Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
+Viewable at `/office/backlog` (admin-only nav link); the member-facing board is `/office/suggestions`.
 
 Last full review: **2026-10-06**. **31 open items**: 5 P1, 10 P2, 14 P3, plus
 2 nice-to-haves (counted from the `###` headings and the § 4 bullets). The
 previous count, from 2026-09-19, matched neither its own split nor the
 headings, so recount rather than adjust. Not re-measured in the 2026-10-06
-review: the Discord backfill counts, `/suggestions`, and the futures/`/invest`
+review: the Discord backfill counts, `/office/suggestions`, and the futures/`/nbyen/invest`
 entry.
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
@@ -159,8 +159,8 @@ here permanently.
 
 2026-09-23: `CapLevel.is_estimate` now exists (`nbn-api` `routers/misc.py`),
 and `extension_cap_position` / `extension_max_year1` score against an
-estimated cap instead of refusing outright — see the `/cap-settings` checkbox.
-**What's actually left is committee action, not code**: go into `/cap-settings`
+estimated cap instead of refusing outright — see the `/office/cap-settings` checkbox.
+**What's actually left is committee action, not code**: go into `/office/cap-settings`
 for 27-28/28-29/29-30, enter a projected cap/apron1/apron2/hard_cap (grown off
 26-27's real numbers is a reasonable starting point), and check the box. When
 the real 27-28 number is announced next season, re-save with the box
@@ -214,7 +214,7 @@ fixing only the site would just re-open the same divergence from the other end.
 Someone also has to choose where the boundary belongs, because 28-29 has no
 EAPS on file (`cap-levels.json` has it at 0 — same gap as the minimum-scale
 item above; setting a real 28-29 EAPS would make the split compute itself and
-would also retire the `eaps_assumption` placeholder `/transactions` has to ask
+would also retire the `eaps_assumption` placeholder `/fo/transactions` has to ask
 about).
 
 `build/load_rookie_scale.py` refuses to write any year that fails its § 3.10
@@ -228,14 +228,14 @@ Split out 2026-08-29 when the nine `"NA"` bios that this entry was about were
 fixed. Those were the substance of it: `ajinca-melvin`, `bridges-jalen`,
 `dixon-eric`, `johnson-keshad`, `juzang-johnny`, `mccullar-kevin`,
 `newton-tristen`, `pate-dink` and `robinson-jaxson` each carried the literal
-three-character string `NA` where a URL belongs, so every load of `/players/`
-fired a 404 for `https://nbn.today/players/NA`. All nine are now `""`, which is
+three-character string `NA` where a URL belongs, so every load of `/stats/players/`
+fired a 404 for `https://nbn.today/stats/players/NA`. All nine are now `""`, which is
 what 70 other bios already used and which the page's normal fallback handles.
 **`tests/frontend/run.js` now passes all 15 pages** — that 404 was the only
 same-origin failure the suite had.
 
 One thing worth keeping from how it was fixed, because the entry described the
-fix as a bio edit and that was only half of it: `/players/` reads
+fix as a bio edit and that was only half of it: `/stats/players/` reads
 `PHOTO_URL` out of `players/player_seasons.csv`, which snapshots the bio at
 **build** time. The bio write alone changed nothing on the page — it took a
 `build/build.sh` run to re-snapshot. Any future "just fix the bio" of a
@@ -248,7 +248,7 @@ What is left is two one-offs in the same field, neither of them our defect:
   it inflates every `GET /api/players` response for one player.
 - `da-commish-chuck`'s photo is the only **imgur-hosted** image in the league
   (`i.imgur.com/SaK7v2z.png`), and it 429ed when last checked. The frontend suite reports
-  it as a third-party warning on `/players/` and `/draft/` and does not fail on
+  it as a third-party warning on `/stats/players/` and `/history/draft/` and does not fail on
   it, correctly — but it is a broken image on two real pages.
 
 Both are worth normalising if anyone is in that field anyway. Neither is urgent.
@@ -359,7 +359,7 @@ tightens the raise limit, and the trade goes through TRC separately.
 
 ### [P2] Proration is practiced but undocumented
 The league prorates in-season minimum signings, but the rulebook says nothing
-about it — zero occurrences of "prorat" anywhere in `rulebook/index.html`.
+about it — zero occurrences of "prorat" anywhere in `about/rulebook/index.html`.
 Confirmed as real practice 2026-08-07.
 
 This matters now that § 3.12 minimums are enforced. `_check_minimum_salary`
@@ -409,7 +409,7 @@ not per page, and it doesn't count as outgoing salary in trade matching.
 ### [P2] An RFA match doesn't link back to the holds that funded the offer
 `rescind_renounce` shipped 2026-08-08 alongside owner self-serve renounce, and
 that part is done: every `renounce` stores a `_snapshot` of the bio state it
-erases, `rescind_renounce` restores from it, and `/transactions` has the undo
+erases, `rescind_renounce` restores from it, and `/fo/transactions` has the undo
 button. § 3.10's cap restrictions are warnings rather than errors there, since
 the same mechanism doubles as the correction path for a mistaken renounce.
 
@@ -463,7 +463,7 @@ day it landed.
   On 2026-10-06 three had gone stale and were fixed: § 3.1 and § 3.8 said
   Bird tenure was "self-declared", though `_check_bird_rights_declaration`
   had checked it against the ledger since August, and § 6.2 carried a count
-  that had drifted. The notes aren't shown on `/rulebook` (only the badge
+  that had drifted. The notes aren't shown on `/about/rulebook` (only the badge
   is), but the hand-written "What's system-enforced" prose there drifts the
   same way: § 3.14 made the same "self-declared" claim and was fixed the
   same day. Nothing checks that prose against the code.
@@ -574,9 +574,9 @@ and then set well below it, so the floors survive the league doing something
 ordinary. Two lessons are written into `tests/frontend/README.md` rather than
 here, because they are what the next person adding a row needs:
 
-- Where a count can legitimately *shrink*, the row says so — `/ratings-changes`
+- Where a count can legitimately *shrink*, the row says so — `/stats/ratings-changes`
   produces nothing from a scrape that changed nothing.
-- **Don't assert on a worklist.** `/suggestions` and the rosters dashboard's
+- **Don't assert on a worklist.** `/office/suggestions` and the rosters dashboard's
   reconciliation tabs are public and
   render fine, but their content is a list of things that are *supposed* to
   reach zero. A `min` on either goes red the day the league clears it. A test
@@ -595,14 +595,14 @@ What is left:
   and would add those minutes to every deploy; a nightly systemd timer runs
   detached and needs somewhere to report a failure (Discord, like
   `check_stats_integrity.py` already does). The timer is the better shape.
-- **No authenticated pages.** `/committees/pdc`, `/free-agency`, `/extensions`,
-  `/strikes`, `/committees/stream`, `/transactions`, `/inbox`, `/bet`, `/invest` and team
+- **No authenticated pages.** `/committees/pdc`, `/fo/free-agency`, `/fo/extensions`,
+  `/office/strikes`, `/committees/stream`, `/fo/transactions`, `/about/inbox`, `/nbyen/bet`, `/nbyen/invest` and team
   edit mode. Confirmed 2026-09-19 that signed out they each render a sign-in
   prompt correctly, so the gap is real but not hiding a defect. Covering them
   means minting a real session against the live API, and a write path exercised
   from a dev page is a real write — so this needs a decision, not just effort.
 - **~70 pages still uncovered**, but they are now the thin ones: static prose
-  (`/constitution`, `/legal`, `/join`), per-stat leaderboard
+  (`/about/constitution`, `/legal`, `/about/join`), per-stat leaderboard
   pages that share one `table.js`, and the 30 team shells that share one
   `team.js`. The heavy data-driven pages are done.
 
@@ -628,7 +628,7 @@ and unauthenticated, 503 when the data directory is unreachable
 
 ### [P3] Fifth copy of the same frontend primitives — `nbn-data.js` is overdue
 Entered 2026-08-16. `contract.js` exists because the contract grammar had
-already diverged twice; `teams/lineup.js` exists for the same reason. The rest
+already diverged twice; `stats/teams/lineup.js` exists for the same reason. The rest
 of the shared primitives never got that treatment, and the count has grown
 (2026-08-16 in brackets):
 
@@ -644,8 +644,8 @@ Same failure mode as the contract shorthand, just quieter — one page renders
 covers part of that**: `nbnPlayerName()` is the shared display rule and 28
 files load it. But the 11 local `displayName()` copies are still there, so
 it's a sixth copy until they're replaced. A root `nbn-data.js` carrying
-those six, adopted first in the four heaviest consumers (`teams/team.js`,
-`players/index.html`, `cap-summary/`, `transaction-sim/`), then opportunistically.
+those six, adopted first in the four heaviest consumers (`stats/teams/team.js`,
+`stats/players/index.html`, `fo/cap-summary/`, `fo/transaction-sim/`), then opportunistically.
 
 Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
 has to be pulled in the same injected-script + awaited-promise way
@@ -667,7 +667,7 @@ Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
   outcome while it has an open TRC request (but the pause itself leaks that a
   trade is coming). Decide once there's real trading to look at.
 
-### [P3] Seed `/suggestions` with the member-facing part of this file
+### [P3] Seed `/office/suggestions` with the member-facing part of this file
 The board is no longer empty (checked 2026-08-08: two live suggestions, #4 MCP
 server and #5 comments/editing, seq at 5; #5 is built — threads, status history,
 and an Edit button the UI had never exposed despite the PATCH existing since
@@ -681,7 +681,7 @@ job.
 
 ## 4. Nice to have
 
-- **Extension window UI** — teams submit on `/extensions` (2026-10-04) and the
+- **Extension window UI** — teams submit on `/fo/extensions` (2026-10-04) and the
   validator checks the § 6.3 window. What's missing is a calendar surface
   showing when each window opens and closes, the way FA has one.
 - **Cap history chart on the team page** — the rest of per-team cap health
@@ -692,12 +692,12 @@ job.
   since 2026-08-25, so "when did this team cross the first apron" is a chart
   over an existing endpoint, not a collection problem.
 - **Front Office Ledger: headlines and a recap Business section** — the ledger
-  shipped 2026-10-24 (`/finances`, box score attendance, owners, the team page
+  shipped 2026-10-24 (`/fo/finances`, box score attendance, owners, the team page
   section). Still unbuilt from the spec: feed / NBN Today headlines ("PHX posts
   record loss after a ¥40M tax bill") and a Business section in the season
   recap. `docs/franchise-finances-spec.md` § Outputs.
 - **Decide whether fair value replaces Wall Street pricing** — the hidden
-  `/invest/fair/` (2026-10-24) prices every franchise by a DCF on the ledger,
+  `/nbyen/invest/fair/` (2026-10-24) prices every franchise by a DCF on the ledger,
   snapshotted daily from its first hourly run. Watch it through 26-27, then
   decide. What has to be settled before it could carry NB¥ is in
   `docs/franchise-finances-spec.md` § Fair value.

@@ -85,7 +85,7 @@
 
   <script src="/league-time.js"></script>
   <script src="/names.js"></script>
-  <script src="/teams/lineup.js"></script>
+  <script src="/stats/teams/lineup.js"></script>
   <script src="/milestones.js"></script>
   <script src="/nav.js"></script>
   <script src="/token-badge.js"></script>
@@ -139,7 +139,7 @@
     const DATE = q.get('date') || '';
     if (!/^[A-Z]{3}$/.test(AWAY) || !/^[A-Z]{3}$/.test(HOME) || !/^\d{4}-\d\d-\d\d$/.test(DATE)) {
       $('pv-body').innerHTML = '<div class="ui-empty">No game named. Open a preview from the '
-        + '<a href="/calendar">calendar</a> or the homepage.</div>';
+        + '<a href="/season/calendar">calendar</a> or the homepage.</div>';
       return;
     }
     const SEASON = nbnSeasonForDate(DATE);
@@ -185,7 +185,7 @@
       const won = (g, t) => (g.home_team === t ? g.home_score > g.away_score : g.away_score > g.home_score);
       const score = (g, t) => (g.home_team === t ? `${g.home_score}–${g.away_score}` : `${g.away_score}–${g.home_score}`);
       const opp = (g, t) => (g.home_team === t ? `vs ${g.away_team}` : `@ ${g.home_team}`);
-      const boxHref = g => `/boxscores/?date=${encodeURIComponent(g.date)}&game=${g.away_team}-${g.home_team}`;
+      const boxHref = g => `/stats/boxscores/?date=${encodeURIComponent(g.date)}&game=${g.away_team}-${g.home_team}`;
 
       let html = '';
 
@@ -210,7 +210,7 @@
         const form = before(t).slice(0, 5);
         html += `<section class="ui-card pv-team" data-team="${esc(t)}">`
           + `<div class="pv-team-head"><img src="${logo(t)}" alt="">`
-          + `<a href="/teams/${esc(t)}/">${esc(teamName(t))}</a>`
+          + `<a href="/stats/teams/${esc(t)}/">${esc(teamName(t))}</a>`
           + (reg.length ? `<span class="pv-rec">${w}–${reg.length - w}</span>` : '') + '</div>'
           + (ls ? `<div class="pv-line"><span class="pv-muted">${esc(ls.SEASON)}:</span> ${esc(ls.W)}–${esc(ls.L)}`
               + (ls.SEED ? `, ${esc(ls.SEED.replace('-', ' '))} seed` : '')
@@ -266,7 +266,7 @@
         const five = set || (pool.length ? computeStartingFive(pool.filter(p => p.type === 'player')) : []);
         const rows = DEPTH_SLOTS.map((slotName, i) => {
           const p = five[i];
-          return `<tr><td>${slotName}</td><td>${p ? `<a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a>` : '<span class="pv-muted">—</span>'}</td>`
+          return `<tr><td>${slotName}</td><td>${p ? `<a href="/stats/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a>` : '<span class="pv-muted">—</span>'}</td>`
             + `<td class="num">${p && p.OVR ? esc(p.OVR) : ''}</td></tr>`;
         }).join('');
         html += '<section class="ui-card">'
@@ -285,7 +285,7 @@
           + (list.length
             ? '<div class="pv-ms">' + list.map(m => '<div class="pv-ms-row">'
                 + `<img src="${logo(m.team)}" alt="" title="${esc(m.team)}">`
-                + `<a href="/players/?p=${encodeURIComponent(m.slug)}">${esc(nbnPlayerName(m.name))}</a>`
+                + `<a href="/stats/players/?p=${encodeURIComponent(m.slug)}">${esc(nbnPlayerName(m.name))}</a>`
                 + `<span>${esc(Milestones.describe(m, nbnPlayerName))}</span>`
                 + `<span class="pv-eta">${esc(Milestones.eta(m))}</span></div>`).join('') + '</div>'
             : '<div class="pv-line pv-muted">Nobody on either roster is within five games of one.</div>')

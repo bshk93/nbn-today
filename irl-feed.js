@@ -1,7 +1,7 @@
 // IRL feed — real-world game logs and injury news for the players on one
 // fantasy roster, from ESPN via /api/irl (nbn-api routers/irl.py). Kept apart
 // from NBN's own stats on purpose: it shares no data, table or build step
-// with them. Mounted in an IRL tab by /nbnfl and by every NBN team page:
+// with them. Mounted in an IRL tab by /media/nbnfl and by every NBN team page:
 //
 //   IrlFeed.mount(container, { sport: 'nfl', roster: 'CIN' })   // nbnfl/index.html
 //   IrlFeed.mount(container, { sport: 'nba', roster: 'BOS' })   // teams/team.js

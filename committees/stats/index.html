@@ -240,9 +240,9 @@
       <div class="card-head"><h2>Tools</h2></div>
       <div class="card-body">
         <div class="links">
-          <a class="link-chip" href="/boxscores/submit/">Type in a box score by hand</a>
-          <a class="link-chip" href="/boxscores/">Browse box scores</a>
-          <a class="link-chip" href="/calendar/">Schedule &amp; calendar</a>
+          <a class="link-chip" href="/stats/boxscores/submit/">Type in a box score by hand</a>
+          <a class="link-chip" href="/stats/boxscores/">Browse box scores</a>
+          <a class="link-chip" href="/season/calendar/">Schedule &amp; calendar</a>
           <a class="link-chip" href="/stats/seasons">Season stats</a>
         </div>
       </div>
@@ -596,7 +596,7 @@
     if (box) {
       const aw = box.away_team === g.away_team ? box.away_score : box.home_score;
       const hm = box.away_team === g.away_team ? box.home_score : box.away_score;
-      s.innerHTML += `<span class="score"><a href="/boxscores/?date=${encodeURIComponent(g.date)}&game=${box.away_team}-${box.home_team}">`
+      s.innerHTML += `<span class="score"><a href="/stats/boxscores/?date=${encodeURIComponent(g.date)}&game=${box.away_team}-${box.home_team}">`
         + `${esc(g.away_team)} ${esc(aw)} – ${esc(hm)} ${esc(g.home_team)}</a></span>`;
     }
     row.appendChild(s);
@@ -756,7 +756,7 @@
   //
   // MyNBA's Injury History → Entire League screen, once a day. Every
   // screenshot for a date joins that date's pending report (a long list is
-  // two or three); /parse-injuries turns it into /injuries and the
+  // two or three); /parse-injuries turns it into /season/injuries and the
   // #injury-report post. Uploading after a commit starts a fresh report.
 
   function injuryEl(date) {
@@ -812,7 +812,7 @@
     const s = document.createElement('div');
     s.className = 'game-status';
     s.innerHTML = `<span class="ui-badge${st.tone ? ' ui-badge--' + st.tone : ''}">${esc(st.label)}</span>`;
-    if (committed) s.innerHTML += '<span class="score"><a href="/injuries/">Injury list</a></span>';
+    if (committed) s.innerHTML += '<span class="score"><a href="/season/injuries/">Injury list</a></span>';
     row.appendChild(s);
     return row;
   }
@@ -896,7 +896,7 @@
     document.getElementById('queue-card').hidden = false;
     document.getElementById('queue').innerHTML =
       `<p>${queue.length} game${queue.length === 1 ? '' : 's'} flagged to be typed in by hand.</p>`
-      + '<div class="links"><a class="link-chip" href="/boxscores/submit/">Work the queue</a></div>';
+      + '<div class="links"><a class="link-chip" href="/stats/boxscores/submit/">Work the queue</a></div>';
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────

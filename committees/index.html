@@ -126,9 +126,9 @@
 
     <div class="footnote">
       Want on one? Committees are staffed by volunteers — say so in Discord, or leave it on the
-      <a href="/suggestions/">suggestions board</a>. Roles are granted by an admin and every one of
-      them is listed with its exact permissions on <a href="/roles">Roles &amp; Permissions</a>.
-      The <a href="/rulebook/">rulebook</a> is what all five committees enforce; where a committee
+      <a href="/office/suggestions/">suggestions board</a>. Roles are granted by an admin and every one of
+      them is listed with its exact permissions on <a href="/about/roles">Roles &amp; Permissions</a>.
+      The <a href="/about/rulebook/">rulebook</a> is what all five committees enforce; where a committee
       has discretion rather than a rule, the rulebook says so.
     </div>
   </div>
@@ -139,7 +139,7 @@
   // Static except for one live number per card. Everything structural about a
   // committee — what it does, which roles sit on it, where its dashboard is —
   // is declared here, because it is the kind of fact that changes once a year
-  // and should read the same as /roles rather than being fetched from anywhere.
+  // and should read the same as /about/roles rather than being fetched from anywhere.
   const COMMITTEES = [
     {
       key: 'rosters',
@@ -242,7 +242,7 @@
       + `<p class="cmte-purpose">${esc(c.purpose)}</p>`
       + `<ul class="cmte-does">${c.does.map(d => `<li>${esc(d)}</li>`).join('')}</ul>`
       + `<div class="cmte-roles">${c.roles.map(r =>
-          `<a class="role-chip" href="/roles">${esc(r)}</a>`).join('')}</div>`
+          `<a class="role-chip" href="/about/roles">${esc(r)}</a>`).join('')}</div>`
       + (c.gated ? `<div class="gated">${esc(c.gated)}</div>` : '')
       + `<div class="cmte-foot">`
         + `<span class="cmte-signal" id="signal-${esc(c.key)}"></span>`

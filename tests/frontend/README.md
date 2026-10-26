@@ -53,7 +53,7 @@ author. The hook keeps `build/smoke_test.py`.
 One row in `PAGES` in `run.js`:
 
 ```js
-{ path: '/h2h/', selector: 'table tbody tr', min: 30, what: 'the head-to-head matrix' },
+{ path: '/stats/h2h/', selector: 'table tbody tr', min: 30, what: 'the head-to-head matrix' },
 ```
 
 Pick a selector that is the page's *content*, not its chrome — every page
@@ -65,9 +65,9 @@ Two things to get right about `min`, both learned by adding 24 rows at once on
 
 - **Read it off a real render, then set it well below.** A floor pinned to
   today's count fails the next time the league does something ordinary. Where a
-  count can legitimately *shrink* — `/ratings-changes` produces nothing from a
+  count can legitimately *shrink* — `/stats/ratings-changes` produces nothing from a
   scrape that changed nothing — say so in a comment beside the row.
-- **Don't assert on a worklist.** `/suggestions` and `/poopoo` are public and
+- **Don't assert on a worklist.** `/office/suggestions` and `/poopoo` are public and
   render fine, but their content is a list of things that are *supposed* to
   reach zero. A `min` on either goes red the day the league clears it. A test
   that fails on success is worse than no test, so both are deliberately
@@ -75,8 +75,8 @@ Two things to get right about `min`, both learned by adding 24 rows at once on
 
 ## Authenticated pages are not covered
 
-`/pdc`, `/free-agency`, `/extensions`, `/strikes`, `/stream`, `/transactions`,
-`/inbox`, `/cleanup`, `/bet`, `/invest` and team edit mode need a session cookie
+`/pdc`, `/fo/free-agency`, `/fo/extensions`, `/office/strikes`, `/stream`, `/fo/transactions`,
+`/about/inbox`, `/cleanup`, `/nbyen/bet`, `/nbyen/invest` and team edit mode need a session cookie
 (`Domain=.nbn.today`), so they are out of scope here. Signed out they correctly
 render a sign-in prompt, which is why a row on one would only ever assert the
 prompt. Covering them means minting a real session against the live API, and a
