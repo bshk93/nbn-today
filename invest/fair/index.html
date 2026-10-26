@@ -47,6 +47,10 @@
     .fv-how summary { cursor: pointer; color: var(--text-secondary); font-weight: 600; }
     .fv-how .ui-prose { margin-top: var(--space-3); font-size: var(--text-sm); }
     .fv-scroll { overflow-x: auto; }
+    .fv-tip { text-decoration: underline dotted var(--text-muted); text-underline-offset: 3px; cursor: help; }
+    .fv-cols { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); margin: 0; }
+    .fv-cols dt { font-weight: 600; color: var(--text-primary); }
+    .fv-cols dd { margin: 0; }
   </style>
 </head>
 <body>
@@ -91,23 +95,23 @@
   const COLS = [
     { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
     { key: 'team',   label: 'Team',       get: t => t.team },
-    { key: 'price',  label: 'Price',      get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
-    { key: 'day',    label: 'Day',        get: t => t.day, num: true,
+    { key: 'price',  label: 'Price', tip: "Fair value per share: the franchise's value ÷ 30M shares",      get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
+    { key: 'day',    label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
-    { key: 'vs',     label: 'vs league',  get: t => t.vs_league, num: true, fmt: t => pct(t.vs_league * 100) },
-    { key: 'book',   label: 'Ledger value', get: t => t.book_value, num: true, fmt: t => yen(t.book_value, 'B') },
-    { key: 'ratio',  label: 'Fair ÷ ledger', get: t => t.book_value ? t.value / t.book_value : null, num: true,
+    { key: 'vs',     label: 'vs league', tip: "Price against the league-average price. Cleaner than Price, which drifts up with discounting",  get: t => t.vs_league, num: true, fmt: t => pct(t.vs_league * 100) },
+    { key: 'book',   label: 'Ledger value', tip: "What the Front Office Ledger values the franchise at", get: t => t.book_value, num: true, fmt: t => yen(t.book_value, 'B') },
+    { key: 'ratio',  label: 'Fair ÷ ledger', tip: "This model's value divided by the ledger's. Above 1× means the model rates it higher", get: t => t.book_value ? t.value / t.book_value : null, num: true,
       fmt: t => t.book_value ? (t.value / t.book_value).toFixed(2) + '×' : '—' },
-    { key: 'rec',    label: 'W-L',        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
-    { key: 'projw',  label: 'Proj W',     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
-    { key: 'title',  label: 'Title',      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
-    { key: 'ops',    label: 'PV profit',  get: t => t.pv_in - t.pv_out, num: true, fmt: t => signedYen(t.pv_in - t.pv_out) },
-    { key: 'sale',   label: 'PV sale',    get: t => t.pv_sale, num: true, fmt: t => yen(t.pv_sale, 'B') },
+    { key: 'rec',    label: 'W-L', tip: "This season's record so far",        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
+    { key: 'projw',  label: 'Proj W', tip: "Projected wins for the full season, from the playoff odds simulator",     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
+    { key: 'title',  label: 'Title', tip: "Chance of winning this season's title",      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
+    { key: 'ops',    label: 'PV profit', tip: "Today's value of profit for the rest of this season and the next two",  get: t => t.pv_in - t.pv_out, num: true, fmt: t => signedYen(t.pv_in - t.pv_out) },
+    { key: 'sale',   label: 'PV sale', tip: "Today's value of selling the team after the third season",    get: t => t.pv_sale, num: true, fmt: t => yen(t.pv_sale, 'B') },
   ];
 
   function renderHead() {
     document.getElementById('thead').innerHTML = COLS.map(c =>
-      `<th class="${c.num ? 'num' : ''} ${sortKey === c.key ? 'sorted' : ''}" ${c.sort === false ? '' : `data-sort="${c.key}"`}>${c.label}${sortKey === c.key ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('');
+      `<th class="${c.num ? 'num' : ''} ${sortKey === c.key ? 'sorted' : ''}" ${c.sort === false ? '' : `data-sort="${c.key}"`}${c.tip ? ` title="${esc(c.tip)}"` : ''}>${c.tip ? `<span class="fv-tip">${c.label}</span>` : c.label}${sortKey === c.key ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('');
   }
 
   function sorted() {
@@ -239,6 +243,8 @@
       <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
       <p>As the season goes by, every price drifts up a little from discounting alone, so “vs league” is the cleaner comparison. A day's move is labelled with the piece that moved most: revenue, costs or sale.</p>
+      <p><b>The columns</b></p>
+      <dl class="fv-cols">${COLS.filter(c => c.tip).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.tip)}</dd>`).join('')}</dl>
       <p class="muted">Model ${esc(run.model)}, computed ${esc(new Date(run.computed_at).toLocaleString())}.</p>`;
   }
 
