@@ -59,6 +59,13 @@
     .fo-ledger .fo-sub td:first-child { padding-left: var(--space-5); color: var(--text-muted); }
     .fo-ledger tr.fo-head td { font-family: var(--font-display); text-transform: uppercase; color: var(--text-muted); padding-top: var(--space-3); }
     .fo-patch { font-size: var(--text-xs); color: var(--text-secondary); white-space: normal; display: inline-block; max-width: 9rem; text-align: right; }
+    .fo-arena-name { font-weight: 600; }
+    .fo-arena-real { color: var(--text-muted); font-weight: 400; }
+    .fo-bid td { background: var(--bg-subtle); }
+    .fo-bid form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+    .fo-bid .ui-input[name=name] { flex: 1 1 14rem; min-width: 0; }
+    .fo-bid .ui-input[name=bid] { width: 8rem; }
+    .fo-bid-err { color: var(--danger); font-size: var(--text-sm); width: 100%; }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); }
   </style>
 </head>
@@ -87,6 +94,10 @@
       <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first fo-ledger" id="ledger"></table></div>
       <p class="fo-note">Franchise figures, in NB¥ for flavor. Not spendable, not a balance, and not the
         <a href="/invest">Wall Street</a> share price. Every number is made up from real results.</p>
+
+      <h2 class="ui-section-title" id="arenas">Arena naming rights</h2>
+      <div class="ui-table-wrap"><table class="ui-table" id="arena-table"></table></div>
+      <p class="fo-note" id="arena-note">Name any team's arena, yours or a rival's. Bids are real NB¥ and the price only goes up: the next bid has to beat the last by 10%. If someone outbids you, the NB¥ you paid is gone. The name shows on that team's box scores from the day you buy it.</p>
 
       <div class="ui-header">
         <h2 class="ui-section-title">Most valuable franchises</h2>
@@ -166,7 +177,7 @@
       for (const s of seasons) {
         const rs = rows.filter(r => r.SEASON === s);
         avg[s] = {};
-        for (const k of ['VALUE', 'GATE', 'PLAYOFF_GATE', 'MERCH', 'TITLE_BONUS', 'AVG_ATTENDANCE', 'REVENUE'])
+        for (const k of ['VALUE', 'GATE', 'PLAYOFF_GATE', 'CONCESSIONS', 'MERCH', 'TITLE_BONUS', 'AVG_ATTENDANCE', 'REVENUE'])
           avg[s][k] = rs.reduce((a, r) => a + (r[k] || 0), 0) / rs.length;
       }
       model = rows[0]?.MODEL || '';
@@ -358,10 +369,12 @@
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Revenue</td></tr>
           ${line('Ticket sales', r => money(r.GATE))}
           ${line('Playoff gate', r => r.PLAYOFF_GATE ? money(r.PLAYOFF_GATE) : '—')}
-          ${line('Jerseys and foam fingers', r => money(r.MERCH))}
+          ${line('Nachos, parking, foam fingers', r => money(r.CONCESSIONS))}
+          ${line('Jersey sales', r => money(r.MERCH))}
           ${line('TV money', r => money(r.MEDIA))}
           ${line('NBNTV bonus', r => r.NBNTV ? money(r.NBNTV, 1) : '—')}
           ${line('Championship bonus', r => r.TITLE_BONUS ? money(r.TITLE_BONUS) : '—')}
+          ${fire('Tax check from the big spenders', r => r.TAX_SHARE ? money(r.TAX_SHARE, 1) : '—')}
           ${line('Total revenue', r => money(r.REVENUE), 'fo-total')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Expenses</td></tr>
           ${fire('Payroll', r => money(r.PAYROLL))}
@@ -434,6 +447,73 @@
       })
       .catch(() => {});
 
+    // ── Arena naming rights (GET/POST/DELETE /api/arenas) ───────────────────
+    const TOKEN = (() => { try { return localStorage.getItem('nbn_token'); } catch { return null; } })();
+    let arenas = [], me = null, bidOpen = null, bidErr = '';
+    const nby = n => 'NB¥' + Number(n).toLocaleString('en-US');
+    async function api(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (TOKEN) headers.Authorization = `Bearer ${TOKEN}`;
+      const res = await fetch(path, { ...opts, headers });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+      return body;
+    }
+    function drawArenas() {
+      const el = document.getElementById('arena-table');
+      if (!arenas.length) { el.innerHTML = ''; return; }
+      const admin = me?.roles?.includes('admin');
+      el.innerHTML = `
+        <thead><tr><th>Franchise</th><th>Arena</th><th>Named by</th><th class="num">Paid</th><th class="num">To beat</th><th></th></tr></thead>
+        <tbody>${arenas.map(a => `
+          <tr>
+            <td><span class="fo-team">${logo(a.team)}${esc(a.team)}</span></td>
+            <td><span class="fo-arena-name">${esc(a.name || '—')}</span>${a.bought && a.default ? `<br><span class="fo-arena-real">formerly ${esc(a.default)}</span>` : ''}</td>
+            <td>${a.by ? esc(a.by) : '<span class="muted">Up for grabs</span>'}</td>
+            <td class="num">${a.bid ? nby(a.bid) : '—'}</td>
+            <td class="num strong">${nby(a.to_beat)}</td>
+            <td class="num">
+              <button class="ui-btn ui-btn--sm" data-bid="${a.team}">${bidOpen === a.team ? 'Cancel' : 'Bid'}</button>
+              ${admin && a.bought ? `<button class="ui-btn ui-btn--sm ui-btn--danger" data-pull="${a.team}">Pull</button>` : ''}
+            </td>
+          </tr>
+          ${bidOpen === a.team ? `<tr class="fo-bid"><td colspan="6">${TOKEN ? `
+            <form data-team="${a.team}">
+              <input class="ui-input" name="name" maxlength="40" required placeholder="Name ${esc(a.team)}'s arena" aria-label="Arena name">
+              <input class="ui-input" name="bid" type="number" min="${a.to_beat}" step="1" value="${a.to_beat}" aria-label="Bid in NB¥">
+              <button class="ui-btn ui-btn--primary ui-btn--sm" type="submit">Buy for the bid</button>
+              ${bidErr ? `<span class="fo-bid-err">${esc(bidErr)}</span>` : ''}
+            </form>` : 'Sign in to bid.'}</td></tr>` : ''}`).join('')}</tbody>`;
+      el.querySelectorAll('[data-bid]').forEach(b => b.addEventListener('click', () => {
+        bidOpen = bidOpen === b.dataset.bid ? null : b.dataset.bid; bidErr = '';
+        drawArenas();
+        el.querySelector('.fo-bid input[name=name]')?.focus();
+      }));
+      el.querySelectorAll('[data-pull]').forEach(b => b.addEventListener('click', async () => {
+        const reason = prompt(`Pull ${b.dataset.pull}'s arena name? The bid is refunded and the name before it comes back. Reason:`);
+        if (!reason) return;
+        try { await api(`/api/arenas/${b.dataset.pull}`, { method: 'DELETE', body: JSON.stringify({ reason }) }); }
+        catch (e) { alert(e.message); }
+        loadArenas();
+      }));
+      el.querySelector('.fo-bid form')?.addEventListener('submit', async e => {
+        e.preventDefault();
+        const f = e.target, t = f.dataset.team;
+        const bid = Number(f.bid.value), name = f.name.value.trim();
+        if (!confirm(`Spend ${nby(bid)} to name ${t}'s arena "${name}"? If someone outbids you, it's gone.`)) return;
+        try {
+          await api(`/api/arenas/${t}`, { method: 'POST', body: JSON.stringify({ name, bid }) });
+          bidOpen = null; bidErr = '';
+        } catch (err) { bidErr = err.message; }
+        loadArenas();
+      });
+    }
+    function loadArenas() {
+      api('/api/arenas').then(d => { arenas = d.teams || []; drawArenas(); }).catch(() => {});
+    }
+    if (TOKEN) api('/api/me').then(m => { me = m; drawArenas(); }).catch(() => {});
+    loadArenas();
+
     function drawAll() {
       document.getElementById('f-team').value = state.team;
       document.getElementById('f-season').value = state.season;
@@ -474,6 +554,8 @@
         document.getElementById('status').hidden = true;
         document.getElementById('content').hidden = false;
         drawAll();
+        // The page is hidden until the books load, so a #arenas link can't land on its own.
+        if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
         document.getElementById('f-team').addEventListener('change', e => pickTeam(e.target.value));
         document.getElementById('f-season').addEventListener('change', e => {
           state.season = e.target.value;

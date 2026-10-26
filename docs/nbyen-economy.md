@@ -336,6 +336,7 @@ market are the two systems large enough to need their own treatment — § 3.
 | Sink | Price | Recurring | Status |
 |---|---|---|---|
 | **Stream a game** | **10,000** | ✅ flagship — flat price, first come first serve, max 2/team/month | new |
+| Arena naming rights | 100 to open, then +10% on the standing bid; an outbid holder isn't refunded | ✅ | live 2026-10-26 (`nbn-api/routers/arenas.py`) |
 | Team theme unlock | 5,000 | per theme | exists, unchanged |
 | Custom avatar | 5,000 | ✅ | exists, unchanged |
 | Name colour / status text | 500 per change | ✅ | exists, unchanged |
