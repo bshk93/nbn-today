@@ -162,6 +162,16 @@ apply will (`bio["contracts"] + [{team, salaries}]`) before calling
 which this still holds — the probe's `contracts` list is a new list, never
 `bio["contracts"]` appended in place.
 
+**A trailing hold's tier is tenure at the hold season, not the signing tier.**
+A signing's `bird_rights_type` is the player's tier when he signs. Until
+2026-10-26 the sign path copied it onto the hold the deal rolls into and
+priced the hold with it, so an Early Bird re-sign stayed Early Bird after two
+more years with the team (Dadiet's and Bruce Brown's 28-29 holds were 130%,
+not 190%). `_hold_bird_tier` takes the higher of the derived tenure and the
+signing tier's floor plus the deal's own years, and every hold a signing
+writes records it in `bird_tiers`. `GET /api/bird-rights` serves the tier on
+every rostered hold to the team and contract pages.
+
 ## Offer sheets are two transactions (§ 3.15)
 
 `offer_sheet` extends the offer; `offer_sheet_decision` records the incumbent's

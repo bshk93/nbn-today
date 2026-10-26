@@ -988,6 +988,12 @@ const coachingConfigReady = new Promise(resolve => {
 
   /* NON_GTD salary cell tooltip */
   .sal-tip { cursor: pointer; }
+  /* Bird tier under a hold. A pseudo-element so the cell's text stays the
+     bare figure that range-sum and Copy read. */
+  td[data-bird]::after {
+    content: attr(data-bird); display: block;
+    font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;
+  }
 
   /* mobile-friendly tooltip popup (hover on pointer devices, tap-to-toggle on touch) */
   .tt-anchor { cursor: pointer; }
@@ -1808,6 +1814,29 @@ function attachCopyBtn(titleId, wrapId) {
   titleEl.appendChild(btn);
 }
 
+// § 3.8. A tier derived from the draft or from a trade with no earlier record
+// is an estimate and reads with a "?"; one with nothing on file is never shown
+// as Non-Bird, since that player is usually a long-tenured one.
+const BIRD_TIER_LABEL = { QVFA: 'Full Bird', EQVFA: 'Early Bird', 'Non-QVFA': 'Non-Bird' };
+
+function birdLabel(b) {
+  if (!b.tier) return 'Bird ?';
+  const est = b.source === 'draft' || b.source === 'trade_floor';
+  return (BIRD_TIER_LABEL[b.tier] || b.tier) + (est ? '?' : '');
+}
+
+function birdTip(b, season) {
+  const name = b.tier ? `${BIRD_TIER_LABEL[b.tier] || b.tier} (${b.tier})` : 'Bird rights unknown';
+  const why = {
+    record: 'Recorded when he signed.',
+    ledger: `From the transaction history: ${b.evidence}.`,
+    draft: `Estimated from the draft: ${b.evidence}. Assumes no gap the transaction history doesn't show.`,
+    trade_floor: `At least this tier: ${b.evidence}.`,
+    unknown: 'No signing, trade or draft on file, so the tier can\'t be worked out. Ask the office.',
+  }[b.source] || '';
+  return `${season} ${b.type} hold: ${name}. ${why} (§ 3.8)`;
+}
+
 const CAP_HOLD_CSS = {
   UFA:        'cap-ufa',
   RFA:        'cap-rfa',
@@ -1853,6 +1882,10 @@ function parseCapHolds(val) {
 // it from Cap Settings; once set it drives every "current season" use on this page
 // (roster first column, total salary, hard-cap banner, exceptions, trades).
 let LEAGUE_YEAR = null;
+// § 3.8 tier on each of this team's UFA/RFA holds, from GET /api/bird-rights:
+// slug -> {team, holds: {season: {tier, source, evidence}}}. Empty until it
+// answers, and a hold with no entry just shows no tier.
+let BIRD_RIGHTS = {};
 // True during the regular season, when § 2.1's roster ceiling is 15 rather than
 // 20 — from GET /api/league-year, which reads it off the schedule. Undefined
 // until that answers, which cap-health.js reads as "don't guess".
@@ -3001,6 +3034,12 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
           td.textContent = formatSalary(row[col.key]);
         }
         if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
+        const bird = (capType === 'UFA' || capType === 'RFA') && row[col.key]
+          && BIRD_RIGHTS[row.SLUG]?.holds?.[k];
+        if (bird) {
+          td.dataset.bird = birdLabel(bird);
+          attachTooltip(td, birdTip(bird, k));
+        }
       } else {
         td.textContent = row[col.key] ?? '—';
       }
@@ -3179,6 +3218,12 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
       item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
       legend.appendChild(item);
     });
+    if (table.querySelector('td[data-bird]')) {
+      const note = document.createElement('span');
+      note.className = 'attr-legend-note';
+      note.textContent = 'Under a hold: Bird rights (§ 3.8). ? = estimated; tap for why';
+      legend.appendChild(note);
+    }
     wrap.appendChild(legend);
   }
 
@@ -8312,7 +8357,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr, birdr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -8339,6 +8384,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/rotations').then(r => r.ok ? r.json() : {}),
     fetch('/api/game-starters/counts').then(r => r.ok ? r.json() : null),
+    fetch(`/api/bird-rights?team=${abbr}`).then(r => r.ok ? r.json() : null),
   ]);
 
   await namesReady;
@@ -8351,6 +8397,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   // Set the league year before any render so currentSeasonYr() is consistent everywhere.
   if (lyr.status === 'fulfilled' && lyr.value?.current_season) LEAGUE_YEAR = lyr.value.current_season;
+  if (birdr.status === 'fulfilled' && birdr.value?.players) BIRD_RIGHTS = birdr.value.players;
   if (lyr.status === 'fulfilled' && typeof lyr.value?.in_season === 'boolean') IN_SEASON = lyr.value.in_season;
   if (lyr.status === 'fulfilled') SEASON_LAST_GAME = lyr.value?.calendar?.last_regular_season_game || null;
 

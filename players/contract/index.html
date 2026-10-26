@@ -29,6 +29,7 @@
     :is(.cap-ufa, .cap-rfa, .cap-player-opt, .cap-team-opt) td { background: color-mix(in srgb, var(--cap-c) 10%, transparent); }
     .dead-cap-row   td { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
     .dead-cap-row td.hold-label { color: var(--danger); opacity: 0.7; }
+    .bird-why { font-size: var(--text-xs); color: var(--text-muted); white-space: normal; }
 
     /* Contract timeline */
     .ctl-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 0.75rem 0.5rem; margin-bottom: 0.5rem; position: relative; }
@@ -111,7 +112,22 @@
     NON_GTD:    'cap-non-gtd',
   };
 
-  function renderSalaryTable(container, bio) {
+  // § 3.8 tier on a UFA/RFA hold, from GET /api/bird-rights. Same wording as
+  // the team page's roster (birdLabel / birdTip in teams/team.js).
+  const BIRD_TIER_LABEL = { QVFA: 'Full Bird', EQVFA: 'Early Bird', 'Non-QVFA': 'Non-Bird' };
+  function birdLine(b) {
+    if (!b.tier) return ['Bird rights unknown',
+      'No signing, trade or draft on file, so the tier can\'t be worked out. Ask the office.'];
+    const name = BIRD_TIER_LABEL[b.tier] || b.tier;
+    return {
+      record: [name, 'Recorded when he signed.'],
+      ledger: [name, `From the transaction history: ${b.evidence}.`],
+      draft: [`${name} (estimated)`, `From the draft: ${b.evidence}. Assumes no gap the transaction history doesn't show.`],
+      trade_floor: [`${name} (at least)`, `${b.evidence}.`],
+    }[b.source] || [name, ''];
+  }
+
+  function renderSalaryTable(container, bio, bird = {}) {
     const salaries = bio.salaries && typeof bio.salaries === 'object' ? bio.salaries : {};
     const rawDeadCap = bio.dead_cap && typeof bio.dead_cap === 'object' ? bio.dead_cap : {};
     // Backward compat: old dead players stored dead cap in salaries with no dead_cap field
@@ -197,6 +213,16 @@
         tdLabel.textContent = label;
       } else if (holdType && CAP_HOLD_LABELS[holdType]) {
         tdLabel.textContent = CAP_HOLD_LABELS[holdType];
+        if (bird[season]) {
+          const [tier, why] = birdLine(bird[season]);
+          tdLabel.textContent += ` · ${tier}`;
+          if (why) {
+            const sub = document.createElement('div');
+            sub.className = 'bird-why';
+            sub.textContent = why;
+            tdLabel.appendChild(sub);
+          }
+        }
       }
 
       if (isDeadCap || !holdType) {
@@ -620,13 +646,15 @@
     if (tooltip) tooltip.style.display = 'none';
   }
 
-  PlayerSubpage.mount('contract').then(ctx => {
+  PlayerSubpage.mount('contract').then(async ctx => {
     if (!ctx) return;
     const { slug, bio, content } = ctx;
+    const birdRes = await json(`/api/bird-rights?player=${encodeURIComponent(slug)}`);
+    const bird = (birdRes && birdRes.players && birdRes.players[slug] || {}).holds || {};
     content.innerHTML = '';
     renderContractTimeline(content, bio, slug);
     const before = content.children.length;
-    renderSalaryTable(content, bio);
+    renderSalaryTable(content, bio, bird);
     if (content.children.length > before) {
       const h2 = document.createElement('h2');
       h2.className = 'section-heading';
