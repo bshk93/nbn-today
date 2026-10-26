@@ -173,7 +173,7 @@
         Strength is the minutes-weighted OVR of the top eight. Later seasons count only who is under contract or re-signed, aged a year per season; payroll shows how many players that is.
         This season's PV counts only what is left of it.
       </div>
-      ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price by day, with the league average"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
+      ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price by day"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
   }
 
   function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
@@ -183,21 +183,19 @@
     if (!el || typeof Chart === 'undefined') return;
     if (chart) chart.destroy();
     const days = history.filter(d => d.teams[team]);
-    const mean = d => Object.values(d.teams).reduce((s, x) => s + x.price, 0) / Object.keys(d.teams).length;
     chart = new Chart(el, {
       type: 'line',
       data: {
         labels: days.map(d => d.date),
         datasets: [
           { label: team, data: days.map(d => d.teams[team].price), borderColor: cssVar('--accent'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
-          { label: 'League average', data: days.map(mean), borderColor: cssVar('--text-muted'), borderWidth: 2, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { labels: { color: cssVar('--text-secondary'), boxWidth: 14 } },
+          legend: { display: false },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ¥${c.parsed.y.toFixed(2)}` } },
         },
         scales: {
