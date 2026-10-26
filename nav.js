@@ -301,8 +301,8 @@ function _rebuildThemeMenu() {
 
 // ── Inbox button ─────────────────────────────────────────────────────────────
 // Only on a page that opts out of the sidebar (`<html data-no-sidebar>`):
-// everywhere else the inbox is in the sidebar's account menu, and its unread
-// count rides on the avatar there and on the menu button. The unread count is only
+// everywhere else the inbox is its own sidebar entry (_buildInboxEntry), which
+// carries the unread count, as does the phone menu button. The unread count is only
 // fetched when a token is on hand; a signed-out visitor still gets the button
 // (clicking takes them to /inbox/, which prompts sign-in itself), just no badge.
 function _buildInboxButton() {
@@ -501,7 +501,7 @@ function _initNav() {
     actions.className = 'nav-actions';
 
     // Search and the inbox live in the sidebar (its search box, Ctrl+K, and
-    // the account menu), so the nav carries them only on a page without one.
+    // the Inbox entry), so the nav carries them only on a page without one.
     // What's left here is token-badge.js's Sign in, on phones.
     if (!_sidebarEnabled() && !nav.hasAttribute('data-no-search')) {
       const btn = document.createElement('button');
@@ -1072,7 +1072,7 @@ function _buildInboxEntry() {
 
 // ── Account ──
 // Bottom left: who you are (avatar or initials, name, team) and, on click, a
-// menu with everything that's yours — profile, team, inbox, NB¥, the theme
+// menu with everything that's yours — profile, team, NB¥, the theme
 // picker, sign out. It replaces the profile and theme buttons the nav used to
 // carry. Signed out, it's a Sign in button whose menu still offers themes.
 function _teamRecord(abbr) {
@@ -1194,24 +1194,14 @@ function _buildAccount() {
     const headSub = head.querySelector('.sb-acct-head-sub');
 
     const profile = _acctItem('a', 'My profile', 'owner', `/members/${encodeURIComponent(me.name)}/`);
-    const inbox = _acctItem('a', 'Inbox', 'inbox', '/inbox/');
     const nby = _acctItem('a', 'NB¥ history', 'yen', `/nbyen/?m=${encodeURIComponent(me.name)}`);
     const signOut = _acctItem('button', 'Sign out', 'exit');
     signOut.classList.add('sb-acct-signout');
     signOut.addEventListener('click', nbnSignOut);
     const teamSlot = document.createElement('div');
-    menu.replaceChildren(head, profile, teamSlot, inbox, nby, divider(), themeRow, themeList, changelog, divider(), signOut);
+    menu.replaceChildren(head, profile, teamSlot, nby, divider(), themeRow, themeList, changelog, divider(), signOut);
     _refreshThemeMenu();
 
-    // Unread mail shows on the avatar too — the inbox used to be its own
-    // button in the nav, and its count shouldn't go out of sight with it.
-    _unreadCount().then(n => {
-      if (!n) return;
-      const count = n > 99 ? '99+' : String(n);
-      inbox.insertAdjacentHTML('beforeend', `<span class="sb-badge">${count}</span>`);
-      wrap.querySelector('.sb-avatar-wrap').insertAdjacentHTML('beforeend',
-        `<span class="sb-avatar-badge" title="${count} unread">${count}</span>`);
-    });
     _fetchBalance().then(b => { if (b != null) headSub.textContent = 'NB¥ ' + b.toLocaleString('en-US', { maximumFractionDigits: 0 }); });
     _fetchProfile().then(p => {
       if (p?.cosmetics?.name_color) nameEl.style.color = p.cosmetics.name_color;
@@ -1362,7 +1352,7 @@ function _buildMenuButton() {
   btn.setAttribute('aria-expanded', 'false');
   btn.innerHTML = _ICON_MENU;
   btn.addEventListener('click', () => (_drawerOpen() ? _closeDrawer() : _openDrawer()));
-  // On a phone the drawer hides the account menu, so unread mail marks the menu button.
+  // On a phone the drawer hides the sidebar's Inbox entry, so unread mail marks the menu button.
   _unreadCount().then(n => {
     if (!n) return;
     btn.classList.add('has-unread');
