@@ -324,8 +324,9 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   html[data-sidebar="rail"]:not(.sb-peek) .sb-search:hover { background: var(--bg-hover); }
   html.sb-peek .sidebar { box-shadow: var(--shadow-overlay); }
 
-  /* Peeking, every section reads folded, as in the rail, so nothing moves
-     down; one clicked open (.peek-open) unfolds until the sidebar collapses. */
+  /* Peeking, a section is unfolded only if the visitor unfolded it
+     (.peek-open, from the saved set) — not the current page's, which would
+     push everything below it down on every hover. */
   html.sb-peek .sb-group:not(.peek-open) .sb-items { display: none; }
   html.sb-peek .sb-group.peek-open .sb-items { display: block; }
   html.sb-peek .sb-group:not(.peek-open) .sb-group-chev { transform: rotate(0deg); }

@@ -590,14 +590,19 @@ function _setSidebarMode(mode, persist = true) {
 
 function _peeking() { return document.documentElement.classList.contains('sb-peek'); }
 
-// Expanded by hover, every section shows folded — as in the rail — so opening
-// it only reveals labels beside icons that stay where they were. Unfolding one
-// (.peek-open) lasts until it collapses; the saved folds are the kept-open
-// sidebar's and aren't touched.
+// Expanded by hover, a section shows unfolded (.peek-open) only if the visitor
+// unfolded it — the same saved set the kept-open sidebar uses. Unlike there,
+// the section holding this page isn't forced open: every row it added would
+// push the icons below it down on every hover.
 function _startPeek() {
   if (_peeking()) return;
   document.documentElement.classList.add('sb-peek');
-  document.querySelectorAll('.sidebar .sb-group > .sb-group-hdr').forEach(h => h.setAttribute('aria-expanded', 'false'));
+  const open = _openGroups();
+  document.querySelectorAll('.sidebar .sb-group').forEach(g => {
+    const on = open.has(g.dataset.key);
+    g.classList.toggle('peek-open', on);
+    g.querySelector(':scope > .sb-group-hdr').setAttribute('aria-expanded', on ? 'true' : 'false');
+  });
 }
 function _endPeek() {
   if (!_peeking()) return;
@@ -727,6 +732,8 @@ function _sidebarRow(p, active) {
 function _sidebarGroup(label, key, rows, active, open, icon) {
   const group = document.createElement('div');
   group.className = 'sb-group';
+  group.dataset.key = key;
+  if (_peeking() && open.has(key)) group.classList.add('peek-open'); // redrawn mid-peek (Pinned)
   // The section holding this page is never drawn folded — a highlight you
   // can't see is no highlight — but that doesn't overwrite the saved fold.
   if (!open.has(key) && !rows.some(p => p.href === active)) group.classList.add('folded');
@@ -745,12 +752,16 @@ function _sidebarGroup(label, key, rows, active, open, icon) {
     // In the rail the rows are hidden, so a header opens the sidebar on its
     // section rather than folding something you can't see.
     const railDocked = _sidebarMode() === 'rail' && !_drawerOpen() && window.matchMedia('(min-width: 900px)').matches;
-    // Hover mode: unfold for this peek only (expanding first, if the keyboard
-    // got here before the pointer did).
+    // Hover mode: fold or unfold, remembered (expanding first, if the
+    // keyboard got here before the pointer did).
     if (railDocked && _hoverMode()) {
       _startPeek();
       const on = group.classList.toggle('peek-open');
       hdr.setAttribute('aria-expanded', on ? 'true' : 'false');
+      group.classList.toggle('folded', !on && !group.classList.contains('holds-active'));
+      const f = _openGroups();
+      on ? f.add(key) : f.delete(key);
+      try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
       _refreshBadges();
       return;
     }
