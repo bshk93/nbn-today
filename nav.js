@@ -1488,7 +1488,7 @@ const NAV_SECTIONS = [
     { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
     { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
   ] },
-  { label: 'League Office', icon: 'gavel', items: [
+  { label: 'League Office', icon: 'briefcase', items: [
     { title: 'Proposals', href: '/proposals/', icon: 'vote' },
     { title: 'Suggestions', href: '/suggestions/', icon: 'bulb' },
     { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope' },

@@ -375,10 +375,10 @@ ICONS = {
         ('b', '<circle cx="10.8" cy="12" r="1.1"/>'),
         ('cs', '<path d="M15.5 12H21M18.2 9l3 3-3 3"/>', 2.2),
     ],
-    'gavel': [
-        ('as', '<path d="M12 11l8.5 8.5"/>', 3),
-        ('a', '<rect x="5" y="4.5" width="11" height="6.5" rx="1.2" transform="rotate(45 10.5 7.75)"/><rect x="3" y="19" width="10" height="3" rx="1"/>'),
-        ('b', '<rect x="9.8" y="4.5" width="1.4" height="6.5" transform="rotate(45 10.5 7.75)"/>'),
+    'briefcase': [
+        ('as', '<path d="M8.5 7V5a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 15.5 5v2"/>', 1.8),
+        ('a', '<rect x="2.5" y="7" width="19" height="13.5" rx="2"/>'),
+        ('b', '<rect x="2.5" y="12" width="19" height="1.4"/><rect x="10.25" y="10.75" width="3.5" height="3.9" rx=".7"/>'),
     ],
 }
 
@@ -424,9 +424,9 @@ OUTLINES = {
         ('as', '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5a6.5 6.5 0 0 1 13 0"/>'
                '<circle cx="16.75" cy="8.5" r="2.75"/><path d="M17.5 14a5 5 0 0 1 4.5 5"/>', 1.6),
     ],
-    'gavel': [
-        ('as', '<rect x="5" y="4.5" width="11" height="6.5" rx="1.2" transform="rotate(45 10.5 7.75)"/>'
-               '<path d="M13.6 12.6l6.9 6.9"/><rect x="3" y="19" width="10" height="2.5" rx="1"/>', 1.6),
+    'briefcase': [
+        ('as', '<path d="M8.5 7V5a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 15.5 5v2"/><rect x="2.75" y="7" width="18.5" height="13.5" rx="2"/>'
+               '<path d="M2.75 12.75h7.5M13.75 12.75h7.5"/><rect x="10.25" y="11" width="3.5" height="3.5" rx=".6"/>', 1.6),
     ],
     'basketball': [
         ('as', '<circle cx="12" cy="12" r="9.5"/>', 1.6),
