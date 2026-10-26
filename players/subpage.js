@@ -45,7 +45,7 @@
       const team = teamMap[slug] || '';
       const profile = href('profile', slug);
 
-      document.title = `${name} ${label} - NBN`;
+      document.title = `NBN | ${name} ${label}`;
       document.getElementById('page-title').textContent = name;
       document.getElementById('page-sub').innerHTML = `${esc(label)}${team ? ` · <a href="/teams/${esc(team)}/">${esc(team)}</a>` : ''}`;
       // The same team band as the profile (components.css § Player pages).
