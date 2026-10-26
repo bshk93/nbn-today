@@ -452,6 +452,11 @@ OUTLINES = {
 # outline; they stand on a solid accent shape instead (Instagram's Reels icon
 # does the same), so the section you are in is unmistakable.
 ACTIVE = {
+    # The filled ball's seams are too heavy on a dark sidebar; thinner here.
+    'basketball': [
+        ('a', '<circle cx="12" cy="12" r="10"/>'),
+        ('bs', '<path d="M2.5 12h19M12 2.5v19M5.5 4.8c2.4 2 3.8 4.4 3.8 7.2s-1.4 5.2-3.8 7.2M18.5 4.8c-2.4 2-3.8 4.4-3.8 7.2s1.4 5.2 3.8 7.2"/>', 0.9),
+    ],
     'yen': [
         ('a', '<circle cx="12" cy="12" r="10.5"/>'),
         ('bs', '<path d="M7.5 5.5L12 12l4.5-6.5M12 12v6.5M8.5 12.75h7M8.5 15.75h7"/>', 1.9),
