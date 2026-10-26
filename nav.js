@@ -463,10 +463,12 @@ function _initNav() {
   // move around, so a bare "← Home" said nothing. A page outside the nav
   // keeps "← Home".
   if (!nav.children.length && !nav.textContent.trim() && !nav.hasAttribute('data-no-home')) {
-    const section = _activeSectionLabel();
-    nav.innerHTML = section
-      ? `<span class="nav-kicker">${section}</span>`
-      : '<a href="/">← Home</a>';
+    const sec = _activeSection();
+    // On a page a hub lists, the kicker is the way back to the hub.
+    nav.innerHTML = !sec ? '<a href="/">← Home</a>'
+      : sec.hub && _normPath(sec.hub) !== _normPath(location.pathname)
+        ? `<a class="nav-kicker" href="${sec.hub}">${sec.label}</a>`
+        : `<span class="nav-kicker">${sec.label}</span>`;
   }
   if (_sidebarEnabled() && !nav.querySelector('.nav-menu-btn')) nav.prepend(_buildMenuButton());
   // On a phone the sidebar (and its logo) is a closed drawer, which left the
@@ -699,11 +701,13 @@ function _activeNavHref() {
   return best && best.href;
 }
 
-// The NAV_SECTIONS label of the section this page sits in, or null.
-function _activeSectionLabel() {
+// The NAV_SECTIONS section this page sits in, or null. A hub page is in its own.
+function _activeSection() {
+  const here = _normPath(location.pathname);
+  const hub = NAV_SECTIONS.find(sec => sec.hub && _normPath(sec.hub) === here);
+  if (hub) return hub;
   const href = _activeNavHref();
-  const s = href && NAV_SECTIONS.find(sec => sec.items.some(p => p.href === href));
-  return s ? s.label : null;
+  return (href && NAV_SECTIONS.find(sec => sec.items.some(p => p.href === href))) || null;
 }
 
 function _openGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
@@ -713,7 +717,11 @@ function _openGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
 const SIDEBAR_PINS_KEY = 'nbn_sidebar_pins';
 const _ICON_STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,3 14.7,8.6 20.8,9.4 16.3,13.6 17.5,19.7 12,16.7 6.5,19.7 7.7,13.6 3.2,9.4 9.3,8.6"></polygon></svg>';
 
-function _navItemFor(href) { return _NAV_ITEMS.find(p => p.href === href && !p.searchOnly) || null; }
+// A hub section's pages have no sidebar row, so they can't be pinned.
+function _navItemFor(href) {
+  return NAV_SECTIONS.filter(sec => !sec.hub).flatMap(sec => sec.items)
+    .find(p => p.href === href && !p.searchOnly) || null;
+}
 
 function _sidebarPins() { return _readJson(SIDEBAR_PINS_KEY, []).filter(_navItemFor); }
 
@@ -1201,6 +1209,20 @@ function _buildInboxEntry() {
   return a;
 }
 
+// A hub section: one row, like Inbox, opening the hub page. It stays current
+// on every page the hub lists, as well as on the hub itself.
+function _buildHubEntry(sec) {
+  const a = document.createElement('a');
+  a.className = 'sb-group-hdr sb-top-link';
+  a.href = sec.hub;
+  a.dataset.href = sec.hub;
+  a.title = sec.label;
+  if (_activeSection() === sec) a.setAttribute('aria-current', 'page');
+  a.innerHTML = `<span class="sb-icon">${_navIcon(sec.icon)}</span><span class="sb-group-label sb-label"></span>`;
+  a.querySelector('.sb-group-label').textContent = sec.label;
+  return a;
+}
+
 // ── Account ──
 // Bottom left: who you are (avatar or initials, name, team) and, on click, a
 // menu with everything that's yours — profile, team, inbox, NB¥, the theme
@@ -1413,6 +1435,7 @@ function _buildSidebar() {
   personal.className = 'sb-personal';
   nav.appendChild(personal);
   for (const sec of NAV_SECTIONS) {
+    if (sec.hub) { nav.appendChild(_buildHubEntry(sec)); continue; }
     const rows = sec.items.filter(p => !p.searchOnly);
     if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, open, sec.icon));
   }
@@ -1579,17 +1602,21 @@ const NAV_SECTIONS = [
     { title: 'Wall Street', href: '/invest', icon: 'candles' },
     { title: 'Donations', href: '/donations/', icon: 'heart' },
   ] },
-  { label: 'Games', icon: 'hoop', items: [
-    { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop' },
-    { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette' },
-    { title: 'Trivia', href: '/trivia', icon: 'question' },
-    { title: 'Tetris', href: '/tetris/', icon: 'blocks' },
+  // A section with a `hub` is one row in the sidebar, opening a page of cards
+  // for its items (hub.js); each item's `desc` is its card's line.
+  { label: 'Games', icon: 'hoop', hub: '/games/', items: [
+    { title: 'Games', href: '/games/', icon: 'hoop', searchOnly: true },
+    { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop', desc: 'One guess a day at the day\'s Perry.' },
+    { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette', desc: 'Guess the NBN player in eight tries. A new one every day.' },
+    { title: 'Trivia', href: '/trivia', icon: 'question', desc: 'How well do you actually know this league?' },
+    { title: 'Tetris', href: '/tetris/', icon: 'blocks', desc: 'For the wait between games, with a members\' leaderboard.' },
   ] },
-  { label: 'Media', icon: 'tv', items: [
-    { title: 'News', href: '/news/', icon: 'newspaper' },
-    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv' },
-    { title: 'NBNFL', href: '/nbnfl/', icon: 'football', noSearch: true },
-    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play' },
+  { label: 'Media', icon: 'tv', hub: '/media/', items: [
+    { title: 'Media', href: '/media/', icon: 'tv', searchOnly: true },
+    { title: 'News', href: '/news/', icon: 'newspaper', desc: 'League news, power rankings and columns, written by NBN members.' },
+    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv', desc: 'The greatest playoff performances in NBN history, ranked and annotated.' },
+    { title: 'NBNFL', href: '/nbnfl/', icon: 'football', noSearch: true, desc: 'The Bengals in NBN\'s sister football league, and their players\' real NFL stats.' },
+    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play', desc: 'Every streamed game, on the NBN channel.' },
   ] },
   { label: 'Committees', icon: 'columns', href: '/committees/', items: [
     { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns' },
@@ -1603,26 +1630,29 @@ const NAV_SECTIONS = [
     { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
       roles: ['trc', 'trc_head'] },
   ] },
-  { label: 'About', icon: 'people', items: [
-    { title: 'Members', href: '/members/', icon: 'people' },
-    { title: 'Roles & Permissions', href: '/roles', icon: 'key' },
-    { title: 'Constitution', href: '/constitution/', icon: 'charter' },
-    { title: 'Rulebook', href: '/rulebook/', icon: 'book' },
+  { label: 'About', icon: 'people', hub: '/about/', items: [
+    { title: 'About', href: '/about/', icon: 'people', searchOnly: true },
+    { title: 'Members', href: '/members/', icon: 'people', desc: 'Everyone in NBN: tenures, teams, achievements and rings.' },
+    { title: 'Roles & Permissions', href: '/roles', icon: 'key', desc: 'Who can do what: roles, committees and permissions.' },
+    { title: 'Constitution', href: '/constitution/', icon: 'charter', desc: 'The founding document of the league.' },
+    { title: 'Rulebook', href: '/rulebook/', icon: 'book', desc: 'The salary cap, trades, free agency, extensions and the draft.' },
     // Searchable, but its own entry in the sidebar's account menu (_buildAccount).
     { title: 'Change Log', href: '/changelog', icon: 'tag', searchOnly: true },
     // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
     { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
-    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus' },
+    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus', desc: 'What a GM does, and how to get a team.' },
   ] },
-  { label: 'League Office', icon: 'gavel', items: [
-    { title: 'Proposals', href: '/proposals/', icon: 'vote' },
-    { title: 'Suggestions', href: '/suggestions/', icon: 'bulb' },
-    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope' },
+  { label: 'League Office', icon: 'gavel', hub: '/office/', items: [
+    { title: 'League Office', href: '/office/', icon: 'gavel', searchOnly: true },
+    { title: 'Proposals', href: '/proposals/', icon: 'vote', desc: 'Rule proposals up for a vote.' },
+    { title: 'Suggestions', href: '/suggestions/', icon: 'bulb', desc: 'Suggest a change to NBN, and see what the league thinks of it.' },
+    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope', desc: 'Memos from the league office to the league.' },
     { title: 'League Settings', href: '/cap-settings/', icon: 'gear',
-      keywords: ['cap settings', 'salary cap', 'apron', 'minimum salary', 'league year'] },
+      keywords: ['cap settings', 'salary cap', 'apron', 'minimum salary', 'league year'],
+      desc: 'The cap, aprons and minimum salaries by season, and the rookie scale.' },
     { title: 'Rookie Scale', href: '/cap-settings/#rookie-scale', icon: 'ruler', searchOnly: true },
-    { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'] },
-    { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [] },
+    { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'], desc: 'Who has a strike, and what for.' },
+    { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [], desc: 'The working list of what needs doing on the site.' },
   ] },
 ];
 

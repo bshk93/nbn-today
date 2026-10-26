@@ -103,6 +103,11 @@ const PAGES = [
   { path: '/preview/?away=ORL&home=PHX&date=2026-06-18', selector: '.pv-h2h dd', min: 3, what: 'the game preview head-to-head' },
   { path: '/cap-summary/',            selector: 'table tbody tr',  min: 30, what: 'a row per team' },
   { path: '/committees/',             selector: '.cmte',           min: 4,  what: 'a card per committee' },
+  // Hub pages draw their cards from NAV_SECTIONS (hub.js); gated cards don't count.
+  { path: '/office/',                 selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per League Office page' },
+  { path: '/about/',                  selector: '.ui-hub-card:not([hidden])', min: 5, what: 'a card per About page' },
+  { path: '/media/',                  selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per Media page' },
+  { path: '/games/',                  selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per game' },
   { path: '/committees/rosters/',      selector: '#comp-body tr',   min: 30, what: 'a row per team on the Compliance tab' },
   // A published power-rankings edition, by id — the only stable way to reach
   // one, since /news/ lists whatever is newest. Editions are never deleted.
