@@ -178,7 +178,7 @@ async function boot() {
   }
   document.getElementById('app').style.display = '';
 
-  BIOS = await api('/stats/players');
+  BIOS = await api('/players');
   await reload();
 
   const p = new URLSearchParams(location.search).get('player');

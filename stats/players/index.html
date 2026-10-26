@@ -2451,7 +2451,7 @@
     share.textContent = 'Share';
     share.title = 'Share this player';
     // Always the canonical ?p= link, which unfurls with the player's own card.
-    share.onclick = () => nbnShare({ title: document.title, url: `${location.origin}/players/?p=${encodeURIComponent(playerSlug)}` }, share);
+    share.onclick = () => nbnShare({ title: document.title, url: `${location.origin}/stats/players/?p=${encodeURIComponent(playerSlug)}` }, share);
     actions.appendChild(share);
     if (editBioBtn && canEditBios()) actions.appendChild(editBioBtn);
     headerMain.appendChild(actions);

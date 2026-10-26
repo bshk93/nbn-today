@@ -150,7 +150,7 @@
     $('team').onchange = async () => { team = $('team').value; await loadTeam(); go(); };
     $('season').onchange = () => { season = $('season').value; go(); };
     $('share').onclick = e => nbnShare({
-      title: document.title, url: `${location.origin}/recap/?team=${team}&season=${season}`,
+      title: document.title, url: `${location.origin}/history/recap/?team=${team}&season=${season}`,
     }, e.currentTarget);
 
     let shared = null;   // league-wide files, fetched once

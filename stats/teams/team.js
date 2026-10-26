@@ -1254,7 +1254,7 @@ document.head.appendChild(_badgeScript);
 
 // nav.js is injected above and may not have loaded yet, so look it up on click.
 document.getElementById('team-share-btn').onclick = e =>
-  window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
+  window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/stats/teams/${abbr}/` }, e.currentTarget);
 
 // The open tab is kept in the URL hash (#coaching), so the reload after a save
 // lands back on the tab the save was made from, and a tab can be linked to.

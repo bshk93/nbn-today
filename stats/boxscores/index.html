@@ -125,7 +125,7 @@
     const params = new URLSearchParams(location.search);
     let wantGame = (params.get("game") || "").toUpperCase().split("-").filter(Boolean).sort().join("~");
     const gameKey = g => [g.home_team, g.away_team].sort().join("~");
-    const gameUrl = (date, g) => `${location.origin}/boxscores/?date=${date}&game=${g.away_team}-${g.home_team}`;
+    const gameUrl = (date, g) => `${location.origin}/stats/boxscores/?date=${date}&game=${g.away_team}-${g.home_team}`;
 
     const TEAM_NAMES = {
       ATL: 'Atlanta Hawks', BKN: 'Brooklyn Nets', BOS: 'Boston Celtics', CHA: 'Charlotte Hornets',

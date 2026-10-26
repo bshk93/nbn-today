@@ -471,7 +471,7 @@ imported across routers.
 GET    /api/poext/eligible                     public — every rostered player,
                                                `eligible` + server-composed `reason`
 POST   /api/poext/proposals                    team role — draft
-PATCH  /api/poext/proposals/{id}               team role — while history/draft/returned
+PATCH  /api/poext/proposals/{id}               team role — while draft/returned
 DELETE /api/poext/proposals/{id}               team role — while draft
 POST   /api/poext/proposals/{id}/submit        team role — final at team initiative
 POST   /api/poext/proposals/{id}/remand        claiming agent / head — free, pre- or mid-committee (D4)

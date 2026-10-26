@@ -7,7 +7,7 @@ contract a `/api/validate/*` endpoint returns.
 
 ## Validation endpoints — the two bugs the endpoint layer hid
 
-`_require_validatable` rejects unknown stats/teams/players with a 400 instead of
+`_require_validatable` rejects unknown teams/players with a 400 instead of
 scoring them — a validator handed an unknown team reads its salary as $0 and
 every check passes vacuously, which would print a confident "LEGAL" for a
 transaction that was never evaluated. `_require_trade_validatable` is the same

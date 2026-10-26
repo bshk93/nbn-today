@@ -22,7 +22,7 @@ curl -s http://localhost:8001/api/picks               # all draft picks, with sw
 curl -s http://localhost:8001/api/team-map            # slug -> current team, for player ownership
 ```
 
-Also read `/home/skim/projects/nbn-today/rulebook/index.html` sections as needed in step 6 — don't load the whole file up front, just the relevant `<article>` once you know the transaction type.
+Also read `/home/skim/projects/nbn-today/about/rulebook/index.html` sections as needed in step 6 — don't load the whole file up front, just the relevant `<article>` once you know the transaction type.
 
 ### 3. Classify the transaction type
 
@@ -30,7 +30,7 @@ Read `TEXT` and decide which of the 12 types it describes:
 
 | Type | Cues in freeform text |
 |---|---|
-| `trade` | Two or more teams exchanging stats/players/picks ("trades X for Y", "sends ... to ... for ...") |
+| `trade` | Two or more teams exchanging players/picks ("trades X for Y", "sends ... to ... for ...") |
 | `sign` + `trade` (sign-and-trade) | "sign-and-trades X to Y", or a pending free agent being re-signed by their own team and immediately moved elsewhere. Not a distinct API type — see the note under step 5's shape reference. |
 | `offer_sheet` (RFA offer sheet, § 3.15) | A team extends an offer sheet to another team's restricted free agent ("X offers Y a 2-year offer sheet"). Nobody is signed by this call. |
 | `offer_sheet_decision` (§ 3.15) | The incumbent's answer to an open offer sheet ("Z matches the offer sheet", "Z declines to match / lets Y walk"). **This** is the call that signs the player. See step 5. |
@@ -168,7 +168,7 @@ print(json.dumps(team['diffs'], indent=2))
 
 Show the user, plainly:
 - What type you've classified this as, and why, if it wasn't obvious
-- The resolved stats/players/teams/picks (flag anything fuzzy-matched or reconstructed rather than directly stated)
+- The resolved players/teams/picks (flag anything fuzzy-matched or reconstructed rather than directly stated)
 - The full `details` JSON you're about to submit
 - Any rulebook concerns from step 6
 

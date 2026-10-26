@@ -25,7 +25,7 @@ simultaneously the working copy, the docroot, and part of the data write
 path — which is why a dev/live split can't be done cleanly without
 touching storage first.
 
-(The 30 `stats/teams/atl -> ATL` symlinks are lowercase-URL aliases, not data.
+(The 30 `teams/atl -> ATL` symlinks are lowercase-URL aliases, not data.
 They stay.)
 
 ## Goal
@@ -106,7 +106,7 @@ So:
 /var/lib/nothing-but-stats/
   allstats-*.csv                                — STAY PUT (`raw/` dropped)
   derived/    R build output, mirroring URL paths:  — MOVED (1 line in job.R)
-                data/  stats/players/  season/standings/  media/nbntv-classics/
+                data/  players/  standings/  nbntv-classics/
   public/     symlink view for nginx (below)        — new, generated, untracked
   *.json      65 state files                        — STAY PUT, tracked in git
   *-roster.csv, *-picks.csv, *-deadcap.csv          — STAY PUT, tracked in git
@@ -124,7 +124,7 @@ purposes at zero risk.
 
 `avatars/` (user-uploaded, not regenerable), `rules/`, and the
 `discord-*-raw/` scrape corpora are state and get tracked. `pending-
-stats/boxscores/` and `build-status.json` are transient and don't.
+boxscores/` and `build-status.json` are transient and don't.
 
 **Do not use compatibility symlinks** if a later pass does move the state
 files. `storage.py`'s atomic write is `os.replace(tmp, path)`, which

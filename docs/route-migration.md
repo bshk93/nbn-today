@@ -41,22 +41,59 @@ predating this move (`/schedule`, `/pickem`, `/trade-sim`, `/rookie-scale`,
 
 Don't delete the stubs: links to the old paths live on in Discord history.
 
-## Server-side follow-up (not in this repo)
+## Lowercase team URLs
 
-The site works without any of this, because every old link goes through a stub.
-What's missing until it lands is the per-item Discord card on the **new** URLs
-of the moved per-item pages.
+`stats/teams/atl -> ATL` (30 symlinks) keep `/stats/teams/atl/` working, as
+`teams/atl` did. The old `teams/atl` links still point at `teams/ATL`, which is
+now a stub, so `/teams/atl/` forwards as well.
 
-1. **nbn-api `routers/og.py`.** Accept `/stats/players/`, `/stats/boxscores/`
-   and `/history/recap/` alongside the old paths, and emit the new path in
-   `og:url`. Discord embeds that link the site (`discord_notify.py` and similar:
-   team, player and rulebook links) should move to the new paths. Until they
-   do, they still work through the stubs.
-2. **nginx, `nbn.today` *and* `pdc.nbn.today`.** Edit
-   `/etc/nginx/sites-enabled/nbn.today`, which is a real file, not the
-   `sites-available` copy. The `$nbn_unfurler` rules that hand `/players/`,
-   `/boxscores/?game=` and `/recap/` to og.py need the new prefixes added.
-   Keep the old ones, so old links still unfurl. Any other path-specific
-   `location` rule that names a moved page needs the same.
-3. **Order:** nbn-api first, then nginx, then the site. That's the usual
-   API-first rule.
+## nbn-api (branch `claude/vigilant-hawking-hog4b2` in that repo)
+
+Ships **before** the site:
+
+- `tests/test_rulebook_coverage.py` reads `nbn-today/about/rulebook/index.html`.
+  Against the old path it would read a stub, find no sections and fail.
+- `routers/og.py`: `_static_head` reads the moved shells (`/stats/players/`,
+  `/stats/boxscores/`, `/history/recap/`), and every card's `og:url` is the new
+  address. `tests/test_og.py` follows.
+- Every link the API writes (Discord embeds, inbox `link`s, the bet and
+  Pick'em posts, Perry and Poeltl) points at the new address, so nothing
+  hops through a stub. The Discord bot's slash commands (`/standings`,
+  `/h2h`, `/compare`, `/champions`, `/awards`) are command names, not URLs,
+  and were left alone.
+
+Links already stored in old inbox messages and old Discord posts keep the old
+paths, and keep working through the stubs.
+
+## nginx (by hand, on the box)
+
+The `$nbn_unfurler` map and its location blocks are not in either repo. In
+`/etc/nginx/sites-enabled/nbn.today` (a real file, not the `sites-available`
+copy), and in `pdc.nbn.today` if it carries the same blocks:
+
+1. Find the location blocks that hand unfurlers to og.py:
+   `grep -n 'og/' /etc/nginx/sites-enabled/nbn.today`
+2. For the three that moved, add a block for the new path next to the old one,
+   identical apart from the path. Keep the old blocks, so old links still
+   unfurl with the right card. The new paths are:
+   - `/players/` → `/stats/players/` (→ `/api/og/player`)
+   - `/boxscores/` → `/stats/boxscores/` (→ `/api/og/boxscore`)
+   - `/recap/` → `/history/recap/` (→ `/api/og/recap`)
+
+   `/news/view/`, `/proposals/view/` and `/members/` did not move.
+3. Any other `location` that names a moved page path needs the same treatment:
+   `grep -nE 'location[^{]*/(teams|players|boxscores|recap|rulebook|draft|standings|calendar|bet|invest|tradeblock|free-agency|transactions|memos|changelog|inbox)' /etc/nginx/sites-enabled/*`
+   The CSV and `/data/*.json` rules do **not** change.
+4. `sudo nginx -t && sudo systemctl reload nginx`. Never reload without
+   `nginx -t`: this is the one step here that can take the site down.
+5. Check: `curl -sA Discordbot 'https://nbn.today/stats/players/?p=curry-stephen' | grep og:title`
+   should name the player, not "Players".
+
+## Deploy order
+
+1. nbn-api: merge, then `deploy.sh` (it restarts the service).
+2. nginx: the steps above.
+3. Site: merge, then `deploy.sh`.
+
+If the site goes out before nginx, nothing breaks. Only new-path player,
+box score and recap links show the generic card until step 2.

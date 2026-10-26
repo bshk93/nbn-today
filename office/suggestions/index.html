@@ -676,7 +676,7 @@ async function apiSend(path, method, body) {
 
 async function postComment(id, body) {
   try {
-    await apiSend(`/office/suggestions/${id}/comments`, 'POST', { body });
+    await apiSend(`/suggestions/${id}/comments`, 'POST', { body });
     expandedIds.add(id);
     await loadSuggestions();
   } catch (e) { toast(e.message, true); }
@@ -685,7 +685,7 @@ async function postComment(id, body) {
 async function saveComment(id, commentId, body) {
   if (!body.trim()) return;
   try {
-    await apiSend(`/office/suggestions/${id}/comments/${commentId}`, 'PATCH', { body: body.trim() });
+    await apiSend(`/suggestions/${id}/comments/${commentId}`, 'PATCH', { body: body.trim() });
     await loadSuggestions();
   } catch (e) { toast(e.message, true); }
 }
@@ -698,7 +698,7 @@ async function deleteComment(id, commentId) {
     danger: true,
   })) return;
   try {
-    await apiSend(`/office/suggestions/${id}/comments/${commentId}`, 'DELETE');
+    await apiSend(`/suggestions/${id}/comments/${commentId}`, 'DELETE');
     await loadSuggestions();
   } catch (e) { toast(e.message, true); }
 }
@@ -735,7 +735,7 @@ async function submitEdit() {
   const btn = document.getElementById('edit-submit-btn');
   btn.disabled = true;
   try {
-    await apiSend(`/office/suggestions/${editingId}`, 'PATCH', { title, description });
+    await apiSend(`/suggestions/${editingId}`, 'PATCH', { title, description });
     closeEditModal();
     await loadSuggestions();
   } catch (e) {

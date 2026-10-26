@@ -445,7 +445,7 @@
       // of which committee(s) a member sits on, so a poext-only member (no fac,
       // no agent) still gets names and current teams rather than bare slugs.
       const [bios, ovr, teamMap, ly] = await Promise.all([
-        api('/stats/players'), api('/ovr/current'), api('/team-map'),
+        api('/players'), api('/ovr/current'), api('/team-map'),
         api('/league-year').catch(() => ({})),
       ]);
       BIOS = bios; OVR = ovr; TEAMMAP = teamMap;
