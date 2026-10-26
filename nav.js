@@ -521,11 +521,16 @@ function _initNav() {
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 //
 // The site's left-hand navigation, drawn from NAV_SECTIONS. Three states:
-//   open  — docked, full width (the default)
+//   open  — docked, full width
 //   rail  — docked, icons only
 //   drawer — below 900px it is never docked; the menu button in .nav slides it over
 //            the page instead, and open/rail don't apply.
-// open/rail is the visitor's choice, kept in localStorage. The first paint is
+// With a mouse, rail is the default and the sidebar expands over the page while
+// the pointer is on it (<html class="sb-peek">), so the page
+// never reflows; the button beside the logo keeps it open (SIDEBAR_KEEP_KEY).
+// A touch screen has no hover to expand it, so there open/rail stays a plain
+// toggle, defaulting to open (SIDEBAR_KEY), as it was before hover existed.
+// The choice is kept in localStorage. The first paint is
 // theme-boot.js's job, for the same reason as the theme: it sets
 // <html data-sidebar> in <head>, so css/sidebar.css reserves the sidebar's
 // width before this file (at the end of <body>) gets to draw it. Keep the two
@@ -534,7 +539,8 @@ function _initNav() {
 // Attached to <body>, not .nav: pages rewrite .nav wholesale (players/), and
 // that must not take the sidebar with it. `<html data-no-sidebar>` opts a page
 // out entirely.
-const SIDEBAR_KEY = 'nbn_sidebar';               // 'open' | 'rail'
+const SIDEBAR_KEY = 'nbn_sidebar';               // 'open' | 'rail' — touch screens
+const SIDEBAR_KEEP_KEY = 'nbn_sidebar_keep';     // 'open' or absent (hover) — with a mouse
 // Sections start folded; what's kept is the ones a visitor has unfolded.
 // (The old key, 'nbn_sidebar_groups', held folded ones when open was the default.)
 const SIDEBAR_GROUPS_KEY = 'nbn_sidebar_open';   // labels of unfolded sections
@@ -545,21 +551,129 @@ const _ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="6" y1
 
 function _sidebarEnabled() { return !document.documentElement.hasAttribute('data-no-sidebar'); }
 
+// A mouse (or trackpad) to hover with. Decided per page load, like the mode.
+function _hoverMode() { return !!(window.matchMedia && window.matchMedia('(hover: hover)').matches); }
+
 function _sidebarMode() {
-  try { return localStorage.getItem(SIDEBAR_KEY) === 'rail' ? 'rail' : 'open'; } catch { return 'open'; }
+  try {
+    if (_hoverMode()) return localStorage.getItem(SIDEBAR_KEEP_KEY) === 'open' ? 'open' : 'rail';
+    return localStorage.getItem(SIDEBAR_KEY) === 'rail' ? 'rail' : 'open';
+  } catch { return _hoverMode() ? 'rail' : 'open'; }
 }
 
 function _setSidebarMode(mode, persist = true) {
+  const hover = _hoverMode();
   if (persist) {
-    try { localStorage.setItem(SIDEBAR_KEY, mode); } catch { /* private browsing — just won't persist */ }
+    try {
+      if (!hover) localStorage.setItem(SIDEBAR_KEY, mode);
+      else if (mode === 'open') localStorage.setItem(SIDEBAR_KEEP_KEY, 'open');
+      else localStorage.removeItem(SIDEBAR_KEEP_KEY);
+    } catch { /* private browsing — just won't persist */ }
   }
-  document.documentElement.setAttribute('data-sidebar', mode);
+  const root = document.documentElement;
+  root.setAttribute('data-sidebar', mode);
+  // Kept open: nothing to peek. Back to hover: stay expanded while the pointer
+  // is still on it, rather than snapping shut under the click.
+  if (mode === 'open') _endPeek();
+  else if (hover && document.querySelector('.sidebar:hover')) _startPeek();
   const t = document.querySelector('.sb-collapse');
   if (t) {
-    const label = mode === 'rail' ? 'Expand sidebar' : 'Collapse sidebar';
+    const label = hover
+      ? (mode === 'rail' ? 'Keep sidebar open' : 'Auto-collapse sidebar')
+      : (mode === 'rail' ? 'Expand sidebar' : 'Collapse sidebar');
     t.setAttribute('aria-label', label);
     t.title = label;
+    if (hover) t.setAttribute('aria-pressed', mode === 'open' ? 'true' : 'false');
+    else t.removeAttribute('aria-pressed');
   }
+}
+
+function _peeking() { return document.documentElement.classList.contains('sb-peek'); }
+
+// Expanded by hover, a section shows unfolded (.peek-open) only if the visitor
+// unfolded it — the same saved set the kept-open sidebar uses. Unlike there,
+// the section holding this page isn't forced open: every row it added would
+// push the icons below it down on every hover.
+//
+// The rail shows no rows, so an unfolded section's rows grow in as it widens
+// and shrink away as it narrows (_slideRows), in step with the width
+// transition in css/sidebar.css — not all at once, which made every icon
+// below them jump while the sidebar was still mid-animation.
+const _PEEK_MS = 150;
+let _unpeekTimer = null;
+function _slideRows(groups, show) {
+  const ms = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : _PEEK_MS;
+  groups.forEach(g => {
+    const items = g.querySelector(':scope > .sb-items');
+    const h = items.scrollHeight + 'px';
+    items.getAnimations().forEach(a => a.cancel());
+    items.animate(show ? [{ height: '0px', opacity: 0 }, { height: h, opacity: 1 }]
+                       : [{ height: h, opacity: 1 }, { height: '0px', opacity: 0 }],
+                  { duration: ms, easing: 'ease' });
+  });
+}
+function _startPeek() {
+  if (_peeking()) return;
+  const root = document.documentElement;
+  // Back before the close finished: the rows already showing stay as they are.
+  const wasClosing = root.classList.contains('sb-unpeeking');
+  clearTimeout(_unpeekTimer);
+  root.classList.remove('sb-unpeeking');
+  root.classList.add('sb-peek');
+  const open = _openGroups();
+  document.querySelectorAll('.sidebar .sb-group').forEach(g => {
+    const on = open.has(g.dataset.key);
+    g.classList.toggle('peek-open', on);
+    g.querySelector(':scope > .sb-group-hdr').setAttribute('aria-expanded', on ? 'true' : 'false');
+  });
+  if (!wasClosing) _slideRows(document.querySelectorAll('.sidebar .sb-group.peek-open'), true);
+  else document.querySelectorAll('.sidebar .sb-items').forEach(i => i.getAnimations().forEach(a => a.cancel()));
+}
+function _endPeek() {
+  if (!_peeking()) return;
+  const root = document.documentElement;
+  const groups = document.querySelectorAll('.sidebar .sb-group.peek-open');
+  // sb-unpeeking keeps those rows drawn (css/sidebar.css) while they shrink.
+  root.classList.add('sb-unpeeking');
+  root.classList.remove('sb-peek');
+  _slideRows(groups, false);
+  _unpeekTimer = setTimeout(() => {
+    root.classList.remove('sb-unpeeking');
+    document.querySelectorAll('.sidebar .sb-group').forEach(g => {
+      g.classList.remove('peek-open');
+      g.querySelector(':scope > .sb-group-hdr').setAttribute('aria-expanded', g.classList.contains('folded') ? 'false' : 'true');
+    });
+  }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : _PEEK_MS);
+}
+
+// Hover mode: expand over the page while the pointer (or keyboard focus) is on
+// the sidebar, with a beat of grace either way like the Teams panel — no
+// flicker for a mouse just passing by, none when it slips off the edge. The
+// Teams panel and account menu are inside the aside, so being in them is being
+// on it. Nothing happens on touch screens or below 900px.
+function _initSidebarPeek(aside) {
+  if (!_hoverMode()) return;
+  const root = document.documentElement;
+  const docked = () => window.matchMedia('(min-width: 900px)').matches;
+  const applies = () => docked() && root.getAttribute('data-sidebar') === 'rail';
+  let timer = null;
+  const peek = () => { if (applies()) _startPeek(); };
+  const unpeek = () => {
+    if (!_peeking() || aside.matches(':hover')) return;
+    if (aside.querySelector(':focus-visible')) return; // the keyboard is still in it
+    _endPeek();
+    _closeTeamsPanel();
+    _closeAccountMenu();
+  };
+  aside.addEventListener('mouseenter', () => { clearTimeout(timer); if (applies()) timer = setTimeout(peek, 100); });
+  aside.addEventListener('mouseleave', () => { clearTimeout(timer); timer = setTimeout(unpeek, 250); });
+  aside.addEventListener('focusin', e => { if (e.target.matches(':focus-visible')) { clearTimeout(timer); peek(); } });
+  aside.addEventListener('focusout', e => {
+    if (aside.contains(e.relatedTarget) || aside.matches(':hover')) return;
+    clearTimeout(timer);
+    _endPeek();
+  });
+  window.addEventListener('resize', () => { if (!applies()) _endPeek(); });
 }
 
 // "/teams/ATL/index.html" and "/teams/ATL" are the same page.
@@ -651,6 +765,8 @@ function _sidebarRow(p, active) {
 function _sidebarGroup(label, key, rows, active, open, icon) {
   const group = document.createElement('div');
   group.className = 'sb-group';
+  group.dataset.key = key;
+  if (_peeking() && open.has(key)) group.classList.add('peek-open'); // redrawn mid-peek (Pinned)
   // The section holding this page is never drawn folded — a highlight you
   // can't see is no highlight — but that doesn't overwrite the saved fold.
   if (!open.has(key) && !rows.some(p => p.href === active)) group.classList.add('folded');
@@ -668,7 +784,22 @@ function _sidebarGroup(label, key, rows, active, open, icon) {
   hdr.addEventListener('click', () => {
     // In the rail the rows are hidden, so a header opens the sidebar on its
     // section rather than folding something you can't see.
-    if (_sidebarMode() === 'rail' && !_drawerOpen() && window.matchMedia('(min-width: 900px)').matches) {
+    const railDocked = _sidebarMode() === 'rail' && !_drawerOpen() && window.matchMedia('(min-width: 900px)').matches;
+    // Hover mode: fold or unfold, remembered (expanding first, if the
+    // keyboard got here before the pointer did).
+    if (railDocked && _hoverMode()) {
+      _startPeek();
+      const on = group.classList.toggle('peek-open');
+      hdr.setAttribute('aria-expanded', on ? 'true' : 'false');
+      group.classList.toggle('folded', !on && !group.classList.contains('holds-active'));
+      const f = _openGroups();
+      on ? f.add(key) : f.delete(key);
+      try { localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify([...f])); } catch { /* private browsing */ }
+      _refreshBadges();
+      return;
+    }
+    // On a touch screen the rail's header opens the sidebar for good.
+    if (railDocked && !_peeking()) {
       _setSidebarMode('open');
       group.classList.remove('folded');
       hdr.setAttribute('aria-expanded', 'true');
@@ -1303,6 +1434,7 @@ function _buildSidebar() {
   document.body.prepend(scrim);
   document.body.prepend(aside);
   _setSidebarMode(_sidebarMode(), false);
+  _initSidebarPeek(aside);
 
   _drawPersonalGroups();
 

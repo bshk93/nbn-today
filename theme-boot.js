@@ -37,11 +37,17 @@
 
 // The sidebar's open/rail state, for the same reason: css/sidebar.css reserves
 // its width off <html data-sidebar>, and nav.js draws it only at the end of
-// <body>. Same key and default as _sidebarMode() in nav.js — keep them in step.
+// <body>. Same keys and defaults as _sidebarMode() in nav.js — keep them in
+// step: with a mouse, rail unless kept open; on a touch screen, open unless
+// collapsed.
 (function () {
   var root = document.documentElement;
   if (root.hasAttribute('data-no-sidebar')) return;
-  var mode = 'open';
-  try { if (localStorage.getItem('nbn_sidebar') === 'rail') mode = 'rail'; } catch (e) { /* private browsing */ }
+  var hover = !!(window.matchMedia && window.matchMedia('(hover: hover)').matches);
+  var mode = hover ? 'rail' : 'open';
+  try {
+    if (hover) { if (localStorage.getItem('nbn_sidebar_keep') === 'open') mode = 'open'; }
+    else if (localStorage.getItem('nbn_sidebar') === 'rail') mode = 'rail';
+  } catch (e) { /* private browsing */ }
   root.setAttribute('data-sidebar', mode);
 })();
