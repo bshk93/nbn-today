@@ -381,7 +381,8 @@ ICONS = {
 
 # The sidebar's outline set, written as `<symbol id="{name}-o">`. A section
 # header (and Teams, Inbox, Pinned) draws its icon in outline, and switches to
-# the filled icon above when you are in that section, so the section you are
+# its `-on` icon (below: the filled one, or its ACTIVE override) when you are
+# in that section, so the section you are
 # in is the one solid icon in the sidebar. Only those icons need an outline;
 # search results and the account menu always draw the filled set. Drawn by
 # hand, not traced from the filled shapes (a trace doubles every line where two
@@ -434,6 +435,33 @@ OUTLINES = {
     'star': [('as', star(12, 12.5, 9.5, 0.45), 1.6)],
 }
 
+# What a header draws while you are in its section: `<symbol id="{name}-on">`,
+# the filled icon unless overridden here. The overrides are the bare glyphs,
+# whose filled form is only a thicker line and barely differs from the
+# outline; they stand on a solid accent shape instead (Instagram's Reels icon
+# does the same), so the section you are in is unmistakable.
+ACTIVE = {
+    'yen': [
+        ('a', '<circle cx="12" cy="12" r="10.5"/>'),
+        ('bs', '<path d="M7.5 5.5L12 12l4.5-6.5M12 12v6.5M8.5 12.75h7M8.5 15.75h7"/>', 1.9),
+    ],
+    'swap': [
+        ('a', '<rect x="1.5" y="1.5" width="21" height="21" rx="5"/>'),
+        ('bs', '<path d="M6 9h11M14 6l3 3-3 3M18 15H7M10 12l-3 3 3 3"/>', 1.9),
+    ],
+    'bar-chart': [
+        ('a', '<rect x="1.5" y="1.5" width="21" height="21" rx="5"/>'),
+        ('b', '<rect x="6" y="12" width="3" height="6" rx=".8"/><rect x="10.5" y="6" width="3" height="12" rx=".8"/>'
+              '<rect x="15" y="9" width="3" height="9" rx=".8"/>'),
+    ],
+    'columns': [
+        ('a', '<polygon points="12,1.5 22.5,7 1.5,7"/><rect x="2.5" y="8" width="19" height="10.5"/>'
+              '<rect x="1.5" y="19.5" width="21" height="3" rx=".5"/>'),
+        ('b', '<rect x="7.25" y="10" width="1.5" height="6.5" rx=".5"/><rect x="11.25" y="10" width="1.5" height="6.5" rx=".5"/>'
+              '<rect x="15.25" y="10" width="1.5" height="6.5" rx=".5"/><circle cx="12" cy="4.6" r="1"/>'),
+    ],
+}
+
 FILL = {'a': 'fill="currentColor"', 'b': 'style="fill:var(--ni-b,#fff)"',
         'c': 'style="fill:var(--ni-c,#8db6e6)"'}
 STROKE = {'as': 'stroke:currentColor', 'bs': 'stroke:var(--ni-b,#fff)',
@@ -457,6 +485,8 @@ def main():
         assert name in ICONS, f'outline for {name} has no filled icon'
         body = ''.join(layer(*l) for l in layers)
         out.append(f'<symbol id="{name}-o" viewBox="0 0 24 24">{body}</symbol>')
+        body = ''.join(layer(*l) for l in ACTIVE.get(name, ICONS[name]))
+        out.append(f'<symbol id="{name}-on" viewBox="0 0 24 24">{body}</symbol>')
     out.append('</svg>')
     OUT.write_text('\n'.join(out) + '\n')
     print(f'wrote {OUT.relative_to(ROOT)} — {len(ICONS)} icons, {len(OUTLINES)} outlines')
