@@ -220,9 +220,9 @@ SEMANTIC_EDGE = {"--danger-border", "--danger-border-strong", "--danger-alt-bord
 
 # Theme-independent tokens: type, scale, spacing, widths, radii. A theme
 # changes colour, so these stay in the bare :root and are never copied into a
-# team block. --heat-text-l is colour but tracks dark vs light, and every team
-# theme is dark, so the :root value is already right.
-SKIP = {"--font-sans", "--font-mono", "--font-display", "--heat-text-l",
+# team block. --heat-text-l and --logo-rim are colour but track dark vs light,
+# and every team theme is dark, so the :root value is already right.
+SKIP = {"--font-sans", "--font-mono", "--font-display", "--heat-text-l", "--logo-rim",
         "--page-width", "--page-width-wide", "--radius-sm", "--radius"}
 SKIP_PREFIXES = ("--text-xs", "--text-sm", "--text-base", "--text-md", "--text-lg", "--text-xl", "--space-")
 

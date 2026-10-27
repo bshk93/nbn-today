@@ -142,6 +142,14 @@
      a popover, a dialog), and the focus ring. Nothing else casts one. */
   --shadow-overlay: 0 8px 24px var(--shadow-color-strong);
   --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  /* A thin light rim round every team logo (components.css § Team logos), so
+     an all-black or navy logo (UTA, MIN, MEM, LAC…) keeps its outline on a
+     dark surface. Every team theme is dark too, so they take this value; the
+     light themes set it to none and draw logos exactly as they are. */
+  --logo-rim: drop-shadow(0.5px 0 0 rgba(255, 255, 255, 0.5))
+              drop-shadow(-0.5px 0 0 rgba(255, 255, 255, 0.5))
+              drop-shadow(0 0.5px 0 rgba(255, 255, 255, 0.5))
+              drop-shadow(0 -0.5px 0 rgba(255, 255, 255, 0.5));
 
   /* Secondary accent tones (site-wide, lower frequency than the core set above) */
   --accent-panel-bg: #13233a;   /* selected/info panel bg-tint, paired with --accent border */
@@ -196,6 +204,7 @@
    modal scrim). */
 :root[data-theme="nbn-today-light"] {
   --heat-text-l: 32%;
+  --logo-rim: none;
   /* These seven used to be absent, so they silently took the dark block's
      value — which this file's own header says never happens. Four of them
      happened to work on a light page anyway; --text-muted did not (4.47:1,
@@ -316,6 +325,7 @@
    it stays distinguishable from the rose accent. */
 :root[data-theme="lavender-rose"] {
   --heat-text-l: 32%;
+  --logo-rim: none;
   /* Backgrounds */
   --bg-page: #f6f1f5;
   --bg-card: #ffffff;

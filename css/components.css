@@ -615,6 +615,13 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
   color: var(--text-primary);
 }
 
+/* ── Team logos ─────────────────────────────────────────────────────────── */
+/* Every team logo on the site is an <img> from /logos/, so this one rule
+   reaches all of them, including the ones scripts insert. --logo-rim is a thin
+   light outline on dark themes (an all-black Jazz logo otherwise vanishes on
+   the card) and none on light ones (css/theme.css). */
+img[src*="logos/"] { filter: var(--logo-rim); }
+
 /* ── Empty and loading states ───────────────────────────────────────────── */
 .ui-empty {
   padding: var(--space-6) var(--space-4);
