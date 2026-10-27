@@ -102,6 +102,10 @@
     { key: 'day',    label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
     { key: 'vs',     label: 'vs league', tip: "Price against the league-average price. Cleaner than Price, which drifts up with discounting",  get: t => t.vs_league, num: true, fmt: t => pct(t.vs_league * 100) },
+    { key: 'mcap',   label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
+    { key: 'ps',     label: 'P/S', tip: "Price to sales: market cap ÷ this season's projected revenue", get: t => t.ps, num: true, fmt: t => t.ps == null ? '—' : t.ps.toFixed(1) + '×' },
+    { key: 'pe',     label: 'P/E', tip: "Price to earnings: price ÷ earnings per share (this season's projected profit ÷ 30M shares). Blank for a team losing money", get: t => t.pe, num: true, fmt: t => t.pe == null ? '<span class="muted">n/m</span>' : t.pe.toFixed(0) },
+    { key: 'beta',   label: 'Beta', tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
     { key: 'book',   label: 'Ledger value', tip: "What the Front Office Ledger values the franchise at", get: t => t.book_value, num: true, fmt: t => yen(t.book_value, 'B') },
     { key: 'ratio',  label: 'Fair ÷ ledger', tip: "This model's value divided by the ledger's. Above 1× means the model rates it higher", get: t => t.book_value ? t.value / t.book_value : null, num: true,
       fmt: t => t.book_value ? (t.value / t.book_value).toFixed(2) + '×' : '—' },
@@ -167,7 +171,17 @@
         <td class="mono">${yen(y.pv_out)}</td>
       </tr>`).join('');
     const last = yrs[yrs.length - 1].season;
-    return `<div class="fv-sum">
+    const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+    const y0 = t.years[0];
+    const keyStats = `<div class="fv-sum">
+        Market cap <b>${yen(t.value, 'B')}</b> · Revenue <b>${yen(y0.revenue)}</b> · Profit <b>${signedYen(y0.profit)}</b>
+        · EPS <b>¥${t.eps.toFixed(2)}</b> · P/E <b>${t.pe == null ? 'n/m' : t.pe.toFixed(0)}</b> · P/S <b>${t.ps == null ? '—' : t.ps.toFixed(1) + '×'}</b>
+        · Season range <b>¥${t.lo.toFixed(2)}–¥${t.hi.toFixed(2)}</b> · Beta <b>${t.beta == null ? `— <span class="muted">(after ${BETA_MIN_DAYS} days)</span>` : t.beta.toFixed(2)}</b>
+      </div>`;
+    const picks = (t.picks || []).filter(p => p.round === 1);
+    const pickLine = picks.length ? `<div class="fv-sum">First-round picks in the next two drafts: ${picks.map(p =>
+        `${p.year} ${p.orig === t.team ? 'own' : esc(p.orig)}${p.share < 1 ? ` (${Math.round(p.share * 100)}% share)` : ''}, projected ${ord(p.slot)}, about ${Math.round(p.ovr)} OVR`).join('; ')}.</div>` : '';
+    return keyStats + pickLine + `<div class="fv-sum">
         Value <b>${yen(t.value, 'B')}</b> = PV of profit <b>${signedYen(t.pv_in - t.pv_out)}</b>
         + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
         (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
@@ -250,20 +264,52 @@
       <p><b>Revenue</b> uses the Front Office Ledger's own formulas (gate, playoff gate, merch, media, title bonus) on projected inputs: wins and playoff odds from the playoff odds simulator, and stars from the league's top 15 OVRs. This season's projection always gives the current roster at least half the weight, so a trade moves the price even late in the season.</p>
       <p><b>Market</b> is how much a city spends on its team, and it scales ticket prices, merchandise and local TV. It comes from the Front Office Ledger, where winning grows it and losing shrinks it. Later seasons grow it from the simulated finish, so a playoff run is worth more than one season's revenue.</p>
       <p><b>Buzz</b> is a team's form over its last ten games: its margins, adjusted for how good each opponent is. It raises or cuts ticket prices and merchandise on top of the market. The rest of this season starts from today's buzz and settles at what the team's rating would sustain, so a hot streak pays now and a cold one costs now.</p>
+      <p><b>Draft picks</b> count once the player is on the roster within the three projected seasons, so only the next two drafts matter. A pick's player is rated from where it is projected to land (a top pick is about 81 OVR, a late first about 70) and improves with age. A pick that more than one team has a claim on, through a swap or protection, is shared equally between them.</p>
       <p><b>Injuries</b> count against this season's strength. An Out player is missing until his expected return (the middle of 2K's estimate, from the report that set it), a Hurt one plays at his injured OVR, each for the share of the remaining games he misses.</p>
       <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
       <p>As the season goes by, every price drifts up a little from discounting alone, so “vs league” is the cleaner comparison. A day's move is labelled with the piece that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
       ${rebuilt.length ? `<p>The model started on 2026-10-24. Earlier days (${esc(rebuilt[0])} to ${esc(rebuilt[rebuilt.length - 1])}) were rebuilt afterwards from each day's games, with today's rosters and contracts. Nothing bigger than a depth signing changed in that window.</p>` : ''}
+      <p>The <b>NBN 30</b> is the average price of all 30 franchises, the league's index. Market cap, P/S, P/E and beta read the way they do for a real stock.</p>
       <p><b>The columns</b></p>
       <dl class="fv-cols">${COLS.filter(c => c.tip).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.tip)}</dd>`).join('')}</dl>
       <p class="muted">Model ${esc(run.model)}, computed ${esc(new Date(run.computed_at).toLocaleString())}.</p>`;
+  }
+
+  // Stock figures, from the run and the history: the NBN 30 (the equal-weighted
+  // average price), each team's beta against it, P/S, P/E and its season range.
+  const BETA_MIN_DAYS = 10;
+  let index = null;
+  function stockStats() {
+    const shares = run.league.shares;
+    const days = history.filter(d => d.date < run.date).concat([{ date: run.date, teams: Object.fromEntries(run.teams.map(t => [t.team, { price: t.price }])) }]);
+    const mean = d => { const v = Object.values(d.teams).map(x => x.price); return v.reduce((a, b) => a + b, 0) / v.length; };
+    const level = days.map(mean);
+    const mret = level.slice(1).map((v, i) => v / level[i] - 1);
+    index = { level: level[level.length - 1], day: level.length > 1 ? (level[level.length - 1] / level[level.length - 2] - 1) * 100 : null };
+    for (const t of run.teams) {
+      const y = t.years[0];
+      t.ps = y.revenue ? t.value / y.revenue : null;
+      t.eps = y.profit / shares;
+      t.pe = t.eps > 0 ? t.price / t.eps : null;
+      const prices = days.map(d => (d.teams[t.team] || {}).price).filter(v => v != null);
+      t.hi = Math.max(...prices); t.lo = Math.min(...prices);
+      t.beta = null;
+      if (mret.length >= BETA_MIN_DAYS) {
+        const tret = days.slice(1).map((d, i) => d.teams[t.team] && days[i].teams[t.team] ? d.teams[t.team].price / days[i].teams[t.team].price - 1 : null);
+        const pairs = tret.map((v, i) => [v, mret[i]]).filter(([v]) => v != null);
+        const mx = pairs.reduce((a, [, m]) => a + m, 0) / pairs.length, tx = pairs.reduce((a, [v]) => a + v, 0) / pairs.length;
+        const cov = pairs.reduce((a, [v, m]) => a + (v - tx) * (m - mx), 0), vm = pairs.reduce((a, [, m]) => a + (m - mx) ** 2, 0);
+        t.beta = vm ? cov / vm : null;
+      }
+    }
   }
 
   function renderChips() {
     document.getElementById('chips').innerHTML = `
       <span class="ui-chip ui-chip--warning">Shadow model · not tradable</span>
       <span class="ui-chip">As of ${esc(run.date)}</span>
+      ${index ? `<span class="ui-chip" title="The NBN 30: the average price of all 30 franchises">NBN 30 ¥${index.level.toFixed(2)}${index.day == null ? '' : ` <span class="${cls(index.day)}">${arrow(index.day)} ${pct(index.day, 2)}</span>`}</span>` : ''}
       <a class="ui-chip" href="/invest/">Wall Street</a>`;
   }
 
@@ -348,6 +394,7 @@
       run = r;
       history = h.days || [];
       for (const t of run.teams) t.day = r.prev[t.team] ? (t.price / r.prev[t.team] - 1) * 100 : null;
+      stockStats();
       renderChips();
       renderHead();
       renderBody();

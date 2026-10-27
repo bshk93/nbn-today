@@ -332,6 +332,27 @@ affects days after it.
   rule and `CAP_GROWTH` (27-28 onward has no apron figures yet, see the
   backlog's cap estimate item) are all unfitted.
 
+### Draft picks and stock figures (2026-10-27)
+
+- **Picks** count once their player is inside the three projected seasons,
+  so only the next two drafts matter. OVR from the pick number,
+  `80.74 − 3.04·ln(pick)` (fit on the 2025 and 2026 classes, ±1.8), aged by
+  `AGE_CURVE`; the slot is where the pick's team finishes in the simulated
+  season before (no lottery). A contingent pick is shared equally among the
+  teams its `leaves` name. A pick below replacement level never lowers a
+  team's strength.
+- **Rejected: pricing the sale on the seasons after the horizon**, which is
+  what would make picks and young cores really count. Every version pulled
+  teams toward .500 (the far projection regresses and rosters churn): the
+  spread fell from 2.27× to 1.74× fully forward, 1.99× blended, and the user
+  chose to keep the sale on the three projected seasons.
+- **Stock figures** are page-only (`stockStats` in `invest/fair/index.html`):
+  market cap, P/S on this season's projected revenue, P/E on its projected
+  profit (blank for a loss), the season's price range, the **NBN 30** (the
+  equal-weighted average price) and each team's beta against it, shown after
+  ten days of history. P/S lands around 10–12×, which is where real NBA
+  franchises trade.
+
 ## Open
 
 - The constants above are first guesses. Tune them against the sanity checks
