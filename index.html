@@ -1409,15 +1409,21 @@
         : !a.set && !h.set ? 'Projected by OVR'
         : `${esc(a.set ? away : home)} set rotation · ${esc(a.set ? home : away)} projected`;
       const logo = t => `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="">`;
+      // Full team names where there's room (the wide variant on a wide screen).
+      const teamLabel = t => (wide
+        ? `<span class="dash-five-full">${esc((typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t)}</span><span class="dash-five-last">${esc(t)}</span>`
+        : esc(t));
       el.innerHTML = `<div class="dash-five-box${wide ? ' wide' : ''}">`
-        + `<div class="dash-five-head"><span class="away">${esc(away)} ${logo(away)}</span><span></span><span class="home">${logo(home)} ${esc(home)}</span></div>`
+        + `<div class="dash-five-head"><span class="away">${teamLabel(away)} ${logo(away)}</span><span></span><span class="home">${logo(home)} ${teamLabel(home)}</span></div>`
         + (wide ? '<div class="dash-five-row dash-five-cols"><span></span><span>PPG</span><span>OVR</span><span></span><span>OVR</span><span>PPG</span><span></span></div>' : '')
         + DEPTH_SLOTS.map((slot, i) => {
             const p = a.five[i], q = h.five[i];
             return `<div class="dash-five-row" style="--i:${i}">${name(p, 'away')}${ppg(p, la)}${ovrCell(p, q)}`
               + `<span class="dash-five-slot">${slot}</span>${ovrCell(q, p)}${ppg(q, lh)}${name(q, 'home')}</div>`;
           }).join('')
-        + `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}<br>${how}</div>`
+        // The wide variant drops whose five is set: the card already says
+        // when your own is projected, on the Starting 5 tab.
+        + `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}${wide ? '' : `<br>${how}`}</div>`
         + '</div>';
     }
 
