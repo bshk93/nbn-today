@@ -379,16 +379,42 @@ The user asked for cap space to be worth something and for a GM premium.
   stays at 2.17×. There are 14 signings across 27-28 and 28-29: most teams
   sit between the cap and the first apron, so the MLE does most of the work.
   Cap room only wins a player who asks more than the MLE.
-- **GM skill: measured, not built.** The test was whether a GM's past seasons
-  predict next season's point differential beyond what this season's does.
-  The data: 150 team-season pairs, 20-21 to 25-26, owners from `owners.csv`.
-  Next season keeps 0.42 of this season's margin. A GM's past mean
-  residual, held out, correlates −0.03 with the next one. The between-GM
-  variance comes out below the noise (method of moments goes negative).
-  Adding a GM's past mean margin to the regression gets a coefficient of
-  −0.01. A new GM's first season is −1.7 ± 1.7, not distinguishable from 0.
-  Five seasons is too short to separate skill from luck, and any skill there
-  is already in the roster the model prices. Revisit with more seasons.
+- **GM skill in the regular season: measured, not built.** The test was
+  whether a GM's past seasons predict next season's point differential beyond
+  what this season's does. Data: 150 team-season pairs, 20-21 to 25-26.
+  Next season keeps 0.42 of this season's margin, and a GM's held-out past
+  record adds nothing (correlation −0.03; past win % +0.12 ± 0.19 on next win
+  %). A regular-season record is the roster, which the model already prices.
+  The playoffs were different; see the next section.
+
+### Playoff edge (fv4, 2026-10-27)
+
+The user asked whether GMs' win % and playoff win % should count. The
+regular season doesn't (above). The playoffs do, a little.
+
+- **The measure.** Score each of the 90 series 20-21 to 25-26: 1 for a win,
+  less the chance the two teams' point differentials gave it (logit 0.0575 a
+  point). Credit it to **everyone on staff** for that playoff (owner, GM and
+  coach equally, the user's call; staff read on May 1, from members.json
+  tenures). A person's edge is the sum over n series ÷ (n + 8). A team's edge
+  is its current staff's average.
+- **Does it predict?** Each series scored only on the staffs' earlier series:
+  +3.96 ± 2.26 on the series logit per unit of edge gap. Without PHX's series
+  it is about half that and inside its error, so the model uses half of the
+  full estimate (`PLAYOFF_EDGE_POINTS` 10.2 points a game per unit, since the
+  sim's series logit moves 0.194 a point). The shrink of 8 was chosen over the
+  fit's slight preference for 3 (log-likelihood +1.66 against +1.93) so that one
+  title run doesn't count as much as five seasons of them.
+- **Owner-only was wrong.** The first pass credited owners alone, which
+  dropped nelson (WAS coach since 2024) and Jaywalker7, the Suns' head coach
+  through the 2023 and 2025 titles, whose PHX tenure wasn't in members.json.
+  It was added from the lore on 2026-10-27 (PHX coach, 2021-03-22 to
+  2025-06-13).
+- **Effect on 2026-10-27:** PHX +2.7% (chuck, malespmatt +0.22 over 18
+  series, +2.2 a game), ORL +2.2%, MIA +1.5% (Jaywalker7), WAS +1.0% (nelson,
+  Ball, Bowl, Avatar); IND −0.8% (KidMonotone −0.18, −1.8 a game). The
+  public playoff odds don't use it: `playoff_odds.simulate` takes
+  `playoff_bonus` only from fair value.
 
 ### Outlook season and the market price (2026-10-27)
 
