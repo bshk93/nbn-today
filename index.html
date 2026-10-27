@@ -660,7 +660,12 @@
     .dash-five-avg .dash-five-ovr { color: var(--text-secondary); font-weight: 600; }
     .dash-five-ppg { text-align: center; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
     .dash-five-last { display: none; }
-    @media (max-width: 600px) {
+    /* Short names by the card's own width, not the screen's: the two-column
+       layout makes the card narrowest just above tablet width, where
+       "Minnesota Timberwolves" wrapped and full player names were cut off.
+       520px is where the longest pair still fits on one line. */
+    .dash-team-panel { container-type: inline-size; }
+    @container (max-width: 520px) {
       .dash-five-full { display: none; }
       .dash-five-last { display: inline; }
       .dash-five-box.wide { padding: 0.55rem 0.5rem 0.45rem; font-size: var(--text-xs); }
