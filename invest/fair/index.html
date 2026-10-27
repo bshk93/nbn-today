@@ -77,6 +77,9 @@
 
   <script src="/nav.js"></script>
   <script src="/invest/daily-moves.js"></script>
+  <script src="/contract.js"></script>
+  <script src="/feed-types.js"></script>
+  <script src="/names.js"></script>
   <script>
   // A shadow model: a discounted-cash-flow price per franchise, built on the
   // Front Office Ledger (nbn-api/routers/fair_value.py). Nothing trades on it.
@@ -90,7 +93,7 @@
   const cls = v => v > 0 ? 'up' : v < 0 ? 'dn' : '';
   const prob = p => (p * 100).toFixed(p >= 0.1 ? 0 : 1) + '%';
 
-  let run = null, history = [], sortKey = 'price', sortDir = -1, openTeam = null, chart = null;
+  let run = null, history = [], events = {}, sortKey = 'price', sortDir = -1, openTeam = null, chart = null;
 
   const COLS = [
     { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
@@ -167,6 +170,7 @@
         + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
         (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
         ${t.book_value ? `The ledger has it at ${yen(t.book_value, 'B')}.` : ''}
+        ${(t.injuries || []).length ? `<br>Injuries take this season's strength from ${t.years[0].strength.toFixed(1)} to ${t.strength_injured.toFixed(1)}: ${t.injuries.map(i => `${esc(i.name ? nbnPlayerName(i.name) : i.slug)} (${esc((i.status || '').toLowerCase())}, about ${i.games} of ${i.of} games left)`).join(', ')}.` : ''}
       </div>
       <div class="fv-scroll"><table class="fv-years"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>
       <div class="muted" style="font-size:var(--text-xs);margin-bottom:var(--space-3)">
@@ -224,10 +228,12 @@
         ].sort((m, n) => Math.abs(n[1]) - Math.abs(m[1]));
         const [name, d] = drivers[0];
         const dw = x.proj_w - p.proj_w;
-        let note = `${name} ${signedYen(d)}`;
+        // What happened leads; the money that moved is the note only on a day nothing did.
+        const happened = (events[t] || {})[b.date];
+        let note = happened ? happened.join(' · ') : `${name} ${signedYen(d)}`;
+        if (!happened && Math.abs(dw) >= 0.1) note += ` · proj W ${dw > 0 ? '+' : ''}${dw.toFixed(1)}`;
+        if (!happened && x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
         if (b.backfill) note += ' · rebuilt';
-        if (Math.abs(dw) >= 0.1) note += ` · proj W ${dw > 0 ? '+' : ''}${dw.toFixed(1)}`;
-        if (x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
         teams[t][b.date] = { pct: (x.price / p.price - 1) * 100, note };
       }
     }
@@ -240,6 +246,7 @@
     document.getElementById('how').innerHTML = `
       <p>Each franchise is priced as what its owner gets out of it: <b>profit</b> for the rest of this season and the next two, plus what the team would <b>sell for</b> at the end of the third. Both are discounted at ${(L.discount_rate * 100).toFixed(0)}% a season. The price is that value divided by ${(L.shares / 1e6).toFixed(0)}M shares.</p>
       <p><b>Revenue</b> uses the Front Office Ledger's own formulas (gate, playoff gate, merch, media, title bonus) on projected inputs: wins and playoff odds from the playoff odds simulator, and stars from the league's top 15 OVRs. This season's projection always gives the current roster at least half the weight, so a trade moves the price even late in the season.</p>
+      <p><b>Injuries</b> count against this season's strength. An Out player is missing until his expected return (the middle of 2K's estimate, from the report that set it), a Hurt one plays at his injured OVR, each for the share of the remaining games he misses.</p>
       <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
       <p>As the season goes by, every price drifts up a little from discounting alone, so “vs league” is the cleaner comparison. A day's move is labelled with the piece that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
@@ -272,6 +279,58 @@
     renderBody();
   });
 
+  // What happened to each team each day, in words: its game, injury report
+  // changes, and ledger moves. { ATL: { '2026-10-24': ['W by 8 v BOS', ...] } }
+  async function loadEvents(season, since) {
+    const get = u => fetch(u).then(x => x.ok ? x.json() : null).catch(() => null);
+    const [games, injuries, ledger] = await Promise.all([
+      get(`${API}/boxscores/games?season=${encodeURIComponent(season)}`),
+      get(`${API}/injuries/history?since=${encodeURIComponent(since)}`),
+      get(`${API}/transactions?limit=300`),
+    ]);
+    const out = {};
+    const add = (team, day, text) => {
+      if (!team || !day || day < since || !text) return;
+      ((out[team] ||= {})[day] ||= []).push(text);
+    };
+    for (const g of (games || [])) {
+      if (g.gametype && g.gametype !== 'REG') continue;
+      const diff = g.home_score - g.away_score;
+      const res = n => n > 0 ? `W by ${n}` : `L by ${-n}`;
+      add(g.home_team, g.date, `${res(diff)} v ${g.away_team}`);
+      add(g.away_team, g.date, `${res(-diff)} @ ${g.home_team}`);
+    }
+    for (const e of [...(injuries || [])].reverse()) {
+      const name = e.name || e.slug;
+      if (e.kind === 'healed') add(e.team, e.date, `${name} back`);
+      else if (e.after) add(e.team, e.date, `${name} ${/^out$/i.test(e.after.status || '') ? 'out' : 'hurt'}${e.after.duration ? ' ' + e.after.duration.toLowerCase() : ''}`);
+    }
+    const txns = ((ledger || {}).transactions || []).filter(t => !t.voided && (t.date || '') >= since);
+    if (txns.length && window.FeedTypes) {
+      const slugs = new Set();
+      txns.forEach(t => {
+        const d = t.details || {};
+        if (d.player) slugs.add(d.player);
+        (d.transfers || []).forEach(tr => (tr.assets || []).forEach(a => a.slug && slugs.add(a.slug)));
+      });
+      const bios = slugs.size ? (await get(`${API}/players?slugs=${encodeURIComponent([...slugs].join(','))}`)) || {} : {};
+      const ctx = {
+        esc: s => String(s ?? ''),
+        name: slug => (bios[slug] || {}).name ? nbnPlayerName(bios[slug].name) : slug,
+        team: abbr => abbr,
+      };
+      const text = html => { const el = document.createElement('div'); el.innerHTML = html; return el.textContent.trim(); };
+      for (const t of [...txns].reverse()) {
+        const h = FeedTypes.headline(t, ctx);
+        if (!h) continue;
+        const d = t.details || {};
+        const teams = new Set([d.team, ...(Array.isArray(d.teams) ? d.teams : [])].filter(Boolean));
+        teams.forEach(team => add(team, t.date, text(h.html)));
+      }
+    }
+    return out;
+  }
+
   async function init() {
     try {
       const [r, h] = await Promise.all([
@@ -289,6 +348,7 @@
       renderHead();
       renderBody();
       renderHow();
+      if (history.length) events = await loadEvents(run.season, history[0].date);
       const d = dailyFromHistory();
       DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, ...d });
     } catch (e) {
