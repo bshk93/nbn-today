@@ -365,6 +365,7 @@
           ${line('Record', r => `${r.W}-${r.L}`)}
           ${line('Finish', r => esc(r.IN_PROGRESS ? 'TBD' : (FINISH[r.PLAYOFF_RESULT] || '')))}
           ${line('Market', r => r.MARKET == null || r.MARKET === '' ? '—' : (+r.MARKET).toFixed(2) + '×')}
+          ${line('Buzz', r => r.BUZZ == null || r.BUZZ === '' ? '—' : (r.BUZZ > 0 ? '+' : r.BUZZ < 0 ? '−' : '') + Math.abs(r.BUZZ * 100).toFixed(0) + '%')}
           ${line('Jersey patch', r => r.JERSEY_PATCH ? `<span class="fo-patch">${esc(r.JERSEY_PATCH)}</span>` : '—')}
           ${line('Average crowd', r => r.HOME_GAMES ? r.AVG_ATTENDANCE.toLocaleString() : '—')}
           ${line('Sellouts', r => r.HOME_GAMES ? r.SELLOUTS : '—')}
@@ -409,7 +410,7 @@
       document.querySelectorAll('#board tbody tr').forEach(tr =>
         tr.addEventListener('click', () => pickTeam(tr.dataset.team)));
       document.getElementById('model-note').textContent =
-        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)} with a market of 1.0×. Winning grows a market and losing shrinks it, which scales ticket prices, merchandise and local TV. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll affects profit only, not value.`;
+        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)} with a market of 1.0×. Winning grows a market and losing shrinks it, which scales ticket prices, merchandise and local TV. Buzz is the team's form over its last ten games, by margin and against who: it moves ticket prices game to game, and a season of it moves the market. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll affects profit only, not value.`;
     }
 
     // ── Owners: best stewards and money pits ───────────────────────────────

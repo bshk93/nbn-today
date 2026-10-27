@@ -136,6 +136,27 @@ By 26-27 this runs from CHA 0.51 to PHX ~1.7. Fair value projects it: each
 later season grows from the season before's simulated finish odds and win %,
 re-centred the same way.
 
+### Buzz (v4)
+
+How hot a team is right now, on top of its market. Before each game:
+`buzz = 0.01 × (sum of the last 10 opponent-adjusted margins) ÷ 10`, clamped to
+`[−0.15, +0.20]`. An adjusted margin is the margin plus the opponent's average
+margin so far this season, shrunk toward 0 by five games, so beating a good
+team by 10 counts for more than beating a bad one by 10. Dividing by 10 even
+early on means buzz builds over the first ten games and one blowout can't max
+it.
+
+- It scales that home game's ticket price.
+- Its season average scales base merch and adds `0.5 × average` to next
+  season's market step.
+- `BUZZ` in the CSV is buzz after the team's latest game, `BUZZ_AVG` the season
+  average. At 0.01 per point about 1% of games sit at the top and 5% at the
+  floor (0.015 put 13% at the floor, so the clamp was doing the work).
+
+Fair value runs this season's buzz from today's for the next ten games, then at
+what the team's rating sustains (`0.01 × rating`, the rating being the expected
+margin against an average team); later seasons use their rating's.
+
 ### 5. Championship bonus
 
 One-time ¥100M in the title season.

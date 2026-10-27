@@ -144,7 +144,7 @@
 
   function detail(t) {
     const yrs = t.years;
-    const head = ['Season', 'Strength', 'Proj W', 'Playoffs', '2nd rd', 'Title', 'Stars', 'Market',
+    const head = ['Season', 'Strength', 'Proj W', 'Playoffs', '2nd rd', 'Title', 'Stars', 'Market', 'Buzz',
                   'Gate', 'Playoff gate', 'Merch', 'Revenue', 'Payroll', 'Tax', 'Profit', 'PV in', 'PV out'];
     const body = yrs.map((y, k) => `<tr>
         <td>${y.season}${k === 0 ? ` <span class="muted">(${Math.round(t.season_left * 100)}% left)</span>` : ''}</td>
@@ -155,6 +155,7 @@
         <td class="mono">${prob(y.title)}</td>
         <td class="mono">${y.stars}</td>
         <td class="mono">${y.market == null ? '—' : y.market.toFixed(2) + '×'}</td>
+        <td class="mono">${y.buzz == null ? '—' : pct(y.buzz * 100, 0)}</td>
         <td class="mono">${yen(y.gate)}</td>
         <td class="mono">${yen(y.playoff_gate)}</td>
         <td class="mono">${yen(y.merch)}</td>
@@ -248,6 +249,7 @@
       <p>Each franchise is priced as what its owner gets out of it: <b>profit</b> for the rest of this season and the next two, plus what the team would <b>sell for</b> at the end of the third. Both are discounted at ${(L.discount_rate * 100).toFixed(0)}% a season. The price is that value divided by ${(L.shares / 1e6).toFixed(0)}M shares.</p>
       <p><b>Revenue</b> uses the Front Office Ledger's own formulas (gate, playoff gate, merch, media, title bonus) on projected inputs: wins and playoff odds from the playoff odds simulator, and stars from the league's top 15 OVRs. This season's projection always gives the current roster at least half the weight, so a trade moves the price even late in the season.</p>
       <p><b>Market</b> is how much a city spends on its team, and it scales ticket prices, merchandise and local TV. It comes from the Front Office Ledger, where winning grows it and losing shrinks it. Later seasons grow it from the simulated finish, so a playoff run is worth more than one season's revenue.</p>
+      <p><b>Buzz</b> is a team's form over its last ten games: its margins, adjusted for how good each opponent is. It raises or cuts ticket prices and merchandise on top of the market. The rest of this season starts from today's buzz and settles at what the team's rating would sustain, so a hot streak pays now and a cold one costs now.</p>
       <p><b>Injuries</b> count against this season's strength. An Out player is missing until his expected return (the middle of 2K's estimate, from the report that set it), a Hurt one plays at his injured OVR, each for the share of the remaining games he misses.</p>
       <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>

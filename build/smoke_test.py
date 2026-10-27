@@ -124,7 +124,7 @@ SCHEMA = {
     # read too but left out: it is blank until a cap snapshot carries dead_cap.
     "data/franchise-finances.csv": (
         ["TEAM", "SEASON", "MODEL", "IN_PROGRESS", "W", "L", "PLAYOFF_RESULT",
-         "STARS", "MARKET", "HOME_GAMES", "AVG_ATTENDANCE", "SELLOUTS", "GATE",
+         "STARS", "MARKET", "BUZZ", "HOME_GAMES", "AVG_ATTENDANCE", "SELLOUTS", "GATE",
          "PLAYOFF_HOME_GAMES", "PLAYOFF_GATE", "CONCESSIONS", "MERCH", "MEDIA",
          "NBNTV", "TITLE_BONUS", "TAX_SHARE", "REVENUE", "PAYROLL", "LUXURY_TAX", "ARENA_OPS",
          "PROFIT", "VALUE", "VALUE_CHANGE"],
