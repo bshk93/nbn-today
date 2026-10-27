@@ -83,7 +83,8 @@
     .bar-fill { height: 100%; border-radius: var(--radius-sm); background: var(--accent); transition: width 0.3s; }
     .bar-fill.winner { background: var(--warning); }
     .bar-fill.zero   { background: var(--border); }
-    .opt-pct  { font-size: var(--text-xs); color: var(--text-muted); min-width: 36px; text-align: right; }
+    .opt-pct  { font-size: var(--text-xs); color: var(--text-muted); min-width: 36px; text-align: right; white-space: nowrap; }
+    .opt-us   { color: var(--text); font-weight: 600; margin-right: 0.35rem; }
     .opt-amt  { font-size: var(--text-xs); color: var(--gold); min-width: 60px; text-align: right; }
     .opt-winner-badge { font-size: var(--text-xs); font-weight: 700; color: var(--gold); background: var(--gold-bg); border-radius: var(--radius-sm); padding: 0.1rem 0.3rem; }
 
@@ -886,6 +887,14 @@
         pctEl.textContent = isFixedOdds
           ? `${(prob * 100).toFixed(1)}%`
           : (pool > 0 ? `${barPct.toFixed(1)}%` : '—');
+        // American odds beside the probability (+300 for 25%)
+        const usOdds = isFixedOdds ? pctToOdds(prob * 100) : '';
+        if (usOdds) {
+          const us = document.createElement('span');
+          us.className = 'opt-us';
+          us.textContent = usOdds;
+          pctEl.prepend(us);
+        }
 
         const amtEl = document.createElement('span');
         amtEl.className = 'opt-amt';
