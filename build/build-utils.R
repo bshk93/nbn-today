@@ -115,6 +115,88 @@ join_opponent_scores <- function(df, join_by = c("DATE", "OPP")) {
     )
 }
 
+# Mirrors SEED_OVERRIDES in nbn-api's stats_build/pipeline.py; the reasons
+# are there. (season, team that finished ahead, team it finished ahead of).
+SEED_OVERRIDES <- list(
+  list("24-25", "UTA", "NOP")
+)
+PLAYOFF_ELIGIBLE <- 10
+
+# The NBA's tie-break procedure. A line-for-line mirror of nba_seed_order in
+# nbn-api's stats_build/pipeline.py, whose docstring is the rule set; the port
+# gate compares the two. Returns every team, best first within conference.
+nba_seed_order <- function(standings, games) {
+  played <- games %>% filter(!is.na(WIN), WIN | LOSS)
+  win_pct <- function(team, keep) {
+    g <- played[played$TEAM == team, , drop = FALSE]
+    g <- g[which(keep(g)), , drop = FALSE]
+    n <- sum(g$WIN) + sum(g$LOSS)
+    if (n == 0) NA_real_ else sum(g$WIN) / n
+  }
+  pct_key <- ifelse(is.na(standings$PCT), -1, standings$PCT)
+  names(pct_key) <- standings$TEAM
+  conf_of <- setNames(standings$CONF, standings$TEAM)
+  div_of  <- setNames(standings$DIV, standings$TEAM)
+
+  eligible <- character(0)
+  for (cf in unique(standings$CONF)) {
+    teams <- standings$TEAM[standings$CONF %in% cf]
+    p <- sort(pct_key[teams], decreasing = TRUE)
+    line <- p[min(PLAYOFF_ELIGIBLE, length(p))]
+    eligible <- c(eligible, teams[pct_key[teams] >= line])
+  }
+  net <- sapply(standings$TEAM, function(t) {
+    g <- played[played$TEAM == t, ]; sum(g$TEAM_PTS - g$OPP_PTS)
+  })
+  winners <- character(0)
+
+  steps <- function(tied, with_winner) {
+    two <- length(tied) == 2
+    one_div <- length(unique(div_of[tied])) == 1
+    h2h  <- list("h2h", function(t) win_pct(t, function(g) g$OPP %in% tied))
+    won  <- list("div_winner", function(t) if (t %in% winners) 1 else 0)
+    div  <- list("div", function(t) win_pct(t, function(g) g$DIV == g$OPP_DIV))
+    conf <- list("conf", function(t) win_pct(t, function(g) g$CONF == g$OPP_CONF))
+    po_own <- list("po_own", function(t) win_pct(t, function(g)
+      g$OPP %in% eligible & g$CONF == g$OPP_CONF))
+    po_other <- list("po_other", function(t) win_pct(t, function(g)
+      g$OPP %in% eligible & g$CONF != g$OPP_CONF))
+    diff <- list("diff", function(t) net[[t]])
+    chain <- c(if (two) list(h2h, won) else list(won, h2h),
+               if (one_div) list(div), list(conf, po_own),
+               if (two) list(po_other), list(diff))
+    Filter(function(s) with_winner || s[[1]] != "div_winner", chain)
+  }
+
+  resolve <- function(tied, with_winner = TRUE) {
+    tied <- sort(tied, method = "radix")
+    if (length(tied) < 2) return(tied)
+    for (st in steps(tied, with_winner)) {
+      vals <- sapply(tied, st[[2]])
+      if (any(is.na(vals)) || length(unique(vals)) == 1) next
+      out <- character(0)
+      for (v in sort(unique(vals), decreasing = TRUE))
+        out <- c(out, resolve(tied[vals == v], with_winner))
+      return(out)
+    }
+    tied
+  }
+
+  for (dv in sort(unique(na.omit(standings$DIV)), method = "radix")) {
+    teams <- standings$TEAM[standings$DIV %in% dv]
+    top <- teams[pct_key[teams] == max(pct_key[teams])]
+    winners <- c(winners, resolve(top, with_winner = FALSE)[1])
+  }
+
+  order <- character(0)
+  for (cf in sort(unique(standings$CONF), method = "radix", na.last = TRUE)) {
+    teams <- standings$TEAM[standings$CONF %in% cf]
+    for (p in sort(unique(pct_key[teams]), decreasing = TRUE))
+      order <- c(order, resolve(teams[pct_key[teams] == p]))
+  }
+  order
+}
+
 compute_standings <- function(season_df) {
   x <- season_df %>%
     group_by(DATE, TEAM, OPP) %>%
@@ -154,51 +236,20 @@ compute_standings <- function(season_df) {
       DIFF     = PPG - OPPG
     )
 
-  h2h <- games %>%
-    group_by(TEAM, OPP) %>%
-    summarize(W = sum(WIN), L = sum(LOSS), PCT = W / (W + L), .groups = "drop")
-
-  division_winners <- standings %>%
-    group_by(DIV) %>%
-    arrange(desc(PCT), desc(CONF_PCT), desc(DIFF)) %>%
-    slice(1) %>%
-    mutate(DIV_WINNER = TRUE) %>%
-    select(TEAM, DIV_WINNER)
-
-  standings <- standings %>%
-    left_join(division_winners, by = "TEAM") %>%
-    mutate(DIV_WINNER = if_else(is.na(DIV_WINNER), FALSE, DIV_WINNER))
-
-  resolve_nba_ties <- function(df, h2h) {
-    if (nrow(df) == 1) return(df)
-    teams <- df$TEAM
-    h2h_tied <- h2h %>%
-      filter(TEAM %in% teams, OPP %in% teams) %>%
-      group_by(TEAM) %>%
-      summarize(H2H_PCT = mean(PCT, na.rm = TRUE), .groups = "drop")
-    df2 <- df %>%
-      left_join(h2h_tied, by = "TEAM") %>%
-      mutate(H2H_PCT = replace_na(H2H_PCT, 0))
-    ordering <- df2 %>%
-      arrange(desc(H2H_PCT), desc(DIV_WINNER), desc(DIV_PCT), desc(CONF_PCT), desc(DIFF))
-    top <- ordering[1, ]
-    tied <- ordering %>%
-      filter(H2H_PCT == top$H2H_PCT, DIV_WINNER == top$DIV_WINNER,
-             DIV_PCT == top$DIV_PCT, CONF_PCT == top$CONF_PCT, DIFF == top$DIFF)
-    result <- if (nrow(tied) == nrow(ordering)) {
-      ordering
-    } else {
-      bind_rows(top, resolve_nba_ties(ordering[-1, ] %>% select(-H2H_PCT), h2h))
+  order <- nba_seed_order(standings, games)
+  season <- if (nrow(season_df)) season_df$SEASON[1] else NA
+  for (o in SEED_OVERRIDES) {
+    if (identical(o[[1]], season) && all(c(o[[2]], o[[3]]) %in% order)) {
+      ia <- match(o[[2]], order); ib <- match(o[[3]], order)
+      if (ia > ib) order <- append(order[-ia], o[[2]], after = ib - 1)
     }
-    result %>% select(-H2H_PCT)
   }
 
   standings %>%
-    group_by(CONF, W, L) %>%
-    group_modify(~ resolve_nba_ties(.x, h2h)) %>%
-    ungroup() %>%
+    filter(CONF %in% c("East", "West")) %>%
+    mutate(.ord = match(TEAM, order)) %>%
+    arrange(CONF, .ord) %>%
     group_by(CONF) %>%
-    arrange(CONF, desc(W), .by_group = TRUE) %>%
     mutate(GB = (max(W - L) - (W - L)) / 2, SEED = row_number()) %>%
     ungroup() %>%
     transmute(
