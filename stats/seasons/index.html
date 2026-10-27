@@ -118,10 +118,16 @@
       { key: '_FTM',   label: 'FTM',   cls: 'right group-start',   defaultDir: -1 },
       { key: '_FTA',   label: 'FTA',   cls: 'right',               defaultDir: -1 },
       { key: '_FTP',   label: 'FT%',   cls: 'right pct',           defaultDir: -1 },
+      { key: '_TSP',   label: 'TS%',   cls: 'right pct group-start', defaultDir: -1 },
+      { key: '_EFGP',  label: 'eFG%',  cls: 'right pct',           defaultDir: -1 },
       { key: '_PPG',   label: 'PPG',   cls: 'right group-start',   defaultDir: -1 },
       { key: '_PTS',   label: 'PTS',   cls: 'right',               defaultDir: -1 },
       { key: '_RPG',   label: 'RPG',   cls: 'right group-start',   defaultDir: -1 },
       { key: '_REB',   label: 'REB',   cls: 'right',               defaultDir: -1 },
+      { key: '_ORPG',  label: 'ORPG',  cls: 'right group-start',   defaultDir: -1 },
+      { key: '_OREB',  label: 'OREB',  cls: 'right',               defaultDir: -1 },
+      { key: '_DRPG',  label: 'DRPG',  cls: 'right group-start',   defaultDir: -1 },
+      { key: '_DREB',  label: 'DREB',  cls: 'right',               defaultDir: -1 },
       { key: '_APG',   label: 'APG',   cls: 'right group-start',   defaultDir: -1 },
       { key: '_AST',   label: 'AST',   cls: 'right',               defaultDir: -1 },
       { key: '_SPG',   label: 'SPG',   cls: 'right group-start',   defaultDir: -1 },
@@ -130,6 +136,8 @@
       { key: '_BLK',   label: 'BLK',   cls: 'right',               defaultDir: -1 },
       { key: '_TPG',   label: 'TPG',   cls: 'right group-start',   defaultDir: -1 },
       { key: '_TOV',   label: 'TOV',   cls: 'right',               defaultDir: -1 },
+      { key: '_PFPG',  label: 'PFPG',  cls: 'right group-start',   defaultDir:  1 },
+      { key: '_PF',    label: 'PF',    cls: 'right',               defaultDir:  1 },
       { key: '_GMSC',  label: 'GMSC',  cls: 'right group-start',   defaultDir: -1 },
     ];
 
@@ -139,6 +147,9 @@
     // standings-history.csv (the playoff record from the brackets), since a
     // team's games are not the sum of its players'. MPG and GMSC are left out:
     // at team level they are constants or meaningless.
+    const statCols = (from, to) => PLAYER_COLS.slice(
+      PLAYER_COLS.findIndex(c => c.key === from),
+      PLAYER_COLS.findIndex(c => c.key === to) + 1);
     const TEAM_COLS = [
       { key: 'TEAM',   label: 'Team',   cls: 'player-name',         defaultDir:  1 },
       { key: 'SEASON', label: 'Season', cls: 'muted',               defaultDir:  1 },
@@ -146,10 +157,10 @@
       { key: '_W',     label: 'W',      cls: 'right',               defaultDir: -1 },
       { key: '_L',     label: 'L',      cls: 'right',               defaultDir: -1 },
       { key: '_WP',    label: 'W%',     cls: 'right pct',           defaultDir: -1 },
-      ...PLAYER_COLS.slice(5, 16),   // FGM … PTS
+      ...statCols('_FGM', '_PTS'),
       { key: '_OPPG',  label: 'OPPG',   cls: 'right group-start',   defaultDir:  1 },
       { key: '_DIFF',  label: 'DIFF',   cls: 'right',               defaultDir: -1 },
-      ...PLAYER_COLS.slice(16, 26),  // RPG … TOV
+      ...statCols('_RPG', '_PF'),
     ];
 
     // Leader cards. `rate` cards need a made-shots floor as well as the games
@@ -165,6 +176,8 @@
       { key: '_FGP',  name: 'Field goal %',  abbr: 'FG%', made: '_FGM', floor: 300, poFloor: 20 },
       { key: '_3PP',  name: 'Three-point %', abbr: '3P%', made: '_3PM', floor: 82,  poFloor: 10 },
       { key: '_FTP',  name: 'Free throw %',  abbr: 'FT%', made: '_FTM', floor: 125, poFloor: 10 },
+      { key: '_TSP',  name: 'True shooting %', abbr: 'TS%', made: '_FGM', floor: 300, poFloor: 20 },
+      { key: '_ORPG', name: 'Offensive rebounds', abbr: 'ORPG' },
       { key: '_GMSC', name: 'Game Score',    abbr: 'GmSc' },
     ];
     const TEAM_CARDS = [
@@ -173,7 +186,9 @@
       { key: '_OPPG', name: 'Defense',       abbr: 'OPPG', asc: true, po: false },
       { key: '_DIFF', name: 'Point margin',  abbr: 'DIFF', po: false },
       { key: '_RPG',  name: 'Rebounds',      abbr: 'RPG' },
+      { key: '_ORPG', name: 'Offensive rebounds', abbr: 'ORPG' },
       { key: '_APG',  name: 'Assists',       abbr: 'APG' },
+      { key: '_TSP',  name: 'True shooting %', abbr: 'TS%' },
       { key: '_FGP',  name: 'Field goal %',  abbr: 'FG%' },
       { key: '_3PP',  name: 'Three-point %', abbr: '3P%' },
       { key: '_3PM',  name: 'Threes made',   abbr: '3PM', total: true },
@@ -222,6 +237,8 @@
       row._STL  = +row.STL  || 0;
       row._BLK  = +row.BLK  || 0;
       row._TOV  = +row.TOV  || 0;
+      row._PF   = +row.PF   || 0;
+      row._OREB = +row.OREB || 0;
       row._teams = [row.TEAM];
       return recomputeRates(row);
     }
@@ -232,17 +249,24 @@
       row._FGP  = pct(row._FGM, row._FGA);
       row._3PP  = pct(row._3PM, row._3PA);
       row._FTP  = pct(row._FTM, row._FTA);
+      // True shooting uses the NBA's 0.44 free-throw weight.
+      row._TSP  = pct(row._PTS / 2, row._FGA + 0.44 * row._FTA);
+      row._EFGP = pct(row._FGM + 0.5 * row._3PM, row._FGA);
+      row._DREB = row._REB - row._OREB;
       row._PPG  = g ? row._PTS      / g : 0;
       row._RPG  = g ? row._REB      / g : 0;
+      row._ORPG = g ? row._OREB     / g : 0;
+      row._DRPG = g ? row._DREB     / g : 0;
       row._APG  = g ? row._AST      / g : 0;
       row._SPG  = g ? row._STL      / g : 0;
       row._BPG  = g ? row._BLK      / g : 0;
       row._TPG  = g ? row._TOV      / g : 0;
+      row._PFPG = g ? row._PF       / g : 0;
       row._GMSC = g ? row._GMSC_TOT / g : 0;
       return row;
     }
 
-    const SUMS = ['_G','_MIN','_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV','_GMSC_TOT'];
+    const SUMS = ['_G','_MIN','_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV','_PF','_OREB','_GMSC_TOT'];
 
     function aggregateByPlayerSeason(rows) {
       const map = new Map();
@@ -270,11 +294,11 @@
         if (!agg) {
           agg = { TEAM: row.TEAM, SEASON: row.SEASON, _G: 0, _MIN: 0, _GMSC_TOT: 0,
                   _FGM: 0, _FGA: 0, _3PM: 0, _3PA: 0, _FTM: 0, _FTA: 0,
-                  _PTS: 0, _REB: 0, _AST: 0, _STL: 0, _BLK: 0, _TOV: 0 };
+                  _PTS: 0, _REB: 0, _AST: 0, _STL: 0, _BLK: 0, _TOV: 0, _PF: 0, _OREB: 0 };
           map.set(key, agg);
         }
         agg._G = Math.max(agg._G, row._G);   // fallback when there is no record on file
-        ['_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV']
+        ['_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV','_PF','_OREB']
           .forEach(k => { agg[k] += row[k]; });
       });
       return Array.from(map.values()).map(agg => {
@@ -313,9 +337,9 @@
     function cellText(key, row) {
       switch (key) {
         case '_MPG': case '_PPG': case '_RPG': case '_APG': case '_SPG':
-        case '_BPG': case '_TPG': case '_GMSC':
+        case '_BPG': case '_TPG': case '_GMSC': case '_ORPG': case '_DRPG': case '_PFPG':
           return fmt1(row[key]);
-        case '_FGP': case '_3PP': case '_FTP':
+        case '_FGP': case '_3PP': case '_FTP': case '_TSP': case '_EFGP':
           return fmtPct(row[key]);
         case '_W':    return row._W ?? '—';
         case '_L':    return row._L ?? '—';
@@ -416,7 +440,7 @@
       } else {
         const s = state.season === 'all' ? SEASONS[0] : state.season;
         parts.push(`Per-game leaders: at least ${minGames(s)} games`,
-          `percentages also need ${PLAYER_CARDS.filter(c => c.made).map(c => `${minMade(c, s)} ${c.made.slice(1)}`).join(', ')}`);
+          `percentages also need ${[...new Set(PLAYER_CARDS.filter(c => c.made).map(c => `${minMade(c, s)} ${c.made.slice(1)}`))].join(', ')}`);
       }
       if (state.team) parts.push(`only games played for ${state.team}`);
       $('note').textContent = parts.join(' · ') + '.';

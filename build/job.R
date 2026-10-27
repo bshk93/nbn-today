@@ -413,6 +413,7 @@ player_seasons <- dfs %>%
     `3PA`     = sum(`3PA`, na.rm = TRUE),
     FTM       = sum(FTM,   na.rm = TRUE),
     FTA       = sum(FTA,   na.rm = TRUE),
+    OREB      = sum(OR,    na.rm = TRUE),
     GMSC      = sum(GMSC,  na.rm = TRUE),
     LAST_DATE = max(as.Date(DATE), na.rm = TRUE),
     .groups = "drop"
@@ -460,6 +461,7 @@ player_seasons_playoffs <- dfs_playoffs %>%
     `3PA`     = sum(`3PA`, na.rm = TRUE),
     FTM       = sum(FTM,   na.rm = TRUE),
     FTA       = sum(FTA,   na.rm = TRUE),
+    OREB      = sum(OR,    na.rm = TRUE),
     GMSC      = sum(GMSC,  na.rm = TRUE),
     LAST_DATE = max(as.Date(DATE), na.rm = TRUE),
     .groups = "drop"
