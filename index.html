@@ -159,6 +159,56 @@
     .dash-chip.caution   { border-color: var(--gold-border);   background: var(--gold-bg);   color: var(--gold); }
     .dash-chip.ok        { color: var(--text-muted); }
 
+    /* In season: the team's line, its starting five with stats, and the next
+       games as one row. Cap and roster lines fold under the toggle. */
+    .dash-team-snap { display: flex; flex-wrap: wrap; gap: 0.3rem 1.25rem; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+    .dash-s5-head { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.4rem; }
+    .dash-s5-how { font-size: var(--text-xs); color: var(--text-muted); }
+    .dash-s5-edit { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--link); text-decoration: none; white-space: nowrap; }
+    .dash-s5-edit:hover { text-decoration: underline; }
+    .dash-s5 { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+    .dash-s5 th { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); text-align: right; padding: 0 0.4rem 0.25rem; white-space: nowrap; }
+    .dash-s5 th:nth-child(2) { text-align: left; }
+    .dash-s5 td { padding: 0.3rem 0.4rem; text-align: right; border-top: 1px solid var(--border); white-space: nowrap; color: var(--text-secondary); }
+    .dash-s5 td.pos { color: var(--text-muted); font-size: var(--text-xs); text-align: left; width: 2rem; padding-left: 0; }
+    .dash-s5 td.name { text-align: left; white-space: normal; width: 100%; }
+    .dash-s5 td.name a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
+    .dash-s5 td.name a:hover { color: var(--link); }
+    .dash-s5 td.ovr { font-weight: 700; color: var(--text-primary); }
+    .dash-s5 td.spark { padding-right: 0; }
+    .dash-s5 .hot  { color: var(--success); }
+    .dash-s5 .cold { color: var(--danger); }
+    .dash-s5-inj { margin-left: 0.35rem; font-size: var(--text-xs); }
+    .dash-s5-spark { display: block; margin-left: auto; }
+    .dash-s5-spark rect { fill: var(--text-dim); }
+    .dash-s5-spark rect:last-child { fill: var(--accent); }
+    @media (max-width: 600px) { .dash-s5 .wide { display: none; } }
+    .dash-sched { display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: none; }
+    .dash-sched-g {
+      flex: 1 0 6.5rem; display: flex; flex-direction: column; gap: 0.15rem;
+      padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-subtle); color: var(--text-secondary); text-decoration: none; font-size: var(--text-xs);
+    }
+    a.dash-sched-g:hover { border-color: var(--muted-border); color: var(--text-primary); }
+    .dash-sched-g.b2b { border-style: dashed; }
+    .dash-sched-when { color: var(--text-muted); display: flex; justify-content: space-between; gap: 0.3rem; }
+    .dash-sched-opp { display: flex; align-items: center; gap: 0.3rem; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .dash-sched-opp img { height: 16px; width: 16px; object-fit: contain; }
+    .dash-sched-score { font-variant-numeric: tabular-nums; color: var(--text-secondary); min-height: 1rem; }
+    .dash-sched-score .tone-ok { color: var(--success); font-weight: 700; }
+    .dash-sched-score .tone-violation { color: var(--danger); font-weight: 700; }
+    .dash-sched-g.final { background: none; }
+    .dash-team-tabs { margin-bottom: 0.6rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .dash-inj-count { display: inline-block; min-width: 1.1rem; margin-left: 0.25rem; padding: 0 0.3rem; border-radius: 999px; background: var(--danger-bg); color: var(--danger); font-size: var(--text-xs); font-weight: 700; text-align: center; }
+    @media (max-width: 600px) {
+      .dash-team-tabs { display: flex; width: 100%; }
+      .dash-team-tabs > button { flex: 1 1 auto; padding-left: 0.35rem; padding-right: 0.35rem; }
+      .dash-sched { flex-direction: column; overflow: visible; }
+      .dash-sched-g { flex: none; display: grid; grid-template-columns: 6.5rem 1fr auto; align-items: center; gap: 0.5rem; }
+      .dash-sched-when { flex-direction: column; gap: 0; }
+    }
+    .dash-sched-tags { display: flex; gap: 0.25rem; flex-wrap: wrap; min-height: 1rem; }
+
     /* Kind, team and search over the loaded rows. One line on a wide card;
        on a phone the switch keeps its own line and the other two share one. */
     .dash-feed-filters {
@@ -1012,6 +1062,10 @@
         .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
     };
     const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+    const ordinal = n => {
+      const teen = n % 100 >= 11 && n % 100 <= 13;
+      return n + (teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+    };
     // Logo + abbreviation, for a game row that needs to read at a glance
     // rather than by parsing three-letter codes.
     // A link to that team's page. `recs` (TEAM → "12–4") adds the record
@@ -2295,6 +2349,91 @@
         }))
       .catch(() => null);
 
+    // ── Band 1: your team's starting five, in season ───────────────────────
+    //
+    // The same five the slate's click-to-open fives show (`startersFor`: the
+    // saved rotation, else the best legal five by OVR), with each starter's
+    // regular-season per-game line from his game log, his last five games'
+    // points, and his injury if he's on the report.
+    async function renderStarting5(team, season) {
+      const box = $('dash-s5');
+      const [{ set, five }, inj] = await Promise.all([startersFor(team), injuriesPromise]);
+      const injBy = Object.fromEntries(((inj && inj.players) || []).map(p => [p.slug, p]));
+      const logs = await Promise.all(five.map(p => (p
+        ? jget(`/api/players/${encodeURIComponent(p.slug)}/gamelog`).catch(() => []) : Promise.resolve([]))));
+
+      const line = games => {
+        const n = games.length, sum = k => games.reduce((s, g) => s + (g[k] || 0), 0);
+        const fga = sum('fga');
+        return n ? {
+          gp: n, min: sum('min') / n, pts: sum('pts') / n, reb: sum('reb') / n, ast: sum('ast') / n,
+          fg: fga ? sum('fgm') / fga : null,
+        } : null;
+      };
+      const spark = games => {
+        const pts = games.slice(0, 5).reverse().map(g => g.pts || 0);
+        if (!pts.length) return '';
+        const max = Math.max(20, ...pts), w = 6, gap = 2, h = 18;
+        return `<svg class="dash-s5-spark" width="${pts.length * (w + gap) - gap}" height="${h}" aria-hidden="true">`
+          + pts.map((v, i) => { const bh = Math.max(1, Math.round(v / max * h)); return `<rect x="${i * (w + gap)}" y="${h - bh}" width="${w}" height="${bh}" rx="1"></rect>`; }).join('')
+          + '</svg>';
+      };
+      const f1 = v => (v == null ? '—' : v.toFixed(1));
+
+      const rows = DEPTH_SLOTS.map((slot, i) => {
+        const p = five[i];
+        if (!p) return `<tr><td class="pos">${slot}</td><td class="name" style="color:var(--text-muted)">—</td><td colspan="7"></td></tr>`;
+        const games = (logs[i] || []).filter(g => g.season === season && !/PLAYOFF/i.test(g.gametype || ''));
+        const s = line(games), l5 = line(games.slice(0, 5));
+        // Hot or cold: the last five games' scoring a clear step off his season.
+        const trend = s && l5 && s.gp >= 5 && Math.abs(l5.pts - s.pts) >= 3
+          ? (l5.pts > s.pts ? ' class="hot" title="Last 5: ' + f1(l5.pts) + ' PPG"' : ' class="cold" title="Last 5: ' + f1(l5.pts) + ' PPG"') : '';
+        const hurt = injBy[p.slug];
+        const injTag = hurt ? `<span class="dash-s5-inj ui-chip ui-chip--sm ${/^out$/i.test(hurt.status || '') ? 'ui-chip--danger' : 'ui-chip--warning'}" title="${esc([hurt.injury, hurt.duration].filter(Boolean).join(' · '))}">${esc(hurt.status || 'Hurt')}</span>` : '';
+        return `<tr><td class="pos">${slot}</td>`
+          + `<td class="name"><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a>${injTag}</td>`
+          + `<td class="ovr">${p.OVR ? esc(p.OVR) : ''}</td>`
+          + `<td class="wide">${s ? f1(s.min) : '—'}</td>`
+          + `<td${trend}>${s ? f1(s.pts) : '—'}</td><td>${s ? f1(s.reb) : '—'}</td><td>${s ? f1(s.ast) : '—'}</td>`
+          + `<td class="wide">${s && s.fg != null ? s.fg.toFixed(3).replace(/^0/, '') : '—'}</td>`
+          + `<td class="spark wide">${spark(games)}</td></tr>`;
+      }).join('');
+
+      box.querySelector('.dash-s5-how').textContent = set ? 'Your set rotation' : 'Projected by OVR — no rotation saved';
+      box.lastElementChild.outerHTML = '<table class="dash-s5"><thead><tr><th></th><th></th><th>OVR</th>'
+        + '<th class="wide">MIN</th><th>PTS</th><th>REB</th><th>AST</th><th class="wide">FG%</th><th class="wide">Last 5</th></tr></thead>'
+        + `<tbody>${rows}</tbody></table>`;
+    }
+
+    // ── Band 1: your team's injuries, in season ────────────────────────────
+    //
+    // This team's rows from the injury report, Out first then longest, the
+    // same order as the league card. The tab label carries the count so an
+    // injury is seen without opening it.
+    async function renderTeamInjuries(team) {
+      const panel = $('dash-inj');
+      const tab = document.querySelector('.dash-team-tabs > [data-tab="inj"]');
+      const data = await injuriesPromise;
+      if (!data || !data.last_report) {
+        panel.innerHTML = '<div class="dash-s5-how">No injury report on file.</div>';
+        return;
+      }
+      const rows = (data.players || []).filter(p => p.team === team).sort(injOrder);
+      const when = new Date(data.last_report.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (rows.length) tab.innerHTML = `Injuries <span class="dash-inj-count">${rows.length}</span>`;
+      panel.innerHTML = `<div class="dash-s5-head"><span class="dash-s5-how">Report of ${esc(when)}</span>`
+        + `<a class="dash-s5-edit" href="/injuries/?team=${esc(team)}">Full report</a></div>`
+        + (rows.length
+          ? '<table class="dash-s5"><thead><tr><th></th><th>Status</th><th>Injury</th><th>Duration</th></tr></thead><tbody>'
+            + rows.map(p => {
+              const out = /^out$/i.test(p.status || '');
+              return `<tr><td class="name"><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a></td>`
+                + `<td><span class="ui-chip ui-chip--sm ${out ? 'ui-chip--danger' : 'ui-chip--warning'}">${esc(p.status || 'Hurt')}</span></td>`
+                + `<td>${esc(p.injury || '')}</td><td>${esc(p.duration || '')}</td></tr>`;
+            }).join('') + '</tbody></table>'
+          : '<div class="dash-chip ok"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Fully healthy</div>');
+    }
+
     // ── Band 1: your team ─────────────────────────────────────────────────
     mePromise.then(async ctx => {
       if (!ctx || !ctx.team) return;   // signed in, but no active tenure
@@ -2451,8 +2590,101 @@
           }));
       }
 
+      // ── In season the card leads with the team: its line, its five, and the
+      // next games as one row. The cap lines and chips fold under the toggle.
+      const inSeason = ph.phase === 'in-season';
+      let leadHtml = '';
+      if (inSeason) {
+        const done = (Array.isArray(results) ? results : []).filter(g => g.date <= today)
+          .sort((a, b) => b.date.localeCompare(a.date));
+        const won = g => (g.home_team === team) === (Number(g.home_score) > Number(g.away_score));
+        const snap = [];
+        // Conference rank by win percentage, from this season's standings.
+        const east = (typeof TEAM_DIVISIONS !== 'undefined' ? TEAM_DIVISIONS : []).slice(0, 3).flatMap(d => d[1]);
+        if (cur && east.length) {
+          const isEast = east.includes(team);
+          const conf = standings.filter(r => r.SEASON === season && east.includes(r.TEAM) === isEast)
+            .sort((a, b) => (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0) || (b.W - a.W));
+          const i = conf.findIndex(r => r.TEAM === team);
+          if (i >= 0) snap.push(`<a class="dash-glance" href="/standings/"><span class="dash-line-label">${isEast ? 'East' : 'West'}</span> ${ordinal(i + 1)}</a>`);
+        }
+        if (done.length) {
+          const w0 = won(done[0]);
+          let n = 0;
+          while (n < done.length && won(done[n]) === w0) n++;
+          snap.push(`<span><span class="dash-line-label">Streak</span> <span class="${w0 ? 'tone-ok' : 'tone-violation'}">${w0 ? 'W' : 'L'}${n}</span></span>`);
+          const l10 = done.slice(0, 10), lw = l10.filter(won).length;
+          if (done.length > 5) snap.push(`<span><span class="dash-line-label">L${l10.length}</span> ${lw}–${l10.length - lw}</span>`);
+        }
+        const num = v => (v === undefined || v === '' || isNaN(parseFloat(v)) ? null : parseFloat(v));
+        if (cur && num(cur.PPG) != null) snap.push(`<span><span class="dash-line-label">PPG</span> ${num(cur.PPG).toFixed(1)}</span>`);
+        if (cur && num(cur.OPPG) != null) snap.push(`<span><span class="dash-line-label">Opp</span> ${num(cur.OPPG).toFixed(1)}</span>`);
+        if (cur && num(cur.DIFF) != null) {
+          const d = num(cur.DIFF);
+          snap.push(`<span><span class="dash-line-label">Diff</span> <span class="${d > 0 ? 'tone-ok' : d < 0 ? 'tone-violation' : ''}">${d > 0 ? '+' : ''}${d.toFixed(1)}</span></span>`);
+        }
+        if (cur && num(cur.OFF_RTG) != null && num(cur.DEF_RTG) != null) {
+          // Opponent-adjusted, signed like the team page's Season History:
+          // above zero is better than the opponents' norm, on either end.
+          const rtg = (label, v) => `<span><span class="dash-line-label">${label}</span> `
+            + `<span class="${v > 0 ? 'tone-ok' : v < 0 ? 'tone-violation' : ''}">${v > 0 ? '+' : ''}${v.toFixed(1)}</span></span>`;
+          snap.push(rtg('Off', num(cur.OFF_RTG)), rtg('Def', num(cur.DEF_RTG)));
+        }
+        if (snap.length) leadHtml += `<div class="dash-sep"></div><div class="dash-team-snap dash-team-glance" style="margin-top:0">${snap.join('')}</div>`;
+
+        // Schedule tab: the last two results and the next three games, as one
+        // row of tiles. A dashed edge marks the second night of a back-to-back.
+        const schedTiles = [];
+        done.slice(0, 2).reverse().forEach(g => {
+          const home = g.home_team === team, opp = home ? g.away_team : g.home_team;
+          const [us, them] = home ? [g.home_score, g.away_score] : [g.away_score, g.home_score];
+          schedTiles.push(`<a class="dash-sched-g final" href="/boxscores/?date=${esc(g.date)}&game=${esc(g.away_team)}-${esc(g.home_team)}">`
+            + `<span class="dash-sched-when"><span>${esc(relDate(g.date))}</span><span>Final</span></span>`
+            + `<span class="dash-sched-opp"><span style="color:var(--text-muted);font-weight:400">${home ? 'vs' : '@'}</span>`
+            + `<img src="/logos/sm/logo-${esc(opp.toLowerCase())}.webp" alt="">${esc(opp)}</span>`
+            + `<span class="dash-sched-score"><span class="${won(g) ? 'tone-ok' : 'tone-violation'}">${won(g) ? 'W' : 'L'}</span> ${esc(us)}–${esc(them)}</span></a>`);
+        });
+        let prev = done.length ? done[0].date : null;
+        mine.slice(0, 3).forEach(g => {
+          const home = g.home_team === team;
+          const opp = home ? g.away_team : g.home_team;
+          const b2b = prev && dayBefore(g.date, 1) === prev;
+          prev = g.date;
+          const rec = recs && recs[opp] ? `<span class="dash-game-rec">${esc(recs[opp])}</span>` : '';
+          const tags = (b2b ? '<span class="ui-chip ui-chip--sm" title="Second night of a back-to-back">B2B</span>' : '')
+            + (g.stream ? `<span class="ui-chip ui-chip--sm ui-chip--warning" title="${esc('Stream game' + (g.streamer ? `, streamed by ${g.streamer}` : ''))}">Stream</span>` : '');
+          schedTiles.push(`<a class="dash-sched-g${b2b ? ' b2b' : ''}" href="${previewHref(g)}">`
+            + `<span class="dash-sched-when"><span>${esc(relDate(g.date))}</span><span>${esc(g.time_et || '')}</span></span>`
+            + `<span class="dash-sched-opp"><span style="color:var(--text-muted);font-weight:400">${home ? 'vs' : '@'}</span>`
+            + `<img src="/logos/sm/logo-${esc(opp.toLowerCase())}.webp" alt="">${esc(opp)} ${rec}</span>`
+            + `<span class="dash-sched-tags">${tags}</span></a>`);
+        });
+
+        const tabs = [
+          ['s5', 'Starting 5', '<div class="dash-s5-head"><span class="dash-s5-how"></span>'
+            + `<a class="dash-s5-edit" href="/teams/${esc(abbr)}/#coaching">Edit lineup</a></div>`
+            + '<div class="dash-s5-how">Loading…</div>'],
+          ['matchup', 'Matchup', mine.length
+            ? `<div class="dash-s5-head"><span class="dash-s5-how">${mine[0].home_team === team ? 'vs' : '@'} `
+              + `${esc(mine[0].home_team === team ? mine[0].away_team : mine[0].home_team)} · ${esc(relDate(mine[0].date))}`
+              + `${mine[0].time_et ? ' ' + esc(mine[0].time_et) : ''}</span>`
+              + `<a class="dash-s5-edit" href="${previewHref(mine[0])}">Game preview</a></div><div></div>`
+            : '<div class="dash-s5-how">No game on file.</div>'],
+          ['sched', 'Schedule', schedTiles.length
+            ? `<div class="dash-sched">${schedTiles.join('')}</div>`
+              + `<div class="dash-s5-head" style="margin:0.4rem 0 0"><a class="dash-s5-edit" href="/teams/${esc(abbr)}/#schedule">Full schedule</a></div>`
+            : '<div class="dash-s5-how">No games on file.</div>'],
+          ['inj', 'Injuries', '<div class="dash-s5-how">Loading…</div>'],
+        ];
+        leadHtml += '<div id="dash-alert-slot"></div><div class="dash-sep"></div>'
+          + '<div class="ui-segmented dash-team-tabs" role="tablist" aria-label="Your team">'
+          + tabs.map(([k, label]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="false" aria-pressed="false">${label}</button>`).join('')
+          + '</div>'
+          + tabs.map(([k, , body]) => `<div class="dash-team-panel" id="dash-${k}" role="tabpanel" hidden>${body}</div>`).join('');
+      }
+
       // ── Next games
-      if (mine.length) {
+      if (mine.length && !inSeason) {
         html += '<div class="dash-sep"></div><div class="dash-games dash-games--wide">'
           + mine.slice(0, 5).map(g => {
             const home = g.home_team === team;
@@ -2466,22 +2698,63 @@
       }
 
       html += '<div class="dash-sep"></div><div class="dash-chips" id="dash-chips"></div>';
-      card.innerHTML = headHtml + glanceHtml + `<div class="dash-team-more" id="dash-team-more" hidden>${html}</div>`;
+      card.innerHTML = headHtml + glanceHtml + leadHtml + `<div class="dash-team-more" id="dash-team-more" hidden>${html}</div>`;
       card.hidden = false;
-
-      // Open or closed is remembered per browser; closed unless you opened it.
       const moreEl = $('dash-team-more'), toggle = $('dash-team-toggle');
-      const setOpen = open => {
-        moreEl.hidden = !open;
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.textContent = open ? 'Less ▴' : 'More ▾';
-      };
-      try { setOpen(localStorage.getItem('nbn_dash_team_open') === '1'); } catch { setOpen(false); }
-      toggle.addEventListener('click', () => {
-        const open = moreEl.hidden;
-        setOpen(open);
-        try { localStorage.setItem('nbn_dash_team_open', open ? '1' : '0'); } catch {}
-      });
+
+      if (inSeason) {
+        // In season the cap lines are left out: they move at the deadline
+        // and in the offseason, not night to night. The chips stay, as a strip
+        // above the tabs that shows only when something is there (paintChips).
+        // The open tab is remembered per browser; Starting 5 by default.
+        const capLines = moreEl.querySelector('.dash-lines');
+        if (capLines) { capLines.previousElementSibling.remove(); capLines.remove(); }
+        $('dash-alert-slot').replaceWith(moreEl);
+        toggle.hidden = true;
+        let s5Loaded = false;
+        const loaded = {};
+        const show = key => {
+          card.querySelectorAll('.dash-team-tabs > button').forEach(b => {
+            const on = b.dataset.tab === key;
+            b.setAttribute('aria-selected', String(on));
+            b.setAttribute('aria-pressed', String(on));
+          });
+          card.querySelectorAll('.dash-team-panel').forEach(p => { p.hidden = p.id !== `dash-${key}`; });
+          if (key === 'matchup' && !loaded.matchup && mine.length) {
+            loaded.matchup = true;
+            renderFives($('dash-matchup').lastElementChild, mine[0].away_team, mine[0].home_team);
+          }
+          if (key === 's5' && !s5Loaded) {
+            s5Loaded = true;
+            renderStarting5(team, season).catch(() => {
+              $('dash-s5').lastElementChild.textContent = 'Lineup unavailable.';
+            });
+          }
+        };
+        renderTeamInjuries(team);
+        let first = 's5';
+        try { first = localStorage.getItem('nbn_dash_team_tab') || 's5'; } catch {}
+        show(card.querySelector(`.dash-team-tabs > [data-tab="${CSS.escape(first)}"]`) ? first : 's5');
+        card.querySelector('.dash-team-tabs').addEventListener('click', e => {
+          const b = e.target.closest('button[data-tab]');
+          if (!b) return;
+          show(b.dataset.tab);
+          try { localStorage.setItem('nbn_dash_team_tab', b.dataset.tab); } catch {}
+        });
+      } else {
+        // Open or closed is remembered per browser; closed unless you opened it.
+        const setOpen = open => {
+          moreEl.hidden = !open;
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.textContent = open ? 'Less ▴' : 'More ▾';
+        };
+        try { setOpen(localStorage.getItem('nbn_dash_team_open') === '1'); } catch { setOpen(false); }
+        toggle.addEventListener('click', () => {
+          const open = moreEl.hidden;
+          setOpen(open);
+          try { localStorage.setItem('nbn_dash_team_open', open ? '1' : '0'); } catch {}
+        });
+      }
 
       const chipBox = $('dash-chips');
       let settled = 0;
@@ -2504,6 +2777,7 @@
           : settled >= EXPECTED ? 'All clear' : '';
         if (!act && !notes && settled >= EXPECTED) status.dataset.icon = 'check';
         else delete status.dataset.icon;
+        if (inSeason) moreEl.hidden = !chips.length;
         if (!chips.length) {
           chipBox.innerHTML = settled >= EXPECTED
             ? '<span class="dash-chip ok"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Nothing needs you right now</span>'
