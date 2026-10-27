@@ -1150,7 +1150,12 @@
     function phaseOf(games) {
       if (!games || !games.length) return { phase: 'unknown' };
       const dates = games.map(g => g.date).sort();
-      const first = dates[0], last = dates[dates.length - 1];
+      return phaseFromRange(dates[0], dates[dates.length - 1]);
+    }
+    // The same reading off the schedule's first and last dates alone, which
+    // is what GET /api/home/team sends instead of the whole league schedule.
+    function phaseFromRange(first, last) {
+      if (!first || !last) return { phase: 'unknown' };
       if (today < first) return { phase: 'preseason', first, last };
       if (today > last) return { phase: 'offseason', first, last };
       return { phase: 'in-season', first, last };
@@ -1390,10 +1395,14 @@
 
     // `wide`: the team card's Matchup tab, which has the room for full names
     // and each starter's PPG this season.
-    async function renderFives(el, away, home, { wide = false, season = '' } = {}) {
+    // `pre`: a team's five and lines already in hand (`{TEAM: {set, five,
+    // lines}}`, from the team card's one request), so Matchup asks for nothing.
+    async function renderFives(el, away, home, { wide = false, season = '', pre = {} } = {}) {
       el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Loading…</div></div>';
-      const [a, h, la, lh] = await Promise.all([startersFor(away), startersFor(home),
-        wide ? seasonLines(away, season) : {}, wide ? seasonLines(home, season) : {}]).catch(() => [null, null]);
+      const fiveOf = t => pre[t] || startersFor(t);
+      const linesOf = t => (!wide ? {} : pre[t] ? pre[t].lines || {} : seasonLines(t, season));
+      const [a, h, la, lh] = await Promise.all([fiveOf(away), fiveOf(home), linesOf(away), linesOf(home)])
+        .catch(() => [null, null]);
       if (!a || !h || (!a.five.some(Boolean) && !h.five.some(Boolean))) {
         el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Lineups unavailable.</div></div>';
         return;
@@ -2517,23 +2526,50 @@
       const abbr = team.toLowerCase();
       const card = $('dash-team');
 
-      // Started before the card waits on anything: Starting 5's lineup and
-      // lines (in season only), and the cap row, which only the chips and the
-      // off-season cap lines read, so the card never waits on it.
-      const s5Prefetch = schedulePromise.then(s => (phaseOf(s && s.games).phase === 'in-season'
-        ? Promise.all([startersFor(team), seasonLines(team), injuriesPromise]) : null)).catch(() => null);
-      const capPromise = jget('/api/cap-history/current').catch(() => null);
-
-      const [sched, standings, recs, results] = await Promise.all([
-        schedulePromise,
-        standingsPromise,
-        recordsPromise,
-        // This season's results, newest first, for the "Last" line.
-        nbnCurrentSeason().then(s => jget(`/api/boxscores/games?team=${team}&season=${s}`)).catch(() => []),
-      ]);
+      // The whole card in one request (GET /api/home/team): its games,
+      // results, standings, cap row, injuries, and both teams' fives and lines
+      // for Starting 5 and Matchup. Over HTTP/1.1 that is one place in the
+      // browser's queue instead of a dozen. `?asof=` replays an earlier date,
+      // which the endpoint doesn't do, so it keeps the page-wide fetches below;
+      // so does an API that predates the endpoint.
+      const bundle = asof ? null : await jget(`/api/home/team/${encodeURIComponent(team)}`).catch(() => null);
       if (gen !== cardGen) return;
 
-      const ph = phaseOf(sched && sched.games);
+      let sched, standings, recs, results, ph, s5Prefetch, capPromise;
+      const fivesPre = {};
+      if (bundle) {
+        // The fives in the shape `startersFor` returns, so Starting 5 and
+        // Matchup read them unchanged.
+        const asFive = f => ({ set: !!f.set, five: (f.players || []).map(p => p && {
+          slug: p.slug, name: p.name, type: p.type, OVR: p.ovr || 0, _posList: p.pos || [] }) });
+        sched = { season: bundle.season, games: bundle.games || [] };
+        ph = phaseFromRange(bundle.schedule_first, bundle.schedule_last);
+        standings = bundle.standings || [];
+        results = bundle.results || [];
+        const live = ph.phase === 'in-season' ? standings.filter(r => r.SEASON === bundle.season) : [];
+        recs = live.length ? Object.fromEntries(live.map(r => [r.TEAM, `${r.W}–${r.L}`])) : null;
+        capPromise = Promise.resolve({ entries: bundle.cap ? [bundle.cap] : [] });
+        fivesPre[team] = { ...asFive(bundle.five || {}), lines: bundle.lines || {} };
+        if (bundle.opponent) fivesPre[bundle.opponent.team] = { ...asFive(bundle.opponent.five || {}), lines: bundle.opponent.lines || {} };
+        s5Prefetch = Promise.resolve(ph.phase === 'in-season'
+          ? [fivesPre[team], fivesPre[team].lines, bundle.injuries || { players: [] }] : null);
+      } else {
+        // Started before the card waits on anything: Starting 5's lineup and
+        // lines (in season only), and the cap row, which only the chips and
+        // the off-season cap lines read, so the card never waits on it.
+        s5Prefetch = schedulePromise.then(s => (phaseOf(s && s.games).phase === 'in-season'
+          ? Promise.all([startersFor(team), seasonLines(team), injuriesPromise]) : null)).catch(() => null);
+        capPromise = jget('/api/cap-history/current').catch(() => null);
+        [sched, standings, recs, results] = await Promise.all([
+          schedulePromise,
+          standingsPromise,
+          recordsPromise,
+          // This season's results, newest first, for the "Last" line.
+          nbnCurrentSeason().then(s => jget(`/api/boxscores/games?team=${team}&season=${s}`)).catch(() => []),
+        ]);
+        if (gen !== cardGen) return;
+        ph = phaseOf(sched && sched.games);
+      }
       const season = (sched && sched.season) || '';
 
       // ── Header: who you are, and where the league year is
@@ -2814,7 +2850,7 @@
           if (l) { link.href = l[0]; link.textContent = l[1]; }
           if (key === 'matchup' && !loaded.matchup && mine.length) {
             loaded.matchup = true;
-            renderFives($('dash-matchup'), mine[0].away_team, mine[0].home_team, { wide: true, season });
+            renderFives($('dash-matchup'), mine[0].away_team, mine[0].home_team, { wide: true, season, pre: fivesPre });
           }
           if (key === 's5' && !s5Loaded) {
             s5Loaded = true;
