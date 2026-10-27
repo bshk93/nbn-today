@@ -2422,7 +2422,7 @@
       const when = new Date(data.last_report.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       if (rows.length) tab.innerHTML = `Injuries <span class="dash-inj-count">${rows.length}</span>`;
       panel.innerHTML = `<div class="dash-s5-head"><span class="dash-s5-how">Report of ${esc(when)}</span>`
-        + `<a class="dash-s5-edit" href="/injuries/?team=${esc(team)}">Full report →</a></div>`
+        + `<a class="dash-s5-edit" href="/injuries/?team=${esc(team)}">Full report</a></div>`
         + (rows.length
           ? '<table class="dash-s5"><thead><tr><th></th><th>Status</th><th>Injury</th><th>Duration</th></tr></thead><tbody>'
             + rows.map(p => {
@@ -2662,17 +2662,17 @@
 
         const tabs = [
           ['s5', 'Starting 5', '<div class="dash-s5-head"><span class="dash-s5-how"></span>'
-            + `<a class="dash-s5-edit" href="/teams/${esc(abbr)}/#coaching">Edit lineup →</a></div>`
+            + `<a class="dash-s5-edit" href="/teams/${esc(abbr)}/#coaching">Edit lineup</a></div>`
             + '<div class="dash-s5-how">Loading…</div>'],
           ['matchup', 'Matchup', mine.length
             ? `<div class="dash-s5-head"><span class="dash-s5-how">${mine[0].home_team === team ? 'vs' : '@'} `
               + `${esc(mine[0].home_team === team ? mine[0].away_team : mine[0].home_team)} · ${esc(relDate(mine[0].date))}`
               + `${mine[0].time_et ? ' ' + esc(mine[0].time_et) : ''}</span>`
-              + `<a class="dash-s5-edit" href="${previewHref(mine[0])}">Game preview →</a></div><div></div>`
+              + `<a class="dash-s5-edit" href="${previewHref(mine[0])}">Game preview</a></div><div></div>`
             : '<div class="dash-s5-how">No game on file.</div>'],
           ['sched', 'Schedule', schedTiles.length
             ? `<div class="dash-sched">${schedTiles.join('')}</div>`
-              + `<div class="dash-s5-head" style="margin:0.4rem 0 0"><a class="dash-s5-edit" href="/teams/${esc(abbr)}/#schedule">Full schedule →</a></div>`
+              + `<div class="dash-s5-head" style="margin:0.4rem 0 0"><a class="dash-s5-edit" href="/teams/${esc(abbr)}/#schedule">Full schedule</a></div>`
             : '<div class="dash-s5-how">No games on file.</div>'],
           ['inj', 'Injuries', '<div class="dash-s5-how">Loading…</div>'],
         ];
