@@ -364,6 +364,7 @@
         <tbody>
           ${line('Record', r => `${r.W}-${r.L}`)}
           ${line('Finish', r => esc(r.IN_PROGRESS ? 'TBD' : (FINISH[r.PLAYOFF_RESULT] || '')))}
+          ${line('Market', r => r.MARKET == null || r.MARKET === '' ? '—' : (+r.MARKET).toFixed(2) + '×')}
           ${line('Jersey patch', r => r.JERSEY_PATCH ? `<span class="fo-patch">${esc(r.JERSEY_PATCH)}</span>` : '—')}
           ${line('Average crowd', r => r.HOME_GAMES ? r.AVG_ATTENDANCE.toLocaleString() : '—')}
           ${line('Sellouts', r => r.HOME_GAMES ? r.SELLOUTS : '—')}
@@ -372,7 +373,7 @@
           ${line('Playoff ticket sales', r => r.PLAYOFF_GATE ? money(r.PLAYOFF_GATE) : '—')}
           ${line('Concessions and parking', r => money(r.CONCESSIONS))}
           ${line('Merchandise', r => money(r.MERCH))}
-          ${line('TV money', r => money(r.MEDIA))}
+          ${line('TV and sponsors', r => money(r.MEDIA))}
           ${line('NBNTV stream bonus', r => r.NBNTV ? money(r.NBNTV, 1) : '—')}
           ${line('Championship bonus', r => r.TITLE_BONUS ? money(r.TITLE_BONUS) : '—')}
           ${payrollEra('Share of other teams\' luxury tax', r => r.TAX_SHARE ? money(r.TAX_SHARE, 1) : '—')}
@@ -408,7 +409,7 @@
       document.querySelectorAll('#board tbody tr').forEach(tr =>
         tr.addEventListener('click', () => pickTeam(tr.dataset.team)));
       document.getElementById('model-note').textContent =
-        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)}, and market size doesn't count. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll affects profit only, not value.`;
+        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)} with a market of 1.0×. Winning grows a market and losing shrinks it, which scales ticket prices, merchandise and local TV. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll affects profit only, not value.`;
     }
 
     // ── Owners: best stewards and money pits ───────────────────────────────

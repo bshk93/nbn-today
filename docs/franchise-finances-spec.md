@@ -15,9 +15,12 @@ and to give NBN Today and Discord something to roast.
 
 - **Cosmetic only.** No link to NB¥ balances, the cap, the validators or the
   rulebook. Nothing here goes through `nbn-api/routers/wallet.py`.
-- **Equal markets.** Every team has the same arena, ticket price and media
-  deal, and starts at the same valuation. Every difference comes from what
-  happened on the court.
+- **Markets are earned (v3, 2026-10-26).** Every team has the same arena and
+  starts at the same valuation and a market of 1.0. Market grows with success
+  and shrinks without it (see "Market" below), so every difference still comes
+  from what happened on the court. A city's real size never counts: this
+  replaced "equal markets" because the spread was too narrow (1.7×, against
+  the NBA's ~3×), and the user chose success over real market size.
 - **No owner levers.** No ticket pricing, no decisions. Nobody can play it.
 - **Tongue in cheek.** Line items, headlines and labels are written for laughs.
   The numbers stay plausible.
@@ -71,7 +74,7 @@ All amounts in NB¥. Starting constants, to be tuned against the sanity checks.
 
 ### 1. Regular-season gate — per home game
 
-`gate = 19,000 seats × ¥120 × fill`
+`gate = 19,000 seats × ¥120 × market × fill`
 
 `fill` for one home game, clamped to `[0.45, 1.00]`:
 
@@ -99,18 +102,39 @@ the page should say so.
 
 ### 3. Merch
 
-Flat base ¥40M, plus: ¥10M per All-NBN player, ¥15M for an MVP, ¥6M for a
+Base ¥40M × market, plus: ¥10M per All-NBN player, ¥15M for an MVP, ¥6M for a
 ROTY, ¥30M for a title.
 
 ### 4. Media
 
-Flat league share, ¥150M, the same for everyone. Plus the **NBNTV bonus**:
+National TV ¥150M, the same for everyone, plus local TV and sponsors at
+¥80M × market (v3). One `MEDIA` column holds both. Plus the **NBNTV bonus**:
 ¥1.5M per streamed game the team plays in (home or away), from 26-27 on.
 
 The stream bonus starts in 26-27 because stream flags only exist from then.
 Every team gets streamed games, so it should read as a small league-wide step
 that season rather than a jump for one team. The sanity checks confirm it stays
 small.
+
+### Market (v3)
+
+How much a city spends on its team, as a multiplier on the ticket price, base
+merch and local media. Concessions are per head, so they follow the crowd and
+not the market.
+
+- Everyone opens 20-21 at **1.0**.
+- After each finished season: `1 + (market − 1) × 0.85 + step + 0.30 × (win % − .500)`,
+  clamped to `[0.5, 2.0]`. The step is title +0.16, Finals loss +0.11, conf
+  finals +0.07, second round +0.04, first round +0.02, missed −0.03.
+- Then the league is re-centred so the mean market is 1.0 every season. It is
+  relative: winners grow at losers' expense, and the multiple alone carries
+  league-wide growth, so the league average shows no step.
+- A season's market reads only seasons already finished, so it doesn't move
+  during a season.
+
+By 26-27 this runs from CHA 0.51 to PHX ~1.7. Fair value projects it: each
+later season grows from the season before's simulated finish odds and win %,
+re-centred the same way.
 
 ### 5. Championship bonus
 
@@ -205,8 +229,8 @@ Pinned as a test once built:
 
 - A champion's value rises in its title season.
 - A team that misses the playoffs every season ends below the league average.
-- Six-season spread: top ÷ bottom valuation between 1.3× and 2×. Wider means a
-  term is too strong.
+- Spread: top ÷ bottom valuation between 1.8× and 3× (v3; it was 1.3–2× with
+  equal markets). The NBA's is about 3×; wider means a term is too strong.
 - No visible step at 25-26 or 26-27, where new data sources begin. Valuation
   doesn't read payroll or the stream bonus, so any step there is a bug.
 - Fill-rate distribution looks real: some sellouts every season, few games at
