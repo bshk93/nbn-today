@@ -656,6 +656,8 @@
     .dash-five-box.wide .dash-five-row { padding: 0.3rem 0; }
     .dash-five-cols { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-align: center; }
     .dash-five-cols + .dash-five-row { border-top: none !important; }
+    .dash-five-box.wide .dash-five-row.dash-five-avg { border-top: 1px solid var(--border); margin-top: 0.15rem; color: var(--text-muted); }
+    .dash-five-avg .dash-five-ovr { color: var(--text-secondary); font-weight: 600; }
     .dash-five-ppg { text-align: center; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
     .dash-five-last { display: none; }
     @media (max-width: 600px) {
@@ -1423,7 +1425,11 @@
           }).join('')
         // The wide variant drops whose five is set: the card already says
         // when your own is projected, on the Starting 5 tab.
-        + `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}${wide ? '' : `<br>${how}`}</div>`
+        + (wide
+          // A row of the grid, so each average sits under its own OVR column.
+          ? `<div class="dash-five-row dash-five-avg"><span></span><span></span><span class="dash-five-ovr">${avg(a)}</span>`
+            + `<span class="dash-five-slot">AVG</span><span class="dash-five-ovr">${avg(h)}</span><span></span><span></span></div>`
+          : `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}<br>${how}</div>`)
         + '</div>';
     }
 
