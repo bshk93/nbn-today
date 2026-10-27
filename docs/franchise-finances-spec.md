@@ -353,6 +353,43 @@ affects days after it.
   ten days of history. P/S lands around 10–12×, which is where real NBA
   franchises trade.
 
+### Free agency, and what was tried for GM skill (fv3, 2026-10-27)
+
+The user asked for cap space to be worth something and for a GM premium.
+
+- **Free agency.** Before fv3, a player whose team let him walk was gone from
+  the projection, and his spot was filled at replacement level, so a team
+  with ¥40M of room looked no better than one with none. Now everyone who
+  walks, league-wide, is a pool (`free_agency`). Best OVR first, each goes to
+  the biggest offer that has a roster spot: cap room, else the NTMLE under
+  the first apron, else the TMLE under the second (`fa_budget`). Between
+  equal offers he picks the team rated higher the season before. Without that
+  rule the alphabet decided every MLE tie, and TOR, MIL and SAS gained from
+  it. His price is `fa_ask`: ln(share of cap) = −12.946 + 0.1278·OVR, fit on
+  the 2026 offseason's 50 signings above ¥4M (minimums out, Bird re-signings
+  in, ±0.44), capped at 35% of the cap. He takes down to 65% of it (one sd)
+  rather than not sign, and never goes back to the team that let him walk. A
+  signing stays on the books at that salary through the projection.
+- **The re-sign ceiling moved from the first apron to the second, plus a
+  bargain rule.** At the first apron, OKC let SGA (97 OVR, ¥57M hold) walk in
+  27-28. A team now re-signs under the second apron, and past it anyone whose
+  `fa_ask` is at least his hold. That re-sign change is most of fv3's effect:
+  OKC +5.4%.
+- **Effect on 2026-10-27:** −2.5% (POR) to +5.4% (OKC), and the spread
+  stays at 2.17×. There are 14 signings across 27-28 and 28-29: most teams
+  sit between the cap and the first apron, so the MLE does most of the work.
+  Cap room only wins a player who asks more than the MLE.
+- **GM skill: measured, not built.** The test was whether a GM's past seasons
+  predict next season's point differential beyond what this season's does.
+  The data: 150 team-season pairs, 20-21 to 25-26, owners from `owners.csv`.
+  Next season keeps 0.42 of this season's margin. A GM's past mean
+  residual, held out, correlates −0.03 with the next one. The between-GM
+  variance comes out below the noise (method of moments goes negative).
+  Adding a GM's past mean margin to the regression gets a coefficient of
+  −0.01. A new GM's first season is −1.7 ± 1.7, not distinguishable from 0.
+  Five seasons is too short to separate skill from luck, and any skill there
+  is already in the roster the model prices. Revisit with more seasons.
+
 ### Outlook season and the market price (2026-10-27)
 
 The user's aim, in their words: "realistic stock price series".

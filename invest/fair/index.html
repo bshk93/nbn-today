@@ -184,9 +184,18 @@
         · Season range <b>¥${t.lo.toFixed(2)}–¥${t.hi.toFixed(2)}</b> · Beta <b>${t.beta == null ? `— <span class="muted">(after ${BETA_MIN_DAYS} days)</span>` : t.beta.toFixed(2)}</b>
       </div>`;
     const picks = (t.picks || []).filter(p => p.round === 1);
+    const nm = p => esc(p.name ? nbnPlayerName(p.name) : p.slug);
+    const faLine = yrs.slice(1).map(y => {
+      const signs = (y.fa_signed || []).map(p => `${nm(p)} (${Math.round(p.ovr)} OVR, ${yen(p.salary)}, from ${esc(p.from)})`);
+      const leaves = (y.walked || []).filter(p => p.ovr != null && p.ovr > run.league.replacement_ovr)
+        .map(p => `${nm(p)}${p.to ? ` to ${esc(p.to)}` : ''}`);
+      if (!signs.length && !leaves.length) return '';
+      return `${esc(y.season)}: ${signs.length ? `signs ${signs.join(', ')}` : ''}${signs.length && leaves.length ? '; ' : ''}${leaves.length ? `loses ${leaves.join(', ')}` : ''}.`;
+    }).filter(Boolean);
+    const faHtml = faLine.length ? `<div class="fv-sum">Projected free agency: ${faLine.join(' ')}</div>` : '';
     const pickLine = picks.length ? `<div class="fv-sum">First-round picks in the next two drafts: ${picks.map(p =>
         `${p.year} ${p.orig === t.team ? 'own' : esc(p.orig)}${p.share < 1 ? ` (${Math.round(p.share * 100)}% share)` : ''}, projected ${ord(p.slot)}, about ${Math.round(p.ovr)} OVR`).join('; ')}.</div>` : '';
-    return keyStats + pickLine + `<div class="fv-sum">
+    return keyStats + pickLine + faHtml + `<div class="fv-sum">
         Value <b>${yen(t.value, 'B')}</b> = PV of profit <b>${signedYen(t.pv_in - t.pv_out)}</b>
         + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
         (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
@@ -195,7 +204,7 @@
       </div>
       <div class="fv-scroll"><table class="fv-years"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>
       <div class="muted" style="font-size:var(--text-xs);margin-bottom:var(--space-3)">
-        Strength is the minutes-weighted OVR of the top eight. Later seasons count only who is under contract or re-signed, aged a year per season; payroll shows how many players that is.
+        Strength is the minutes-weighted OVR of the top eight. Later seasons count only who is under contract, re-signed or signed in free agency, aged a year per season; payroll shows how many players that is.
         This season's PV counts only what is left of it.
       </div>
       ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price and fair value by day"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
@@ -274,7 +283,8 @@
       <p><b>Buzz</b> is a team's form over its last ten games: its margins, adjusted for how good each opponent is. It raises or cuts ticket prices and merchandise on top of the market. The rest of this season starts from today's buzz and settles at what the team's rating would sustain, so a hot streak pays now and a cold one costs now.</p>
       <p><b>Draft picks</b> count once the player is on the roster within the three projected seasons, so only the next two drafts matter. A pick's player is rated from where it is projected to land (a top pick is about 81 OVR, a late first about 70) and improves with age. A pick that more than one team has a claim on, through a swap or protection, is shared equally between them.</p>
       <p><b>Injuries</b> count against this season's strength. An Out player is missing until his expected return (the middle of 2K's estimate, from the report that set it), a Hurt one plays at his injured OVR, each for the share of the remaining games he misses.</p>
-      <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
+      <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the second apron, and keeps anyone past it whose market price is at least his hold.</p>
+      <p><b>Free agency.</b> Everyone who leaves, across the league, is the free agent pool. Best first, each signs with whoever offers the most: cap room, else the mid-level exception the team's payroll allows. Between equal offers he picks the better team. His price is what this past summer's signings paid for his OVR (an 80 about ¥11M, an 84 about ¥18M, an 88 about ¥30M), up to the max. He will take somewhat less rather than not sign, and he never goes back to the team that let him go. So cap room is worth something, but only when there is someone worth more than the mid-level to spend it on. Spots still empty are filled by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
       <p>As the season goes by, every price drifts up a little from discounting alone, so compare a team with the NBN 30 rather than with its own past. A day's move is labelled with what happened to the team; on a day with no news it is the market's mood, or the piece of fair value that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
       ${rebuilt.length ? `<p>The model started on 2026-10-24. Earlier days (${esc(rebuilt[0])} to ${esc(rebuilt[rebuilt.length - 1])}) were rebuilt afterwards from each day's games, with today's rosters and contracts. Nothing bigger than a depth signing changed in that window.</p>` : ''}
