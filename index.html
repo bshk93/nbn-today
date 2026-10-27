@@ -199,7 +199,7 @@
     .dash-sched-score .tone-violation { color: var(--danger); font-weight: 700; }
     .dash-sched-g.final { background: none; }
     .dash-team-tabs { margin-bottom: 0.6rem; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-    .dash-inj-count { display: inline-block; min-width: 1.1rem; margin-left: 0.25rem; padding: 0 0.3rem; border-radius: 999px; background: var(--danger-bg); color: var(--danger); font-size: var(--text-xs); font-weight: 700; text-align: center; }
+    .dash-inj-count { display: inline-block; min-width: 1.1rem; margin-left: 0.25rem; padding: 0 0.3rem; border-radius: var(--radius-sm); background: var(--danger-bg); color: var(--danger); font-size: var(--text-xs); font-weight: 700; text-align: center; }
     @media (max-width: 600px) {
       .dash-team-tabs { display: flex; width: 100%; }
       .dash-team-tabs > button { flex: 1 1 auto; padding-left: 0.35rem; padding-right: 0.35rem; }
@@ -2599,9 +2599,13 @@
           .sort((a, b) => b.date.localeCompare(a.date));
         const won = g => (g.home_team === team) === (Number(g.home_score) > Number(g.away_score));
         const snap = [];
-        // Conference rank by win percentage, from this season's standings.
+        // Conference rank: the build's seed (tie-breaks included), so it agrees
+        // with the standings card. Win percentage only if there is no seed yet.
         const east = (typeof TEAM_DIVISIONS !== 'undefined' ? TEAM_DIVISIONS : []).slice(0, 3).flatMap(d => d[1]);
-        if (cur && east.length) {
+        const seed = cur && /^(East|West)-(\d+)$/.exec(cur.SEED || '');
+        if (seed) {
+          snap.push(`<a class="dash-glance" href="/standings/"><span class="dash-line-label">${seed[1]}</span> ${ordinal(+seed[2])}</a>`);
+        } else if (cur && east.length) {
           const isEast = east.includes(team);
           const conf = standings.filter(r => r.SEASON === season && east.includes(r.TEAM) === isEast)
             .sort((a, b) => (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0) || (b.W - a.W));
