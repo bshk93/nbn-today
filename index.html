@@ -1371,14 +1371,17 @@
       jget('/api/rotations').catch(() => ({})),
       jget('/api/ovr/current').catch(() => ({})),
     ]));
-    const rosterSlugs = team => fetch(`/data/${team.toLowerCase()}-roster.csv`)
+    // One roster CSV and one bios request per team per page: the team card's
+    // Starting 5, its guarantee chip and the fives all read the same two.
+    const rosterMemo = {}, biosMemo = {};
+    const rosterSlugs = team => rosterMemo[team] || (rosterMemo[team] = fetch(`/data/${team.toLowerCase()}-roster.csv`)
       .then(r => (r.ok ? r.text() : '')).catch(() => '')
-      .then(t => { const [h, ...rows] = t.trim().split('\n'); return h && h.trim() === 'SLUG' ? rows.map(s => s.trim()).filter(Boolean) : []; });
+      .then(t => { const [h, ...rows] = t.trim().split('\n'); return h && h.trim() === 'SLUG' ? rows.map(s => s.trim()).filter(Boolean) : []; }));
+    const rosterBios = team => biosMemo[team] || (biosMemo[team] = rosterSlugs(team).then(slugs => (slugs.length
+      ? jget('/api/players?slugs=' + encodeURIComponent(slugs.join(','))).catch(() => ({})) : {})));
 
     async function startersFor(team) {
-      const [[rotations, ovr], slugs] = await Promise.all([loadFivesData(), rosterSlugs(team)]);
-      const bios = slugs.length
-        ? await jget('/api/players?slugs=' + encodeURIComponent(slugs.join(','))).catch(() => ({})) : {};
+      const [[rotations, ovr], slugs, bios] = await Promise.all([loadFivesData(), rosterSlugs(team), rosterBios(team)]);
       const pool = slugs.filter(s => bios[s] && ['player', 'two-way'].includes(bios[s].type))
         .map(s => ({ slug: s, type: bios[s].type, name: bios[s].name || s, _posList: bios[s].pos || [], OVR: ovr[s] || 0 }));
       const set = rotationFive(pool, rotations[team]);
@@ -2152,6 +2155,21 @@
       $('dash-standings').hidden = false;
     }).catch(() => {});
 
+    // ── Who loads first ───────────────────────────────────────────────────
+    //
+    // A signed-in owner's team card goes first. The heavy cards near the foot
+    // of the page wait until it has rendered, then load when the browser is
+    // idle: Milestone Watch alone is 31 requests (every roster CSV plus the
+    // 1MB player_seasons.csv), and fired at load they took the six connections
+    // a browser allows per host ahead of the card's own. Signed out there is
+    // no team card, so they start straight away; 4s caps the wait if the card
+    // never renders.
+    let markBandOne = () => {};
+    const bandOneReady = token ? new Promise(r => { markBandOne = r; setTimeout(r, 4000); }) : Promise.resolve();
+    const afterBandOne = fn => bandOneReady
+      .then(() => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 0))))
+      .then(fn);
+
     // ── Ratings movers ────────────────────────────────────────────────────
     //
     // The three biggest OVR gains and drops in the latest 2K scrape, off the
@@ -2159,7 +2177,7 @@
     // keeps them in their own table: they were never synced into the live OVR.
     // `since` keeps the payload to recent scrapes as the history grows; a
     // league that hasn't scraped in six months simply has no card.
-    jget(`/api/ratings-changes?since=${dayBefore(today, 183)}`).then(d => {
+    afterBandOne(() => jget(`/api/ratings-changes?since=${dayBefore(today, 183)}`)).then(d => {
       const entries = (d && d.entries) || [];
       const date = entries.length ? entries[0].date : null;
       const moves = entries.filter(e => e.date === date && e.ovr && !e.ovr_stub
@@ -2197,7 +2215,7 @@
     // The leaders of /awards/race, while a season is being played: MVP's top
     // three, then the leader of each other award. The formulas are
     // award-race.js; this only picks who to show.
-    Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise]).then(async ([season, rows, stand]) => {
+    afterBandOne(() => Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise])).then(async ([season, rows, stand]) => {
       if (!season || !window.AwardRace) return;
       const pct = {};
       stand.forEach(r => { pct[`${r.SEASON}|${r.TEAM}`] = +r.PCT; });
@@ -2226,7 +2244,7 @@
     // This season's draft class, ranked by the same ROTY ladder as
     // /awards/race (award-race.js), with each rookie's draft slot and line.
     const ROOKIES_SHOWN = 5;
-    Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise]).then(([season, rows, stand]) => {
+    afterBandOne(() => Promise.all([liveSeasonPromise, Milestones.seasonRows(), standingsPromise])).then(([season, rows, stand]) => {
       if (!season || !window.AwardRace) return;
       const pct = {};
       stand.forEach(r => { pct[`${r.SEASON}|${r.TEAM}`] = +r.PCT; });
@@ -2252,7 +2270,7 @@
     // or the next spot in an all-time top 10 (milestones.js, shared with
     // /preview). One line per player, their nearest; the closest five show.
     const MS_GAMES = 5, MS_SHOWN = 5;
-    Milestones.load().then(data => {
+    afterBandOne(() => Milestones.load()).then(data => {
       const seen = new Set();
       const list = Milestones.upcoming(data, { maxGames: MS_GAMES })
         .filter(m => !seen.has(m.slug) && seen.add(m.slug))
@@ -2387,19 +2405,17 @@
     // ── Band 1: signed-in only ────────────────────────────────────────────
     if (!token) return;
 
-    // Which team is mine. Same derivation nav.js's profile picker uses:
-    // /api/members/me reports position names ("owner") but not which team, so
-    // the active tenure off /api/members/public is what names it.
-    const mePromise = jget('/api/me', { headers: auth })
-      .then(me => jget('/api/members/public')
-        .then(members => {
-          const mine = members.find(m => m.name === me.name);
-          const active = (mine && mine.tenures || []).filter(t => !t.end);
-          if (!active.length) return { me, team: null };
-          const tenure = active.sort((a, b) => b.start.localeCompare(a.start))[0];
-          return { me, team: tenure.team.toUpperCase() };
-        }))
-      .catch(() => null);
+    // Which team is mine: nav.js's own lookup (`_fetchMyTeam`: /api/me, then
+    // the active tenure off /api/members/public), shared rather than asked a
+    // second time. The answer is kept per browser, so a returning owner's card
+    // starts loading at once; the real answer then confirms it or replaces it.
+    const myTeamPromise = (typeof _fetchMyTeam === 'function' ? _fetchMyTeam()
+      : jget('/api/me', { headers: auth }).then(me => jget('/api/members/public').then(members => {
+          const active = ((members.find(m => m.name === me.name) || {}).tenures || []).filter(t => !t.end);
+          return active.length ? active.sort((a, b) => b.start.localeCompare(a.start))[0].team.toUpperCase() : null;
+        }))).catch(() => null);
+    let cachedTeam = null;
+    try { cachedTeam = localStorage.getItem('nbn_dash_team'); } catch {}
 
     // ── Band 1: your team's starting five, in season ───────────────────────
     //
@@ -2411,9 +2427,11 @@
     const seasonLines = (team, season) => jget(`/api/teams/${encodeURIComponent(team)}/season-lines`
       + (season ? `?season=${encodeURIComponent(season)}` : '')).then(r => (r && r.players) || {}).catch(() => ({}));
 
-    async function renderStarting5(team, season) {
+    async function renderStarting5(prefetched) {
       const box = $('dash-s5');
-      const [{ set, five }, lines, inj] = await Promise.all([startersFor(team), seasonLines(team, season), injuriesPromise]);
+      const data = await prefetched;
+      if (!data) throw new Error('lineup unavailable');
+      const [{ set, five }, lines, inj] = data;
       const injBy = Object.fromEntries(((inj && inj.players) || []).map(p => [p.slug, p]));
       const spark = pts => {
         pts = (pts || []).slice().reverse();
@@ -2481,24 +2499,42 @@
     }
 
     // ── Band 1: your team ─────────────────────────────────────────────────
-    mePromise.then(async ctx => {
-      if (!ctx || !ctx.team) return;   // signed in, but no active tenure
-      const team = ctx.team;
+    //
+    // Rendered from the cached team at once, then again only if the real
+    // answer differs. `gen` marks which render is current, so a superseded
+    // one's late chips can't paint into the new card.
+    let cardGen = 0;
+    const showTeam = team => renderTeamCard(team, ++cardGen).catch(() => {}).then(() => markBandOne());
+    if (cachedTeam) showTeam(cachedTeam);
+    myTeamPromise.then(team => {
+      try { if (team) localStorage.setItem('nbn_dash_team', team); else localStorage.removeItem('nbn_dash_team'); } catch {}
+      if (team === cachedTeam) return;
+      if (team) showTeam(team);
+      else { cardGen++; $('dash-team').hidden = true; markBandOne(); }   // signed in, but no active tenure
+    });
+
+    async function renderTeamCard(team, gen) {
       const abbr = team.toLowerCase();
       const card = $('dash-team');
 
-      const [sched, capRows, standings, recs, results] = await Promise.all([
+      // Started before the card waits on anything: Starting 5's lineup and
+      // lines (in season only), and the cap row, which only the chips and the
+      // off-season cap lines read, so the card never waits on it.
+      const s5Prefetch = schedulePromise.then(s => (phaseOf(s && s.games).phase === 'in-season'
+        ? Promise.all([startersFor(team), seasonLines(team), injuriesPromise]) : null)).catch(() => null);
+      const capPromise = jget('/api/cap-history/current').catch(() => null);
+
+      const [sched, standings, recs, results] = await Promise.all([
         schedulePromise,
-        jget('/api/cap-history/current').catch(() => null),
         standingsPromise,
         recordsPromise,
         // This season's results, newest first, for the "Last" line.
         nbnCurrentSeason().then(s => jget(`/api/boxscores/games?team=${team}&season=${s}`)).catch(() => []),
       ]);
+      if (gen !== cardGen) return;
 
       const ph = phaseOf(sched && sched.games);
-      const season = (capRows && capRows.entries && capRows.entries[0] || {}).season
-        || (sched && sched.season) || '';
+      const season = (sched && sched.season) || '';
 
       // ── Header: who you are, and where the league year is
       const teamName = (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[team]) || team;
@@ -2568,73 +2604,79 @@
 
       let html = '';
 
-      // ── Cap and roster, read through cap-health.js
+      // ── Cap and roster, read through cap-health.js. Applied when the cap row
+      // arrives: returns the off-season cap lines and pushes any binding rule
+      // as a chip.
       const chips = [];
-      const entry = capRows && (capRows.entries || []).find(e => e.team === team);
-      if (entry && typeof CapHealth !== 'undefined') {
-        const st = CapHealth.standing({
-          season: entry.season,
-          capLevels: { [entry.season]: { cap: entry.cap, apron1: entry.apron1, apron2: entry.apron2 } },
-          teamState: { hard_cap: entry.hard_cap },
-          teamSalaryFull: entry.salary,
-          teamSalaryExHolds: entry.salary_ex_holds,
-          standardCount: entry.roster,
-          twoWayCount: entry.two_way,
-          inSeason: entry.in_season,
-          // § 2.1a's charge, already folded into the two salary figures above
-          // by `cap_history.build_rows` and reported separately so this can
-          // name the amount. Undefined on a row predating the field, which
-          // standing() handles by naming the floor without a figure.
-          erc: entry.empty_roster_charge == null ? undefined : {
-            deficiency: entry.empty_roster_deficiency,
-            charge: entry.empty_roster_charge,
-          },
-          draftRights: entry.draft_rights,
-          // Homepage altitude for every figure it produces, so the notes read
-          // in the same units as the Team Salary line beside them rather than
-          // mixing "$135.0M" with "$29,915,676".
-          fmt: fmtM,
-        });
-        const row = k => st.rows.find(r => r.key === k);
-        const capRow = row('cap'), apron1Row = row('apron1'), apron2Row = row('apron2'), rosterRow = row('roster');
-        // A team's hard cap (§ 1.4) is never a number of its own — it's
-        // always pegged to the league's own Apron 1 or Apron 2 level, so a
-        // separate "Hard Cap" line necessarily repeats whichever apron line
-        // is already here. Boxing that line in place says the same thing
-        // without a fourth line that just duplicates a number already shown.
-        const hardCapKey = entry.hard_cap === 'first_apron' ? 'apron1'
-          : entry.hard_cap === 'second_apron' ? 'apron2' : null;
-        const threshLine = (label, r, key) => r
-          ? `<span${key === hardCapKey
-              ? ` class="dash-line-hardcap${key === 'apron2' ? ' apron2' : ''}" title="This team is hard-capped here"`
-              : ''}>`
-            + `<span class="dash-line-label">${esc(label)}</span> `
-            + `<span class="dash-line-val tone-${esc(r.tone)}">${esc(r.note)}</span></span>`
-          : '';
-        html += '<div class="dash-sep"></div><div class="dash-lines">'
-          + `<span><span class="dash-line-label">Team Salary</span> `
-          + `<span class="dash-line-val">${esc(fmtM(entry.salary))}</span></span>`
-          + threshLine('Soft Cap', capRow, 'cap')
-          + threshLine('Apron 1', apron1Row, 'apron1')
-          + threshLine('Apron 2', apron2Row, 'apron2')
-          + (rosterRow ? `<span><span class="dash-line-label">Roster</span> `
-            + `<span class="dash-line-val">${esc(rosterRow.value)}</span></span>` : '')
-          + '</div>';
-        // Only the rules that are actually binding. "Over the Salary Cap" is
-        // the normal condition for most of the league and the line above
-        // already says it in dollars, so notes are left out — same filter the
-        // team page's always-visible card applies.
-        //
-        // `short`, not `text`: a chip is a glance, and the full § citation is
-        // a paragraph in a pill. Both registers come from cap-health.js, so
-        // this is picking one rather than paraphrasing a rule here.
-        st.warnings
-          .filter(w => w.severity === 'violation' || w.severity === 'caution')
-          .forEach(w => chips.push({
-            tone: w.severity, text: w.short || w.text, title: w.text,
-            href: `/teams/${abbr}/`,
-          }));
-      }
+      const capLinesFor = capRows => {
+        let lines = '';
+        const entry = capRows && (capRows.entries || []).find(e => e.team === team);
+        if (entry && typeof CapHealth !== 'undefined') {
+          const st = CapHealth.standing({
+            season: entry.season,
+            capLevels: { [entry.season]: { cap: entry.cap, apron1: entry.apron1, apron2: entry.apron2 } },
+            teamState: { hard_cap: entry.hard_cap },
+            teamSalaryFull: entry.salary,
+            teamSalaryExHolds: entry.salary_ex_holds,
+            standardCount: entry.roster,
+            twoWayCount: entry.two_way,
+            inSeason: entry.in_season,
+            // § 2.1a's charge, already folded into the two salary figures above
+            // by `cap_history.build_rows` and reported separately so this can
+            // name the amount. Undefined on a row predating the field, which
+            // standing() handles by naming the floor without a figure.
+            erc: entry.empty_roster_charge == null ? undefined : {
+              deficiency: entry.empty_roster_deficiency,
+              charge: entry.empty_roster_charge,
+            },
+            draftRights: entry.draft_rights,
+            // Homepage altitude for every figure it produces, so the notes read
+            // in the same units as the Team Salary line beside them rather than
+            // mixing "$135.0M" with "$29,915,676".
+            fmt: fmtM,
+          });
+          const row = k => st.rows.find(r => r.key === k);
+          const capRow = row('cap'), apron1Row = row('apron1'), apron2Row = row('apron2'), rosterRow = row('roster');
+          // A team's hard cap (§ 1.4) is never a number of its own — it's
+          // always pegged to the league's own Apron 1 or Apron 2 level, so a
+          // separate "Hard Cap" line necessarily repeats whichever apron line
+          // is already here. Boxing that line in place says the same thing
+          // without a fourth line that just duplicates a number already shown.
+          const hardCapKey = entry.hard_cap === 'first_apron' ? 'apron1'
+            : entry.hard_cap === 'second_apron' ? 'apron2' : null;
+          const threshLine = (label, r, key) => r
+            ? `<span${key === hardCapKey
+                ? ` class="dash-line-hardcap${key === 'apron2' ? ' apron2' : ''}" title="This team is hard-capped here"`
+                : ''}>`
+              + `<span class="dash-line-label">${esc(label)}</span> `
+              + `<span class="dash-line-val tone-${esc(r.tone)}">${esc(r.note)}</span></span>`
+            : '';
+          lines += '<div class="dash-sep"></div><div class="dash-lines">'
+            + `<span><span class="dash-line-label">Team Salary</span> `
+            + `<span class="dash-line-val">${esc(fmtM(entry.salary))}</span></span>`
+            + threshLine('Soft Cap', capRow, 'cap')
+            + threshLine('Apron 1', apron1Row, 'apron1')
+            + threshLine('Apron 2', apron2Row, 'apron2')
+            + (rosterRow ? `<span><span class="dash-line-label">Roster</span> `
+              + `<span class="dash-line-val">${esc(rosterRow.value)}</span></span>` : '')
+            + '</div>';
+          // Only the rules that are actually binding. "Over the Salary Cap" is
+          // the normal condition for most of the league and the line above
+          // already says it in dollars, so notes are left out — same filter the
+          // team page's always-visible card applies.
+          //
+          // `short`, not `text`: a chip is a glance, and the full § citation is
+          // a paragraph in a pill. Both registers come from cap-health.js, so
+          // this is picking one rather than paraphrasing a rule here.
+          st.warnings
+            .filter(w => w.severity === 'violation' || w.severity === 'caution')
+            .forEach(w => chips.push({
+              tone: w.severity, text: w.short || w.text, title: w.text,
+              href: `/teams/${abbr}/`,
+            }));
+        }
+        return lines;
+      };
 
       // ── In season the card leads with the team: its line, its five, and the
       // next games as one row. The cap lines and chips fold under the toggle.
@@ -2756,8 +2798,6 @@
         // and in the offseason, not night to night. The chips stay, as a strip
         // above the tabs that shows only when something is there (paintChips).
         // The open tab is remembered per browser; Starting 5 by default.
-        const capLines = moreEl.querySelector('.dash-lines');
-        if (capLines) { capLines.previousElementSibling.remove(); capLines.remove(); }
         $('dash-alert-slot').replaceWith(moreEl);
         toggle.hidden = true;
         let s5Loaded = false;
@@ -2778,7 +2818,7 @@
           }
           if (key === 's5' && !s5Loaded) {
             s5Loaded = true;
-            renderStarting5(team, season).catch(() => {
+            renderStarting5(s5Prefetch).catch(() => {
               $('dash-s5').innerHTML = '<div class="dash-s5-how">Lineup unavailable.</div>';
             });
           }
@@ -2810,11 +2850,15 @@
 
       const chipBox = $('dash-chips');
       let settled = 0;
-      const EXPECTED = 6;   // the async chip sources below
+      // The async chip sources below. In season the FFA board and extension
+      // eligibility are skipped: they only ever make notes, which the
+      // in-season card leaves out.
+      const EXPECTED = inSeason ? 5 : 7;
       // Differences from the league sheet are not a chip: they are bookkeeping
       // for the rosters committee, not something the owner acts on. They live
       // on /committees/rosters only.
       function paintChips() {
+        if (gen !== cardGen) return;   // a newer render owns the card now
         // The collapsed card's one-word read of the chips, so a problem is
         // never hidden by the card being closed.
         const status = $('dash-glance-status');
@@ -2898,7 +2942,7 @@
       // announces these deadlines, so this is a reminder, not a leak.
       // Always a note: bidding is optional, so an open window never "needs
       // you". (It was a caution under 24h, which a 24h window always is.)
-      jget('/api/fa/board').then(board => {
+      if (!inSeason) jget('/api/fa/board').then(board => {
         const open = Object.entries((board && board.players) || [])
           .filter(([, p]) => p.ffa_deadline && Date.parse(p.ffa_deadline) > Date.now())
           .sort((a, b) => Date.parse(a[1].ffa_deadline) - Date.parse(b[1].ffa_deadline));
@@ -2911,7 +2955,7 @@
 
       // § 6.2 extension eligibility, computed by the API with its own reason
       // string — nothing about the rule is re-derived here.
-      jget('/api/poext/eligible').then(list => {
+      if (!inSeason) jget('/api/poext/eligible').then(list => {
         const n = (list || []).filter(p => p.team === team && p.eligible).length;
         if (n) add('note', `${n} extension-eligible`, '/extensions/',
                    `${plural(n, 'player')} on this roster meets § 6.2's eligibility rules`);
@@ -2920,16 +2964,11 @@
       // Guarantee/vesting dates inside 30 days. Reads `guarantee_schedule`,
       // the field /calendar renders from; its `guarantee_dates` fallback is
       // dead league-wide (present on 625 players, non-empty on none), so
-      // leaving it out cannot change what shows. Deferred to an idle callback:
-      // /api/players is 83KB gzipped, by far the heaviest thing here, and no
+      // leaving it out cannot change what shows. Reads this roster's bios only
+      // (`rosterBios`, the same request Starting 5 makes), not the whole
+      // league's 85KB /api/players. Still deferred to an idle callback, since no
       // part of the visible page waits on it.
-      const soon = () => jget('/api/players').then(bios =>
-        fetch(`/data/${abbr}-roster.csv`).then(r => r.ok ? r.text() : '').then(csv => {
-          const lines = csv.trim().split('\n');
-          if (lines.length < 2) return;
-          const iSlug = lines[0].split(',').indexOf('SLUG');
-          if (iSlug < 0) return;
-          const slugs = new Set(lines.slice(1).map(l => l.split(',')[iSlug]).filter(Boolean));
+      const soon = () => Promise.all([rosterSlugs(team), rosterBios(team)]).then(([slugs, bios]) => {
           const steps = [];
           slugs.forEach(slug => {
             const sch = (bios[slug] || {}).guarantee_schedule || {};
@@ -2947,10 +2986,18 @@
           add(d <= 7 ? 'caution' : 'note',
             `Guarantee in ${d}d${amt}`, '/calendar',
             `${steps[0].slug} — ${steps[0].date}`);
-        })).catch(() => {}).then(done);
+        }).catch(() => {}).then(done);
       if (window.requestIdleCallback) requestIdleCallback(soon, { timeout: 3000 });
       else setTimeout(soon, 800);
-    });
+
+      // The cap row: binding cap rules as chips, and off season the cap lines
+      // at the top of the More panel.
+      capPromise.then(capRows => {
+        if (gen !== cardGen) return;
+        const lines = capLinesFor(capRows);
+        if (lines && !inSeason) moreEl.insertAdjacentHTML('afterbegin', lines);
+      }).catch(() => {}).then(done);
+    }
   })();
   </script>
   <script>
