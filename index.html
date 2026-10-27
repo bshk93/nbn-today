@@ -199,9 +199,6 @@
     .dash-sched-g.final { background: none; }
     .dash-team-tabbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.6rem; }
     .dash-team-foot { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
-    .dash-team-notes { margin-top: 0.75rem; font-size: var(--text-xs); color: var(--text-muted); }
-    .dash-team-notes a { color: var(--text-muted); text-decoration: none; }
-    .dash-team-notes a:hover { color: var(--link); }
     .dash-team-tabs { margin-bottom: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
     .dash-inj-count { display: inline-block; min-width: 1.1rem; margin-left: 0.25rem; padding: 0 0.3rem; border-radius: var(--radius-sm); background: var(--danger-bg); color: var(--danger); font-size: var(--text-xs); font-weight: 700; text-align: center; }
     @media (max-width: 600px) {
@@ -2715,8 +2712,7 @@
           + '<div class="dash-team-tabbar"><div class="ui-segmented dash-team-tabs" role="tablist" aria-label="Your team">'
           + tabs.map(([k, label]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="false" aria-pressed="false">${label}</button>`).join('')
           + '</div><a class="dash-s5-edit" id="dash-team-tablink" hidden></a></div>'
-          + tabs.map(([k, , body]) => `<div class="dash-team-panel" id="dash-${k}" role="tabpanel" hidden>${body}</div>`).join('')
-          + '<div class="dash-team-notes" id="dash-team-notes" hidden></div>';
+          + tabs.map(([k, , body]) => `<div class="dash-team-panel" id="dash-${k}" role="tabpanel" hidden>${body}</div>`).join('');
       }
 
       // ── Next games
@@ -2809,22 +2805,19 @@
         // problem, so it is counted apart from the chips that need action.
         const bad = chips.filter(c => c.tone === 'violation').length;
         const act = chips.filter(c => c.tone === 'violation' || c.tone === 'caution').length;
-        const notes = chips.length - act;
+        const notes = inSeason ? 0 : chips.length - act;
         status.className = 'dash-glance-status ' + (bad ? 'violation' : act ? 'caution' : notes ? 'note' : 'ok');
         status.textContent = act ? `${act} ${act === 1 ? 'thing needs' : 'things need'} you`
           : notes ? `${notes} ${notes === 1 ? 'update' : 'updates'}`
           : settled >= EXPECTED ? 'All clear' : '';
         if (!act && !notes && settled >= EXPECTED) status.dataset.icon = 'check';
         else delete status.dataset.icon;
-        // In season only what needs acting on sits above the tabs. A note
-        // (extension-eligible, an offer pending, an FFA window) is news, so it
-        // is one quiet line at the foot of the card instead.
+        // In season only what needs acting on shows, above the tabs. A note
+        // (extension-eligible, an offer pending, an FFA window) is news the
+        // team page and its own pages already carry, so the card leaves it out.
         let shown = chips;
         if (inSeason) {
           shown = chips.filter(c => c.tone === 'violation' || c.tone === 'caution');
-          const noteEl = $('dash-team-notes'), ns = chips.filter(c => !shown.includes(c));
-          noteEl.hidden = !ns.length;
-          noteEl.innerHTML = ns.map(c => `<a href="${esc(c.href)}"${c.title ? ` title="${esc(c.title)}"` : ''}>${esc(c.text)}</a>`).join(' · ');
           moreEl.hidden = !shown.length;
         }
         if (!shown.length) {
