@@ -93,16 +93,17 @@
   const cls = v => v > 0 ? 'up' : v < 0 ? 'dn' : '';
   const prob = p => (p * 100).toFixed(p >= 0.1 ? 0 : 1) + '%';
 
-  let run = null, history = [], events = {}, sortKey = 'price', sortDir = -1, openTeam = null, chart = null;
+  let run = null, history = [], events = {}, sortKey = 'mcap', sortDir = -1, openTeam = null, chart = null;
 
   const COLS = [
     { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
     { key: 'team',   label: 'Team',       get: t => t.team },
-    { key: 'price',  label: 'Price', tip: "Fair value per share: the franchise's value ÷ 30M shares",      get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
+    { key: 'price',  label: 'Price', tip: "What a share would trade at: fair value plus the market's mood, which runs hot and cold around it",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
     { key: 'day',    label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
-    { key: 'vs',     label: 'vs league', tip: "Price against the league-average price. Cleaner than Price, which drifts up with discounting",  get: t => t.vs_league, num: true, fmt: t => pct(t.vs_league * 100) },
-    { key: 'mcap',   label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
+    { key: 'fair',   label: 'Fair value', tip: "What a share is worth: the franchise's projected profit and sale price ÷ 30M shares. Moves only when something happens", get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
+    { key: 'prem',   label: 'vs fair', tip: "Price against fair value: above 0 the market is paying up for it, below 0 it's on sale", get: t => t.prem, num: true, fmt: t => `<span class="${cls(t.prem)}">${pct(t.prem * 100)}</span>` },
+    { key: 'mcap',   label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
     { key: 'ps',     label: 'P/S', tip: "Price to sales: market cap ÷ this season's projected revenue", get: t => t.ps, num: true, fmt: t => t.ps == null ? '—' : t.ps.toFixed(1) + '×' },
     { key: 'pe',     label: 'P/E', tip: "Price to earnings: price ÷ earnings per share (this season's projected profit ÷ 30M shares). Blank for a team losing money", get: t => t.pe, num: true, fmt: t => t.pe == null ? '<span class="muted">n/m</span>' : t.pe.toFixed(0) },
     { key: 'beta',   label: 'Beta', tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
@@ -174,7 +175,11 @@
     const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
     const y0 = t.years[0];
     const keyStats = `<div class="fv-sum">
-        Market cap <b>${yen(t.value, 'B')}</b> · Revenue <b>${yen(y0.revenue)}</b> · Profit <b>${signedYen(y0.profit)}</b>
+        Price <b>¥${t.mkt.toFixed(2)}</b> against a fair value of <b>¥${t.price.toFixed(2)}</b>
+        (${Math.abs(t.prem * 100).toFixed(1)}% ${t.prem >= 0 ? 'above' : 'below'}).
+      </div>
+      <div class="fv-sum">
+        Market cap <b>${yen(t.mcap, 'B')}</b> · Revenue <b>${yen(y0.revenue)}</b> · Profit <b>${signedYen(y0.profit)}</b>
         · EPS <b>¥${t.eps.toFixed(2)}</b> · P/E <b>${t.pe == null ? 'n/m' : t.pe.toFixed(0)}</b> · P/S <b>${t.ps == null ? '—' : t.ps.toFixed(1) + '×'}</b>
         · Season range <b>¥${t.lo.toFixed(2)}–¥${t.hi.toFixed(2)}</b> · Beta <b>${t.beta == null ? `— <span class="muted">(after ${BETA_MIN_DAYS} days)</span>` : t.beta.toFixed(2)}</b>
       </div>`;
@@ -193,7 +198,7 @@
         Strength is the minutes-weighted OVR of the top eight. Later seasons count only who is under contract or re-signed, aged a year per season; payroll shows how many players that is.
         This season's PV counts only what is left of it.
       </div>
-      ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price by day"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
+      ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price and fair value by day"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
   }
 
   function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
@@ -208,14 +213,15 @@
       data: {
         labels: days.map(d => d.date),
         datasets: [
-          { label: team, data: days.map(d => d.teams[team].price), borderColor: cssVar('--accent'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
+          { label: 'Price', data: days.map(d => d.teams[team].market ?? d.teams[team].price), borderColor: cssVar('--accent'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
+          { label: 'Fair value', data: days.map(d => d.teams[team].price), borderColor: cssVar('--text-muted'), borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
         ],
       },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: false },
+          legend: { labels: { color: cssVar('--text-secondary'), boxWidth: 14 } },
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ¥${c.parsed.y.toFixed(2)}` } },
         },
         scales: {
@@ -246,11 +252,13 @@
         const dw = x.proj_w - p.proj_w;
         // What happened leads; the money that moved is the note only on a day nothing did.
         const happened = (events[t] || {})[b.date];
-        let note = happened ? happened.join(' · ') : `${name} ${signedYen(d)}`;
+        const fvMove = (x.price / p.price - 1) * 100;
+        let note = happened ? happened.join(' · ')
+          : Math.abs(fvMove) < 0.05 ? 'no news, the market\'s mood' : `${name} ${signedYen(d)}`;
         if (!happened && Math.abs(dw) >= 0.1) note += ` · proj W ${dw > 0 ? '+' : ''}${dw.toFixed(1)}`;
         if (!happened && x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
         if (b.backfill) note += ' · rebuilt';
-        teams[t][b.date] = { pct: (x.price / p.price - 1) * 100, note };
+        teams[t][b.date] = { pct: ((x.market ?? x.price) / (p.market ?? p.price) - 1) * 100, note };
       }
     }
     return { days, teams };
@@ -268,8 +276,9 @@
       <p><b>Injuries</b> count against this season's strength. An Out player is missing until his expected return (the middle of 2K's estimate, from the report that set it), a Hurt one plays at his injured OVR, each for the share of the remaining games he misses.</p>
       <p><b>Costs</b> are real money: contracts and dead cap, the ledger's tax, arena ops. In later seasons, a team re-signs its own free agents best OVR first while it stays under the first apron. The rest leave and are replaced by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p>The <b>sale price</b> is the ledger's valuation (league multiple × three-season average revenue × title brand) on the projected seasons.</p>
-      <p>As the season goes by, every price drifts up a little from discounting alone, so “vs league” is the cleaner comparison. A day's move is labelled with the piece that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
+      <p>As the season goes by, every price drifts up a little from discounting alone, so compare a team with the NBN 30 rather than with its own past. A day's move is labelled with what happened to the team; on a day with no news it is the market's mood, or the piece of fair value that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
       ${rebuilt.length ? `<p>The model started on 2026-10-24. Earlier days (${esc(rebuilt[0])} to ${esc(rebuilt[rebuilt.length - 1])}) were rebuilt afterwards from each day's games, with today's rosters and contracts. Nothing bigger than a depth signing changed in that window.</p>` : ''}
+      <p><b>Price and fair value.</b> Fair value is what the franchise is worth, and it only moves when something happens. The price is what a share would trade at: fair value plus the market's mood. The whole league has a mood that every team moves with (some harder than others, which is beta), and each team has its own. News is overdone and then given back over a few weeks, and wild days come in bunches, the way real stocks behave. The mood is the same every time the history is rebuilt. Nothing here can be traded.</p>
       <p>The <b>NBN 30</b> is the average price of all 30 franchises, the league's index. Market cap, P/S, P/E and beta read the way they do for a real stock.</p>
       <p><b>The columns</b></p>
       <dl class="fv-cols">${COLS.filter(c => c.tip).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.tip)}</dd>`).join('')}</dl>
@@ -282,21 +291,22 @@
   let index = null;
   function stockStats() {
     const shares = run.league.shares;
-    const days = history.filter(d => d.date < run.date).concat([{ date: run.date, teams: Object.fromEntries(run.teams.map(t => [t.team, { price: t.price }])) }]);
-    const mean = d => { const v = Object.values(d.teams).map(x => x.price); return v.reduce((a, b) => a + b, 0) / v.length; };
+    const px = x => x.market ?? x.price;
+    const days = history.filter(d => d.date < run.date).concat([{ date: run.date, teams: Object.fromEntries(run.teams.map(t => [t.team, { market: t.mkt }])) }]);
+    const mean = d => { const v = Object.values(d.teams).map(px); return v.reduce((a, b) => a + b, 0) / v.length; };
     const level = days.map(mean);
     const mret = level.slice(1).map((v, i) => v / level[i] - 1);
     index = { level: level[level.length - 1], day: level.length > 1 ? (level[level.length - 1] / level[level.length - 2] - 1) * 100 : null };
     for (const t of run.teams) {
       const y = t.years[0];
-      t.ps = y.revenue ? t.value / y.revenue : null;
+      t.ps = y.revenue ? t.mcap / y.revenue : null;
       t.eps = y.profit / shares;
-      t.pe = t.eps > 0 ? t.price / t.eps : null;
-      const prices = days.map(d => (d.teams[t.team] || {}).price).filter(v => v != null);
+      t.pe = t.eps > 0 ? t.mkt / t.eps : null;
+      const prices = days.map(d => d.teams[t.team] ? px(d.teams[t.team]) : null).filter(v => v != null);
       t.hi = Math.max(...prices); t.lo = Math.min(...prices);
       t.beta = null;
       if (mret.length >= BETA_MIN_DAYS) {
-        const tret = days.slice(1).map((d, i) => d.teams[t.team] && days[i].teams[t.team] ? d.teams[t.team].price / days[i].teams[t.team].price - 1 : null);
+        const tret = days.slice(1).map((d, i) => d.teams[t.team] && days[i].teams[t.team] ? px(d.teams[t.team]) / px(days[i].teams[t.team]) - 1 : null);
         const pairs = tret.map((v, i) => [v, mret[i]]).filter(([v]) => v != null);
         const mx = pairs.reduce((a, [, m]) => a + m, 0) / pairs.length, tx = pairs.reduce((a, [v]) => a + v, 0) / pairs.length;
         const cov = pairs.reduce((a, [v, m]) => a + (v - tx) * (m - mx), 0), vm = pairs.reduce((a, [, m]) => a + (m - mx) ** 2, 0);
@@ -393,7 +403,13 @@
       }
       run = r;
       history = h.days || [];
-      for (const t of run.teams) t.day = r.prev[t.team] ? (t.price / r.prev[t.team] - 1) * 100 : null;
+      for (const t of run.teams) {
+        t.mkt = t.market ?? t.price;
+        t.prem = t.mkt / t.price - 1;
+        t.mcap = t.mkt * run.league.shares;
+        const prev = (r.prev_market || {})[t.team] ?? r.prev[t.team];
+        t.day = prev ? (t.mkt / prev - 1) * 100 : null;
+      }
       stockStats();
       renderChips();
       renderHead();

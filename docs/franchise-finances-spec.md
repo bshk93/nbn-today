@@ -353,6 +353,29 @@ affects days after it.
   ten days of history. P/S lands around 10–12×, which is where real NBA
   franchises trade.
 
+### Outlook season and the market price (2026-10-27)
+
+The user's aim, in their words: "realistic stock price series".
+
+- **Outlook season.** The sale price averages the three projected seasons
+  plus one more, two seasons past the last (`OUTLOOK_YEARS`): the year-three
+  roster held as it is, everyone aged (young players up, old ones down),
+  every pick up to then drafted. Holding the roster is what keeps it from the
+  rejected version's drift to .500. Effect on 2026-10-27: −4.7% (MIL, aging)
+  to +6.6% (CHA, young with picks), spread 2.27× → 2.17×.
+- **Market price** = fair value × exp(beta·league mood + team mood), in
+  `market_series` (nbn-api `routers/fair_value.py`). Both moods are
+  mean-reverting; shocks are seeded on season, date and team (fat-tailed,
+  unit variance) with GARCH(1,1) volatility, and a fair-value move is overdone
+  by 60% and given back. Tuned on a synthetic 180-day season against real
+  single stocks: daily sd 1.8% (real 1.5–2%), kurtosis 5.4 (5–10), |return|
+  autocorrelation +0.07 (+0.1–0.3), pairwise correlation +0.22 (+0.2–0.4),
+  price vs fair value ±6.5% typical. A stronger GARCH gave 23% days and 74%
+  premiums and was rejected.
+- Recomputed over the season's history on every write (`write_history`), so
+  a rebuilt or late day carries forward. `price` in the API stays fair value;
+  `market` is the new field. The page leads with the market price.
+
 ## Open
 
 - The constants above are first guesses. Tune them against the sanity checks
