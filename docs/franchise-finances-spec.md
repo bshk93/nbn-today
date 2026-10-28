@@ -321,14 +321,19 @@ affects days after it.
   its games is played but not entered. A price that moves on trades needs the
   same lock while a TRC trade request involving the team is open, and probably
   a ban on trading your own team.
-- **Drift.** Discounting pulls every price up about 8% over a season, and the
-  rollover moves the horizon a season along. A tradable version would price
-  against the league average, or every long position would gain.
+- **Drift.** Gone within a season since fv5 (valued as of opening night), but
+  the rollover still steps every price up a season's discounting at once. A
+  tradable version would need to pay it out or price against the league
+  average across the rollover.
+- **The crowd term is pumpable.** fv5's market price follows the title
+  futures, where a ¥150 bet moves a long shot ten points. Harmless while
+  nothing trades on it; a tradable version would need to drop it or weight it
+  by money at risk.
 - **Payout budget.** Wall Street's `MOVE_DIVISOR` was tuned against the NB¥
   budget (`docs/nbyen-economy.md` § 3). This model's volatility is
   different and would need the same backtest, which it can't have until
   there is a season of snapshots.
-- **First guesses.** `AGE_CURVE`, `REVERT`, `PRIOR_FLOOR`, the re-signing
+- **First guesses.** `REVERT`, `PRIOR_FLOOR`, `SALE_PROFIT_WEIGHT`, the re-signing
   rule and `CAP_GROWTH` (27-28 onward has no apron figures yet, see the
   backlog's cap estimate item) are all unfitted.
 
@@ -338,9 +343,9 @@ affects days after it.
   so only the next two drafts matter. OVR from the pick number,
   `80.74 − 3.04·ln(pick)` (fit on the 2025 and 2026 classes, ±1.8), aged by
   `AGE_CURVE`; the slot is where the pick's team finishes in the simulated
-  season before (no lottery). A contingent pick is shared equally among the
-  teams its `leaves` name. A pick below replacement level never lowers a
-  team's strength.
+  season before (no lottery). Since fv5 a contingent pick is resolved, not
+  shared (below). A pick below replacement level never lowers a team's
+  strength.
 - **Rejected: pricing the sale on the seasons after the horizon**, which is
   what would make picks and young cores really count. Every version pulled
   teams toward .500 (the far projection regresses and rosters churn): the
@@ -438,6 +443,44 @@ The user's aim, in their words: "realistic stock price series".
 - Recomputed over the season's history on every write (`write_history`), so
   a rebuilt or late day carries forward. `price` in the API stays fair value;
   `market` is the new field. The page leads with the market price.
+
+### fv5 (2026-10-28)
+
+Six changes from a review of the page, all asked for by the user.
+
+- **The sale saw no payroll.** The sale was ~94% of every value and priced on
+  revenue alone, so a team deep in the tax sold like one under the cap. Now
+  `SALE_PROFIT_WEIGHT` (0.25) of it is a multiple of the three seasons' mean
+  profit, scaled so the average team sells the same either way. Profit varies
+  far more than revenue (¥14M a season for CLE, ¥249M for CHI), so 0.5 was
+  tried and rejected: it took LAC to 0.39× the league and the spread to 4.3×.
+- **Contingent picks are resolved, not shared.** Each sim keeps its draft
+  order (`simulate(draft_samples=)`, which draws nothing from the generator
+  so the public odds don't change), and `pick_odds` runs 400 of them through
+  `picks_conveyance.resolver.resolve_all`, the draft-night engine. CHI's
+  top-4-protected 2027 first is DEN's in every sample; DET takes the better of
+  its HOU/LAL swap.
+- **Age curve fit.** `AGE_CURVE` was a guess (+3 a year at 22, −3 past 33).
+  It is now NBN's own box scores: the year-on-year change in game score per
+  36, 20-21 to 25-26, ~1,700 player pairs, at 1 OVR a point. That is +0.7 at
+  22 and under, flat through the late 20s, −0.5 to −0.7 in the early 30s.
+  ovr-history.json can't give this: its one yearly pair (May → August 2026)
+  is mostly the new 2K edition taking a point off almost everyone.
+- **Outlook reversion: measured, kept.** Reverting the outlook season to four
+  seasons out instead of two moves no team more than 0.6% against the league
+  with the fitted age curve, so it stays.
+- **Valued as of opening night.** This season counts whole and the sale is
+  three seasons out, so a price no longer drifts up ~8% a season from
+  discounting alone.
+- **The crowd.** The market price adds 1% per percentage point the members
+  have moved a team's title futures from the opening line, capped at ±10%
+  (`crowd_lookup`, `CROWD_PER_POINT`). The random moods stay as tuned. MEM's
+  +16% over fair on 10-28 was one of their fat-tail days (about one in 33),
+  not news.
+- **Effect on 2026-10-28**, against the league average: OKC +20%, CHI and ORL
+  +12%, MIL and MEM +10%; CLE and LAC −21%, WAS and SAC −14%, CHA −12%. The
+  spread goes from 2.23× to 3.0×. Without the profit weight (age, picks and
+  valuation date alone) it is 2.49×, PHX +9% to CHA −8%.
 
 ## Open
 
