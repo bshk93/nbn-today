@@ -182,6 +182,14 @@
   --cat-slate: #94a3b8;
   --cat-bronze: #c27c3e;
   --cat-silver: #b0b8c1;
+
+  /* Chart series: lines that cross and must stay distinct as every pair (the
+     futures chart, Wall Street's Compare). The dataviz reference palette's
+     first three slots, validated against the default dark surface, the tinted
+     team surfaces and white; light themes take the light steps. */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
 }
 
 /* ── NBN Today Light ──────────────────────────────────────────────────────
@@ -303,6 +311,10 @@
   --cat-slate: #475569;
   --cat-bronze: #8a5a2b;
   --cat-silver: #64748b;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
 }
 
 /* ── Lavender Rose ─────────────────────────────────────────────────────────
@@ -412,6 +424,10 @@
   --cat-slate: #475569;
   --cat-bronze: #8a5a2b;
   --cat-silver: #64748b;
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
 }
 
 /* ── Phoenix Suns ──────────────────────────────────────────────────────
