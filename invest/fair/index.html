@@ -28,12 +28,23 @@
     .fv-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
     .fv-table .team-in { display: flex; align-items: center; gap: 0.5rem; }
     /* # and Team both stay put while the table scrolls sideways. */
-    .fv-table > thead > tr > :first-child, .fv-table > tbody > tr.row > :first-child { width: 2.5rem; min-width: 2.5rem; box-sizing: border-box; }
-    .fv-table > thead > tr > :nth-child(2), .fv-table > tbody > tr.row > :nth-child(2) { position: sticky; left: 2.5rem; background: var(--bg-page); z-index: 1; }
+    .fv-table > thead > tr#thead > :first-child, .fv-table > tbody > tr.row > :first-child { width: 2.5rem; min-width: 2.5rem; box-sizing: border-box; }
+    .fv-table > thead > tr#thead > :nth-child(2), .fv-table > tbody > tr.row > :nth-child(2) { position: sticky; left: 2.5rem; background: var(--bg-page); z-index: 1; }
     .fv-years td:first-child { position: static; background: none; }
     .fv-table > tbody > tr.row:is(:hover, .open) > td { background: var(--bg-hover); }
     /* A mask, like the tab strip's: the right edge fades while there are columns off to the side. */
     .fv-wrap.more .ui-table-wrap { mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent); }
+    /* Column groups: a short label over each run of columns, ruled underneath. */
+    .fv-table #thgroup th { border-bottom: none; padding-bottom: 0; font-size: var(--text-xs); letter-spacing: 0.08em; color: var(--text-dim); text-align: center; }
+    .fv-table #thgroup th span { display: block; border-bottom: 1px solid var(--border); padding-bottom: var(--space-1); }
+    .fv-table #thgroup th.blank { position: sticky; left: 0; background: var(--bg-page); z-index: 1; }
+    .fv-table td.gstart, .fv-table #thead th.gstart { border-left: 1px solid var(--border-subtle); }
+    .fv-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--space-2); margin-bottom: var(--space-4); }
+    .fv-tile { border-left: 2px solid var(--border); padding: var(--space-1) var(--space-3); }
+    .fv-tile .ui-kicker { color: var(--text-muted); font-size: var(--text-xs); }
+    .fv-tile .ui-statline { margin-top: var(--space-1); }
+    .fv-tile .ui-statline > b.up { color: var(--market-positive); }
+    .fv-tile .ui-statline > b.dn { color: var(--danger); }
     .fv-table .logo { width: 20px; height: 20px; object-fit: contain; }
     .fv-table th[data-sort] { cursor: pointer; }
     .fv-table th.sorted { color: var(--text-primary); }
@@ -75,7 +86,7 @@
 
     <div class="fv-wrap"><div class="ui-table-wrap" id="wrap">
       <table class="ui-table ui-table--dense ui-table--sticky-first fv-table">
-        <thead><tr id="thead"></tr></thead>
+        <thead><tr id="thgroup"></tr><tr id="thead"></tr></thead>
         <tbody id="tbody"><tr><td class="ui-loading" colspan="13">Loading…</td></tr></tbody>
       </table>
     </div></div>
@@ -111,27 +122,38 @@
   const COLS = [
     { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
     { key: 'team',   label: 'Team',       get: t => t.team },
-    { key: 'mcap',   label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
-    { key: 'fcap',   label: 'Fair cap', tip: "Fair value × 30M shares: what the model says the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
-    { key: 'price',  label: 'Price', tip: "What a share would trade at: fair value plus the market's mood, which runs hot and cold around it",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
-    { key: 'day',    label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
+    { key: 'mcap',   group: 'Franchise', label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
+    { key: 'fcap',   group: 'Franchise', label: 'Fair cap', tip: "Fair value × 30M shares: what the model says the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
+    { key: 'price',  group: 'Share', label: 'Price', tip: "What a share would trade at: fair value plus the market's mood, which runs hot and cold around it",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
+    { key: 'day',    group: 'Share', label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
-    { key: 'fair',   label: 'Fair value', tip: "What a share is worth: the franchise's projected profit and sale price ÷ 30M shares. Moves only when something happens", get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
-    { key: 'prem',   label: 'vs fair', tip: "Price against fair value: above 0 the market is paying up for it, below 0 it's on sale", get: t => t.prem, num: true, fmt: t => `<span class="${cls(t.prem)}">${pct(t.prem * 100)}</span>` },
-    { key: 'ps',     label: 'P/S', tip: "Price to sales: market cap ÷ this season's projected revenue", get: t => t.ps, num: true, fmt: t => t.ps == null ? '—' : t.ps.toFixed(1) + '×' },
-    { key: 'pe',     label: 'P/E', tip: "Price to earnings: price ÷ earnings per share (this season's projected profit ÷ 30M shares). Blank for a team losing money", get: t => t.pe, num: true, fmt: t => t.pe == null ? '<span class="muted">n/m</span>' : t.pe.toFixed(0) },
-    { key: 'beta',   label: 'Beta', hideEmpty: true, tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
-    { key: 'rec',    label: 'W-L', tip: "This season's record so far",        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
-    { key: 'projw',  label: 'Proj W', tip: "Projected wins for the full season, from the playoff odds simulator",     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
-    { key: 'title',  label: 'Title', tip: "Chance of winning this season's title",      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
+    { key: 'fair',   group: 'Share', label: 'Fair value', tip: "What a share is worth: the franchise's projected profit and sale price ÷ 30M shares. Moves only when something happens", get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
+    { key: 'prem',   group: 'Share', label: 'vs fair', tip: "Price against fair value: above 0 the market is paying up for it, below 0 it's on sale", get: t => t.prem, num: true, fmt: t => `<span class="${cls(t.prem)}">${pct(t.prem * 100)}</span>` },
+    { key: 'ps',     group: 'Ratios', label: 'P/S', tip: "Price to sales: market cap ÷ this season's projected revenue", get: t => t.ps, num: true, fmt: t => t.ps == null ? '—' : t.ps.toFixed(1) + '×' },
+    { key: 'pe',     group: 'Ratios', label: 'P/E', tip: "Price to earnings: price ÷ earnings per share (this season's projected profit ÷ 30M shares). Blank for a team losing money", get: t => t.pe, num: true, fmt: t => t.pe == null ? '<span class="muted">n/m</span>' : t.pe.toFixed(0) },
+    { key: 'beta',   group: 'Ratios', label: 'Beta', hideEmpty: true, tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
+    { key: 'rec',    group: 'This season', label: 'W-L', tip: "This season's record so far",        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
+    { key: 'projw',  group: 'This season', label: 'Proj W', tip: "Projected wins for the full season, from the playoff odds simulator",     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
+    { key: 'title',  group: 'This season', label: 'Title', tip: "Chance of winning this season's title",      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
   ];
 
   // Beta stays off the table until there are enough days to compute it.
   const shownCols = () => COLS.filter(c => !c.hideEmpty || run.teams.some(t => c.get(t) != null));
 
+  // A column starts a group when its group differs from the one before it.
+  const gstart = (cols, k) => cols[k].group && cols[k].group !== (cols[k - 1] || {}).group;
+
   function renderHead() {
-    document.getElementById('thead').innerHTML = shownCols().map(c =>
-      `<th class="${c.num ? 'num' : ''} ${sortKey === c.key ? 'sorted' : ''}" ${c.sort === false ? '' : `data-sort="${c.key}"`}${c.tip ? ` title="${esc(c.tip)}"` : ''}>${c.tip ? `<span class="fv-tip">${c.label}</span>` : c.label}${sortKey === c.key ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('');
+    const cols = shownCols(), runs = [];
+    for (const c of cols) {
+      const last = runs[runs.length - 1];
+      if (last && last.group === c.group) last.n++;
+      else runs.push({ group: c.group, n: 1 });
+    }
+    document.getElementById('thgroup').innerHTML = runs.map(g => g.group
+      ? `<th colspan="${g.n}"><span>${esc(g.group)}</span></th>` : `<th colspan="${g.n}" class="blank"></th>`).join('');
+    document.getElementById('thead').innerHTML = cols.map((c, k) =>
+      `<th class="${c.num ? 'num' : ''} ${sortKey === c.key ? 'sorted' : ''} ${gstart(cols, k) ? 'gstart' : ''}" ${c.sort === false ? '' : `data-sort="${c.key}"`}${c.tip ? ` title="${esc(c.tip)}"` : ''}>${c.tip ? `<span class="fv-tip">${c.label}</span>` : c.label}${sortKey === c.key ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('');
   }
 
   function sorted() {
@@ -147,10 +169,10 @@
   function renderBody() {
     const rows = sorted(), cols = shownCols();
     document.getElementById('tbody').innerHTML = rows.map((t, i) => {
-      const cells = cols.map(c => {
+      const cells = cols.map((c, k) => {
         if (c.key === 'team') return `<td class="team"><span class="team-in"><img class="logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'"><a href="/teams/${t.team}/" onclick="event.stopPropagation()"><b>${t.team}</b></a></span></td>`;
         const v = c.fmt ? c.fmt(t) : c.get(t, i);
-        return `<td class="${c.num ? 'num mono' : ''}">${v}</td>`;
+        return `<td class="${c.num ? 'num mono' : ''} ${gstart(cols, k) ? 'gstart' : ''}">${v}</td>`;
       }).join('');
       const open = openTeam === t.team;
       return `<tr class="row ${open ? 'open' : ''}" data-team="${t.team}">${cells}</tr>` +
@@ -198,14 +220,20 @@
     const last = yrs[yrs.length - 1].season;
     const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
     const y0 = t.years[0];
-    const keyStats = `<div class="fv-sum">
-        Price <b>¥${t.mkt.toFixed(2)}</b> against a fair value of <b>¥${t.price.toFixed(2)}</b>
-        (${Math.abs(t.prem * 100).toFixed(1)}% ${t.prem >= 0 ? 'above' : 'below'}).
-      </div>
-      <div class="fv-sum">
-        Market cap <b>${yen(t.mcap, 'B')}</b> · Revenue <b>${yen(y0.revenue)}</b> · Profit <b>${signedYen(y0.profit)}</b>
-        · EPS <b>¥${t.eps.toFixed(2)}</b> · P/E <b>${t.pe == null ? 'n/m' : t.pe.toFixed(0)}</b> · P/S <b>${t.ps == null ? '—' : t.ps.toFixed(1) + '×'}</b>
-        · Season range <b>¥${t.lo.toFixed(2)}–¥${t.hi.toFixed(2)}</b> · Beta <b>${t.beta == null ? `— <span class="muted">(after ${BETA_MIN_DAYS} days)</span>` : t.beta.toFixed(2)}</b>
+    const tile = (label, value, c = '') => `<div class="fv-tile"><div class="ui-kicker">${label}</div><div class="ui-statline"><b class="${c}">${value}</b></div></div>`;
+    const keyStats = `<div class="fv-tiles">
+        ${tile('Price', '¥' + t.mkt.toFixed(2))}
+        ${tile('Fair value', '¥' + t.price.toFixed(2))}
+        ${tile('vs fair', pct(t.prem * 100), cls(t.prem))}
+        ${tile('Mkt cap', yen(t.mcap, 'B'))}
+        ${tile('Fair cap', yen(t.value, 'B'))}
+        ${tile('Revenue', yen(y0.revenue))}
+        ${tile('Profit', signedYen(y0.profit), cls(y0.profit))}
+        ${tile('EPS', '¥' + t.eps.toFixed(2))}
+        ${tile('P/E', t.pe == null ? 'n/m' : t.pe.toFixed(0))}
+        ${tile('P/S', t.ps == null ? '—' : t.ps.toFixed(1) + '×')}
+        ${tile('Season range', '¥' + t.lo.toFixed(0) + '–' + t.hi.toFixed(0))}
+        ${t.beta == null ? '' : tile('Beta', t.beta.toFixed(2))}
       </div>`;
     const picks = (t.picks || []).filter(p => p.round === 1);
     const nm = p => esc(p.name ? nbnPlayerName(p.name) : p.slug);
@@ -270,6 +298,14 @@
 
   // Day-over-day moves from the history, with what drove each: the PV of
   // revenue, of costs, or of the sale, whichever moved most.
+  // How each driver reads in a note. `d` is its effect on value, so costs
+  // that rose show as the (negative) value they took.
+  const DRIVER = {
+    revenue: d => `revenue outlook ${signedYen(d)}`,
+    costs: d => d > 0 ? `costs down, value ${signedYen(d)}` : `costs up, value ${signedYen(d)}`,
+    sale: d => `resale value ${signedYen(d)}`,
+  };
+
   function dailyFromHistory() {
     const days = [], teams = {};
     for (let i = 1; i < history.length; i++) {
@@ -290,8 +326,8 @@
         const happened = (events[t] || {})[b.date];
         const fvMove = (x.price / p.price - 1) * 100;
         let note = happened ? happened.join(' · ')
-          : Math.abs(fvMove) < 0.05 ? 'no news, the market\'s mood' : `${name} ${signedYen(d)}`;
-        if (!happened && Math.abs(dw) >= 0.1) note += ` · proj W ${dw > 0 ? '+' : ''}${dw.toFixed(1)}`;
+          : Math.abs(fvMove) < 0.05 ? 'no news, the market\'s mood' : DRIVER[name](d);
+        if (!happened && Math.abs(dw) >= 0.1) note += ` · ${dw > 0 ? '+' : ''}${dw.toFixed(1)} projected wins`;
         if (!happened && x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
         if (b.backfill) note += ' · rebuilt';
         teams[t][b.date] = { pct: ((x.market ?? x.price) / (p.market ?? p.price) - 1) * 100, note };
