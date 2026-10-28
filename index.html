@@ -602,6 +602,15 @@
     .dash-tw-foot a { color: var(--text-muted); }
     .dash-tw-foot a:hover { color: var(--link); }
     .dash-tw-more { margin-top: 0.4rem; }
+    .dash-tw-del { background: none; border: 0; padding: 0; font: inherit; color: var(--text-muted); cursor: pointer; }
+    .dash-tw-del:hover { color: var(--danger); }
+    .dash-tw-new { display: grid; gap: 0.4rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border-subtle); margin-bottom: 0.2rem; }
+    .dash-tw-new textarea { width: 100%; resize: vertical; min-height: 3.6rem; }
+    .dash-tw-new-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+    .dash-tw-new-row .ui-select, .dash-tw-new-row .ui-input { flex: 1 1 8rem; min-width: 0; }
+    .dash-tw-new-row label { font-size: var(--text-xs); color: var(--text-muted); display: flex; gap: 0.3rem; align-items: center; }
+    .dash-tw-count { margin-left: auto; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .dash-tw-err { font-size: var(--text-xs); color: var(--danger); }
     .dash-ms-what { flex-basis: 100%; padding-left: calc(18px + 0.35rem); font-size: var(--text-xs); color: var(--text-muted); }
 
     /* A slate row's time links to that game's preview. */
@@ -2354,7 +2363,7 @@
     // ── NBN Twitter ───────────────────────────────────────────────────────
     //
     // Made-up accounts reacting to the latest game day, written by the box
-    // score run (nbn-api routers/tweets.py). Fiction, but the numbers in them
+    // score run, plus whatever members post (nbn-api routers/tweets.py). Fiction, but the numbers in them
     // are the box score's. A player's own account shows his face, a fan
     // account its team's logo, anyone else an initial.
     const TW_PAGE = 6;
@@ -2373,17 +2382,37 @@
       return `<div class="dash-tw">${av}<div style="min-width:0">`
         + `<div class="dash-tw-who"><b>${esc(t.name)}</b> <span>@${esc(t.handle)} · ${esc(shortDate(t.date))}</span></div>`
         + `<div class="dash-tw-text">${esc(t.text)}</div>`
-        + `<div class="dash-tw-foot"><span>${twCount(t.retweets || 0)} RTs</span>`
-        + `<span>${twCount(t.likes || 0)} likes</span>${game}</div></div></div>`;
+        + `<div class="dash-tw-foot">`
+        + (t.likes || t.retweets ? `<span>${twCount(t.retweets || 0)} RTs</span><span>${twCount(t.likes || 0)} likes</span>` : '')
+        + `${game}${twMine(t)}</div></div></div>`;
     };
-    jget(`/api/tweets?limit=${TW_PAGE}`).then(list => {
-      if (!list.length) return;
+    const TW_TEAMS = ['ATL','BKN','BOS','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM',
+      'MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'];
+    const twMine = t => t.mine ? `<button class="dash-tw-del" data-id="${t.id}">Delete</button>` : '';
+    // Members post too: as themselves, or as a made-up identity (a scoop
+    // account) they can save and pick again. Who really posted is kept by the
+    // API and never sent back (nbn-api routers/tweets.py).
+    const twCompose = () => `<form class="dash-tw-new" id="dash-tw-new">`
+      + `<textarea class="ui-textarea" id="tw-text" maxlength="280" rows="2" placeholder="What's happening?"></textarea>`
+      + `<div class="dash-tw-new-row"><select class="ui-select" id="tw-as" aria-label="Post as"></select>`
+      + `<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="tw-forget" hidden>Forget identity</button></div>`
+      + `<div class="dash-tw-new-row" id="tw-anon" hidden>`
+      + `<input class="ui-input" id="tw-name" maxlength="50" placeholder="Display name">`
+      + `<input class="ui-input" id="tw-handle" maxlength="15" placeholder="handle">`
+      + `<select class="ui-select" id="tw-team" aria-label="Team colour"><option value="">No team</option>`
+      + TW_TEAMS.map(t => `<option>${t}</option>`).join('') + `</select>`
+      + `<label><input type="checkbox" id="tw-save" checked> Save this identity</label></div>`
+      + `<div class="dash-tw-new-row"><span class="dash-tw-err" id="tw-err"></span>`
+      + `<span class="dash-tw-count" id="tw-count">280</span>`
+      + `<button class="ui-btn ui-btn--primary ui-btn--sm" id="tw-post" disabled>Post</button></div></form>`;
+    jget(`/api/tweets?limit=${TW_PAGE}`, { headers: auth }).then(list => {
+      if (!list.length && !token) return;
       const card = $('dash-tweets');
-      card.innerHTML = '<div class="dash-card-title">NBN Twitter</div><div id="dash-tw-list"></div>';
+      card.innerHTML = '<div class="dash-card-title">NBN Twitter</div>'
+        + (token ? twCompose() : '') + '<div id="dash-tw-list"></div>';
       const box = $('dash-tw-list');
       let oldest = null;
-      const add = rows => {
-        box.insertAdjacentHTML('beforeend', rows.map(twRow).join(''));
+      const fixImgs = () => {
         // No cached headshot is a 404; fall back to the initial.
         box.querySelectorAll('img.dash-tw-av:not([data-tw])').forEach(img => {
           img.dataset.tw = '1';
@@ -2392,6 +2421,11 @@
             img.outerHTML = `<span class="dash-tw-av dash-tw-av--init">${esc(name.charAt(0).toUpperCase())}</span>`;
           };
         });
+      };
+      const add = rows => {
+        if (!rows.length) return;
+        box.insertAdjacentHTML('beforeend', rows.map(twRow).join(''));
+        fixImgs();
         oldest = rows[rows.length - 1].id;
         const more = card.querySelector('.dash-tw-more');
         if (more) more.remove();
@@ -2401,7 +2435,7 @@
         btn.textContent = 'Older tweets';
         btn.onclick = () => {
           btn.disabled = true;
-          jget(`/api/tweets?limit=${TW_PAGE}&before=${oldest}`)
+          jget(`/api/tweets?limit=${TW_PAGE}&before=${oldest}`, { headers: auth })
             .then(r => r.length ? add(r) : btn.remove())
             .catch(() => { btn.disabled = false; });
         };
@@ -2409,7 +2443,77 @@
       };
       add(list);
       card.hidden = false;
+      box.addEventListener('click', e => {
+        const del = e.target.closest('.dash-tw-del');
+        if (!del || !confirm('Delete this tweet? Its Discord post stays up.')) return;
+        fetch(`/api/tweets/${del.dataset.id}`, { method: 'DELETE', headers: auth })
+          .then(r => { if (r.ok) del.closest('.dash-tw').remove(); });
+      });
+      if (token) setupTwCompose(row => {
+        box.insertAdjacentHTML('afterbegin', twRow(row));
+        fixImgs();
+      });
     }).catch(() => {});
+
+    function setupTwCompose(onPosted) {
+      const text = $('tw-text'), as = $('tw-as'), post = $('tw-post'), err = $('tw-err');
+      let ids = { self: null, profiles: [] };
+      const fill = keep => {
+        as.innerHTML = `<option value="self">Post as me (@${esc(ids.self.handle)})</option>`
+          + ids.profiles.map(p => `<option value="p${p.id}">${esc(p.name)} (@${esc(p.handle)})</option>`).join('')
+          + `<option value="anon">New identity…</option>`;
+        if (keep && [...as.options].some(o => o.value === keep)) as.value = keep;
+        sync();
+      };
+      const sync = () => {
+        $('tw-anon').hidden = as.value !== 'anon';
+        $('tw-forget').hidden = !as.value.startsWith('p');
+        const left = 280 - text.value.length;
+        $('tw-count').textContent = left;
+        post.disabled = !text.value.trim();
+      };
+      const load = keep => jget('/api/tweets/profiles', { headers: auth }).then(r => { ids = r; fill(keep); });
+      load().catch(() => { $('dash-tw-new').remove(); });
+      text.addEventListener('input', sync);
+      as.addEventListener('change', sync);
+      $('tw-forget').onclick = () => {
+        const p = ids.profiles.find(p => 'p' + p.id === as.value);
+        if (!p || !confirm(`Forget @${p.handle}? Tweets already posted under it stay up, and nobody else can take the handle.`)) return;
+        fetch(`/api/tweets/profiles/${p.id}`, { method: 'DELETE', headers: auth }).then(() => load('self'));
+      };
+      $('dash-tw-new').addEventListener('submit', e => {
+        e.preventDefault();
+        const body = { text: text.value.trim() };
+        if (as.value === 'self') body.identity = 'self';
+        else if (as.value === 'anon') Object.assign(body, {
+          identity: 'anon', name: $('tw-name').value.trim(), handle: $('tw-handle').value.trim().replace(/^@/, ''),
+          team: $('tw-team').value || null, save: $('tw-save').checked });
+        else Object.assign(body, { identity: 'profile', profile_id: Number(as.value.slice(1)) });
+        post.disabled = true;
+        err.textContent = '';
+        fetch('/api/tweets/member', { method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body) })
+          .then(r => r.json().then(j => ({ ok: r.ok, j })))
+          .then(({ ok, j }) => {
+            if (!ok) {
+              const d = j.detail;
+              err.textContent = typeof d === 'string' ? d : (d && d[0] && d[0].msg) || 'Could not post';
+              sync();
+              return;
+            }
+            onPosted(j);
+            text.value = '';
+            if (body.identity === 'anon' && body.save) {
+              ['tw-name', 'tw-handle'].forEach(id => { $(id).value = ''; });
+              load().then(() => {
+                const p = ids.profiles.find(p => p.handle === j.handle);
+                if (p) { as.value = 'p' + p.id; sync(); }
+              });
+            } else sync();
+          })
+          .catch(() => { err.textContent = 'Could not post'; sync(); });
+      });
+    }
 
     // ── Band 1: signed-in only ────────────────────────────────────────────
     if (!token) return;
