@@ -319,3 +319,17 @@ into several messages by team, each pinging only the teams it names.
 Unchanged injuries are never reposted: a report that changes nothing posts
 nothing, and an OVR move alone isn't a change. Unset channel, nothing is sent.
 
+
+## NBN Twitter
+
+Every tweet `routers/tweets.py` stores is also posted to
+`DISCORD_TWEETS_CHANNEL` (`#twitter`), one embed per tweet: the account as the
+author line (with the player's headshot on a player's own account), the text
+as the body, the team's colour, likes, retweets and the game in the footer.
+That covers the game-day batch from `/parse-boxscores` step 8 and the arena
+naming-rights tweets from `post_one`. Nothing in a tweet can ping
+(`allowed_mentions` is empty).
+
+Deleting a tweet on the site does not remove its Discord post, because the
+shared transport keeps no message ids. Delete it in Discord by hand. Unset
+channel, nothing is sent.
