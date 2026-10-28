@@ -26,28 +26,39 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     .fv-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-    .fv-table td.team { display: flex; align-items: center; gap: 0.5rem; }
+    .fv-table .team-in { display: flex; align-items: center; gap: 0.5rem; }
+    /* # and Team both stay put while the table scrolls sideways. */
+    .fv-table > thead > tr > :first-child, .fv-table > tbody > tr.row > :first-child { width: 2.5rem; min-width: 2.5rem; box-sizing: border-box; }
+    .fv-table > thead > tr > :nth-child(2), .fv-table > tbody > tr.row > :nth-child(2) { position: sticky; left: 2.5rem; background: var(--bg-page); z-index: 1; }
+    .fv-years td:first-child { position: static; background: none; }
+    .fv-table > tbody > tr.row:is(:hover, .open) > td { background: var(--bg-hover); }
+    /* A mask, like the tab strip's: the right edge fades while there are columns off to the side. */
+    .fv-wrap.more .ui-table-wrap { mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent); }
     .fv-table .logo { width: 20px; height: 20px; object-fit: contain; }
     .fv-table th[data-sort] { cursor: pointer; }
     .fv-table th.sorted { color: var(--text-primary); }
     .fv-table tbody tr.row { cursor: pointer; }
-    .fv-table tbody tr.open td { background: var(--bg-hover); }
     .fv-table td.mono, .fv-years td.mono { font-family: var(--font-mono); }
-    .fv-detail td { white-space: normal; background: var(--bg-page); padding: var(--space-3) var(--space-4); }
+    .fv-detail > td { white-space: normal; padding: 0; background: var(--bg-card); }
+    .ui-table tbody tr.fv-detail:hover > td { background: var(--bg-card); }
+    .fv-years tr:hover td { background: none; }
+    /* The cell spans the whole scrolling table; its content is held to the
+       visible width (set from JS) so prose never runs off the side. */
+    .fv-detail-in { position: sticky; left: 0; box-sizing: border-box; padding: var(--space-3) var(--space-4); border-left: 3px solid var(--accent); }
     .fv-years { width: 100%; border-collapse: collapse; font-size: var(--text-xs); margin-bottom: var(--space-3); }
     .fv-years th, .fv-years td { padding: 0.3rem 0.5rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); }
     .fv-years th:first-child, .fv-years td:first-child { text-align: left; }
     .fv-years th { color: var(--text-muted); font-weight: 600; }
     .fv-sum { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6; }
     .fv-sum b { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
-    .fv-chart { position: relative; height: 220px; max-width: 720px; }
+    .fv-chart { position: relative; height: 240px; }
     .up { color: var(--market-positive); }
     .dn { color: var(--danger); }
     .fv-how { margin-top: var(--space-6); }
     .fv-how summary { cursor: pointer; color: var(--text-secondary); font-weight: 600; }
     .fv-how .ui-prose { margin-top: var(--space-3); font-size: var(--text-sm); }
     .fv-scroll { overflow-x: auto; }
-    .fv-tip { text-decoration: underline dotted var(--text-muted); text-underline-offset: 3px; cursor: help; }
+    .fv-tip { cursor: help; }
     .fv-cols { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); margin: 0; }
     .fv-cols dt { font-weight: 600; color: var(--text-primary); }
     .fv-cols dd { margin: 0; }
@@ -62,12 +73,12 @@
 
     <div id="daily-moves"></div>
 
-    <div class="ui-table-wrap">
+    <div class="fv-wrap"><div class="ui-table-wrap" id="wrap">
       <table class="ui-table ui-table--dense ui-table--sticky-first fv-table">
         <thead><tr id="thead"></tr></thead>
-        <tbody id="tbody"><tr><td class="ui-loading" colspan="12">Loading…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="ui-loading" colspan="13">Loading…</td></tr></tbody>
       </table>
-    </div>
+    </div></div>
 
     <details class="fv-how">
       <summary>How the price is worked out</summary>
@@ -91,7 +102,9 @@
   const pct = (v, dp = 1) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(dp) + '%';
   const arrow = v => v > 0 ? '▲' : v < 0 ? '▼' : '';
   const cls = v => v > 0 ? 'up' : v < 0 ? 'dn' : '';
-  const prob = p => (p * 100).toFixed(p >= 0.1 ? 0 : 1) + '%';
+  const prob = p => p > 0 && p < 0.0005 ? '<0.1%' : (p * 100).toFixed(p >= 0.1 ? 0 : 1) + '%';
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const shortDate = iso => { const [, m, d] = iso.split('-').map(Number); return `${MONTHS[m - 1]} ${d}`; };
 
   let run = null, history = [], events = {}, sortKey = 'mcap', sortDir = -1, openTeam = null, chart = null;
 
@@ -99,6 +112,7 @@
     { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
     { key: 'team',   label: 'Team',       get: t => t.team },
     { key: 'mcap',   label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
+    { key: 'fcap',   label: 'Fair cap', tip: "Fair value × 30M shares: what the model says the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
     { key: 'price',  label: 'Price', tip: "What a share would trade at: fair value plus the market's mood, which runs hot and cold around it",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
     { key: 'day',    label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
@@ -106,19 +120,17 @@
     { key: 'prem',   label: 'vs fair', tip: "Price against fair value: above 0 the market is paying up for it, below 0 it's on sale", get: t => t.prem, num: true, fmt: t => `<span class="${cls(t.prem)}">${pct(t.prem * 100)}</span>` },
     { key: 'ps',     label: 'P/S', tip: "Price to sales: market cap ÷ this season's projected revenue", get: t => t.ps, num: true, fmt: t => t.ps == null ? '—' : t.ps.toFixed(1) + '×' },
     { key: 'pe',     label: 'P/E', tip: "Price to earnings: price ÷ earnings per share (this season's projected profit ÷ 30M shares). Blank for a team losing money", get: t => t.pe, num: true, fmt: t => t.pe == null ? '<span class="muted">n/m</span>' : t.pe.toFixed(0) },
-    { key: 'beta',   label: 'Beta', tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
-    { key: 'book',   label: 'Ledger value', tip: "What the Front Office Ledger values the franchise at", get: t => t.book_value, num: true, fmt: t => yen(t.book_value, 'B') },
-    { key: 'ratio',  label: 'Fair ÷ ledger', tip: "This model's value divided by the ledger's. Above 1× means the model rates it higher", get: t => t.book_value ? t.value / t.book_value : null, num: true,
-      fmt: t => t.book_value ? (t.value / t.book_value).toFixed(2) + '×' : '—' },
+    { key: 'beta',   label: 'Beta', hideEmpty: true, tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
     { key: 'rec',    label: 'W-L', tip: "This season's record so far",        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
     { key: 'projw',  label: 'Proj W', tip: "Projected wins for the full season, from the playoff odds simulator",     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
     { key: 'title',  label: 'Title', tip: "Chance of winning this season's title",      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
-    { key: 'ops',    label: 'PV profit', tip: "Today's value of profit for the rest of this season and the next two",  get: t => t.pv_in - t.pv_out, num: true, fmt: t => signedYen(t.pv_in - t.pv_out) },
-    { key: 'sale',   label: 'PV sale', tip: "Today's value of selling the team after the third season",    get: t => t.pv_sale, num: true, fmt: t => yen(t.pv_sale, 'B') },
   ];
 
+  // Beta stays off the table until there are enough days to compute it.
+  const shownCols = () => COLS.filter(c => !c.hideEmpty || run.teams.some(t => c.get(t) != null));
+
   function renderHead() {
-    document.getElementById('thead').innerHTML = COLS.map(c =>
+    document.getElementById('thead').innerHTML = shownCols().map(c =>
       `<th class="${c.num ? 'num' : ''} ${sortKey === c.key ? 'sorted' : ''}" ${c.sort === false ? '' : `data-sort="${c.key}"`}${c.tip ? ` title="${esc(c.tip)}"` : ''}>${c.tip ? `<span class="fv-tip">${c.label}</span>` : c.label}${sortKey === c.key ? (sortDir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('');
   }
 
@@ -133,19 +145,31 @@
   }
 
   function renderBody() {
-    const rows = sorted();
+    const rows = sorted(), cols = shownCols();
     document.getElementById('tbody').innerHTML = rows.map((t, i) => {
-      const cells = COLS.map(c => {
-        if (c.key === 'team') return `<td class="team"><img class="logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'"><a href="/teams/${t.team}/" onclick="event.stopPropagation()"><b>${t.team}</b></a></td>`;
+      const cells = cols.map(c => {
+        if (c.key === 'team') return `<td class="team"><span class="team-in"><img class="logo" src="/logos/sm/logo-${t.team.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'"><a href="/teams/${t.team}/" onclick="event.stopPropagation()"><b>${t.team}</b></a></span></td>`;
         const v = c.fmt ? c.fmt(t) : c.get(t, i);
         return `<td class="${c.num ? 'num mono' : ''}">${v}</td>`;
       }).join('');
       const open = openTeam === t.team;
       return `<tr class="row ${open ? 'open' : ''}" data-team="${t.team}">${cells}</tr>` +
-        (open ? `<tr class="fv-detail"><td colspan="${COLS.length}">${detail(t)}</td></tr>` : '');
+        (open ? `<tr class="fv-detail"><td colspan="${cols.length}"><div class="fv-detail-in">${detail(t)}</div></td></tr>` : '');
     }).join('');
+    fitDetail();
     if (openTeam) drawChart(openTeam);
   }
+
+  // Hold the open detail to the visible width, and fade the right edge while
+  // there are columns off to the side.
+  const wrap = document.getElementById('wrap');
+  function fitDetail() {
+    const d = document.querySelector('.fv-detail-in');
+    if (d) d.style.width = wrap.clientWidth + 'px';
+    wrap.parentElement.classList.toggle('more', wrap.scrollLeft + wrap.clientWidth < wrap.scrollWidth - 2);
+  }
+  wrap.addEventListener('scroll', fitDetail, { passive: true });
+  window.addEventListener('resize', () => { fitDetail(); if (chart) chart.resize(); });
 
   function detail(t) {
     const yrs = t.years;
@@ -202,7 +226,7 @@
         Value <b>${yen(t.value, 'B')}</b> = PV of profit <b>${signedYen(t.pv_in - t.pv_out)}</b>
         + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
         (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
-        ${t.book_value ? `The ledger has it at ${yen(t.book_value, 'B')}.` : ''}
+        ${t.book_value ? `The ledger has it at ${yen(t.book_value, 'B')}, so this model rates it ${(t.value / t.book_value).toFixed(2)}× the ledger.` : ''}
         ${(t.injuries || []).length ? `<br>${t.years[0].strength.toFixed(1) === t.strength_injured.toFixed(1) ? "Injuries don't move this season's strength" : `Injuries take this season's strength from ${t.years[0].strength.toFixed(1)} to ${t.strength_injured.toFixed(1)}`}: ${t.injuries.map(i => `${esc(i.name ? nbnPlayerName(i.name) : i.slug)} (${esc((i.status || '').toLowerCase())}, about ${i.games} of ${i.of} games left)`).join(', ')}.` : ''}
       </div>
       <div class="fv-scroll"><table class="fv-years"><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>
@@ -223,7 +247,7 @@
     chart = new Chart(el, {
       type: 'line',
       data: {
-        labels: days.map(d => d.date),
+        labels: days.map(d => shortDate(d.date)),
         datasets: [
           { label: 'Price', data: days.map(d => d.teams[team].market ?? d.teams[team].price), borderColor: cssVar('--accent'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
           { label: 'Fair value', data: days.map(d => d.teams[team].price), borderColor: cssVar('--text-muted'), borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
@@ -332,7 +356,7 @@
   function renderChips() {
     document.getElementById('chips').innerHTML = `
       <span class="ui-chip ui-chip--warning">Shadow model · not tradable</span>
-      <span class="ui-chip">As of ${esc(run.date)}</span>
+      <span class="ui-chip">As of ${esc(shortDate(run.date))}</span>
       ${index ? `<span class="ui-chip" title="The NBN 30: the average price of all 30 franchises">NBN 30 ¥${index.level.toFixed(2)}${index.day == null ? '' : ` <span class="${cls(index.day)}">${arrow(index.day)} ${pct(index.day, 2)}</span>`}</span>` : ''}
       <a class="ui-chip" href="/invest/">Wall Street</a>`;
   }
@@ -412,7 +436,7 @@
         fetch(`${API}/fair-value/history`).then(x => x.ok ? x.json() : { days: [] }),
       ]);
       if (!r) {
-        document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="${COLS.length}">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
+        document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
         return;
       }
       run = r;
@@ -433,7 +457,7 @@
       const d = dailyFromHistory();
       DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, ...d });
     } catch (e) {
-      document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="${COLS.length}">Couldn't load the fair value.</td></tr>`;
+      document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">Couldn't load the fair value.</td></tr>`;
     }
   }
   init();
