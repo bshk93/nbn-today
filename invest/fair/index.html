@@ -76,7 +76,7 @@
     <div class="fv-wrap"><div class="ui-table-wrap" id="wrap">
       <table class="ui-table ui-table--dense ui-table--sticky-first fv-table">
         <thead><tr id="thead"></tr></thead>
-        <tbody id="tbody"><tr><td class="ui-loading" colspan="12">Loading…</td></tr></tbody>
+        <tbody id="tbody"><tr><td class="ui-loading" colspan="13">Loading…</td></tr></tbody>
       </table>
     </div></div>
 
@@ -112,6 +112,7 @@
     { key: 'rank',   label: '#',          get: (t, i) => i + 1, sort: false },
     { key: 'team',   label: 'Team',       get: t => t.team },
     { key: 'mcap',   label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
+    { key: 'fcap',   label: 'Fair cap', tip: "Fair value × 30M shares: what the model says the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
     { key: 'price',  label: 'Price', tip: "What a share would trade at: fair value plus the market's mood, which runs hot and cold around it",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
     { key: 'day',    label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
@@ -435,7 +436,7 @@
         fetch(`${API}/fair-value/history`).then(x => x.ok ? x.json() : { days: [] }),
       ]);
       if (!r) {
-        document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="12">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
+        document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
         return;
       }
       run = r;
@@ -456,7 +457,7 @@
       const d = dailyFromHistory();
       DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, ...d });
     } catch (e) {
-      document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="12">Couldn't load the fair value.</td></tr>`;
+      document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">Couldn't load the fair value.</td></tr>`;
     }
   }
   init();
