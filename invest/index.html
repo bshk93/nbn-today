@@ -640,9 +640,8 @@ async function toggleChart(team) {
       { label: 'Season', desc: 'This season',   pick: () => take(games.filter(p => p.season === season)), seasons: false },
       { label: 'All',    desc: 'All time',      pick: () => take(games), seasons: true },
     ];
-    const inSeason = games.filter(p => p.season === season).length;
     if (!cRow.classList.contains('visible')) return;
-    teamCharts[team] = mountPriceChart(host, ranges, inSeason >= 10 ? 'Season' : '30G');
+    teamCharts[team] = mountPriceChart(host, ranges, 'All');
   } catch (e) {
     host.textContent = 'Failed to load chart.';
   }
@@ -706,6 +705,9 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
     if (pts.length < 2) pts = ranges[ranges.length - 1].pick();
     host.querySelectorAll('.win-btn').forEach(b => b.classList.toggle('active', b.dataset.r === range.label));
     const first = pts[0].price, lastP = pts[pts.length - 1].price;
+    // The y-axis hugs the range's own low and high, so the shape fills the plot.
+    const ys = pts.map(p => p.price);
+    const lo = Math.min(...ys), hi = Math.max(...ys), pad = (hi - lo) * 0.08 || 2;
     const tone = lastP > first + 0.004 ? '--market-positive' : lastP < first - 0.004 ? '--danger' : '--text-muted';
     const line = cssVar(tone);
     const playoff = pts.map(p => !!p.is_playoff);
@@ -723,7 +725,7 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
         data: pts.map((p, i) => ({ x: i, y: p.price })),
         borderColor: line,
         borderWidth: 2,
-        tension: 0.15,
+        tension: 0.1,
         fill: 'start',
         backgroundColor: ({ chart: c }) => {
           const a = c.chartArea;
@@ -766,11 +768,11 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
           },
           y: {
             position: 'right',
-            grace: '6%',
+            min: Math.max(0, lo - pad), max: hi + pad,
             grid: { color: cssFill('--border', 0.6) },
             border: { display: false },
             ticks: {
-              color: cssVar('--text-dim'), font: { size: 10 }, maxTicksLimit: 4, padding: 6,
+              color: cssVar('--text-dim'), font: { size: 10 }, maxTicksLimit: 5, padding: 6, includeBounds: false,
               callback: v => '¥' + Number(v).toLocaleString('en-US', { maximumFractionDigits: Math.abs(v) < 20 ? 1 : 0 }),
             },
           },
@@ -948,7 +950,7 @@ function renderPortfolio() {
       { label: '1M',  desc: 'Last month',    pick: since(30) },
       { label: '3M',  desc: 'Last 3 months', pick: since(91) },
       { label: 'All', desc: 'All time',      pick: () => pts },
-    ], '3M');
+    ], 'All');
   }
 }
 
