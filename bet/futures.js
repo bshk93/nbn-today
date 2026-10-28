@@ -43,13 +43,10 @@
     .fut-trades td.down { color: var(--danger); }
     .fut-form { display: flex; flex-direction: column; gap: 0.55rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; }
     .fut-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.55rem; }
-    /* Price chart. Three highlighted series in the dataviz reference palette's
-       first three slots — the only ones that stay distinct as every pair
-       (lines cross), validated against the default dark surface, the tinted
-       team surfaces and white. Dark steps by default; light steps on the two
-       light themes. Everything else is a grey context line. */
-    .fut-chart { --s1: #3987e5; --s2: #d95926; --s3: #199e70; position: relative; margin: 0.2rem 0 0.8rem; }
-    :root[data-theme="nbn-today-light"] .fut-chart, :root[data-theme="lavender-rose"] .fut-chart { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; }
+    /* Price chart. Three highlighted series in the --series-* tokens (css/theme.css),
+       validated to stay distinct as every pair since the lines cross. Everything
+       else is a grey context line. */
+    .fut-chart { --s1: var(--series-1); --s2: var(--series-2); --s3: var(--series-3); position: relative; margin: 0.2rem 0 0.8rem; }
     .fut-chart svg { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
     .fut-chart svg:focus { outline: none; }
     .fut-chart svg:focus-visible { outline: 1px solid var(--border); outline-offset: 2px; }
