@@ -325,10 +325,6 @@ affects days after it.
   the rollover still steps every price up a season's discounting at once. A
   tradable version would need to pay it out or price against the league
   average across the rollover.
-- **The crowd term is pumpable.** fv5's market price follows the title
-  futures, where a ¥150 bet moves a long shot ten points. Harmless while
-  nothing trades on it; a tradable version would need to drop it or weight it
-  by money at risk.
 - **Payout budget.** Wall Street's `MOVE_DIVISOR` was tuned against the NB¥
   budget (`docs/nbyen-economy.md` § 3). This model's volatility is
   different and would need the same backtest, which it can't have until
@@ -446,7 +442,7 @@ The user's aim, in their words: "realistic stock price series".
 
 ### fv5 (2026-10-28)
 
-Six changes from a review of the page, all asked for by the user.
+Five changes from a review of the page, all asked for by the user.
 
 - **The sale saw no payroll.** The sale was ~94% of every value and priced on
   revenue alone, so a team deep in the tax sold like one under the cap. Now
@@ -472,11 +468,11 @@ Six changes from a review of the page, all asked for by the user.
 - **Valued as of opening night.** This season counts whole and the sale is
   three seasons out, so a price no longer drifts up ~8% a season from
   discounting alone.
-- **The crowd.** The market price adds 1% per percentage point the members
-  have moved a team's title futures from the opening line, capped at ±10%
-  (`crowd_lookup`, `CROWD_PER_POINT`). The random moods stay as tuned. MEM's
-  +16% over fair on 10-28 was one of their fat-tail days (about one in 33),
-  not news.
+- **Rejected: driving the market mood from the title futures** (how far
+  members have moved a team's odds from the opening line). Built and taken out
+  the same day: the user doesn't want futures bets moving these prices. The
+  random moods stay as tuned. MEM's +16% over fair on 10-28 was one of their
+  fat-tail days (about one in 33), not news.
 - **Effect on 2026-10-28**, against the league average: OKC +20%, CHI and ORL
   +12%, MIL and MEM +10%; CLE and LAC −21%, WAS and SAC −14%, CHA −12%. The
   spread goes from 2.23× to 3.0×. Without the profit weight (age, picks and
