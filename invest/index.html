@@ -24,7 +24,6 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2/dist/chartjs-plugin-zoom.min.js"></script>
   <style>
     
             
@@ -63,15 +62,27 @@
     .buy-btn:hover { background: color-mix(in srgb, var(--success) 16%, transparent); }
     .buy-btn:disabled { opacity: 0.4; cursor: default; }
 
-    /* Expanded chart row */
+    /* Expanded chart row. The chart sticks to the left edge so it stays in view
+       when a phone has the table scrolled sideways; its width is set from the
+       table's visible width in fitChartWidths(). */
     .chart-row { display: none; }
     .chart-row.visible { display: table-row; }
-    .chart-row td { padding: 0 0.85rem 1rem; position: sticky; left: 0; }
-    .chart-wrap { position: relative; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem; width: min(860px, calc(100vw - 3rem)); }
-    .chart-wrap canvas { max-height: 200px; }
-    .chart-hint { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.3rem; }
-    .chart-reset { position: absolute; top: 0.5rem; right: 0.6rem; background: none; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius-sm); padding: 0.1rem 0.45rem; font-size: var(--text-xs); cursor: pointer; }
-    .chart-reset:hover { border-color: var(--text-muted); color: var(--text-secondary); }
+    .chart-row td { padding: 0 0 1rem; }
+    .chart-wrap { position: sticky; left: 0; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem 0.6rem; max-width: 860px; box-sizing: border-box; cursor: default; }
+
+    /* Price chart (team rows, indexes, portfolio) */
+    .pc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .pc-read { min-width: 0; }
+    .pc-val { font-family: var(--font-mono); font-size: var(--text-md); font-weight: 700; color: var(--text-primary); }
+    .pc-chg { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; margin-left: 0.5rem; }
+    .pc-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.15rem; min-height: 1.2em; }
+    .pc-plot { position: relative; height: 220px; touch-action: pan-y; }
+    .pc-foot { display: flex; align-items: center; gap: 0.4rem; font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.35rem; min-height: 1em; }
+    .pc-key { display: inline-block; width: 0.8rem; height: 0.6rem; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--purple) 18%, transparent); }
+    @media (max-width: 600px) {
+      .pc-plot { height: 180px; }
+      .chart-wrap { padding: 0.6rem 0.6rem 0.5rem; }
+    }
 
     /* Holdings / portfolio */
     .summary-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
@@ -82,7 +93,6 @@
     .summary-card .val.neg { color: var(--danger); }
 
     .portfolio-chart-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
-    .portfolio-chart-wrap canvas { max-height: 200px; }
     .chart-title { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
 
     .holdings-table-wrap { overflow-x: auto; }
@@ -133,13 +143,17 @@
 
     /* Market Summary */
     .mkt-summary { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.85rem 1.1rem; margin-bottom: 1.5rem; }
-    .mkt-summary-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .mkt-summary-hdr { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
     .mkt-summary-title { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
     .win-toggle { display: flex; gap: 2px; background: var(--bg-page); border-radius: var(--radius-sm); padding: 2px; }
     .win-btn { background: none; border: none; color: var(--text-muted); padding: 0.2rem 0.55rem; border-radius: var(--radius-sm); cursor: pointer; font-size: var(--text-xs); font-weight: 600; }
     .win-btn.active { background: var(--border); color: var(--text-primary); }
     .win-btn:hover:not(.active) { color: var(--text-secondary); }
-    .movers-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.35rem; }
+    /* Five cards across; on a phone they keep their size and scroll sideways. */
+    .movers-grid { display: grid; grid-template-columns: repeat(5, minmax(84px, 1fr)); gap: 0.35rem; overflow-x: auto; scrollbar-width: none; }
+    .movers-grid::-webkit-scrollbar { display: none; }
+    .mover-spark { width: 100%; height: 22px; margin: 0.1rem 0; overflow: visible; }
+    .mover-spark path { fill: none; stroke: currentColor; stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
     .movers-row-label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.3rem; margin-top: 0.1rem; }
     .movers-row-label.up { color: var(--market-positive); }
     .movers-row-label.dn { color: var(--danger); }
@@ -528,11 +542,7 @@ function renderMarketTable() {
     const cRow = document.createElement('tr');
     cRow.className = 'chart-row';
     cRow.id = `chart-row-${t.team}`;
-    cRow.innerHTML = `<td colspan="9"><div class="chart-wrap">
-      <button class="chart-reset" onclick="resetTeamChart('${t.team}')">Reset</button>
-      <canvas id="canvas-${t.team}" onclick="event.stopPropagation()"></canvas>
-      <div class="chart-hint">Scroll to zoom · Drag to select range · Reset to zoom out</div>
-    </div></td>`;
+    cRow.innerHTML = `<td colspan="9"><div class="chart-wrap" id="chart-${t.team}"></div></td>`;
     tbody.appendChild(cRow);
   });
 
@@ -592,11 +602,7 @@ function renderIndexTable() {
       const cRow = document.createElement('tr');
       cRow.className = 'chart-row';
       cRow.id = `chart-row-${ticker}`;
-      cRow.innerHTML = `<td colspan="9"><div class="chart-wrap">
-        <button class="chart-reset" onclick="resetTeamChart('${ticker}')">Reset</button>
-        <canvas id="canvas-${ticker}" onclick="event.stopPropagation()"></canvas>
-        <div class="chart-hint">Scroll to zoom · Drag to select range · Reset to zoom out</div>
-      </div></td>`;
+      cRow.innerHTML = `<td colspan="9"><div class="chart-wrap" id="chart-${ticker}"></div></td>`;
       tbody.appendChild(cRow);
     }
   }
@@ -605,130 +611,228 @@ function renderIndexTable() {
 async function toggleChart(team) {
   const cRow = document.getElementById(`chart-row-${team}`);
   const mainRow = document.getElementById(`row-${team}`);
+  if (teamCharts[team]) { teamCharts[team].destroy(); delete teamCharts[team]; }
   if (cRow.classList.contains('visible')) {
     cRow.classList.remove('visible');
     mainRow.classList.remove('expanded');
-    if (teamCharts[team]) { teamCharts[team].destroy(); delete teamCharts[team]; }
     return;
   }
   cRow.classList.add('visible');
   mainRow.classList.add('expanded');
+  fitChartWidths();
 
-  if (teamCharts[team]) { teamCharts[team].destroy(); delete teamCharts[team]; }
-
+  const host = document.getElementById(`chart-${team}`);
+  host.innerHTML = '<div class="mkt-summary-loading">Loading chart…</div>';
   try {
     const res = await fetch(`${API}/invest/prices/${team}`);
     const data = await res.json();
-    let history = data.history || [];
-
-    // Append a synthetic "Now" point using the current market price so the
-    // chart always extends to today regardless of when the last game was played.
+    const games = (data.history || []).filter(p => !p.is_now);
+    // The current price, when it has moved since the last game, ends the line.
     const cur = tickerEntry(team);
-    if (cur) {
-      history = [...history, { date: 'Now', price: cur.price, is_playoff: false, is_now: true }];
-    }
-
-    drawTeamChart(team, history);
+    const last = games[games.length - 1];
+    const now = cur && (!last || Math.abs(cur.price - last.price) >= 0.005)
+      ? [{ date: null, price: cur.price, is_now: true }] : [];
+    const season = last?.season;
+    const take = pts => [...pts, ...now];
+    const ranges = [
+      { label: '10G',    desc: 'Last 10 games', pick: () => take(games.slice(-11)) },
+      { label: '30G',    desc: 'Last 30 games', pick: () => take(games.slice(-31)) },
+      { label: 'Season', desc: 'This season',   pick: () => take(games.filter(p => p.season === season)), seasons: false },
+      { label: 'All',    desc: 'All time',      pick: () => take(games), seasons: true },
+    ];
+    const inSeason = games.filter(p => p.season === season).length;
+    if (!cRow.classList.contains('visible')) return;
+    teamCharts[team] = mountPriceChart(host, ranges, inSeason >= 10 ? 'Season' : '30G');
   } catch (e) {
-    document.getElementById(`canvas-${team}`).parentElement.textContent = 'Failed to load chart.';
+    host.textContent = 'Failed to load chart.';
   }
 }
 
-function fitYToVisible(chart, prices) {
-  const xScale = chart.scales.x;
-  const lo = Math.max(0, Math.round(xScale.min));
-  const hi = Math.min(prices.length - 1, Math.round(xScale.max));
-  const slice = prices.slice(lo, hi + 1).filter(v => v != null);
-  if (!slice.length) return;
-  const mn = Math.min(...slice), mx = Math.max(...slice);
-  const pad = (mx - mn) * 0.08 || 2;
-  chart.options.scales.y.min = Math.max(0, mn - pad);
-  chart.options.scales.y.max = mx + pad;
-  chart.update('none');
-}
-
-function resetTeamChart(team) {
-  const chart = teamCharts[team];
-  if (!chart) return;
-  chart.resetZoom();
-  chart.options.scales.y.min = undefined;
-  chart.options.scales.y.max = undefined;
-  chart.update('none');
-}
-
-function drawTeamChart(team, history) {
-  const canvas = document.getElementById(`canvas-${team}`);
-  if (!canvas) return;
-  const labels     = history.map(p => p.date);
-  const prices     = history.map(p => p.price);
-  const playoffIdx = new Set(history.map((p, i) => p.is_playoff ? i : -1).filter(i => i >= 0));
-  const pointRadius = history.map(p => p.is_now ? 5 : 0);
-  const pointStyle  = history.map(p => p.is_now ? 'rectRot' : 'circle');
-  const pointColors = history.map(p => p.is_now ? cssVar('--gold') : 'transparent');
-
-  teamCharts[team] = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data: prices,
-        segment: {
-          borderColor: ctx => playoffIdx.has(ctx.p1DataIndex) ? cssVar('--purple') : cssVar('--link'),
-        },
-        backgroundColor: cssFill('--link', 0.12),
-        borderWidth: 1.5,
-        tension: 0.1,
-        fill: true,
-        pointStyle,
-        pointRadius,
-        pointBackgroundColor: pointColors,
-        pointBorderColor: pointColors,
-        pointHoverRadius: 5,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const h = history[ctx.dataIndex];
-              let s = `¥${ctx.parsed.y.toFixed(2)}`;
-              if (h.is_now) s += '  ← Now';
-              else if (h.is_playoff) s += '  · Playoff';
-              else if (h.diff != null) s += `  (${h.diff >= 0 ? '+' : ''}${h.diff})`;
-              return s;
-            },
-          },
-        },
-        zoom: {
-          zoom: {
-            wheel: { enabled: true, speed: 0.15 },
-            drag: {
-              enabled: true,
-              backgroundColor: cssFill('--link', 0.12),
-              borderColor: cssVar('--link'),
-              borderWidth: 1,
-            },
-            pinch: { enabled: true },
-            mode: 'x',
-            onZoomComplete: ({ chart }) => fitYToVisible(chart, prices),
-          },
-          pan: { enabled: false },
-        },
-      },
-      scales: {
-        x: { display: false },
-        y: {
-          ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
-          grid: { color: cssVar('--border') },
-        },
-      },
-    },
+// An open chart row is as wide as the part of the table you can see, not the
+// whole (wider) table, so on a phone it fits the screen.
+function fitChartWidths() {
+  document.querySelectorAll('.chart-row.visible .chart-wrap').forEach(el => {
+    const wrap = el.closest('.market-table-wrap');
+    if (wrap) el.style.width = wrap.clientWidth + 'px';
   });
+}
+window.addEventListener('resize', fitChartWidths);
+
+function fmtDay(iso, withYear) {
+  if (!iso) return 'Now';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US',
+    withYear ? { month: 'short', day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric' });
+}
+
+// One price chart: a range picker, a readout that follows your finger or
+// pointer, a dashed line at the range's opening value and shaded playoffs.
+// ranges: [{label, pick() -> [{date, price, is_playoff?, diff?, opp?, season?}]}]
+function mountPriceChart(host, ranges, initial, opts = {}) {
+  const unit = opts.unit || '';
+  host.innerHTML = `
+    <div class="pc-head">
+      <div class="pc-read"><span class="pc-val"></span><span class="pc-chg"></span><span class="pc-sub"></span></div>
+      <div class="win-toggle">${ranges.map(r => `<button class="win-btn" data-r="${r.label}">${r.label}</button>`).join('')}</div>
+    </div>
+    <div class="pc-plot"><canvas></canvas></div>
+    <div class="pc-foot"></div>`;
+  const $ = sel => host.querySelector(sel);
+  let chart = null, pts = [], range = null;
+
+  function readout(i) {
+    const first = pts[0].price;
+    const p = pts[i ?? pts.length - 1];
+    const d = p.price - first;
+    const pct = first > 0 ? d / first * 100 : 0;
+    $('.pc-val').textContent = fmtNBY(p.price) + unit;
+    const chg = $('.pc-chg');
+    chg.className = 'pc-chg ' + chgClass(Math.round(d * 100));
+    const sign = d >= 0 ? '+' : '−';
+    chg.textContent = `${sign}${fmtNBY(Math.abs(d))} (${sign}${Math.abs(pct).toFixed(1)}%)`;
+    let sub;
+    if (i == null) sub = range.desc;
+    else {
+      sub = p.is_now ? 'Now' : fmtDay(p.date, true);
+      const note = gameNote(p);
+      if (note) sub += ' · ' + note;
+      if (p.is_playoff) sub += ' · playoffs';
+    }
+    $('.pc-sub').textContent = sub;
+  }
+
+  function draw() {
+    pts = range.pick();
+    if (pts.length < 2) pts = ranges[ranges.length - 1].pick();
+    host.querySelectorAll('.win-btn').forEach(b => b.classList.toggle('active', b.dataset.r === range.label));
+    const first = pts[0].price, lastP = pts[pts.length - 1].price;
+    const tone = lastP > first + 0.004 ? '--market-positive' : lastP < first - 0.004 ? '--danger' : '--text-muted';
+    const line = cssVar(tone);
+    const playoff = pts.map(p => !!p.is_playoff);
+    $('.pc-foot').innerHTML = playoff.some(Boolean) ? '<span class="pc-key"></span>Playoffs' : '';
+
+    // Season-start ticks on the long view, dates otherwise.
+    const seasonStarts = range.seasons
+      ? pts.map((p, i) => (i === 0 || (p.season && p.season !== pts[i - 1].season)) && p.season ? i : -1).filter(i => i >= 0)
+      : null;
+
+    if (chart) chart.destroy();
+    chart = new Chart($('canvas'), {
+      type: 'line',
+      data: { datasets: [{
+        data: pts.map((p, i) => ({ x: i, y: p.price })),
+        borderColor: line,
+        borderWidth: 2,
+        tension: 0.15,
+        fill: 'start',
+        backgroundColor: ({ chart: c }) => {
+          const a = c.chartArea;
+          if (!a) return 'transparent';
+          const g = c.ctx.createLinearGradient(0, a.top, 0, a.bottom);
+          g.addColorStop(0, cssFill(tone, 0.22));
+          g.addColorStop(1, cssFill(tone, 0));
+          return g;
+        },
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: line,
+        pointHoverBorderColor: cssVar('--bg-page'),
+        pointHoverBorderWidth: 2,
+      }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        events: ['mousemove', 'mouseout', 'touchstart', 'touchmove', 'touchend'],
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        layout: { padding: { top: 6 } },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: {
+            type: 'linear', min: 0, max: pts.length - 1,
+            grid: { display: false },
+            border: { display: false },
+            afterBuildTicks: seasonStarts ? ax => { ax.ticks = seasonStarts.map(v => ({ value: v })); } : undefined,
+            ticks: {
+              color: cssVar('--text-dim'), font: { size: 10 }, maxRotation: 0,
+              autoSkip: true, autoSkipPadding: 14, maxTicksLimit: seasonStarts ? 12 : 5,
+              includeBounds: false,
+              callback: v => {
+                const p = pts[Math.round(v)];
+                if (!p || v !== Math.round(v)) return '';
+                return seasonStarts ? p.season : (p.is_now ? 'Now' : fmtDay(p.date));
+              },
+            },
+          },
+          y: {
+            position: 'right',
+            grace: '6%',
+            grid: { color: cssFill('--border', 0.6) },
+            border: { display: false },
+            ticks: {
+              color: cssVar('--text-dim'), font: { size: 10 }, maxTicksLimit: 4, padding: 6,
+              callback: v => '¥' + Number(v).toLocaleString('en-US', { maximumFractionDigits: Math.abs(v) < 20 ? 1 : 0 }),
+            },
+          },
+        },
+      },
+      plugins: [{
+        id: 'pcBands',
+        beforeDatasetsDraw(c) {
+          const { ctx, chartArea: a, scales: { x, y } } = c;
+          ctx.save();
+          // Playoff runs as shaded bands.
+          ctx.fillStyle = cssFill('--purple', 0.18);
+          for (let i = 0; i < playoff.length; i++) {
+            if (!playoff[i]) continue;
+            let j = i;
+            while (j + 1 < playoff.length && playoff[j + 1]) j++;
+            const l = Math.max(a.left, x.getPixelForValue(i - 0.5));
+            const r = Math.min(a.right, x.getPixelForValue(j + 0.5));
+            ctx.fillRect(l, a.top, r - l, a.bottom - a.top);
+            i = j;
+          }
+          // Where the range opened.
+          const by = y.getPixelForValue(first);
+          ctx.strokeStyle = cssVar('--text-dim');
+          ctx.setLineDash([3, 4]);
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(a.left, by); ctx.lineTo(a.right, by); ctx.stroke();
+          ctx.restore();
+        },
+        afterDatasetsDraw(c) {
+          const act = c.getActiveElements()[0];
+          if (!act) return;
+          const { ctx, chartArea: a } = c;
+          ctx.save();
+          ctx.strokeStyle = cssVar('--text-muted');
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(act.element.x, a.top); ctx.lineTo(act.element.x, a.bottom); ctx.stroke();
+          ctx.restore();
+        },
+        afterEvent(c, args) {
+          const t = args.event.type;
+          // Lifting a finger, or leaving with the pointer, goes back to the range summary.
+          if (t === 'mouseout' || args.event.native?.type === 'touchend') {
+            c.setActiveElements([]);
+            args.changed = true;
+          }
+          const act = c.getActiveElements()[0];
+          readout(act ? act.index : null);
+        },
+      }],
+    });
+    readout(null);
+  }
+
+  host.querySelectorAll('.win-btn').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    range = ranges.find(r => r.label === b.dataset.r);
+    draw();
+  }));
+  range = ranges.find(r => r.label === initial) || ranges[ranges.length - 1];
+  draw();
+  return { destroy: () => chart && chart.destroy() };
 }
 
 // ── Portfolio ─────────────────────────────────────────────────────────────────
@@ -774,8 +878,8 @@ function renderPortfolio() {
 
   if (chart.length > 1) {
     html += `<div class="portfolio-chart-wrap">
-      <div class="chart-title">Portfolio Equity Over Time</div>
-      <canvas id="portfolio-canvas"></canvas>
+      <div class="chart-title">Holdings value</div>
+      <div id="portfolio-chart"></div>
     </div>`;
   }
 
@@ -830,42 +934,21 @@ function renderPortfolio() {
 
   el.innerHTML = html;
 
-  // Draw portfolio equity chart
+  // Holdings value over time, one point per game day.
   if (chart.length > 1) {
-    const canvas = document.getElementById('portfolio-canvas');
     if (portfolioChart) portfolioChart.destroy();
-    portfolioChart = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: chart.map(p => p.date),
-        datasets: [{
-          data: chart.map(p => p.equity),
-          borderColor: cssVar('--market-positive'),
-          backgroundColor: cssFill('--market-positive', 0.12),
-          borderWidth: 1.5,
-          tension: 0.2,
-          fill: true,
-          pointRadius: 1,
-          pointHoverRadius: 4,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        animation: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => fmtNBY(ctx.parsed.y) } },
-        },
-        scales: {
-          x: { display: false },
-          y: {
-            ticks: { color: cssVar('--text-muted'), font: { size: 10 }, callback: v => '¥' + v.toFixed(0) },
-            grid: { color: cssVar('--border') },
-          },
-        },
-      },
-    });
+    const pts = chart.map(p => ({ date: p.date, price: p.equity }));
+    const since = days => {
+      const [y, m, d] = pts[pts.length - 1].date.split('-').map(Number);
+      const c = new Date(y, m - 1, d - days);
+      const cut = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, '0')}-${String(c.getDate()).padStart(2, '0')}`;
+      return () => pts.filter(p => p.date >= cut);
+    };
+    portfolioChart = mountPriceChart(document.getElementById('portfolio-chart'), [
+      { label: '1M',  desc: 'Last month',    pick: since(30) },
+      { label: '3M',  desc: 'Last 3 months', pick: since(91) },
+      { label: 'All', desc: 'All time',      pick: () => pts },
+    ], '3M');
   }
 }
 
@@ -1103,6 +1186,17 @@ function gameNote(g) {
   return `${res} v ${g.opp}`;
 }
 
+// The window's price path as a tiny line (at least the last 10 games, so a
+// one-game move still shows where it came from).
+function sparkline(team, cls) {
+  const hist = (priceHistoriesCache[team] || []).slice(-(Math.max(moverWindow, 10) + 1));
+  if (hist.length < 2) return '';
+  const ys = hist.map(p => p.price);
+  const lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
+  const d = ys.map((v, i) => `${i ? 'L' : 'M'}${(i / (ys.length - 1) * 60).toFixed(1)},${(20 - (v - lo) / span * 20).toFixed(1)}`).join('');
+  return `<svg class="mover-spark ${cls}" viewBox="0 0 60 20" preserveAspectRatio="none" aria-hidden="true"><path d="${d}"/></svg>`;
+}
+
 function renderMarketSummary() {
   const el = document.getElementById('market-summary');
   if (!el) return;
@@ -1124,6 +1218,7 @@ function renderMarketSummary() {
     return `<div class="mover-card">
       <img class="team-logo" src="/logos/sm/logo-${item.team.toLowerCase()}.webp" alt="${item.team}" onerror="this.style.display='none'">
       <span class="team-abbr">${item.team}</span>
+      ${sparkline(item.team, cls)}
       <span class="mover-pct ${cls}">${sign}${item.pct.toFixed(1)}%</span>
       <span class="mover-abs">${absFmt}</span>
       ${moverWindow === 1 && item.last ? `<span class="mover-abs">${gameNote(item.last)}</span>` : ''}
