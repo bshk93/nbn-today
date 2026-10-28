@@ -439,6 +439,7 @@ The user's aim, in their words: "realistic stock price series".
 - Recomputed over the season's history on every write (`write_history`), so
   a rebuilt or late day carries forward. `price` in the API stays fair value;
   `market` is the new field. The page leads with the market price.
+- **Replaced 2026-10-28** by a mood built from real results (below).
 
 ### fv5 (2026-10-28)
 
@@ -477,6 +478,27 @@ Five changes from a review of the page, all asked for by the user.
   +12%, MIL and MEM +10%; CLE and LAC −21%, WAS and SAC −14%, CHA −12%. The
   spread goes from 2.23× to 3.0×. Without the profit weight (age, picks and
   valuation date alone) it is 2.49×, PHX +9% to CHA −8%.
+
+### A mood from real results (2026-10-28)
+
+The random mood put MEM up 8.2% on 10-28 with no game and no news (two
+fat-tail draws in four days, the second scaled up by the GARCH term), 17%
+over fair value. The user asked for a mood based on real things instead.
+`market_series` now sums, capped at ±10%:
+
+- **news:** 60% of each fair-value move, fading 3% a day (kept from before);
+- **form:** 1% per win in the last ten games above what the model expected
+  going into them (projected win % the day before), up to ±6%;
+- **streak:** 0.75% a game past three, up to ±3%;
+- **glow:** last season's champion +5%, runner-up +2%, fading to nothing by
+  game 41 (`title_glow`, from `playoff-brackets.csv`).
+
+No random draws, no league-wide mood and no beta (the page's Beta column
+went with it: without a league mood it only measured which teams played on
+the same nights). Each day's parts are in the history as `mood_parts`, and
+the page names the one that moved on a quiet day. On 10-28 the moods run
+from IND −4.5% (0-4) to MIL +6.0% (4-0); MEM is +0.4%, and no team moved
+more than 0.11% on that day without games.
 
 ## Open
 

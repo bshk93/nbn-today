@@ -124,20 +124,19 @@
     { key: 'team',   label: 'Team',       get: t => t.team },
     { key: 'mcap',   group: 'Franchise', label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
     { key: 'fcap',   group: 'Franchise', label: 'Fair cap', tip: "Fair value × 30M shares: what the model says the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
-    { key: 'price',  group: 'Share', label: 'Price', tip: "What a share would trade at: fair value plus the market's mood, which runs hot and cold around it",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
+    { key: 'price',  group: 'Share', label: 'Price', tip: "What a share would trade at: fair value plus the market's mood: recent news, form, streaks and last season's finals, overdone the way markets overdo them",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
     { key: 'day',    group: 'Share', label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
     { key: 'fair',   group: 'Share', label: 'Fair value', tip: "What a share is worth: the franchise's projected profit and sale price ÷ 30M shares. Moves only when something happens", get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
     { key: 'prem',   group: 'Share', label: 'vs fair', tip: "Price against fair value: above 0 the market is paying up for it, below 0 it's on sale", get: t => t.prem, num: true, fmt: t => `<span class="${cls(t.prem)}">${pct(t.prem * 100)}</span>` },
     { key: 'ps',     group: 'Ratios', label: 'P/S', tip: "Price to sales: market cap ÷ this season's projected revenue", get: t => t.ps, num: true, fmt: t => t.ps == null ? '—' : t.ps.toFixed(1) + '×' },
     { key: 'pe',     group: 'Ratios', label: 'P/E', tip: "Price to earnings: price ÷ earnings per share (this season's projected profit ÷ 30M shares). Blank for a team losing money", get: t => t.pe, num: true, fmt: t => t.pe == null ? '<span class="muted">n/m</span>' : t.pe.toFixed(0) },
-    { key: 'beta',   group: 'Ratios', label: 'Beta', hideEmpty: true, tip: "How much the team moves with the NBN 30: 1 moves with it, above 1 swings harder, below 1 less. Shown after ten days of history", get: t => t.beta, num: true, fmt: t => t.beta == null ? '—' : t.beta.toFixed(2) },
     { key: 'rec',    group: 'This season', label: 'W-L', tip: "This season's record so far",        get: t => t.w - t.l, num: true, fmt: t => `${t.w}-${t.l}` },
     { key: 'projw',  group: 'This season', label: 'Proj W', tip: "Projected wins for the full season, from the playoff odds simulator",     get: t => t.years[0].proj_w, num: true, fmt: t => t.years[0].proj_w.toFixed(1) },
     { key: 'title',  group: 'This season', label: 'Title', tip: "Chance of winning this season's title",      get: t => t.years[0].title, num: true, fmt: t => prob(t.years[0].title) },
   ];
 
-  // Beta stays off the table until there are enough days to compute it.
+  // A column marked hideEmpty stays off the table while no team has a value for it.
   const shownCols = () => COLS.filter(c => !c.hideEmpty || run.teams.some(t => c.get(t) != null));
 
   // A column starts a group when its group differs from the one before it.
@@ -233,7 +232,6 @@
         ${tile('P/E', t.pe == null ? 'n/m' : t.pe.toFixed(0))}
         ${tile('P/S', t.ps == null ? '—' : t.ps.toFixed(1) + '×')}
         ${tile('Season range', '¥' + t.lo.toFixed(0) + '–' + t.hi.toFixed(0))}
-        ${t.beta == null ? '' : tile('Beta', t.beta.toFixed(2))}
       </div>`;
     const picks = (t.picks || []).filter(p => p.round === 1);
     const nm = p => esc(p.name ? nbnPlayerName(p.name) : p.slug);
@@ -250,7 +248,9 @@
         `${esc(s.name)} ${s.series ? `(${s.series} series, ${s.edge >= 0 ? '+' : '−'}${Math.abs(s.edge).toFixed(2)})` : '(no playoff series yet)'}`).join(', ')}.</div>` : '';
     const pickLine = picks.length ? `<div class="fv-sum">First-round picks in the next two drafts: ${picks.map(p =>
         `${p.year} ${p.orig === t.team ? 'own' : esc(p.orig)}${p.share < 1 ? ` (theirs ${Math.round(p.share * 100)}% of the time)` : ''}, projected ${ord(p.slot)}, about ${Math.round(p.ovr)} OVR`).join('; ')}.</div>` : '';
-    return keyStats + edgeLine + pickLine + faHtml + `<div class="fv-sum">
+    const mp = t.mood_parts;
+    const moodLine = mp ? `<div class="fv-sum">Mood <b>${pct((t.mood || 0) * 100)}</b> over fair value: ${MOOD_PARTS.map(([k, label]) => `${label} ${pct(mp[k] * 100)}`).join(', ')}${Math.abs(mp.news + mp.form + mp.streak + mp.glow - (t.mood || 0)) > 1e-4 ? ', capped' : ''}.</div>` : '';
+    return keyStats + moodLine + edgeLine + pickLine + faHtml + `<div class="fv-sum">
         Value <b>${yen(t.value, 'B')}</b> = PV of profit <b>${signedYen(t.pv_in - t.pv_out)}</b>
         + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
         (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
@@ -300,12 +300,23 @@
   // revenue, of costs, or of the sale, whichever moved most.
   // How each driver reads in a note. `d` is its effect on value, so costs
   // that rose show as the (negative) value they took.
+  const MOOD_PARTS = [['news', 'news'], ['form', 'recent form'], ['streak', 'streak'], ['glow', "last season's finals"]];
   const DRIVER = {
     revenue: d => `revenue outlook ${signedYen(d)}`,
     costs: d => d > 0 ? `costs down, value ${signedYen(d)}` : `costs up, value ${signedYen(d)}`,
     sale: d => `resale value ${signedYen(d)}`,
   };
 
+  // A day with no fair-value move: the part of the mood that moved most.
+  function quietNote(x, p) {
+    const a = x.mood_parts, b = p.mood_parts;
+    if (!a || !b) return 'no news';
+    const [k, d] = MOOD_PARTS.map(([k]) => [k, a[k] - b[k]]).sort((m, n) => Math.abs(n[1]) - Math.abs(m[1]))[0];
+    if (Math.abs(d) < 0.0005) return 'no news';
+    if (k === 'news') return 'no news, last news fading';
+    if (k === 'glow') return "no news, last season's finals fading";
+    return `no news, ${MOOD_PARTS.find(m => m[0] === k)[1]} ${pct(d * 100)}`;
+  }
   function dailyFromHistory() {
     const days = [], teams = {};
     for (let i = 1; i < history.length; i++) {
@@ -326,7 +337,7 @@
         const happened = (events[t] || {})[b.date];
         const fvMove = (x.price / p.price - 1) * 100;
         let note = happened ? happened.join(' · ')
-          : Math.abs(fvMove) < 0.05 ? 'no news, the market\'s mood' : DRIVER[name](d);
+          : Math.abs(fvMove) < 0.05 ? quietNote(x, p) : DRIVER[name](d);
         if (!happened && Math.abs(dw) >= 0.1) note += ` · ${dw > 0 ? '+' : ''}${dw.toFixed(1)} projected wins`;
         if (!happened && x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
         if (b.backfill) note += ' · rebuilt';
@@ -353,16 +364,15 @@
       <p>The <b>sale price</b> is most of a franchise's value. ${Math.round((1 - L.sale_profit_weight) * 100)}% of it is the ledger's valuation (league multiple × average revenue over the projected seasons × title brand), and ${Math.round(L.sale_profit_weight * 100)}% prices the team's average projected profit instead, at the multiple that sells the average team for the same. That share is how payroll reaches the sale: a team deep in the tax sells for less than one with the same crowds under the cap.</p>
       <p>Because every price is valued as of opening night, nothing drifts as the season goes by: a price moves only when something happens. At the start of a new season the valuation date moves a year on and every price steps up with it, so compare across seasons against the NBN 30. A day's move is labelled with what happened to the team; on a day with no news it is the market's mood, or the piece of fair value that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
       ${rebuilt.length ? `<p>The model started on 2026-10-24. Earlier days (${esc(rebuilt[0])} to ${esc(rebuilt[rebuilt.length - 1])}) were rebuilt afterwards from each day's games, with today's rosters and contracts. Nothing bigger than a depth signing changed in that window.</p>` : ''}
-      <p><b>Price and fair value.</b> Fair value is what the franchise is worth, and it only moves when something happens. The price is what a share would trade at: fair value plus the market's mood. The whole league has a mood that every team moves with (some harder than others, which is beta), and each team has its own. News is overdone and then given back over a few weeks, and wild days come in bunches, the way real stocks behave. The mood is the same every time the history is rebuilt. Nothing here can be traded.</p>
-      <p>The <b>NBN 30</b> is the average price of all 30 franchises, the league's index. Market cap, P/S, P/E and beta read the way they do for a real stock.</p>
+      <p><b>Price and fair value.</b> Fair value is what the franchise is worth, and it only moves when something happens. The price is what a share would trade at: fair value plus the market's mood, which is the market chasing what is recent. Every part of it comes from real results, nothing is random: <b>news</b> (a move in fair value, from a trade, an injury or a game, is overdone by 60% and given back over a few weeks), <b>form</b> (1% for each win in the last ten games above what the model expected going into them, up to 6%), a <b>streak</b> of four or more games (0.75% a game past three, up to 3%), and last season's finalists' <b>glow</b> (5% for the champion, 2% for the runner-up, gone by game 41). The whole mood is capped at 10% either way. So a day with no game and no news barely moves a price. Nothing here can be traded.</p>
+      <p>The <b>NBN 30</b> is the average price of all 30 franchises, the league's index. Market cap, P/S and P/E read the way they do for a real stock.</p>
       <p><b>The columns</b></p>
       <dl class="fv-cols">${COLS.filter(c => c.tip).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.tip)}</dd>`).join('')}</dl>
       <p class="muted">Model ${esc(run.model)}, computed ${esc(new Date(run.computed_at).toLocaleString())}.</p>`;
   }
 
   // Stock figures, from the run and the history: the NBN 30 (the equal-weighted
-  // average price), each team's beta against it, P/S, P/E and its season range.
-  const BETA_MIN_DAYS = 10;
+  // average price), P/S, P/E and each team's season range.
   let index = null;
   function stockStats() {
     const shares = run.league.shares;
@@ -370,7 +380,6 @@
     const days = history.filter(d => d.date < run.date).concat([{ date: run.date, teams: Object.fromEntries(run.teams.map(t => [t.team, { market: t.mkt }])) }]);
     const mean = d => { const v = Object.values(d.teams).map(px); return v.reduce((a, b) => a + b, 0) / v.length; };
     const level = days.map(mean);
-    const mret = level.slice(1).map((v, i) => v / level[i] - 1);
     index = { level: level[level.length - 1], day: level.length > 1 ? (level[level.length - 1] / level[level.length - 2] - 1) * 100 : null };
     for (const t of run.teams) {
       const y = t.years[0];
@@ -379,14 +388,6 @@
       t.pe = t.eps > 0 ? t.mkt / t.eps : null;
       const prices = days.map(d => d.teams[t.team] ? px(d.teams[t.team]) : null).filter(v => v != null);
       t.hi = Math.max(...prices); t.lo = Math.min(...prices);
-      t.beta = null;
-      if (mret.length >= BETA_MIN_DAYS) {
-        const tret = days.slice(1).map((d, i) => d.teams[t.team] && days[i].teams[t.team] ? px(d.teams[t.team]) / px(days[i].teams[t.team]) - 1 : null);
-        const pairs = tret.map((v, i) => [v, mret[i]]).filter(([v]) => v != null);
-        const mx = pairs.reduce((a, [, m]) => a + m, 0) / pairs.length, tx = pairs.reduce((a, [v]) => a + v, 0) / pairs.length;
-        const cov = pairs.reduce((a, [v, m]) => a + (v - tx) * (m - mx), 0), vm = pairs.reduce((a, [, m]) => a + (m - mx) ** 2, 0);
-        t.beta = vm ? cov / vm : null;
-      }
     }
   }
 
