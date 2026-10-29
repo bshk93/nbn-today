@@ -498,6 +498,7 @@
     .pick-history .h-date { font-family: var(--font-mono); color: var(--text-secondary); }
     .pick-history .h-move { font-family: var(--font-mono); font-weight: 700; color: var(--text-secondary); }
     .pick-history .h-gap { color: var(--danger-light); font-weight: 700; }
+    .pick-history .h-inferred { font-style: italic; border-bottom: 1px dotted currentColor; cursor: help; }
     .pick-history .h-claims { margin-top: 0.35rem; }
 
     .pick-task .task-age.stale { color: var(--danger-light); }
@@ -1122,19 +1123,27 @@
       const hist = r.history || [];
       const claims = r.sheet_claims || [];
       if (!hist.length && !claims.length) return '';
-      const gaps = hist.filter(h => h.source === 'discord_only').length;
+      const gaps = hist.filter(h => h.source === 'discord_only' || (h.gap_before || []).length).length;
       const open = r.committee_note || ['needs_investigation', 'parties_differ'].includes(r.category);
+      // A sender the ledger didn't record is worked out (the other team in a
+      // two-team trade, or the holder that took part in it) and shown as such.
+      const BASIS = { chain: 'worked out: the holder that was in this trade', two_team: 'worked out: the other team in a two-team trade' };
       const items = hist.map(h => {
-        const move = h.from ? `${h.from} → ${h.to || '?'}` : `→ ${h.to || '?'}`;
+        const from = h.from
+          ? (BASIS[h.from_basis] ? `<span class="h-inferred" title="${BASIS[h.from_basis]}">${escapeHtml(h.from)}</span>` : escapeHtml(h.from))
+          : '?';
+        const move = `${from} → ${escapeHtml(h.to || '?')}`;
+        const gap = (h.gap_before || []).length
+          ? `<li class="h-gap">Missing trade: no record of how ${escapeHtml(h.gap_before.join(' or '))} got this pick</li>` : '';
         const label = [h.label, h.pick].filter(Boolean).join(' · ');
-        return `<li><span class="h-date">${escapeHtml(h.date)}</span>
-          ${label ? escapeHtml(label) + ' · ' : ''}<span class="h-move">${escapeHtml(move)}</span>
+        return `${gap}<li><span class="h-date">${escapeHtml(h.date)}</span>
+          ${label ? escapeHtml(label) + ' · ' : ''}<span class="h-move">${move}</span>
           ${h.clause ? ` — “${escapeHtml(h.clause)}”` : ''}
           ${h.source === 'discord_only' ? ` <span class="h-gap">only on Discord, not in the ledger</span>` : ''}</li>`;
       }).join('');
       const claimHtml = claims.length ? `<div class="h-claims">Sheet tabs listing it as acquired: ${claims.map(c =>
         `<b>${escapeHtml(c.tab)}</b>${c.details ? ` (${escapeHtml(c.details)})` : ''}${c.note ? ` — ${escapeHtml(c.note.replace(/\s*\n\s*/g, '; '))}` : ''}`).join(' · ')}</div>` : '';
-      const summary = `How it got here · ${hist.length} trade${hist.length === 1 ? '' : 's'}${gaps ? ` · ${gaps} missing from the ledger` : ''}`;
+      const summary = `How it got here · ${hist.length} trade${hist.length === 1 ? '' : 's'}${gaps ? ` · ${gaps} gap${gaps === 1 ? '' : 's'} in the record` : ''}`;
       return `<details class="pick-history" ${open ? 'open' : ''}><summary>${summary}</summary>
         ${items ? `<ol>${items}</ol>` : '<div>No trade names this pick.</div>'}${claimHtml}</details>`;
     }

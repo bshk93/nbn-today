@@ -987,7 +987,7 @@ TEAM_WORDS = {
     "LAC": ["Clippers"], "LAL": ["Lakers"], "MEM": ["Memphis", "Grizzlies"],
     "MIA": ["Miami", "Heat"], "MIL": ["Milwaukee", "Bucks"], "MIN": ["Minnesota", "Timberwolves", "Wolves"],
     "NOP": ["New Orleans", "Pelicans"], "NYK": ["New York", "Knicks"], "OKC": ["Oklahoma City", "Thunder"],
-    "ORL": ["Orlando", "Magic"], "PHI": ["Philadelphia", "76ers", "Sixers"], "PHX": ["Phoenix", "Suns"],
+    "ORL": ["Orlando", "Magic"], "PHI": ["Philadelphia", "Philly", "76ers", "Sixers"], "PHX": ["Phoenix", "Suns"],
     "POR": ["Portland", "Blazers"], "SAC": ["Sacramento", "Kings"], "SAS": ["San Antonio", "Spurs"],
     "TOR": ["Toronto", "Raptors"], "UTA": ["Utah", "Jazz"], "WAS": ["Washington", "Wizards"],
 }
@@ -1187,12 +1187,17 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset(), clai
 # how a pick got where it is and flag a trade the ledger never received.
 
 DISCORD_RAW_DIR = DATA_DIR / "discord-transactions-raw"
-_RECV_RE = re.compile(r"\b([A-Z]{2,3})\s*\**\s*(?:receives?|recieves?|gets?)\b\s*:?", re.IGNORECASE)
+_TEAM_NAME_ABBR = {w.lower(): abbr for abbr, words in TEAM_WORDS.items() for w in words}
+_RECV_RE = re.compile(
+    r"\b([A-Z]{2,3}|" + "|".join(re.escape(w) for w in sorted(_TEAM_NAME_ABBR, key=len, reverse=True)) + r")"
+    r"\s*\**\s*(?:receives?|recieves?|gets?)\b\s*:?", re.IGNORECASE)
 _LINE_TEAM_RE = re.compile(r"^\s*\**\s*([A-Z]{2,3})\s*\**\s*:")
 _TRADE_NO_RE = re.compile(r"\btrade\s*#?\s*(\d+)", re.IGNORECASE)
 
 
 def _team_or_none(t):
+    if t and t.lower() in _TEAM_NAME_ABBR and len(t) > 3:
+        return _TEAM_NAME_ABBR[t.lower()]
     t = (t or "").upper()
     return {"BRK": "BKN", "PHO": "PHX", "NOR": "NOP", "SA": "SAS", "GS": "GSW", "NY": "NYK"}.get(t, t) if t else None
 
@@ -1231,7 +1236,7 @@ def pick_mentions(text, year, rnd, orig):
             body = clause.strip()[own.end():] if own else clause
             if own and _team_or_none(own.group(1)) in TEAMS:
                 recvs.append(_team_or_none(own.group(1)))
-            if yr.search(body) and rd.search(body) and tm.search(body):
+            if yr.search(body) and rd.search(body) and tm.search(body) and not _names_other_pick(body, year, orig):
                 found.append((recvs[-1] if recvs else block_recv, body.strip()))
         # A receiver's list can wrap onto the next line, so it carries over.
         line_recvs = [_team_or_none(x) for x in _RECV_RE.findall(line)]
@@ -1239,6 +1244,15 @@ def pick_mentions(text, year, rnd, orig):
         if line_recvs:
             block_recv = line_recvs[-1]
     return found
+
+
+def _names_other_pick(clause, year, orig):
+    """True when the clause spells out another team's pick in the usual
+    "2029 SAS 1st" form and never this one's: "The 2029 SAS 1st is TOR's
+    laddered interest" is about SAS's pick, though it names TOR."""
+    yy = str(year)[2:]
+    std = re.findall(rf"(?:\b{year}|['\u2019]{yy})\s+([A-Z]{{3}})\s+(?:1st|2nd|FRP|SRP)", clause)
+    return bool(std) and orig not in std
 
 
 def _norm(text):
@@ -1253,6 +1267,85 @@ def load_discord_raw():
         except (OSError, ValueError) as exc:
             print(f"poopoo: ignoring {f}: {exc}")
     return msgs
+
+
+_MULTI_TEAM_RE = re.compile(r"\b([A-Z]{3}(?:/[A-Z]{3})+)\b")
+# A clause like "(protected 31-55)" or "swap rights" moves only part of the
+# pick: the sender keeps a share, so it stays a holder.
+_PARTIAL_RE = re.compile(r"protect|\bprot\b|\d+\s*-\s*\d+|swap|favou?r|least|most|better|worse|conveys?\b", re.IGNORECASE)
+
+
+_SWAP_RE = re.compile(r"swap|favou?rable|\bbetter\b|\bworse\b|\bleast\b|\bmost\b", re.IGNORECASE)
+
+
+def trade_teams(text, transfers=()):
+    """Every team taking part in a trade: each "XXX receives" (or a bare
+    "XXX:" line) in the write-up, a "CHA/MIA/HOU/NOP" header, and both ends
+    of every structured transfer."""
+    teams = {_team_or_none(x) for x in _RECV_RE.findall(text or "")}
+    for line in (text or "").split("\n"):
+        m = _LINE_TEAM_RE.match(line)
+        if m:
+            teams.add(_team_or_none(m.group(1)))
+    for m in _MULTI_TEAM_RE.findall((text or "").split("\n")[0]):
+        teams.update(m.split("/"))
+    for tf in transfers:
+        teams.update({tf.get("from_team"), tf.get("to_team")})
+    return {t for t in teams if t in TEAMS}
+
+
+def infer_senders(key, history):
+    """Fill in who sent the pick in each trade, walking the chain from its
+    original team. Only the structured entries record a sender; the prose
+    says who received. The sender is the one current holder that is a
+    party to the trade, or, in a two-team trade, simply the other team.
+
+    Walking the chain also finds the holes in it: a trade none of whose
+    teams held the pick yet means an earlier trade is missing from every
+    record. That entry gets `gap_before`."""
+    holders = [key[2]]
+    for e in history:
+        teams = set(e.pop("teams", ()) or ())
+        to = e.get("to")
+        sender = e.get("from") if e.get("from") != to else None
+        if sender:
+            e["from_basis"] = "ledger"
+        else:
+            cands = [h for h in holders if h in teams and h != to]
+            others = teams - {to} if to else set()
+            if len(cands) == 1:
+                sender, e["from_basis"] = cands[0], "chain"
+            elif not cands and to and len(teams) == 2 and len(others) == 1:
+                sender, e["from_basis"] = next(iter(others)), "two_team"
+            if sender:
+                e["from"] = sender
+        clause = e.get("clause") or ""
+        # "2027 PHI 1st (with TOR swap rights)" moves the pick and a right with it.
+        swap = bool(_SWAP_RE.search(clause)) and not re.search(r"\bwith\b[^)]*swap", clause, re.IGNORECASE)
+        # A swap right moves a claim on a pick, and the write-up rarely says
+        # whose pick it is, so it never flags a gap; its receiver still
+        # becomes a holder, since a later trade can pass that claim on.
+        if swap:
+            pass
+        elif to and teams and not (set(holders) & (teams - {to})) and to not in holders:
+            # Nobody in this trade held the pick yet.
+            e["gap_before"] = sorted(teams - {to}) if sender is None else [sender]
+        elif sender and sender not in holders:
+            e["gap_before"] = [sender]
+        if sender and sender not in holders:
+            # It did hold the pick, by a trade no record has. Counting it from
+            # here stops its next move from flagging the same gap again.
+            holders.append(sender)
+        if not to or to == sender:
+            continue
+        partial = swap or bool(_PARTIAL_RE.search(clause))
+        if sender and not partial and sender in holders:
+            holders.remove(sender)
+        elif not sender and not partial and len(holders) == 1:
+            holders = []
+        if to not in holders:
+            holders.append(to)
+    return history
 
 
 def pick_history(key, transactions, discord_msgs):
@@ -1280,6 +1373,7 @@ def pick_history(key, transactions, discord_msgs):
             "date": t["date"], "source": "ledger", "txn_id": t.get("id"),
             "label": f"Trade {no.group(1)}" if no else None,
             "clause": ms[0][1] if ms else None,
+            "teams": trade_teams(desc, t.get("details", {}).get("transfers", [])),
         }
         if struct:
             entry["from"], entry["to"] = struct[-1]
@@ -1299,10 +1393,10 @@ def pick_history(key, transactions, discord_msgs):
         out.append({
             "date": date, "source": "discord_only", "channel": m.get("channel"),
             "label": f"Trade {no.group(1)}" if no else None,
-            "to": ms[0][0], "clause": ms[0][1],
+            "to": ms[0][0], "clause": ms[0][1], "teams": trade_teams(content),
         })
     out.sort(key=lambda e: e["date"])
-    return out
+    return infer_senders(key, out)
 
 
 def sheet_claims(key, sheet_acquired_by_team):

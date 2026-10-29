@@ -81,6 +81,22 @@ def test_receiver_carries_over_a_wrapped_line():
     assert poopoo.pick_mentions("TOR receives: DAL 2030 FRP swap (favors TOR)", 2030, 1, "DAL")[0][0] == "TOR"
 
 
+def test_senders_are_worked_out_and_gaps_found():
+    hist = [
+        {"date": "2021-02-07", "to": "HOU", "clause": "2027 LAC 2nd", "teams": {"HOU", "DET", "POR", "LAC"}},
+        {"date": "2021-10-15", "to": "MEM", "clause": "LAC 2027 2nd protected", "teams": {"HOU", "MEM"}},
+        {"date": "2022-07-03", "to": "TOR", "clause": "2027 LAC 2nd", "teams": {"TOR", "MEM"}},
+        {"date": "2025-06-30", "to": "NOP", "clause": "2027 LAC 2nd", "teams": {"NOP", "WAS"}},
+    ]
+    out = poopoo.infer_senders((2027, 2, "LAC"), hist)
+    assert [(e.get("from"), e.get("from_basis")) for e in out] == [
+        ("LAC", "chain"), ("HOU", "chain"), ("MEM", "chain"), ("WAS", "two_team")]
+    # Nothing ever gave WAS the pick.
+    assert out[3]["gap_before"] == ["WAS"] and not any(e.get("gap_before") for e in out[:3])
+    # Full team names count as a receiver.
+    assert poopoo.pick_mentions("Memphis Receives: BOS 2022 2nd, LAC 2027 2nd protected", 2027, 2, "LAC")[0][0] == "MEM"
+
+
 if __name__ == "__main__":
     poopoo.load_pick_notes = lambda: {}
     for name, fn in list(globals().items()):
