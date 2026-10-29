@@ -1153,7 +1153,7 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset(), clai
         if lost_terms:
             out["category"] = "needs_investigation"
             out["investigation_note"] = lost_terms_note
-        elif overlap and site_has_structure:
+        elif overlap and site_has_structure and not _sheet_names_old_holders(sheet_only, site_only, hist):
             out["category"] = "parties_differ"
         else:
             out["category"] = "committee_lag"
@@ -1452,6 +1452,17 @@ def sheet_claims(key, sheet_acquired_by_team):
             if orig in origs:
                 claims.append({"tab": team, "from": r["from_raw"], "details": r["details"], "note": r["note"]})
     return claims
+
+
+def _sheet_names_old_holders(sheet_only, site_only, hist):
+    """True when the sheet's extra teams are ones the logged trades show
+    passing their share on, and the site's extra teams are the ones that
+    received it: the sheet still names the old holder (2027 LAL 2nd: sheet
+    NOP, but Trade 51 sent NOP's share to NYK). That is the sheet lagging,
+    not the two sides disagreeing about who the parties are."""
+    senders = {e.get("from") for e in hist}
+    receivers = {e.get("to") for e in hist}
+    return bool(sheet_only) and set(sheet_only) <= senders and set(site_only) <= receivers
 
 
 def load_pick_notes():

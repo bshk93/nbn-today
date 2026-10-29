@@ -97,6 +97,14 @@ def test_senders_are_worked_out_and_gaps_found():
     assert poopoo.pick_mentions("Memphis Receives: BOS 2022 2nd, LAC 2027 2nd protected", 2027, 2, "LAC")[0][0] == "MEM"
 
 
+def test_sheet_naming_the_old_holder_is_lag():
+    # 2027 LAL 2nd: sheet NOP/LAC; Trade 51 sent NOP's 31-50 to NYK.
+    events = {(2027, 2, "LAL"): [{"date": "2026-08-19", "from": "NOP", "to": "NYK", "description": ""}]}
+    row = sheet("NOP/LAC", "Protected 51-60", "31-50 to NOP\n51-60 to LAC")
+    pick = site("NYK|LAC", [("NYK", "protected band 31-50"), ("LAC", "protected band 51-60")])
+    assert cat("LAL", row, pick, events) == "committee_lag"
+
+
 if __name__ == "__main__":
     poopoo.load_pick_notes = lambda: {}
     for name, fn in list(globals().items()):
