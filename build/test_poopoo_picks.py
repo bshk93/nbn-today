@@ -67,6 +67,20 @@ def test_site_pick_missing_from_sheet_is_listed():
     assert report["checked"] == 2 and report["years"] == [2033, 2033]
 
 
+def test_split_only_on_other_tabs_is_flagged():
+    # 2027 DEN 2nd: the pick's own row says MEM; the GSW and MEM tabs split it.
+    claims = [{"tab": "GSW", "from": "DEN", "details": "Protected 31-55", "note": "MEM Receives 31-55\nGSW Receives 56-60"},
+              {"tab": "MEM", "from": "DEN", "details": "Protected 31-55", "note": "MEM Receives 31-55\nGSW Receives 56-60"}]
+    out = poopoo.classify_pick("DEN", sheet("MEM"), site("MEM"), {}, frozenset(), claims)
+    assert out["category"] == "needs_investigation" and out["sheet_only_parties"] == ["GSW"], out
+
+
+def test_receiver_carries_over_a_wrapped_line():
+    text = "Trade 70:\nSAS receives: Norman Powell\nBOS receives:Brook Lopez,2031 SAS 1st,\n2027 SAS/OKC 2nd"
+    assert poopoo.pick_mentions(text, 2027, 2, "SAS") == [("BOS", "2027 SAS/OKC 2nd")]
+    assert poopoo.pick_mentions("TOR receives: DAL 2030 FRP swap (favors TOR)", 2030, 1, "DAL")[0][0] == "TOR"
+
+
 if __name__ == "__main__":
     poopoo.load_pick_notes = lambda: {}
     for name, fn in list(globals().items()):

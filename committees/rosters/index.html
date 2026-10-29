@@ -492,6 +492,14 @@
     .pick-leaves b { color: var(--text-secondary); font-family: var(--font-mono); }
     .pick-party-gap { color: var(--pc); font-weight: 700; }
 
+    .pick-history { grid-column: 1 / -1; margin-top: 0.35rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .pick-history > summary { cursor: pointer; font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
+    .pick-history ol { margin: 0.3rem 0 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.15rem; }
+    .pick-history .h-date { font-family: var(--font-mono); color: var(--text-secondary); }
+    .pick-history .h-move { font-family: var(--font-mono); font-weight: 700; color: var(--text-secondary); }
+    .pick-history .h-gap { color: var(--danger-light); font-weight: 700; }
+    .pick-history .h-claims { margin-top: 0.35rem; }
+
     .pick-task .task-age.stale { color: var(--danger-light); }
 
     .pick-timeline { display: flex; flex-direction: column; gap: 0.15rem; font-family: var(--font-mono); font-size: var(--text-xs); }
@@ -1003,7 +1011,8 @@
       const age = n.added ? daysSince(n.added) : null;
       const ageHtml = age == null ? '' :
         ` · <span class="task-age ${age >= TASK_STALE_DAYS ? 'stale' : ''}">open ${age} day${age === 1 ? '' : 's'}</span>`;
-      const byline = [n.added && `added ${escapeHtml(n.added)}`, n.by && `by ${escapeHtml(n.by)}`].filter(Boolean).join(' · ');
+      const byline = [n.added && `added ${escapeHtml(n.added)}`, n.updated && n.updated !== n.added && `updated ${escapeHtml(n.updated)}`,
+        n.by && `by ${escapeHtml(n.by)}`].filter(Boolean).join(' · ');
       return `
         <div class="pick-task">
           <div class="task-head">Committee task${byline ? ' · ' + byline : ''}${ageHtml}</div>
@@ -1036,19 +1045,25 @@
       const sheetOnly = r.sheet_only_parties || [];
 
       let footer = '';
-      const timeline = (r.evidence && r.evidence.length) ? `<div class="pick-timeline">${r.evidence.map(e => {
+      // The trade-by-trade story is pickHistoryBlock's; only show the job's
+      // structured evidence when the report predates `history`.
+      const timeline = (!r.history && r.evidence && r.evidence.length) ? `<div class="pick-timeline">${r.evidence.map(e => {
         const desc = e.description ? ' — ' + escapeHtml(e.description) : '';
         return `<div><b>${escapeHtml(e.date)}</b> ${escapeHtml(e.from)} → ${escapeHtml(e.to)}${desc}</div>`;
       }).join('')}</div>` : '';
       const gapLine = [
         siteOnly.size ? `Site has ${[...siteOnly].join(', ')}, which the sheet never names.` : '',
-        sheetOnly.length ? `Sheet has ${sheetOnly.join(', ')}, with no claim on the site.` : '',
+        sheetOnly.length ? `Sheet has ${sheetOnly.join(', ')} (owner cell or a tab listing it as acquired), with no claim on the site.` : '',
       ].filter(Boolean).join(' ');
       if (asTask) {
         // The task text is the verdict; the job's own reading would contradict it.
         footer = timeline ? `<div class="pick-footer">${timeline}</div>` : '';
       } else if (r.category === 'committee_lag') {
-        footer = `<div class="pick-footer">Sheet should read <b>${escapeHtml(r.site_owner)}</b>.${timeline}</div>`;
+        // The pick's own row can already be right while another tab still
+        // lists it (the 2027 MIA 2nd: DEN row right, MEM tab stale).
+        const ownRight = ownNorm.toUpperCase() === String(r.site_owner || '').toUpperCase();
+        const lead = ownRight ? '' : `Sheet should read <b>${escapeHtml(r.site_owner)}</b>. `;
+        footer = `<div class="pick-footer">${lead}${escapeHtml(gapLine)}${timeline}</div>`;
       } else if (r.category === 'needs_investigation') {
         const note = r.investigation_note
           ? escapeHtml(r.investigation_note)
@@ -1061,6 +1076,8 @@
       } else if (timeline) {
         footer = `<div class="pick-footer">${timeline}</div>`;
       }
+
+      const historyHtml = pickHistoryBlock(r);
 
       const siteFlags = [];
       if (r.site_protected) siteFlags.push(`protected top-${r.site_protected}`);
@@ -1094,7 +1111,32 @@
             ${siteFlags.length ? `<div class="pick-flags">${siteFlags.map(f => `<span class="pick-flag">${escapeHtml(f)}</span>`).join('')}</div>` : ''}
           </div>
           ${footer}
+          ${historyHtml}
         </div>`;
+    }
+
+    // Every trade naming the pick (ledger prose included, plus Discord posts
+    // the ledger never got) and every sheet tab that lists it as acquired.
+    // Open by default wherever someone has to act on it.
+    function pickHistoryBlock(r) {
+      const hist = r.history || [];
+      const claims = r.sheet_claims || [];
+      if (!hist.length && !claims.length) return '';
+      const gaps = hist.filter(h => h.source === 'discord_only').length;
+      const open = r.committee_note || ['needs_investigation', 'parties_differ'].includes(r.category);
+      const items = hist.map(h => {
+        const move = h.from ? `${h.from} → ${h.to || '?'}` : `→ ${h.to || '?'}`;
+        const label = [h.label, h.pick].filter(Boolean).join(' · ');
+        return `<li><span class="h-date">${escapeHtml(h.date)}</span>
+          ${label ? escapeHtml(label) + ' · ' : ''}<span class="h-move">${escapeHtml(move)}</span>
+          ${h.clause ? ` — “${escapeHtml(h.clause)}”` : ''}
+          ${h.source === 'discord_only' ? ` <span class="h-gap">only on Discord, not in the ledger</span>` : ''}</li>`;
+      }).join('');
+      const claimHtml = claims.length ? `<div class="h-claims">Sheet tabs listing it as acquired: ${claims.map(c =>
+        `<b>${escapeHtml(c.tab)}</b>${c.details ? ` (${escapeHtml(c.details)})` : ''}${c.note ? ` — ${escapeHtml(c.note.replace(/\s*\n\s*/g, '; '))}` : ''}`).join(' · ')}</div>` : '';
+      const summary = `How it got here · ${hist.length} trade${hist.length === 1 ? '' : 's'}${gaps ? ` · ${gaps} missing from the ledger` : ''}`;
+      return `<details class="pick-history" ${open ? 'open' : ''}><summary>${summary}</summary>
+        ${items ? `<ol>${items}</ol>` : '<div>No trade names this pick.</div>'}${claimHtml}</details>`;
     }
 
     function pickRowCardWithTask(r) {

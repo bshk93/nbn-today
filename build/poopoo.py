@@ -310,6 +310,45 @@ def sheet_original_picks(ws):
     return rows
 
 
+def sheet_acquired_picks(ws):
+    """The "Acquired Draft Picks" table under the original picks: one row per
+    pick this team holds a share of, col D = the pick's origin team (or
+    "SAS/OKC" for a swap), F = Details with its cell note. It isn't a second
+    source of truth, but it is where the sheet says who *holds* a pick, so
+    it is the first place two tabs contradict each other."""
+    rows = []
+    started = False
+    last_year = None
+    for r in range(76, 220):
+        label = ws.cell(row=r, column=1).value
+        if isinstance(label, str) and "acquired" in label.lower():
+            started = True
+            continue
+        if not started:
+            continue
+        round_cell = ws.cell(row=r, column=2).value
+        if round_cell not in ("1st", "2nd"):
+            continue
+        year_cell = ws.cell(row=r, column=1).value
+        if year_cell:
+            try:
+                last_year = int(float(year_cell))
+            except (TypeError, ValueError):
+                continue
+        if last_year is None:
+            continue
+        from_cell = ws.cell(row=r, column=4).value
+        details_cell = ws.cell(row=r, column=6)
+        rows.append({
+            "year": last_year,
+            "round": 1 if round_cell == "1st" else 2,
+            "from_raw": str(from_cell).strip() if from_cell else None,
+            "details": str(details_cell.value).strip() if details_cell.value else None,
+            "note": details_cell.comment.text.strip() if details_cell.comment else None,
+        })
+    return rows
+
+
 def build_legend(ws):
     """Reads the Legend row (row 3, cols 6-9) to map fill color -> hold type,
     rather than hardcoding RGB values -- self-adjusts if the sheet's palette
@@ -450,6 +489,7 @@ def load_sheet():
             "bae_year_used": sheet_bae(ws),
             "tpe_remaining": sheet_tpe(ws),
             "picks": sheet_original_picks(ws),
+            "acquired": sheet_acquired_picks(ws),
             "players": sheet_players(ws, legend or {}, season_cols or []),
             "dead_cap": sheet_dead_cap(ws),
         }
@@ -984,7 +1024,7 @@ def site_pick_parties(site_pick, team):
     return parties
 
 
-def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
+def classify_pick(team, row, site_pick, events, group_mentions=frozenset(), claims=()):
     """Buckets one (team, year, round) sheet row against its site
     counterpart. Categories, roughly in order of urgency:
       needs_investigation        -- no overlap and no logged trade explains
@@ -1009,6 +1049,11 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
     `group_mentions` is every team the sheet names on any row of the same
     swap group: the sheet often spells a group out once ("See '27 Detroit
     1st") and the site serves the whole group's parties on every row.
+
+    `claims` is every sheet tab whose Acquired table lists the pick. Each
+    of those teams is one the sheet says holds a share, even when the
+    pick's own row names only one owner: the 2027 DEN 2nd's own row said
+    MEM, and only the GSW and MEM tabs carried the 56-60 slice to GSW.
     """
     out = {
         "team": team, "year": row["year"], "round": row["round"],
@@ -1034,6 +1079,11 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
         return out
 
     sheet_parts = {norm_pick_owner(p, team) for p in re.split(r"[/|]", sheet_owner) if p.strip()} or {team}
+    claim_tabs = {c["tab"] for c in claims}
+    claim_text = set().union(*(teams_named(c.get("note")) | teams_named(c.get("details")) for c in claims)) if claims else set()
+    if claim_tabs - sheet_parts:
+        out["sheet_claim_parties"] = sorted(claim_tabs - sheet_parts)
+    sheet_parts |= claim_tabs
     site_parts = set(site_owner.split("|"))
     site_parties = site_pick_parties(site_pick, team)
 
@@ -1055,7 +1105,7 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
     # Until 2026-10-29 any single team in common was enough, which filed
     # picks like the 2027 IND 2nd (sheet CHA/NYK, site NYK/MIA) as needing
     # no action.
-    sheet_mentions = sheet_parts | sheet_row_mentions(row, team) | set(group_mentions)
+    sheet_mentions = sheet_parts | sheet_row_mentions(row, team) | set(group_mentions) | claim_text
     site_only = sorted(site_parties - sheet_mentions)
     sheet_only = sorted(sheet_parts - site_parties)
     if site_only:
@@ -1063,8 +1113,9 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
     if sheet_only:
         out["sheet_only_parties"] = sheet_only
 
+    has_terms = bool(row["details"] or row["note"] or any(c.get("details") or c.get("note") for c in claims))
     if not site_only and not sheet_only:
-        if not (row["details"] or row["note"]):
+        if not has_terms:
             out["category"] = "clean_match"
         elif sheet_parts == site_parts and site_has_structure:
             out["category"] = "clean_match"
@@ -1080,7 +1131,7 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
     # filed as the sheet lagging: five picks sat under "Sheet is behind" with
     # a party missing from the site until 2026-09-24.
     lost_terms = (
-        bool(row["details"] or row["note"])
+        has_terms
         and (row["details"] or "").upper() != "FROZEN"
         and not site_has_structure
         and not site_has_notes
@@ -1128,6 +1179,146 @@ def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
     return out
 
 
+# ── Provenance: every trade that names a pick, prose included ──────────
+# pick_events_index above reads only structured pick assets, which 51 of the
+# ledger's 492 trades carry (2026-10-29). The rest of the history is prose:
+# the Discord announcements, copied verbatim into the ledger's descriptions.
+# These read that prose too, plus the raw Discord export, so a card can show
+# how a pick got where it is and flag a trade the ledger never received.
+
+DISCORD_RAW_DIR = DATA_DIR / "discord-transactions-raw"
+_RECV_RE = re.compile(r"\b([A-Z]{2,3})\s*\**\s*(?:receives?|recieves?|gets?)\b\s*:?", re.IGNORECASE)
+_LINE_TEAM_RE = re.compile(r"^\s*\**\s*([A-Z]{2,3})\s*\**\s*:")
+_TRADE_NO_RE = re.compile(r"\btrade\s*#?\s*(\d+)", re.IGNORECASE)
+
+
+def _team_or_none(t):
+    t = (t or "").upper()
+    return {"BRK": "BKN", "PHO": "PHX", "NOR": "NOP", "SA": "SAS", "GS": "GSW", "NY": "NYK"}.get(t, t) if t else None
+
+
+def _pick_matchers(year, rnd, orig):
+    yy = str(year)[2:]
+    yr = re.compile(rf"(?:\b{year}\b|['\u2019]{yy}\b)")
+    # "FRP"/"SRP" (first/second round pick) is how a few announcements write it.
+    rd = re.compile(r"\b(?:1st|first|FRP)\b" if rnd == 1 else r"\b(?:2nd|second|SRP)\b", re.IGNORECASE)
+    words = TEAM_WORDS[orig] + (["LA Clippers", "L.A. Clippers"] if orig == "LAC" else [])
+    tm = re.compile(r"\b(?:" + "|".join(re.escape(w) for w in words) + r")\b|\b" + orig + r"\b", re.IGNORECASE)
+    return yr, rd, tm
+
+
+def pick_mentions(text, year, rnd, orig):
+    """[(receiver, clause)] for each clause of `text` naming this pick. The
+    receiver is the nearest "XXX receives" (or a bare "XXX:" line) before the
+    clause, or None when the text never says."""
+    if not text:
+        return []
+    yr, rd, tm = _pick_matchers(year, rnd, orig)
+    found = []
+    block_recv = None
+    for line in text.split("\n"):
+        m = _LINE_TEAM_RE.match(line)
+        if m and _team_or_none(m.group(1)) in TEAMS:
+            block_recv = _team_or_none(m.group(1))
+        pos = 0
+        for clause in re.split(r"[,;]|\band\b|\.\s", line):
+            start = line.find(clause, pos)
+            pos = max(pos, start + len(clause))
+            before = line[:start]
+            recvs = [_team_or_none(x) for x in _RECV_RE.findall(before)]
+            recvs = [x for x in recvs if x in TEAMS]
+            own = _RECV_RE.match(clause.strip())
+            body = clause.strip()[own.end():] if own else clause
+            if own and _team_or_none(own.group(1)) in TEAMS:
+                recvs.append(_team_or_none(own.group(1)))
+            if yr.search(body) and rd.search(body) and tm.search(body):
+                found.append((recvs[-1] if recvs else block_recv, body.strip()))
+        # A receiver's list can wrap onto the next line, so it carries over.
+        line_recvs = [_team_or_none(x) for x in _RECV_RE.findall(line)]
+        line_recvs = [x for x in line_recvs if x in TEAMS]
+        if line_recvs:
+            block_recv = line_recvs[-1]
+    return found
+
+
+def _norm(text):
+    return re.sub(r"\W+", "", (text or "").lower())
+
+
+def load_discord_raw():
+    msgs = []
+    for f in sorted(DISCORD_RAW_DIR.glob("*.json")) if DISCORD_RAW_DIR.exists() else []:
+        try:
+            msgs.extend(json.loads(f.read_text()))
+        except (OSError, ValueError) as exc:
+            print(f"poopoo: ignoring {f}: {exc}")
+    return msgs
+
+
+def pick_history(key, transactions, discord_msgs):
+    """Every trade naming the pick, oldest first: date, label, from/to where
+    known, the clause that names it, and whether the ledger has the trade."""
+    year, rnd, orig = key
+    out = []
+    ledger_text = []
+    for t in transactions:
+        if t.get("type") != "trade":
+            continue
+        desc = t.get("description") or ""
+        struct = [
+            (tf.get("from_team"), tf.get("to_team"))
+            for tf in t.get("details", {}).get("transfers", [])
+            for a in tf.get("assets", [])
+            if a.get("type") == "pick" and (a.get("year"), a.get("round"), a.get("orig")) == key
+        ]
+        ms = pick_mentions(desc, year, rnd, orig)
+        if not (struct or ms):
+            continue
+        ledger_text.append((t["date"], _norm(desc)))
+        no = _TRADE_NO_RE.search(desc)
+        entry = {
+            "date": t["date"], "source": "ledger", "txn_id": t.get("id"),
+            "label": f"Trade {no.group(1)}" if no else None,
+            "clause": ms[0][1] if ms else None,
+        }
+        if struct:
+            entry["from"], entry["to"] = struct[-1]
+        elif ms and ms[0][0]:
+            entry["to"] = ms[0][0]
+        out.append(entry)
+    for m in discord_msgs:
+        content = m.get("content") or ""
+        ms = pick_mentions(content, year, rnd, orig)
+        if not ms:
+            continue
+        date = (m.get("timestamp") or "")[:10]
+        n = _norm(content)[:120]
+        if any(n and n[:60] in lt for _, lt in ledger_text):
+            continue
+        no = _TRADE_NO_RE.search(content)
+        out.append({
+            "date": date, "source": "discord_only", "channel": m.get("channel"),
+            "label": f"Trade {no.group(1)}" if no else None,
+            "to": ms[0][0], "clause": ms[0][1],
+        })
+    out.sort(key=lambda e: e["date"])
+    return out
+
+
+def sheet_claims(key, sheet_acquired_by_team):
+    """Every sheet tab whose Acquired table lists this pick."""
+    year, rnd, orig = key
+    claims = []
+    for team, rows in sheet_acquired_by_team.items():
+        for r in rows:
+            if (r["year"], r["round"]) != (year, rnd):
+                continue
+            origs = {norm_pick_owner(p, team) for p in re.split(r"[/|]", r["from_raw"] or "") if p.strip()}
+            if orig in origs:
+                claims.append({"tab": team, "from": r["from_raw"], "details": r["details"], "note": r["note"]})
+    return claims
+
+
 def load_pick_notes():
     """`pick-committee-notes.json`, or {} when absent or unreadable. A bad
     notes file must never take down the whole report."""
@@ -1140,7 +1331,8 @@ def load_pick_notes():
         return {}
 
 
-def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year):
+def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year,
+                       sheet_acquired_by_team=None, discord_msgs=()):
     events = pick_events_index(transactions)
     site_by_key = {
         (p["year"], p["round"], p["orig"]): p
@@ -1156,13 +1348,32 @@ def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current
     for team, row in future:
         site_pick = site_by_key.get((row["year"], row["round"], team))
         if site_pick and site_pick.get("group_id"):
-            group_mentions.setdefault(site_pick["group_id"], set()).update(sheet_row_mentions(row, team))
+            gm = group_mentions.setdefault(site_pick["group_id"], set())
+            gm.update(sheet_row_mentions(row, team))
+            for c in sheet_claims((row["year"], row["round"], team), sheet_acquired_by_team or {}):
+                gm.add(c["tab"])
+                gm.update(teams_named(c.get("note")))
+
+    # Structured events cover 51 of 492 trades; the prose history covers the
+    # rest. A pick whose history ends with the site's owner reads as the sheet
+    # lagging whether that last trade was entered structured or as prose.
+    def events_for(key):
+        if events.get(key):
+            return events
+        moves = [
+            {"date": e["date"], "from": e.get("from") or "?", "to": e["to"],
+             "description": e.get("clause") or ""}
+            for e in pick_history(key, transactions, discord_msgs) if e.get("to")
+        ]
+        return {key: moves} if moves else events
 
     rows = []
     for team, row in future:
-        site_pick = site_by_key.get((row["year"], row["round"], team))
+        key = (row["year"], row["round"], team)
+        site_pick = site_by_key.get(key)
         mentions = group_mentions.get(site_pick.get("group_id"), set()) if site_pick else set()
-        rows.append(classify_pick(team, row, site_pick, events, mentions))
+        claims = sheet_claims(key, sheet_acquired_by_team or {})
+        rows.append(classify_pick(team, row, site_pick, events_for(key), mentions, claims))
 
     # The other direction: a pick the site serves that the sheet has no row
     # for. WAS's sheet still started at 2026 on 2026-10-29, so its 2033 picks
@@ -1194,6 +1405,34 @@ def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current
     # someone has to close by deleting it, not something that should vanish.
     itemized = [r for r in rows
                 if r["category"] not in ("clean_match", "clean_match_frozen") or r.get("committee_note")]
+    # A swap group is one claim served on every member row, and a trade can
+    # name any member ("2027 OKC 2nd" moving the SAS/OKC worse half), so the
+    # history and the sheet claims are read across the whole group.
+    group_keys = {}
+    for k, p in site_by_key.items():
+        if p.get("group_id"):
+            group_keys.setdefault(p["group_id"], []).append(k)
+    for r in itemized:
+        key = (r["year"], r["round"], r["team"])
+        site_pick = site_by_key.get(key) or {}
+        keys = sorted(group_keys.get(site_pick.get("group_id"), [key]))
+        history, claims = [], []
+        for k in keys:
+            label = f"{k[0]} {k[2]} {'1st' if k[1] == 1 else '2nd'}"
+            for e in pick_history(k, transactions, discord_msgs):
+                history.append({**e, "pick": label} if len(keys) > 1 else e)
+            for c in sheet_claims(k, sheet_acquired_by_team or {}):
+                if c not in claims:
+                    claims.append(c)
+        # One trade naming two group members is one event, not two.
+        seen = set()
+        r["history"] = []
+        for e in sorted(history, key=lambda e: e["date"]):
+            ident = (e["date"], e.get("txn_id") or e.get("label"), e.get("to"), e.get("clause"))
+            if ident not in seen:
+                seen.add(ident)
+                r["history"].append(e)
+        r["sheet_claims"] = claims
     itemized.sort(key=lambda r: (r["category"], r["year"], r["round"], r["team"]))
     years = sorted(sheet_years)
     return {
@@ -1403,7 +1642,9 @@ def main():
 
     transactions = http_json("/api/transactions?limit=5000")["transactions"]
     sheet_picks_by_team = {team: sheet_data[team]["picks"] for team in sheet_data}
-    picks_report = build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year)
+    sheet_acquired_by_team = {team: sheet_data[team].get("acquired", []) for team in sheet_data}
+    picks_report = build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current_draft_year,
+                                      sheet_acquired_by_team, load_discord_raw())
 
     rosters = load_rosters()
     ovr_current = http_json("/api/ovr/current")

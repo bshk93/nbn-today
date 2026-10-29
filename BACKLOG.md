@@ -122,23 +122,26 @@ Proration or partial guarantees are the obvious suspects.
 The rows are on `/committees/rosters` only; team pages no longer show them
 (2026-10-08). Every row is still open.
 
-### [P1] Picks conveyance — 92 picks still not cleanly modeled
-`poopoo.json` `picks.counts`, **recounted 2026-10-29** after the party check
-was made strict (2026-10-06 in brackets):
+### [P1] Picks conveyance — 28 committee tasks open on the Picks tab
+Recounted **2026-10-29**, after the Picks tab started reading every trade's
+prose, the raw Discord export and the sheet's Acquired tables:
+`clean_match` 330, `clean_match_frozen` 7, `same_owner_diff_representation`
+42, `committee_lag` 19 (sheet behind; chain complete), `not_on_sheet` 2,
+and every `needs_investigation` / `parties_differ` pick now carries a task in
+`pick-committee-notes.json`. The tasks are the list; this entry only says
+what kind of work they are:
 
-- `clean_match` 319, `clean_match_frozen` 7 — fine
-- `needs_investigation` **11** (11) — no explanation yet; all 11 are committee tasks from 2026-09-24, none closed
-- `parties_differ` **7** (new) — both sides split the pick but name different teams
-- `committee_lag` **24** (21) — the sheet is behind a logged trade
-- `same_owner_diff_representation` **48** (56) — same teams, written differently
-- `richness_gap` **2** (2) — sheet expresses conditions the model can't hold
-- `not_on_sheet` **2** (new) — WAS's sheet still starts at 2026, so its 2033 picks were never compared
+- **Site looks wrong, waiting on a confirm:** 2027 IND 2nd (bands reversed),
+  2029 DET 1st (1-3 belongs to WAS), 2027 DEN 2nd (GSW's 56-60), and the
+  nine 24 Sept bands (2027 MIN 1st, 2027 LAL/MIL/MIN 2nds, 2028/2029 ORL
+  2nds, 2029 SAC, 2031 GSW/TOR 2nds), plus the 2029 MIA/MIN swap.
+- **A hop no record has:** 2028 DAL 2nd (IND→UTA), 2028 LAC 2nd (LAC→WAS),
+  the 2027 MIL 2nd's 31-33 slice (MEM→CHA), the 2030 ORL 2nd's OKC slice,
+  2032 MIA 2nd (LAC→CHI), and TOR's swap against DAL's 2027 1st.
+- **Sheet-only fixes:** the rest.
 
-Until 2026-10-29 "Already reconciled" needed only one team in common, so 7
-real disagreements (2027 IND 2nd, 2029 DET 1st, the 2027 DAL/PHI/TOR chain…)
-read as no action. The 11 investigations are still the real blocker to
-trusting `/api/picks` end to end. Committee tasks for individual picks go in
-`pick-committee-notes.json` (the Picks tab on `/committees/rosters`).
+Each confirmed fix is a site write plus deleting its task (see the
+committee-tasks memory: no resolve button).
 
 ### [P2] Discord backfill not finished
 - Trades: 437 of 485 raw messages submitted; ~50 multi-team trades still
@@ -147,7 +150,11 @@ trusting `/api/picks` end to end. Committee tasks for individual picks go in
 - FA signings: 1498 of 2081 submitted; 162 flagged, 538 skipped. The 162 were
   member-facing at `/cleanup` from 2026-08-16 until that game was retired
   2026-09-19; they are back to being a committee job with no queue behind them.
-Spec in `nbn-api/docs/discord-transaction-backfill.md`. **The 538 skipped FA
+**Eight unsubmitted Discord trades move a 2027+ pick** (found 2026-10-29 by
+the Picks tab's history, which flags them "only on Discord"): 2020-12-29
+Trade 59, 2021-07-23 Trade 7, 2023-01-26 Trade 67, 2023-06-25 Trade 27,
+2025-06-20 Trade 5, 2025-06-22 Trades 12/13/14. Those are the ones to enter
+first. Spec in `nbn-api/docs/discord-transaction-backfill.md`. **The 538 skipped FA
 rows' open question is resolved**, checked against the real file 2026-08-16:
 496 of 538 have no sign/option language at all (renounce/waiver/retirement/
 trade-block chatter) — the parser correctly excluded them, this is not a
