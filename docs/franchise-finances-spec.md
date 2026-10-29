@@ -527,10 +527,27 @@ went negative, then every price jumped when the weight switched off).
 - The valuation multiple holds at its 26-27 level; revenue carries growth.
 - `SALE_PROFIT_MULTIPLE` is fixed at 3.04 (league revenue / profit on
   2026-10-29) instead of measured each run.
-- **Effect on 2026-10-29**: every price −0.3% to −2.6% except LAC +1.4%; the
+- The cap index alone moved every price −0.3% to −2.6% (LAC +1.4%) and the
   mean −1.6%, because the sale in 28-29 is two seasons of 5% revenue growth
-  at a flat multiple instead of two of 6% multiple growth. Against the league
-  nothing moves more than 1.5 points; the spread goes 3.0x to 2.91x.
+  at a flat multiple instead of two of 6% multiple growth.
+
+Then the user asked for a wider spread. Today's 3.0x was mostly LAC near the
+floor; the top fills only as markets grow, over 6-8 seasons. Levers were
+estimated on today's numbers: brand per title barely moves it (8%: 3.04x),
+the profit weight moves the bottom more than the top (0.5: 3.9x), and the
+flat ¥150M national TV share, ~37% of mean revenue, was what squeezed every
+price toward the middle (moving ¥100M of it local: ~4.8x). Two were taken:
+
+- **National TV goes local from 27-28** (`media_revenue`): ¥50M national,
+  ¥180M × market local, against ¥150M and ¥80M × market through 26-27. The
+  same at an average market. In the ledger too, from 27-28, so no history
+  changes; the first 27-28 books will show small markets losing TV money.
+- **`SALE_PROFIT_WEIGHT` 0.25 → 0.35.**
+- **Effect on 2026-10-29**, with the cap index: spread 3.0x → 5.1x (4th best
+  over 4th worst 1.78 → 2.19). PHX +50% → +68% against the league, MIL +35%
+  → +50%; LAC −50% → −67%, WAS −33% → −46%, CHA −30% → −43%. The mean price
+  is unchanged and the order follows market: DET and BOS, under 0.9, drop
+  past SAC and CLE.
 
 ## Open
 
