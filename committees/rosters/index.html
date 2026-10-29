@@ -475,6 +475,25 @@
     }
     .pick-task .task-title { font-weight: 700; margin-bottom: 0.2rem; white-space: normal; }
 
+    .picks-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      margin-bottom: 0.8rem;
+    }
+    .picks-team { display: inline-flex; align-items: center; gap: 0.5rem; font-size: var(--text-sm); color: var(--text-muted); }
+    .picks-scope { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); }
+
+    .pick-row .pick-id a { color: inherit; text-decoration: none; }
+    .pick-row .pick-id a:hover { text-decoration: underline; }
+
+    .pick-leaves { display: flex; flex-direction: column; gap: 0.1rem; margin-top: 0.15rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .pick-leaves b { color: var(--text-secondary); font-family: var(--font-mono); }
+    .pick-party-gap { color: var(--pc); font-weight: 700; }
+
+    .pick-task .task-age.stale { color: var(--danger-light); }
+
     .pick-timeline { display: flex; flex-direction: column; gap: 0.15rem; font-family: var(--font-mono); font-size: var(--text-xs); }
     .pick-timeline b { color: var(--text-secondary); }
 
@@ -685,7 +704,12 @@
     </div>
 
     <div class="tab-panel" id="panel-picks" hidden>
-      <p class="picks-intro">Every team's future draft pick (2027 and on, both rounds) reconciled between the cached league sheet's Details column + attached cell notes and the live <code>/api/picks</code> ledger.</p>
+      <div class="picks-bar">
+        <label class="picks-team">Team
+          <select id="picks-team"><option value="">All teams</option></select>
+        </label>
+        <span class="picks-scope" id="picks-scope"></span>
+      </div>
       <div class="chip-row" id="picks-chips"></div>
       <div id="picks-groups"></div>
     </div>
@@ -921,19 +945,31 @@
     const PICK_CATEGORY_META = {
       needs_investigation: {
         label: "Needs a decision", color: "var(--danger)",
-        desc: "No overlap and no logged trade explains it, or the site's own ledger disagrees with its own transaction log.",
+        desc: "No logged trade explains the gap, or the site's ledger disagrees with its own trade log.",
+      },
+      parties_differ: {
+        label: "Teams disagree", color: "var(--cat-orange)",
+        desc: "Both sides split the pick, but they don't name the same teams. One of them is wrong.",
+      },
+      site_missing_pick: {
+        label: "Missing on the site", color: "var(--danger)",
+        desc: "The sheet has this pick and /api/picks doesn't.",
+      },
+      not_on_sheet: {
+        label: "Missing on the sheet", color: "var(--gold-alt)",
+        desc: "The site has this pick and the sheet has no row for it, so it was never compared.",
       },
       committee_lag: {
         label: "Sheet is behind", color: "var(--cat-sky)",
-        desc: "The site disagrees with the sheet, but a logged trade explains exactly why — the sheet just hasn't caught up. Worth sending to the committee.",
+        desc: "A logged trade explains the site's owner. The sheet needs updating, not the site.",
       },
       same_owner_diff_representation: {
         label: "Already reconciled", color: "var(--cat-teal)",
-        desc: "Sheet lists a compound/conditional owner; site names one practical team but its notes describe the same split. No action needed.",
+        desc: "Same teams on both sides, written differently. No action needed.",
       },
       richness_gap: {
         label: "Detail gap", color: "var(--gold-alt)",
-        desc: "Owner matches on both sides, but the sheet's swap/protection mechanics aren't in the site's structured fields yet. Backlog, not a dispute.",
+        desc: "Owner matches, but the sheet's swap or protection terms aren't modeled on the site.",
       },
     };
     // Not a category the job assigns: every row carrying a hand-written
@@ -941,68 +977,119 @@
     // out of its own category and listed here first, whatever it reads as.
     const PICK_TASK_META = {
       label: "Committee tasks", color: "var(--purple)",
-      desc: "Picks someone has triaged and handed to the committee, with what's known so far. Each stays here until its note is removed.",
+      desc: "Picks already triaged, with what's known. Each stays until the fix is made.",
     };
-    const PICK_CATEGORY_ORDER = ["needs_investigation", "committee_lag", "same_owner_diff_representation", "richness_gap"];
+    const PICK_CATEGORY_ORDER = ["needs_investigation", "parties_differ", "site_missing_pick", "not_on_sheet",
+                                 "committee_lag", "same_owner_diff_representation", "richness_gap"];
+    // No action needed: folded shut unless their chip is picked.
+    const PICK_COLLAPSED = new Set(["same_owner_diff_representation", "richness_gap"]);
+    const TASK_STALE_DAYS = 21;
 
     let picksFilter = 'all';
+    let picksTeam = '';
     let picksRowsGlobal = [];
+    let picksCounts = {};
 
     function escapeHtml(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
+    function daysSince(iso) {
+      const t = Date.parse(iso + 'T00:00:00Z');
+      return Number.isFinite(t) ? Math.floor((Date.now() - t) / 86400000) : null;
+    }
+
     function pickTaskBlock(n) {
+      const age = n.added ? daysSince(n.added) : null;
+      const ageHtml = age == null ? '' :
+        ` · <span class="task-age ${age >= TASK_STALE_DAYS ? 'stale' : ''}">open ${age} day${age === 1 ? '' : 's'}</span>`;
       const byline = [n.added && `added ${escapeHtml(n.added)}`, n.by && `by ${escapeHtml(n.by)}`].filter(Boolean).join(' · ');
       return `
         <div class="pick-task">
-          <div class="task-head">Committee task${byline ? ' · ' + byline : ''}</div>
+          <div class="task-head">Committee task${byline ? ' · ' + byline : ''}${ageHtml}</div>
           ${n.title ? `<div class="task-title">${escapeHtml(n.title)}</div>` : ''}
           ${escapeHtml(n.text || '')}
         </div>`;
     }
 
-    function pickRowCard(r) {
+    // Every team with a stake in the row, on either side. The team filter
+    // matches these, so a team sees picks it holds a band of, not only its own.
+    function pickParties(r) {
+      const set = new Set([r.team]);
+      String(r.sheet_owner || '').replace(/\*/g, '').split(/[\/|]/).forEach(t => {
+        t = t.trim().toUpperCase();
+        if (TEAMS[t]) set.add(t);
+      });
+      String(r.site_owner || '').split('|').forEach(t => { if (TEAMS[t]) set.add(t); });
+      (r.site_leaves || []).forEach(l => { if (l.team) set.add(l.team); });
+      (r.evidence || []).forEach(e => { set.add(e.from); set.add(e.to); });
+      return set;
+    }
+
+    function pickRowCard(r, asTask = false) {
       // A noted row can read clean against the sheet, and clean has no meta.
       const meta = PICK_CATEGORY_META[r.category] || PICK_TASK_META;
       const sheetOwnerNorm = (r.sheet_owner || r.team).replace(/\*/g, '');
-      const diverge = sheetOwnerNorm.toUpperCase() !== (r.site_owner || r.team).toUpperCase();
+      const ownNorm = /^own$/i.test(sheetOwnerNorm.trim()) ? r.team : sheetOwnerNorm;
+      const diverge = ownNorm.toUpperCase() !== (r.site_owner || r.team).toUpperCase();
+      const siteOnly = new Set(r.site_only_parties || []);
+      const sheetOnly = r.sheet_only_parties || [];
 
       let footer = '';
-      if (r.category === 'committee_lag' && r.evidence && r.evidence.length) {
-        const evs = r.evidence.map(e => {
-          const desc = e.description ? ' — ' + escapeHtml(e.description) : '';
-          return `<div><b>${e.date}</b> ${e.from} → ${e.to}${desc}</div>`;
-        }).join('');
-        footer = `<div class="pick-footer"><div class="pick-timeline">${evs}</div></div>`;
+      const timeline = (r.evidence && r.evidence.length) ? `<div class="pick-timeline">${r.evidence.map(e => {
+        const desc = e.description ? ' — ' + escapeHtml(e.description) : '';
+        return `<div><b>${escapeHtml(e.date)}</b> ${escapeHtml(e.from)} → ${escapeHtml(e.to)}${desc}</div>`;
+      }).join('')}</div>` : '';
+      const gapLine = [
+        siteOnly.size ? `Site has ${[...siteOnly].join(', ')}, which the sheet never names.` : '',
+        sheetOnly.length ? `Sheet has ${sheetOnly.join(', ')}, with no claim on the site.` : '',
+      ].filter(Boolean).join(' ');
+      if (asTask) {
+        // The task text is the verdict; the job's own reading would contradict it.
+        footer = timeline ? `<div class="pick-footer">${timeline}</div>` : '';
+      } else if (r.category === 'committee_lag') {
+        footer = `<div class="pick-footer">Sheet should read <b>${escapeHtml(r.site_owner)}</b>.${timeline}</div>`;
       } else if (r.category === 'needs_investigation') {
         const note = r.investigation_note
           ? escapeHtml(r.investigation_note)
-          : "No logged transaction and no matching note explains this gap — worth a direct check.";
-        footer = `<div class="pick-footer investigate">${note}</div>`;
-      } else if (r.category === 'same_owner_diff_representation') {
-        footer = `<div class="pick-footer">Sheet split and site notes describe the same arrangement — just stored differently.</div>`;
+          : "No logged trade and no site note explains this gap.";
+        footer = `<div class="pick-footer investigate">${note}${timeline}</div>`;
+      } else if (r.category === 'parties_differ') {
+        footer = `<div class="pick-footer investigate">${escapeHtml(gapLine)}${timeline}</div>`;
+      } else if (r.category === 'not_on_sheet') {
+        footer = `<div class="pick-footer">Add a row for it on the sheet.</div>`;
+      } else if (timeline) {
+        footer = `<div class="pick-footer">${timeline}</div>`;
       }
 
       const siteFlags = [];
       if (r.site_protected) siteFlags.push(`protected top-${r.site_protected}`);
       if (r.site_swap_owner) siteFlags.push(`swap w/ ${r.site_swap_owner}`);
+      const leaves = r.site_leaves || [];
+      // With leaves, the pipe-joined owner says nothing they don't; show the
+      // parties and their roles instead.
+      const siteOwnerHtml = leaves.length
+        ? `<div class="pick-leaves">${leaves.map(l =>
+            `<div><b class="${siteOnly.has(l.team) ? 'pick-party-gap' : ''}">${escapeHtml(l.team)}</b> ${escapeHtml(l.description || '')}</div>`).join('')}</div>`
+        : `<div class="owner ${diverge ? 'diverge' : ''}">${escapeHtml(r.site_owner || '—')}</div>`;
+      const sheetOwnerHtml = escapeHtml(r.sheet_owner || '—').replace(/[A-Z]{3}/g, t =>
+        sheetOnly.includes(t) ? `<span class="pick-party-gap">${t}</span>` : t);
 
       return `
         <div class="pick-row" style="--pc:${meta.color}">
           <div class="pick-id">
-            <span class="team">${r.team}</span>
+            <a class="team" href="/teams/${r.team}/" title="${escapeHtml(TEAMS[r.team] || r.team)}">${r.team}</a>
             <span class="yr">${r.year} R${r.round}</span>
           </div>
           <div class="pick-side">
             <div class="side-label">Sheet</div>
-            <div class="owner ${diverge ? 'diverge' : ''}">${escapeHtml(r.sheet_owner || '—')}</div>
+            <div class="owner ${diverge && !leaves.length ? 'diverge' : ''}">${sheetOwnerHtml}</div>
             ${r.sheet_details ? `<div class="detail">${escapeHtml(r.sheet_details)}</div>` : ''}
             ${r.sheet_note ? `<div class="detail">${escapeHtml(r.sheet_note)}</div>` : ''}
           </div>
           <div class="pick-side">
             <div class="side-label">Site</div>
-            <div class="owner ${diverge ? 'diverge' : ''}">${escapeHtml(r.site_owner || '—')}</div>
+            ${siteOwnerHtml}
             ${r.site_notes ? `<div class="detail">${escapeHtml(r.site_notes)}</div>` : ''}
             ${siteFlags.length ? `<div class="pick-flags">${siteFlags.map(f => `<span class="pick-flag">${escapeHtml(f)}</span>`).join('')}</div>` : ''}
           </div>
@@ -1011,21 +1098,29 @@
     }
 
     function pickRowCardWithTask(r) {
-      return pickRowCard(r).replace('<div class="pick-id">', pickTaskBlock(r.committee_note) + '<div class="pick-id">');
+      return pickRowCard(r, true).replace('<div class="pick-id">', pickTaskBlock(r.committee_note) + '<div class="pick-id">');
     }
 
-    function renderPicksChips(counts, cleanTotal) {
-      const tasks = picksRowsGlobal.filter(r => r.committee_note).length;
+    function visiblePickRows() {
+      return picksTeam ? picksRowsGlobal.filter(r => pickParties(r).has(picksTeam)) : picksRowsGlobal;
+    }
+
+    function renderPicksChips() {
+      const rows = visiblePickRows();
+      const tasks = rows.filter(r => r.committee_note).length;
+      const cleanTotal = (picksCounts.clean_match || 0) + (picksCounts.clean_match_frozen || 0);
       const items = [
-        { key: 'all', label: 'All flagged', n: picksRowsGlobal.length, color: 'var(--text-secondary)' },
+        { key: 'all', label: 'All flagged', n: rows.length, color: 'var(--text-secondary)' },
         ...(tasks ? [{ key: 'tasks', label: PICK_TASK_META.label, n: tasks, color: PICK_TASK_META.color }] : []),
         // Counted off the rows, not `counts`: a noted row is listed under
         // Committee tasks instead of its category, so the chip must agree.
         ...PICK_CATEGORY_ORDER
-          .map(k => ({ k, n: picksRowsGlobal.filter(r => !r.committee_note && r.category === k).length }))
+          .map(k => ({ k, n: rows.filter(r => !r.committee_note && r.category === k).length }))
           .filter(({ n }) => n)
           .map(({ k, n }) => ({ key: k, label: PICK_CATEGORY_META[k].label, n, color: PICK_CATEGORY_META[k].color })),
-        { key: 'clean', label: 'Clean matches', n: cleanTotal, color: 'var(--text-muted)', disabled: true },
+        // League-wide only: clean rows aren't itemized, so they can't be
+        // counted per team.
+        ...(picksTeam ? [] : [{ key: 'clean', label: 'Clean matches', n: cleanTotal, color: 'var(--text-muted)', disabled: true }]),
       ];
       document.getElementById('picks-chips').innerHTML = items.map(it => `
         <button type="button" class="pchip ${picksFilter === it.key ? 'active' : ''}" data-key="${it.key}" style="--pc:${it.color}" ${it.disabled ? 'title="No action needed — not itemized below"' : ''}>
@@ -1037,7 +1132,7 @@
           if (key === 'clean') return;
           picksFilter = key;
           renderPicksGroups();
-          renderPicksChips(counts, cleanTotal);
+          renderPicksChips();
         });
       });
     }
@@ -1045,10 +1140,13 @@
     function renderPicksGroups() {
       const byCat = {};
       const tasks = [];
-      picksRowsGlobal.forEach(r => {
+      visiblePickRows().forEach(r => {
         if (r.committee_note) { tasks.push(r); return; }
         (byCat[r.category] = byCat[r.category] || []).push(r);
       });
+      // Oldest task first: the longer it has sat, the more it needs chasing.
+      tasks.sort((a, b) => String(a.committee_note.added || '').localeCompare(String(b.committee_note.added || ''))
+        || a.year - b.year || a.round - b.round || a.team.localeCompare(b.team));
 
       let taskHtml = '';
       if (tasks.length && (picksFilter === 'all' || picksFilter === 'tasks')) {
@@ -1077,13 +1175,14 @@
           </div>
           <p class="pick-group-desc">${meta.desc}</p>`;
         const body = `<div class="pick-rows">${list.map(pickRowCard).join('')}</div>`;
-        if (key === 'richness_gap' && picksFilter === 'all') {
-          return `<div class="pick-group"><details class="pick-group-collapse"><summary>${meta.label} — click to expand (${list.length})</summary>${head}${body}</details></div>`;
+        if (PICK_COLLAPSED.has(key) && picksFilter === 'all') {
+          return `<div class="pick-group"><details class="pick-group-collapse"><summary>${meta.label} (${list.length}) — no action needed</summary>${head}${body}</details></div>`;
         }
         return `<div class="pick-group">${head}${body}</div>`;
       }).join('');
 
-      document.getElementById('picks-groups').innerHTML = html || '<p style="color:var(--text-muted);padding:1rem 0;">Nothing in this category.</p>';
+      document.getElementById('picks-groups').innerHTML = html ||
+        `<p style="color:var(--text-muted);padding:1rem 0;">${picksTeam ? `Nothing flagged for ${escapeHtml(picksTeam)}.` : 'Nothing in this category.'}</p>`;
     }
 
     function renderPicksTab(picks) {
@@ -1092,8 +1191,20 @@
         return;
       }
       picksRowsGlobal = picks.rows;
-      const cleanTotal = (picks.counts.clean_match || 0) + (picks.counts.clean_match_frozen || 0);
-      renderPicksChips(picks.counts, cleanTotal);
+      picksCounts = picks.counts;
+      const scope = document.getElementById('picks-scope');
+      if (picks.checked && picks.years) scope.textContent = `${picks.checked} picks checked, ${picks.years[0]}–${picks.years[1]}, both rounds`;
+
+      const sel = document.getElementById('picks-team');
+      sel.insertAdjacentHTML('beforeend', Object.keys(TEAMS).sort()
+        .map(t => `<option value="${t}">${t} — ${escapeHtml(TEAMS[t])}</option>`).join(''));
+      sel.addEventListener('change', () => {
+        picksTeam = sel.value;
+        picksFilter = 'all';
+        renderPicksChips();
+        renderPicksGroups();
+      });
+      renderPicksChips();
       renderPicksGroups();
     }
 

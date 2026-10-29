@@ -936,24 +936,79 @@ def norm_pick_owner(raw, team):
     return team if v.lower() == "own" else v.upper()
 
 
-def classify_pick(team, row, site_pick, events):
+# How the sheet's Details column and cell notes name a team: by city, by
+# nickname, or by abbreviation. "Los Angeles" and "LA" alone are left out
+# because they name two teams.
+TEAM_WORDS = {
+    "ATL": ["Atlanta", "Hawks"], "BKN": ["Brooklyn", "Nets"], "BOS": ["Boston", "Celtics"],
+    "CHA": ["Charlotte", "Hornets"], "CHI": ["Chicago", "Bulls"], "CLE": ["Cleveland", "Cavaliers", "Cavs"],
+    "DAL": ["Dallas", "Mavericks", "Mavs"], "DEN": ["Denver", "Nuggets"], "DET": ["Detroit", "Pistons"],
+    "GSW": ["Golden State", "Warriors"], "HOU": ["Houston", "Rockets"], "IND": ["Indiana", "Pacers"],
+    "LAC": ["Clippers"], "LAL": ["Lakers"], "MEM": ["Memphis", "Grizzlies"],
+    "MIA": ["Miami", "Heat"], "MIL": ["Milwaukee", "Bucks"], "MIN": ["Minnesota", "Timberwolves", "Wolves"],
+    "NOP": ["New Orleans", "Pelicans"], "NYK": ["New York", "Knicks"], "OKC": ["Oklahoma City", "Thunder"],
+    "ORL": ["Orlando", "Magic"], "PHI": ["Philadelphia", "76ers", "Sixers"], "PHX": ["Phoenix", "Suns"],
+    "POR": ["Portland", "Blazers"], "SAC": ["Sacramento", "Kings"], "SAS": ["San Antonio", "Spurs"],
+    "TOR": ["Toronto", "Raptors"], "UTA": ["Utah", "Jazz"], "WAS": ["Washington", "Wizards"],
+}
+_TEAM_WORD_RES = {
+    abbr: re.compile(r"\b(?:" + "|".join(re.escape(w) for w in words) + r")\b", re.IGNORECASE)
+    for abbr, words in TEAM_WORDS.items()
+}
+_ABBR_RE = re.compile(r"\b(" + "|".join(TEAMS) + r")\b")
+
+
+def teams_named(text):
+    """Every team the sheet's free text names, as abbreviations. Abbreviations
+    are matched in upper case only, so "min" in "minimum" is not Minnesota."""
+    if not text:
+        return set()
+    found = set(_ABBR_RE.findall(text))
+    found.update(abbr for abbr, rx in _TEAM_WORD_RES.items() if rx.search(text))
+    return found
+
+
+def sheet_row_mentions(row, team):
+    """Every team one sheet row names: its owner cell and its free text."""
+    owner = norm_pick_owner(row["owner_raw"], team)
+    parts = {norm_pick_owner(p, team) for p in re.split(r"[/|]", owner) if p.strip()}
+    return parts | teams_named(row["details"]) | teams_named(row["note"])
+
+
+def site_pick_parties(site_pick, team):
+    """Every team with a live claim on the pick, as /api/picks serves it: the
+    owner (pipe-joined when contingent) plus every team in `leaves`."""
+    owner = site_pick.get("owner") or team
+    parties = {t for t in owner.split("|") if t and t != "?"}
+    parties |= {leaf["team"] for leaf in site_pick.get("leaves") or [] if leaf.get("team")}
+    return parties
+
+
+def classify_pick(team, row, site_pick, events, group_mentions=frozenset()):
     """Buckets one (team, year, round) sheet row against its site
     counterpart. Categories, roughly in order of urgency:
       needs_investigation        -- no overlap and no logged trade explains
                                      it, or the site's own ledger disagrees
                                      with its own transaction log
+      parties_differ             -- both sides split the pick, but they name
+                                     different teams: the site has a party
+                                     the sheet never mentions, or the reverse
       committee_lag              -- disagreement fully explained by a real,
                                      already-logged trade the sheet hasn't
                                      caught up to yet
       same_owner_diff_representation -- sheet lists a compound/conditional
-                                     owner, site names one practical team but
-                                     its free-text notes describe the same split
+                                     owner, site models the same split with
+                                     the same teams, just stored differently
       richness_gap                -- owners agree, but the sheet's swap/
                                      protection detail isn't in the site's
                                      structured fields (a model-limit backlog,
                                      not a dispute)
       clean_match / clean_match_frozen -- full agreement
       site_missing_pick           -- site has no entry at all for this pick
+
+    `group_mentions` is every team the sheet names on any row of the same
+    swap group: the sheet often spells a group out once ("See '27 Detroit
+    1st") and the site serves the whole group's parties on every row.
     """
     out = {
         "team": team, "year": row["year"], "round": row["round"],
@@ -968,14 +1023,19 @@ def classify_pick(team, row, site_pick, events):
     out.update({
         "site_owner": site_owner, "site_protected": site_pick.get("protected"),
         "site_swap_owner": site_pick.get("swap_owner"), "site_notes": site_pick.get("notes"),
+        "site_leaves": [
+            {"team": leaf.get("team"), "description": leaf.get("description")}
+            for leaf in site_pick.get("leaves") or []
+        ],
     })
 
     if (row["details"] or "").upper() == "FROZEN" and site_pick.get("frozen"):
         out["category"] = "clean_match_frozen"
         return out
 
-    sheet_parts = set(re.split(r"[/|]", sheet_owner)) if any(c in sheet_owner for c in "/|") else {sheet_owner}
+    sheet_parts = {norm_pick_owner(p, team) for p in re.split(r"[/|]", sheet_owner) if p.strip()} or {team}
     site_parts = set(site_owner.split("|"))
+    site_parties = site_pick_parties(site_pick, team)
 
     # A pick can carry real structure (protected bands, a swap group, a
     # ladder, a binary chain) without the old flat PROTECTED/SWAP_OWNER
@@ -987,12 +1047,29 @@ def classify_pick(team, row, site_pick, events):
         bool(site_pick.get("leaves")) or bool(site_pick.get("ladder"))
         or bool(site_pick.get("group_id")) or bool(site_pick.get("ladder_fallback_of"))
     )
+    site_has_notes = bool((site_pick.get("notes") or "").strip())
 
-    if sheet_parts == site_parts:
+    # The two sides agree on who the parties are when every team the sheet's
+    # owner cell names has a claim on the site, and every team with a claim on
+    # the site is named somewhere on the sheet (owner cell, Details or note).
+    # Until 2026-10-29 any single team in common was enough, which filed
+    # picks like the 2027 IND 2nd (sheet CHA/NYK, site NYK/MIA) as needing
+    # no action.
+    sheet_mentions = sheet_parts | sheet_row_mentions(row, team) | set(group_mentions)
+    site_only = sorted(site_parties - sheet_mentions)
+    sheet_only = sorted(sheet_parts - site_parties)
+    if site_only:
+        out["site_only_parties"] = site_only
+    if sheet_only:
+        out["sheet_only_parties"] = sheet_only
+
+    if not site_only and not sheet_only:
         if not (row["details"] or row["note"]):
             out["category"] = "clean_match"
-        elif site_has_structure:
+        elif sheet_parts == site_parts and site_has_structure:
             out["category"] = "clean_match"
+        elif site_has_structure or (site_has_notes and sheet_parts != site_parts):
+            out["category"] = "same_owner_diff_representation"
         else:
             out["category"] = "richness_gap"
         return out
@@ -1006,45 +1083,35 @@ def classify_pick(team, row, site_pick, events):
         bool(row["details"] or row["note"])
         and (row["details"] or "").upper() != "FROZEN"
         and not site_has_structure
-        and not (site_pick.get("notes") or "").strip()
+        and not site_has_notes
     )
     lost_terms_note = (
         "The sheet records protection or split terms on this pick and the site "
         "models none of them. A logged trade may explain the owner, but not a "
         "band another team kept."
     )
+    overlap = bool(sheet_parts & site_parties)
 
     hist = events.get((row["year"], row["round"], team))
-    if hist and hist[-1]["to"] == site_owner:
+    # A pick inside a swap, chain or ladder is served with a pipe-joined owner
+    # (`BOS|NOP|HOU`), so the log's last recipient is checked against every
+    # served party, not only the owner string.
+    if hist and hist[-1]["to"] in site_parties:
         out["evidence"] = hist
         if lost_terms:
             out["category"] = "needs_investigation"
             out["investigation_note"] = lost_terms_note
+        elif overlap and site_has_structure:
+            out["category"] = "parties_differ"
         else:
             out["category"] = "committee_lag"
-        return out
-    # A pick inside a swap, chain or ladder is served with a pipe-joined owner
-    # (`BOS|NOP|HOU`), so the exact match above can never hold for one. If the
-    # log's last recipient is one of the served parties, the site agrees with
-    # its own log and the gap is only with the sheet. Until 2026-09-24 every
-    # such pick fell through to "needs a decision", which was most of that list.
-    site_parties = site_parts | {leaf["team"] for leaf in site_pick.get("leaves") or [] if leaf.get("team")}
-    if hist and hist[-1]["to"] in site_parties:
-        if sheet_parts & site_parties:
-            out["category"] = "same_owner_diff_representation"
-        elif lost_terms:
-            out["category"] = "needs_investigation"
-            out["investigation_note"] = lost_terms_note
-            out["evidence"] = hist
-        else:
-            out["category"] = "committee_lag"
-            out["evidence"] = hist
         return out
     if hist:
         # A real trade moved this pick, but /api/picks's current owner
         # doesn't match where that trade left it -- the site disagrees with
         # its own log, not just with the sheet.
         out["category"] = "needs_investigation"
+        out["evidence"] = hist
         out["investigation_note"] = (
             f"Site's own transaction log shows this pick moving to {hist[-1]['to']} "
             f"({hist[-1]['date']}), but /api/picks currently lists the owner as "
@@ -1052,13 +1119,12 @@ def classify_pick(team, row, site_pick, events):
             "reflected in the trade log."
         )
         return out
-    # Overlapping owners, and the site describes the split somewhere: in its
-    # notes, or (since most structure written after the conveyance model
-    # shipped carries no notes at all) in the structure itself.
-    if sheet_parts & site_parties and ((site_pick.get("notes") or "").strip() or site_has_structure):
-        out["category"] = "same_owner_diff_representation"
+    if overlap and (site_has_structure or site_has_notes):
+        out["category"] = "parties_differ"
         return out
     out["category"] = "needs_investigation"
+    if lost_terms:
+        out["investigation_note"] = lost_terms_note
     return out
 
 
@@ -1081,13 +1147,38 @@ def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current
         for team_picks in picks_by_orig.values() for p in team_picks
     }
 
+    future = [
+        (team, row) for team in TEAMS for row in sheet_picks_by_team.get(team, [])
+        # this year's picks are live-draft territory, tracked elsewhere
+        if row["year"] > current_draft_year
+    ]
+    group_mentions = {}
+    for team, row in future:
+        site_pick = site_by_key.get((row["year"], row["round"], team))
+        if site_pick and site_pick.get("group_id"):
+            group_mentions.setdefault(site_pick["group_id"], set()).update(sheet_row_mentions(row, team))
+
     rows = []
-    for team in TEAMS:
-        for row in sheet_picks_by_team.get(team, []):
-            if row["year"] <= current_draft_year:
-                continue  # this year's picks are live-draft territory, tracked elsewhere
-            site_pick = site_by_key.get((row["year"], row["round"], team))
-            rows.append(classify_pick(team, row, site_pick, events))
+    for team, row in future:
+        site_pick = site_by_key.get((row["year"], row["round"], team))
+        mentions = group_mentions.get(site_pick.get("group_id"), set()) if site_pick else set()
+        rows.append(classify_pick(team, row, site_pick, events, mentions))
+
+    # The other direction: a pick the site serves that the sheet has no row
+    # for. WAS's sheet still started at 2026 on 2026-10-29, so its 2033 picks
+    # were never compared at all, and nothing said so.
+    sheet_keys = {(r["year"], r["round"], r["team"]) for r in rows}
+    sheet_years = {r["year"] for r in rows}
+    for key, p in sorted(site_by_key.items()):
+        year, rnd, orig = key
+        if year <= current_draft_year or year not in sheet_years or key in sheet_keys:
+            continue
+        rows.append({
+            "team": orig, "year": year, "round": rnd, "category": "not_on_sheet",
+            "sheet_owner": None, "sheet_details": None, "sheet_note": None,
+            "site_owner": p.get("owner") or orig, "site_notes": p.get("notes"),
+            "site_leaves": [{"team": l.get("team"), "description": l.get("description")} for l in p.get("leaves") or []],
+        })
 
     notes = load_pick_notes()
     for r in rows:
@@ -1104,7 +1195,11 @@ def build_picks_report(sheet_picks_by_team, picks_by_orig, transactions, current
     itemized = [r for r in rows
                 if r["category"] not in ("clean_match", "clean_match_frozen") or r.get("committee_note")]
     itemized.sort(key=lambda r: (r["category"], r["year"], r["round"], r["team"]))
-    return {"counts": counts, "rows": itemized}
+    years = sorted(sheet_years)
+    return {
+        "counts": counts, "rows": itemized, "checked": len(rows),
+        "years": [years[0], years[-1]] if years else None,
+    }
 
 
 def diff_team(team, sheet, site, site_name_index, sheet_name_index, current_draft_year, season_keys, current_season):

@@ -122,20 +122,23 @@ Proration or partial guarantees are the obvious suspects.
 The rows are on `/committees/rosters` only; team pages no longer show them
 (2026-10-08). Every row is still open.
 
-### [P1] Picks conveyance — 90 picks still not cleanly modeled
-`poopoo.json` `picks.counts`, **recounted 2026-10-06** (2026-08-07 in brackets):
+### [P1] Picks conveyance — 92 picks still not cleanly modeled
+`poopoo.json` `picks.counts`, **recounted 2026-10-29** after the party check
+was made strict (2026-10-06 in brackets):
 
-- `clean_match` 321, `clean_match_frozen` 7 — fine
-- `needs_investigation` **11** (32) — no explanation yet
-- `same_owner_diff_representation` **56** (35) — right owner, structure differs from the sheet
-- `committee_lag` **21** (18) — site is ahead of / behind the committee sheet
-- `richness_gap` **2** (3) — sheet expresses conditions the model can't hold
+- `clean_match` 319, `clean_match_frozen` 7 — fine
+- `needs_investigation` **11** (11) — no explanation yet; all 11 are committee tasks from 2026-09-24, none closed
+- `parties_differ` **7** (new) — both sides split the pick but name different teams
+- `committee_lag` **24** (21) — the sheet is behind a logged trade
+- `same_owner_diff_representation` **48** (56) — same teams, written differently
+- `richness_gap` **2** (2) — sheet expresses conditions the model can't hold
+- `not_on_sheet` **2** (new) — WAS's sheet still starts at 2026, so its 2033 picks were never compared
 
-`needs_investigation` fell by two thirds, mostly into
-`same_owner_diff_representation` — owners now agree and only the shape
-differs. The 11 left are still the real blocker to trusting `/api/picks` end
-to end. Committee tasks for individual picks go in `pick-committee-notes.json`
-(the Picks tab on `/committees/rosters`).
+Until 2026-10-29 "Already reconciled" needed only one team in common, so 7
+real disagreements (2027 IND 2nd, 2029 DET 1st, the 2027 DAL/PHI/TOR chain…)
+read as no action. The 11 investigations are still the real blocker to
+trusting `/api/picks` end to end. Committee tasks for individual picks go in
+`pick-committee-notes.json` (the Picks tab on `/committees/rosters`).
 
 ### [P2] Discord backfill not finished
 - Trades: 437 of 485 raw messages submitted; ~50 multi-team trades still
