@@ -210,8 +210,9 @@ labels ("Paid to not employ him", "Hot dogs, mostly") read as broken English.
   `value = multiple(season) × trailing 3-season mean revenue × brand`
 
   - `multiple` is the same for every team and grows by a fixed rate each year
-    (start: chosen so 20-21 lands on ¥3.0B, then +6% a year), so the whole league
-    inflates together.
+    (start: chosen so 20-21 lands on ¥3.0B, then +6% a year) up to 26-27, so
+    the whole league inflates together. From 27-28 it holds, and revenue
+    carries the growth instead (below).
   - `brand = 1 + 0.04 × titles in the last 6 seasons`.
 - Revenue here **excludes the NBNTV bonus**, so the 26-27 data step can't move
   valuations. It still shows in that season's P&L.
@@ -219,6 +220,13 @@ labels ("Paid to not employ him", "Hot dogs, mostly") read as broken English.
   games, and for valuation only, every team gets the league-average postseason
   of the last finished season (gate, title bonus and title merch). Without that
   the calendar read as a league-wide crash every October.
+- **Prices grow with the cap after 26-27** (`price_level`). Every NB¥
+  constant here is 26-27 money; a later season's revenue and arena costs are
+  scaled by its cap over 26-27's. A cap the committee hasn't set yet is the
+  last one on file grown 5% a season, the same guess fair value makes for
+  payroll. Before this (2026-10-29) revenue was flat at ~¥408M a season from
+  20-21 on while payroll grew with the cap, so the league's mean profit would
+  have hit zero around 33-34.
 - A title counts in the trailing revenue for three seasons, so a champion's
   value drops when that season leaves the window (CLE, 26-27). That is the
   model working, not a bug.
@@ -499,6 +507,30 @@ the same nights). Each day's parts are in the history as `mood_parts`, and
 the page names the one that moved on a quiet day. On 10-28 the moods run
 from IND −4.5% (0-4) to MIL +6.0% (4-0); MEM is +0.4%, and no team moved
 more than 0.11% on that day without games.
+
+### fv6 (2026-10-29)
+
+The user asked what a price does over 10-15 seasons. A team's price is
+bounded: it is recomputed from the current state each day, and market (0.5 to
+2.0), brand (+24% at most) and strength reversion all cap it. A toy run of the
+ledger's formulas puts a perennial champion at ~2.4-2.7x the league and a
+tanker at ~0.4-0.6x, each reached in about six seasons.
+
+What wasn't bounded was the league. Revenue was flat while payroll grew with
+the cap, so the league's profit thinned every season, and the sale's profit
+multiple, measured each run as league revenue over league profit, blew up as
+it did (the toy put a dynasty at 5x the league in the season before profit
+went negative, then every price jumped when the weight switched off).
+
+- Revenue and arena costs grow with the cap past 26-27 (`fin.price_level`,
+  in the ledger and every projected season); replacement salaries too.
+- The valuation multiple holds at its 26-27 level; revenue carries growth.
+- `SALE_PROFIT_MULTIPLE` is fixed at 3.04 (league revenue / profit on
+  2026-10-29) instead of measured each run.
+- **Effect on 2026-10-29**: every price −0.3% to −2.6% except LAC +1.4%; the
+  mean −1.6%, because the sale in 28-29 is two seasons of 5% revenue growth
+  at a flat multiple instead of two of 6% multiple growth. Against the league
+  nothing moves more than 1.5 points; the spread goes 3.0x to 2.91x.
 
 ## Open
 
