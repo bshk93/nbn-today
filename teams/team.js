@@ -5980,24 +5980,51 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
   // says the team left the rest out on purpose. A record with no empty slot
   // (never saved, or saved before the line existed) keeps the old reading:
   // the first 15 rows play.
+  //
+  // A slot whose saved player has left the roster (traded, released) goes to
+  // someone who isn't in a slot yet, rather than everyone below moving up a
+  // row: moving up put the 6th man at C after a starter was traded, which
+  // blocked Save and slid every saved minute onto the wrong player. A
+  // starter slot prefers a player who can start there; ties go to OVR, and
+  // a standard player before a two-way.
   function orderedRows(minutes) {
     const bySlug = new Map(activeRows.map(r => [r.SLUG, r]));
     const used = new Set();
-    const rows = [];
+    const held = [];  // [slot index, row]; a vacated slot holds null for now
+    let filled = false;
     if (CS) {
-      CS.MINUTES_SLOTS.forEach(slot => {
+      CS.MINUTES_SLOTS.forEach((slot, i) => {
         const slug = minutes[slot] && minutes[slot].slug;
-        if (slug && bySlug.has(slug) && !used.has(slug)) {
-          rows.push(bySlug.get(slug));
+        if (!slug) return;
+        if (bySlug.has(slug) && !used.has(slug)) {
+          held.push([i, bySlug.get(slug)]);
           used.add(slug);
+        } else if (!bySlug.has(slug)) {
+          held.push([i, null]);
         }
       });
     }
+    const ovrOf = r => parseFloat(currentOvr && currentOvr[r.SLUG]) || 0;
+    const isTwoWay = r => (biosData[r.SLUG] || {}).type === 'two-way';
+    held.forEach(h => {
+      if (h[1]) return;
+      const slot = CS.MINUTES_SLOTS[h[0]];
+      const fits = r => {
+        if (h[0] >= STARTERS) return true;
+        const ok = startPositions(r.SLUG);
+        return !ok || ok.includes(slot);
+      };
+      const pick = activeRows
+        .filter(r => !used.has(r.SLUG))
+        .sort((a, b) => (fits(b) - fits(a)) || (isTwoWay(a) - isTwoWay(b)) || (ovrOf(b) - ovrOf(a)))[0];
+      if (pick) { h[1] = pick; used.add(pick.SLUG); filled = true; }
+    });
+    const rows = held.filter(h => h[1]).map(h => h[1]);
     const slotted = rows.length;
     activeRows.forEach(r => { if (!used.has(r.SLUG)) rows.push(r); });
     const leftOpen = !!CS && CS.MINUTES_SLOTS.some(s => minutes[s] && !minutes[s].slug);
     const line = leftOpen ? slotted : Math.min(CS ? CS.MINUTES_SLOTS.length : 0, rows.length);
-    return { rows, line };
+    return { rows, line, filled };
   }
 
   // Row classes that used to be nth-child rules: the slot count is no
@@ -6504,7 +6531,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       handle.addEventListener('touchstart', onStart, { passive: true });
     }
 
-    const { rows: startRows, line: startLine } = orderedRows(startMinutes);
+    const { rows: startRows, line: startLine, filled } = orderedRows(startMinutes);
+    // A vacated slot was given to someone else, so Save has to send it.
+    if (filled) minutesDirty = true;
     let divider = null;
     startRows.forEach((row, i) => {
       if (CS && i === startLine) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
