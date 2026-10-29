@@ -465,8 +465,11 @@ button.ui-dd-trigger:hover { color: var(--text-primary); }
 button.ui-dd-trigger:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
 button.ui-dd-trigger--set { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
 
+/* Above every layer on the site. A select inside a modal opens this menu over
+   the modal, so it must outrank the highest scrim (free-agency's offer form is
+   10001); at 10000 it opened behind that form and every dropdown looked dead. */
 .ui-dd-menu {
-  position: fixed; z-index: 10000;
+  position: fixed; z-index: 20000;
   display: flex; flex-direction: column;
   padding: 0.35rem; background: var(--bg-card);
   border: 1px solid var(--border); border-radius: var(--radius);
