@@ -501,6 +501,16 @@
     .pick-history .h-inferred { font-style: italic; border-bottom: 1px dotted currentColor; cursor: help; }
     .pick-history .h-claims { margin-top: 0.35rem; }
 
+    .band-edit-slot { grid-column: 1 / -1; margin-top: 0.4rem; }
+    .band-editor { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.6rem 0.7rem;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--text-sm); }
+    .band-editor .band-row { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+    .band-editor input[type=number] { width: 4.5rem; }
+    .band-editor textarea { width: 100%; min-height: 3rem; font: inherit; }
+    .band-editor .band-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .band-editor .band-result { font-size: var(--text-xs); color: var(--text-muted); white-space: pre-line; }
+    .band-editor .band-result.bad { color: var(--danger-light); }
+
     .pick-task .task-age.stale { color: var(--danger-light); }
 
     .pick-timeline { display: flex; flex-direction: column; gap: 0.15rem; font-family: var(--font-mono); font-size: var(--text-xs); }
@@ -1127,6 +1137,8 @@
           </div>
           ${footer}
           ${historyHtml}
+          ${picksCanEdit ? `<div class="band-edit-slot" data-key="${r.year}|${r.round}|${r.team}">
+            <button type="button" class="ui-btn ui-btn--sm band-edit-open">Set bands</button></div>` : ''}
         </div>`;
     }
 
@@ -1258,6 +1270,119 @@
         `<p style="color:var(--text-muted);padding:1rem 0;">${picksTeam ? `Nothing flagged for ${escapeHtml(picksTeam)}.` : 'Nothing in this category.'}</p>`;
     }
 
+    // ── Band editor (rosters role) ──
+    // Writes through POST /api/picks/structure/*, which runs the same proof as
+    // restructure_picks.py: every slot in the round goes to exactly one team,
+    // no new parity finding, and the registry hasn't moved since the preview.
+    // The page does no checking of its own beyond reading the form.
+    let picksCanEdit = false;
+    const picksToken = (() => { try { return localStorage.getItem('nbn_token'); } catch { return null; } })();
+
+    function bandEditorHtml(r) {
+      const lo = r.round === 1 ? 1 : 31;
+      const bands = (r.site_leaves || [])
+        .map(l => { const m = /protected band (\d+)-(\d+)/.exec(l.description || ''); return m && { min: +m[1], max: +m[2], to: l.team }; })
+        .filter(Boolean);
+      const rows = bands.length ? bands : [{ min: lo, max: 60, to: (r.site_owner || r.team).split('|')[0] }];
+      const teamOpts = sel => Object.keys(TEAMS).sort().map(t => `<option ${t === sel ? 'selected' : ''}>${t}</option>`).join('');
+      const row = b => `<div class="band-row">Picks <input type="number" class="b-min" value="${b.min}" min="1" max="60">
+          to <input type="number" class="b-max" value="${b.max}" min="1" max="60"> go to
+          <select class="b-to">${teamOpts(b.to)}</select>
+          <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost b-del" aria-label="Remove band">Remove</button></div>`;
+      return `<div class="band-editor">
+        <div class="band-rows">${rows.map(row).join('')}</div>
+        <div class="band-actions"><button type="button" class="ui-btn ui-btn--sm b-add">Add band</button></div>
+        <label>Why (the trade or ruling this comes from)<textarea class="b-reason"></textarea></label>
+        <div class="band-actions">
+          <button type="button" class="ui-btn ui-btn--sm b-preview">Preview</button>
+          <button type="button" class="ui-btn ui-btn--sm ui-btn--primary b-apply" disabled>Apply</button>
+          <button type="button" class="ui-btn ui-btn--sm ui-btn--ghost b-cancel">Cancel</button>
+        </div>
+        <div class="band-result"></div>
+      </div>`;
+    }
+
+    function bandSpec(editor, key) {
+      const [year, round, orig] = key.split('|');
+      const bands = [...editor.querySelectorAll('.band-row')].map(rw => ({
+        min: +rw.querySelector('.b-min').value, max: +rw.querySelector('.b-max').value,
+        to: rw.querySelector('.b-to').value,
+      })).sort((a, b) => a.min - b.min);
+      return { kind: 'protected', pick: { year: +year, round: +round, orig }, bands };
+    }
+
+    function describeServed(list) {
+      return (list || []).map(p => `${p.year} R${p.round} ${p.orig}: ` +
+        ((p.leaves || []).length ? p.leaves.map(l => `${l.team} ${l.description}`).join('; ') : `owner ${p.owner}`)).join('\n');
+    }
+
+    async function structureCall(path, body) {
+      const res = await fetch(path, { method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${picksToken}` },
+        body: JSON.stringify(body) });
+      const data = await res.json().catch(() => ({}));
+      return { ok: res.ok, data };
+    }
+
+    document.addEventListener('click', async ev => {
+      const slot = ev.target.closest('.band-edit-slot');
+      if (!slot) return;
+      const key = slot.dataset.key;
+      const row = picksRowsGlobal.find(r => `${r.year}|${r.round}|${r.team}` === key);
+      if (ev.target.classList.contains('band-edit-open')) { slot.innerHTML = bandEditorHtml(row); return; }
+      const editor = slot.querySelector('.band-editor');
+      if (!editor) return;
+      const out = editor.querySelector('.band-result');
+      const applyBtn = editor.querySelector('.b-apply');
+      if (ev.target.classList.contains('b-cancel')) {
+        slot.innerHTML = '<button type="button" class="ui-btn ui-btn--sm band-edit-open">Set bands</button>';
+        return;
+      }
+      if (ev.target.classList.contains('b-add')) {
+        const rows = editor.querySelector('.band-rows');
+        rows.insertAdjacentHTML('beforeend', rows.lastElementChild.outerHTML);
+        applyBtn.disabled = true;
+        return;
+      }
+      if (ev.target.classList.contains('b-del')) {
+        if (editor.querySelectorAll('.band-row').length > 1) ev.target.closest('.band-row').remove();
+        applyBtn.disabled = true;
+        return;
+      }
+      if (ev.target.classList.contains('b-preview')) {
+        const { ok, data } = await structureCall('/api/picks/structure/preview', { spec: bandSpec(editor, key) });
+        if (!ok) { out.className = 'band-result bad'; out.textContent = data.detail ? JSON.stringify(data.detail) : 'Preview failed.'; return; }
+        out.className = 'band-result' + (data.ok ? '' : ' bad');
+        out.textContent = `Now:\n${describeServed(data.before)}\n\nAfter:\n${describeServed(data.after)}` +
+          (data.ok ? '\n\nChecks pass.' : `\n\nRefused:\n${data.problems.join('\n')}`);
+        applyBtn.disabled = !data.ok;
+        return;
+      }
+      if (ev.target.classList.contains('b-apply')) {
+        applyBtn.disabled = true;
+        const reason = editor.querySelector('.b-reason').value.trim();
+        const { ok, data } = await structureCall('/api/picks/structure/apply', { spec: bandSpec(editor, key), reason });
+        out.className = 'band-result' + (ok ? '' : ' bad');
+        out.textContent = ok
+          ? `Applied. The site now serves:\n${describeServed(data.after)}\n\nThis card updates on the next check (every 10 minutes).`
+          : (typeof data.detail === 'string' ? data.detail : (data.detail?.problems || ['Apply failed.']).join('\n'));
+      }
+    });
+    // Any edit to the form needs a fresh preview before Apply.
+    document.addEventListener('input', ev => {
+      const editor = ev.target.closest('.band-editor');
+      if (editor && !ev.target.classList.contains('b-reason')) editor.querySelector('.b-apply').disabled = true;
+    });
+
+    async function resolvePicksEditor() {
+      if (!picksToken) return;
+      try {
+        const me = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${picksToken}` } }).then(r => r.json());
+        picksCanEdit = ['rosters', 'bod', 'admin'].some(role => (me.roles || []).includes(role));   // bod implies rosters
+      } catch { picksCanEdit = false; }
+      if (picksCanEdit && picksRowsGlobal.length) renderPicksGroups();
+    }
+
     function renderPicksTab(picks) {
       if (!picks) {
         document.getElementById('picks-groups').innerHTML = '<p style="color:var(--text-muted);">No picks data yet — the job hasn\'t run with the new report.</p>';
@@ -1279,6 +1404,7 @@
       });
       renderPicksChips();
       renderPicksGroups();
+      resolvePicksEditor();
     }
 
     // ── Data Quality tab ─────────────────────────────────────────────
