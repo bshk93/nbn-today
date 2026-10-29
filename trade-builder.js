@@ -814,7 +814,10 @@
 
       const cols = abbrs.map(ab => factCol(ab, fact_sheet, cl)).join('');
 
-      const myParties = abbrs.filter(ab => (me.owner_of || []).includes(ab));
+      // Proposing needs any role for a party team (coach, GM, owner), the same
+      // check POST /api/trade-requests makes. Only consent is owner-gated.
+      const myRoles = me.roles || [];
+      const myParties = abbrs.filter(ab => myRoles.includes('admin') || myRoles.includes(ab.toLowerCase()));
       const trcBtn = myParties.length
         ? `<button type="button" class="tb-export-btn" id="tb-trc-btn" title="Send this trade to the Trade Request Committee for review"><i class="ui-icon ui-icon--send" aria-hidden="true"></i> Submit to TRC</button>`
         : '';
