@@ -988,6 +988,20 @@
       label: "Committee tasks", color: "var(--purple)",
       desc: "Picks already triaged, with what's known. Each stays until the fix is made.",
     };
+    // A task's `kind`, set where it is written: what the committee is being
+    // asked for. Listed in this order, so the open questions come first.
+    const PICK_TASK_KINDS = {
+      missing:  { label: "Missing trades", color: "var(--danger)",
+                  desc: "No record has these. The committee needs to name the trade." },
+      conflict: { label: "Write-up contradicts the records", color: "var(--cat-orange)",
+                  desc: "A trade's write-up disagrees with everything else. The committee needs to say which is right." },
+      confirm:  { label: "Trail complete: confirm the site fix", color: "var(--purple)",
+                  desc: "Every hop is on record and points to a site change. A yes is all that's needed." },
+      sheet:    { label: "Trail complete: sheet fixes only", color: "var(--cat-sky)",
+                  desc: "The site is right. Only the league sheet needs updating." },
+    };
+    const PICK_TASK_KIND_ORDER = ["missing", "conflict", "confirm", "sheet"];
+    const taskKind = r => (PICK_TASK_KINDS[r.committee_note.kind] ? r.committee_note.kind : 'confirm');
     const PICK_CATEGORY_ORDER = ["needs_investigation", "parties_differ", "site_missing_pick", "not_on_sheet",
                                  "committee_lag", "same_owner_diff_representation", "richness_gap"];
     // No action needed: folded shut unless their chip is picked.
@@ -1149,7 +1163,8 @@
     }
 
     function pickRowCardWithTask(r) {
-      return pickRowCard(r, true).replace('<div class="pick-id">', pickTaskBlock(r.committee_note) + '<div class="pick-id">');
+      const color = PICK_TASK_KINDS[taskKind(r)].color;
+      return pickRowCard(r, true).replace(/style="--pc:[^"]*"/, `style="--pc:${color}"`).replace('<div class="pick-id">', pickTaskBlock(r.committee_note) + '<div class="pick-id">');
     }
 
     function visiblePickRows() {
@@ -1162,7 +1177,10 @@
       const cleanTotal = (picksCounts.clean_match || 0) + (picksCounts.clean_match_frozen || 0);
       const items = [
         { key: 'all', label: 'All flagged', n: rows.length, color: 'var(--text-secondary)' },
-        ...(tasks ? [{ key: 'tasks', label: PICK_TASK_META.label, n: tasks, color: PICK_TASK_META.color }] : []),
+        ...PICK_TASK_KIND_ORDER
+          .map(k => ({ k, n: rows.filter(r => r.committee_note && taskKind(r) === k).length }))
+          .filter(({ n }) => n)
+          .map(({ k, n }) => ({ key: 'task:' + k, label: PICK_TASK_KINDS[k].label, n, color: PICK_TASK_KINDS[k].color })),
         // Counted off the rows, not `counts`: a noted row is listed under
         // Committee tasks instead of its category, so the chip must agree.
         ...PICK_CATEGORY_ORDER
@@ -1199,19 +1217,23 @@
       tasks.sort((a, b) => String(a.committee_note.added || '').localeCompare(String(b.committee_note.added || ''))
         || a.year - b.year || a.round - b.round || a.team.localeCompare(b.team));
 
-      let taskHtml = '';
-      if (tasks.length && (picksFilter === 'all' || picksFilter === 'tasks')) {
-        taskHtml = `
+      const taskHtml = PICK_TASK_KIND_ORDER
+        .filter(k => picksFilter === 'all' || picksFilter === 'task:' + k)
+        .map(k => {
+          const list = tasks.filter(r => taskKind(r) === k);
+          if (!list.length) return '';
+          const meta = PICK_TASK_KINDS[k];
+          return `
           <div class="pick-group">
             <div class="pick-group-head">
-              <span class="dot" style="background:${PICK_TASK_META.color}"></span>
-              <h3>${PICK_TASK_META.label}</h3>
-              <span class="count">${tasks.length}</span>
+              <span class="dot" style="background:${meta.color}"></span>
+              <h3>${meta.label}</h3>
+              <span class="count">${list.length}</span>
             </div>
-            <p class="pick-group-desc">${PICK_TASK_META.desc}</p>
-            <div class="pick-rows">${tasks.map(pickRowCardWithTask).join('')}</div>
+            <p class="pick-group-desc">${meta.desc}</p>
+            <div class="pick-rows">${list.map(pickRowCardWithTask).join('')}</div>
           </div>`;
-      }
+        }).join('');
 
       const keys = PICK_CATEGORY_ORDER.filter(k => picksFilter === 'all' || picksFilter === k);
       const html = taskHtml + keys.map(key => {

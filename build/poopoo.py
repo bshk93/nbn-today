@@ -65,6 +65,7 @@ Env:
 """
 import csv
 import difflib
+import functools
 import io
 import json
 import os
@@ -1202,9 +1203,13 @@ def _team_or_none(t):
     return {"BRK": "BKN", "PHO": "PHX", "NOR": "NOP", "SA": "SAS", "GS": "GSW", "NY": "NYK"}.get(t, t) if t else None
 
 
+@functools.lru_cache(maxsize=None)
 def _pick_matchers(year, rnd, orig):
     yy = str(year)[2:]
-    yr = re.compile(rf"(?:\b{year}\b|['\u2019]{yy}\b)")
+    # '27, ’27 and ‘27 all appear; so does a backtick.
+    # Also a bare "28 LAC 2nd": two digits, then a space and a word, never
+    # part of a band ("31-55") or a pick number ("#31").
+    yr = re.compile(rf"(?:\b{year}\b|['\u2018\u2019`\u00b4]{yy}\b|(?<![\d$#./\-]){yy}(?=\s+[A-Za-z]))")
     # "FRP"/"SRP" (first/second round pick) is how a few announcements write it.
     rd = re.compile(r"\b(?:1st|first|FRP)\b" if rnd == 1 else r"\b(?:2nd|second|SRP)\b", re.IGNORECASE)
     words = TEAM_WORDS[orig] + (["LA Clippers", "L.A. Clippers"] if orig == "LAC" else [])
@@ -1212,14 +1217,11 @@ def _pick_matchers(year, rnd, orig):
     return yr, rd, tm
 
 
-def pick_mentions(text, year, rnd, orig):
-    """[(receiver, clause)] for each clause of `text` naming this pick. The
-    receiver is the nearest "XXX receives" (or a bare "XXX:" line) before the
-    clause, or None when the text never says."""
-    if not text:
-        return []
-    yr, rd, tm = _pick_matchers(year, rnd, orig)
-    found = []
+@functools.lru_cache(maxsize=None)
+def _write_up_clauses(text):
+    """Every clause of a trade write-up with the team receiving it, parsed
+    once: the same 1,500 write-ups are read for each of ~500 picks."""
+    out = []
     block_recv = None
     for line in text.split("\n"):
         m = _LINE_TEAM_RE.match(line)
@@ -1229,21 +1231,49 @@ def pick_mentions(text, year, rnd, orig):
         for clause in re.split(r"[,;]|\band\b|\.\s", line):
             start = line.find(clause, pos)
             pos = max(pos, start + len(clause))
-            before = line[:start]
-            recvs = [_team_or_none(x) for x in _RECV_RE.findall(before)]
+            recvs = [_team_or_none(x) for x in _RECV_RE.findall(line[:start])]
             recvs = [x for x in recvs if x in TEAMS]
-            own = _RECV_RE.match(clause.strip())
-            body = clause.strip()[own.end():] if own else clause
-            if own and _team_or_none(own.group(1)) in TEAMS:
+            # The receiver can sit inside the clause too ("Trade 35: NYK
+            # receives: PHI 2030 2nd"): the last one before the pick counts.
+            owns = [m for m in _RECV_RE.finditer(clause) if _team_or_none(m.group(1)) in TEAMS]
+            own = owns[-1] if owns else None
+            body = clause[own.end():] if own else clause
+            if own:
                 recvs.append(_team_or_none(own.group(1)))
-            if yr.search(body) and rd.search(body) and tm.search(body) and not _names_other_pick(body, year, orig):
-                found.append((recvs[-1] if recvs else block_recv, body.strip()))
+            out.append((recvs[-1] if recvs else block_recv, body))
         # A receiver's list can wrap onto the next line, so it carries over.
         line_recvs = [_team_or_none(x) for x in _RECV_RE.findall(line)]
         line_recvs = [x for x in line_recvs if x in TEAMS]
         if line_recvs:
             block_recv = line_recvs[-1]
-    return found
+    return tuple(out)
+
+
+def pick_mentions(text, year, rnd, orig):
+    """[(receiver, clause)] for each clause of `text` naming this pick. The
+    receiver is the nearest "XXX receives" (or a bare "XXX:" line) before the
+    clause, or None when the text never says."""
+    if not text or str(year)[2:] not in text:
+        return []
+    yr, rd, tm = _pick_matchers(year, rnd, orig)
+    return [
+        (recv, body.strip()) for recv, body in _write_up_clauses(text)
+        if yr.search(body) and rd.search(body) and tm.search(body) and not _names_other_pick(body, year, orig)
+    ]
+
+
+def _own_pick_mentions(text, year, rnd, orig, teams):
+    """A two-team trade often writes the sender's own pick with no team at
+    all: "DET Receives: Dwight Powell, 2027 1st Round Pick" is DAL's 2027
+    1st. Counted only when the other team receives it and the clause names
+    no team whatever."""
+    yr, rd, _ = _pick_matchers(year, rnd, orig)
+    other = next(iter(teams - {orig}))
+    return [
+        (recv, body.strip()) for recv, body in _write_up_clauses(text)
+        if recv == other and yr.search(body) and rd.search(body)
+        and not teams_named(body) and "swap" not in body.lower()
+    ]
 
 
 def _names_other_pick(clause, year, orig):
@@ -1251,8 +1281,12 @@ def _names_other_pick(clause, year, orig):
     "2029 SAS 1st" form and never this one's: "The 2029 SAS 1st is TOR's
     laddered interest" is about SAS's pick, though it names TOR."""
     yy = str(year)[2:]
-    std = re.findall(rf"(?:\b{year}|['\u2019]{yy})\s+([A-Z]{{3}})\s+(?:1st|2nd|FRP|SRP)", clause)
-    return bool(std) and orig not in std
+    y = rf"(?:\b{year}|['\u2018\u2019`\u00b4]{yy})"
+    named = re.findall(rf"{y}\s+([A-Z]{{3}})\s+(?:1st|2nd|FRP|SRP)", clause)
+    # ...or the team first: "Philly 2027 1st (with TOR swap rights)".
+    named += [_team_or_none(w) for w in re.findall(rf"([A-Za-z.]+)\s+{y}\s+(?:1st|2nd|FRP|SRP)", clause)]
+    named = [t for t in named if t in TEAMS]
+    return bool(named) and orig not in named
 
 
 def _norm(text):
@@ -1321,7 +1355,8 @@ def infer_senders(key, history):
                 e["from"] = sender
         clause = e.get("clause") or ""
         # "2027 PHI 1st (with TOR swap rights)" moves the pick and a right with it.
-        swap = bool(_SWAP_RE.search(clause)) and not re.search(r"\bwith\b[^)]*swap", clause, re.IGNORECASE)
+        swap = e.get("swap") or (
+            bool(_SWAP_RE.search(clause)) and not re.search(r"\bwith\b[^)]*swap", clause, re.IGNORECASE))
         # A swap right moves a claim on a pick, and the write-up rarely says
         # whose pick it is, so it never flags a gap; its receiver still
         # becomes a holder, since a later trade can pass that claim on.
@@ -1358,13 +1393,17 @@ def pick_history(key, transactions, discord_msgs):
         if t.get("type") != "trade":
             continue
         desc = t.get("description") or ""
-        struct = [
-            (tf.get("from_team"), tf.get("to_team"))
+        struct_assets = [
+            (tf.get("from_team"), tf.get("to_team"), a)
             for tf in t.get("details", {}).get("transfers", [])
             for a in tf.get("assets", [])
             if a.get("type") == "pick" and (a.get("year"), a.get("round"), a.get("orig")) == key
         ]
+        struct = [(f, to) for f, to, _ in struct_assets]
         ms = pick_mentions(desc, year, rnd, orig)
+        teams = trade_teams(desc, t.get("details", {}).get("transfers", []))
+        if not (struct or ms) and orig in teams and len(teams) == 2:
+            ms = _own_pick_mentions(desc, year, rnd, orig, teams)
         if not (struct or ms):
             continue
         ledger_text.append((t["date"], _norm(desc)))
@@ -1373,10 +1412,12 @@ def pick_history(key, transactions, discord_msgs):
             "date": t["date"], "source": "ledger", "txn_id": t.get("id"),
             "label": f"Trade {no.group(1)}" if no else None,
             "clause": ms[0][1] if ms else None,
-            "teams": trade_teams(desc, t.get("details", {}).get("transfers", [])),
+            "teams": teams,
         }
         if struct:
             entry["from"], entry["to"] = struct[-1]
+            if struct_assets[-1][2].get("swap_with") or entry["from"] == entry["to"]:
+                entry["swap"] = True
         elif ms and ms[0][0]:
             entry["to"] = ms[0][0]
         out.append(entry)
