@@ -23,16 +23,20 @@ duration it can't read) until the user confirms it — step 4.
 
 ## Steps
 
-### 1. Get token
+### 1. Get token and API base
 
 Check `echo "$NBN_ADMIN_TOKEN"`, then `echo "$NBN_TOKEN"`. Use whichever is
 non-empty as the Bearer token. Only if both are empty, ask the user to paste
 their token (it needs the `stats` or `rosters` role).
 
+Pick `<API>` the same way `/parse-boxscores` step 1 does: `$NBN_API` if set,
+else `http://localhost:8001` if it answers, else `https://nbn.today`. Nothing
+here reads the server's disk.
+
 ### 2. List pending reports
 
 ```bash
-curl -s http://localhost:8001/api/injuries/pending -H "Authorization: Bearer <TOKEN>"
+curl -s <API>/api/injuries/pending -H "Authorization: Bearer <TOKEN>"
 ```
 
 Each item is `{id, date, uploaded_by, images: [{file, by, at, url}]}`. If there
@@ -45,8 +49,13 @@ the last committed report.
 
 #### 3a. Read every image
 
-In one batch of tool calls, read every
-`/var/lib/nothing-but-stats/pending-injury-reports/<id>/<file>`.
+Download every image (each one's `url` in the pending item), then read them
+all in one batch of tool calls:
+
+```bash
+mkdir -p <scratchpad>/nbn-inj-<id>
+curl -sf -o <scratchpad>/nbn-inj-<id>/<file> <API>/api/injuries/screenshots/<id>/<file>   # one per image
+```
 
 The screen's columns are: NAME (abbreviated, e.g. `P. Reed`), team logo, STATUS
 (`Hurt` or `Out`), OVR (the injured rating) with the drop in brackets, e.g.
@@ -114,19 +123,19 @@ clears everyone below the cut. They can upload the rest, or say go ahead.
 #### 3d. Resolve slugs
 
 ```bash
-curl -s http://localhost:8001/api/players
+curl -s <API>/api/players
 ```
 
 Match each `player` (`P. Reed`) against bio `name` (`"REED, PAUL"`): last name
 plus first initial, preferring the player on the `team_shown` team's roster
-(`/var/lib/nothing-but-stats/<abbr>-roster.csv`, lower-case abbr, one `SLUG` column). If
+(`curl -s https://nbn.today/data/<abbr>-roster.csv`, lower-case abbr, one `SLUG` column). If
 there is no match, or more than one, **stop and ask** — a wrong slug files one
 player's injury under another and pings the wrong team.
 
 ### 4. Commit
 
 ```bash
-curl -s -X POST http://localhost:8001/api/injuries/commit \
+curl -s -X POST <API>/api/injuries/commit \
   -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
   -d '{"report_id": "<id>", "date": "<date from the pending item>",
        "rows": [{"slug": "reed-paul", "player": "P. Reed", "team_shown": "LAL", "status": "Hurt",
@@ -151,13 +160,13 @@ A successful commit moves the screenshots out of the queue (kept 14 days, then
 deleted). Remove the scratch file:
 
 ```bash
-rm -f <scratchpad>/nbn-injuries-<id>.json
+rm -rf <scratchpad>/nbn-injuries-<id>.json <scratchpad>/nbn-inj-<id>
 ```
 
 To throw away a mistaken upload instead:
 
 ```bash
-curl -s -X DELETE http://localhost:8001/api/injuries/pending/<id> -H "Authorization: Bearer <TOKEN>"
+curl -s -X DELETE <API>/api/injuries/pending/<id> -H "Authorization: Bearer <TOKEN>"
 ```
 
 ### 5. Continue or stop

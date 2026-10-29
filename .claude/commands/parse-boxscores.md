@@ -35,16 +35,26 @@ committed. Once one game passes cleanly, the rest of the night is routine.
 
 ## Steps
 
-### 1. Get token
+### 1. Get token and API base
 
 Check `echo "$NBN_ADMIN_TOKEN"`, then `echo "$NBN_TOKEN"`. Use whichever is
 non-empty as the Bearer token. Only if both are empty, ask the user to paste
-their admin token.
+their token (it needs the `stats` or `rosters` role).
+
+Then pick `<API>`, the base every call below uses:
+
+1. `$NBN_API`, if it is set.
+2. Else `http://localhost:8001`, if `curl -sf -o /dev/null http://localhost:8001/api/build/status` succeeds (you are on the server).
+3. Else `https://nbn.today`.
+
+Nothing in this skill reads the server's disk, so it runs the same from any
+machine with a clone of this repo. Shell variables don't carry between
+commands, so write the chosen base into each command, as with `<TOKEN>`.
 
 ### 2. List pending games
 
 ```bash
-curl -s http://localhost:8001/api/boxscore/pending \
+curl -s <API>/api/boxscore/pending \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
@@ -66,9 +76,15 @@ Process one game at a time in the order returned.
 
 `images.home` and `images.away` in the pending list are arrays of
 `{file, by, at}` — usually one per side, sometimes two when a long bench
-needed a second screenshot. In a single batch of tool calls, read
-`/var/lib/nothing-but-stats/pending-boxscores/<id>/meta.json` and every
-`/var/lib/nothing-but-stats/pending-boxscores/<id>/<file>` on both sides.
+needed a second screenshot. The pending item itself carries the game's meta
+(`date`, `season`, `game_type`, `game_num`, `round_num`, teams). Download every
+image on both sides in one command, then read them all in a single batch of
+tool calls:
+
+```bash
+mkdir -p <scratchpad>/nbn-shots-<id>
+curl -sf -o <scratchpad>/nbn-shots-<id>/<file> <API>/api/boxscore/screenshots/<id>/<file>   # one per image
+```
 
 When a side has more than one image, they are the same box score split across
 screens: take each player once, and the totals row from whichever image shows
@@ -156,7 +172,7 @@ If a flagged cell is genuinely unreadable in the image, show the user that cell
 Fetch the player registry once:
 
 ```bash
-curl -s http://localhost:8001/api/players
+curl -s <API>/api/players
 ```
 
 For each player name in `.checked.json`, find their slug by matching the `name`
@@ -176,11 +192,11 @@ Add the resolved `slug` into each row (keep `player` as shown, for the report).
 ### 4. Commit
 
 Build the payload from `.checked.json` (it already has `dreb` on every row) plus
-`date`, `season`, `game_type`, `game_num` and `round_num` copied from `meta.json`
+`date`, `season`, `game_type`, `game_num` and `round_num` copied from the pending item
 (never from the example below), and POST:
 
 ```bash
-curl -s -X POST http://localhost:8001/api/boxscore/commit \
+curl -s -X POST <API>/api/boxscore/commit \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '<JSON>'
@@ -221,7 +237,7 @@ and requires the season to be the one the date falls in. A `422` names every
 problem; nothing was written. Fix the cause and commit again:
 
 - **`is not a player bio`** / **`listed twice`** — a slug from 3d is wrong. Go back to 3d for that player.
-- **`is in the YY-YY season`** — the upload's date or season is wrong. Check `meta.json` against the game.
+- **`is in the YY-YY season`** — the upload's date or season is wrong. Check the pending item against the game.
 - **anything else** (`bad_arithmetic`, `bad_minutes`, `score_mismatch`, `overtime mismatch`, …) — should not happen after a clean validator pass. Show the user the response; do not edit numbers to get past it.
 
 The first game of a season creates that season's raw file (the log will say
@@ -232,7 +248,7 @@ a warning. Two responses do need handling:
   pending item (step 5's `DELETE`) so it leaves the queue; do not force it.
 - **`404 Allstats file not found … Only the current season's file is created on
   demand`** — the game's season is not the current league year. Usually the date
-  or the season on the upload is wrong; check `meta.json` against the game before
+  or the season on the upload is wrong; check the pending item against the game before
   doing anything else. Do not create the file to get around this.
 
 ### 5. Clean up
@@ -243,13 +259,13 @@ nbn-api). Do **not** `DELETE` the pending item after a commit; there is
 nothing left to delete. Just remove the scratch files:
 
 ```bash
-rm -f <scratchpad>/nbn-boxscore-<id>.json <scratchpad>/nbn-boxscore-<id>.checked.json
+rm -rf <scratchpad>/nbn-boxscore-<id>.json <scratchpad>/nbn-boxscore-<id>.checked.json <scratchpad>/nbn-shots-<id>
 ```
 
 The `DELETE` is only for a game that was already committed (the 409 above):
 
 ```bash
-curl -s -X DELETE http://localhost:8001/api/boxscore/pending/<id> \
+curl -s -X DELETE <API>/api/boxscore/pending/<id> \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
@@ -279,13 +295,13 @@ could believe. Fiction is the voices and the reactions, not the events.
 
 **What to read**, and nothing more:
 
-- `curl -s 'http://localhost:8001/api/boxscores?date=<date>'` — the day's games.
+- `curl -s '<API>/api/boxscores?date=<date>'` — the day's games.
   Pick the 3–5 stories worth a tweet: the best line, a blowout or a buzzer
   game, a rivalry, a bad night from a star.
-- `curl -s http://localhost:8001/api/members/public` — who owns each team that
+- `curl -s <API>/api/members/public` — who owns each team that
   played (the tenure with `end: null`).
-- `grep -n -i '<team or owner>' /var/lib/nothing-but-stats/lore/lore.md` for the
-  teams and owners in those stories. Grep, don't read the whole file. A callback
+- `curl -s -G <API>/api/lore/search --data-urlencode 'q=<team or owner>' -H "Authorization: Bearer <TOKEN>"`
+  for the teams and owners in those stories. Search, don't read whole documents. A callback
   to a real old grudge is what makes a tweet good.
 - Optional: `GET /api/players/<slug>/insights` for a streak, or a career
   milestone from the homepage's Milestone Watch. A season or career number is
@@ -326,14 +342,14 @@ Then check it. It compares every quoted stat and final score with the box
 score:
 
 ```bash
-python3 build/check_tweets.py <scratchpad>/nbn-tweets-<date>.json --out <scratchpad>/nbn-tweets-<date>.post.json
+python3 build/check_tweets.py <scratchpad>/nbn-tweets-<date>.json --out <scratchpad>/nbn-tweets-<date>.post.json --api <API>
 ```
 
 On a failure, fix only the tweets it names, or cut them, and run it again. Do
 not rewrite the batch. Once it passes, post:
 
 ```bash
-curl -s -X POST http://localhost:8001/api/tweets \
+curl -s -X POST <API>/api/tweets \
   -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" \
   --data @<scratchpad>/nbn-tweets-<date>.post.json
 rm -f <scratchpad>/nbn-tweets-<date>.json <scratchpad>/nbn-tweets-<date>.post.json
