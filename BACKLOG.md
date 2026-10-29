@@ -122,20 +122,23 @@ Proration or partial guarantees are the obvious suspects.
 The rows are on `/committees/rosters` only; team pages no longer show them
 (2026-10-08). Every row is still open.
 
-### [P1] Picks conveyance — 6 open questions, 17 site fixes awaiting a confirm
-Traced 2026-10-29: every 2027+ pick's chain walked from its original team
-through the ledger (prose and structured), the Discord #transactions export,
-#leaguetalk and the FA-signings export. The committee tasks in
-`pick-committee-notes.json` carry a `kind`, and the Picks tab groups by it:
+### [P1] Picks conveyance — 6 open questions, 5 site fixes awaiting a ruling
+Traced 2026-10-29 (every 2027+ pick's chain, through the ledger, the Discord
+export, #leaguetalk and the FA-signings export). Eleven picks were fixed the
+same day: ten band sets and the 2029 MIA/MIN swap. Open, as `kind`ed tasks in
+`pick-committee-notes.json`:
 
-- **missing (3):** no record anywhere: 2027 BOS 2nd (BOS→MIN, before
-  2024-02-08), 2027 ORL 2nd (→BKN), 2028 PHI 2nd (→TOR).
-- **conflict (3):** Trade 65 (2026-02-05) "2032 MIA 2nd", most likely the
-  2031 one (two tasks); Trade 73 (2026-02-06) sends HOU the 2032 CLE 2nd,
-  which the site and sheet still give CLE.
-- **confirm (17):** trail complete, the site needs a write. Each confirmed
-  fix is a site write plus deleting its task (no resolve button).
+- **missing (3):** 2027 BOS 2nd (BOS→MIN, before 2024-02-08), 2027 ORL 2nd
+  (→BKN), 2028 PHI 2nd (→TOR): no record anywhere.
+- **conflict (3):** Trade 65's "2032 MIA 2nd" (likely the 2031 one, two
+  tasks); Trade 73 sends HOU the 2032 CLE 2nd.
+- **confirm (5):** 2027 LAC 2nd and 2029 DET 1st (both wrong from the
+  2026-07-19 seed, see nbn-api `CLAUDE.md` § "Correcting a pick's
+  structure"), 2027 IND 2nd, 2027 MIL 2nd, 2028 LAL 2nd (ledger add only).
 - **sheet (11):** the site is right; only the league sheet changes.
+
+A ruling is applied from the card's **Set bands** (rosters role) or with
+`restructure_picks.py`, and its task deleted.
 
 ### [P2] Discord backfill not finished
 - Trades: 437 of 485 raw messages submitted; ~50 multi-team trades still
