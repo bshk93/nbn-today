@@ -82,6 +82,7 @@
       <div class="ui-header-actions fv-chips" id="chips"></div>
     </header>
 
+    <div id="market-summary"></div>
     <div id="daily-moves"></div>
 
     <div class="fv-wrap"><div class="ui-table-wrap" id="wrap">
@@ -99,6 +100,7 @@
 
   <script src="/nav.js"></script>
   <script src="/invest/daily-moves.js"></script>
+  <script src="/invest/market-summary.js"></script>
   <script src="/contract.js"></script>
   <script src="/feed-types.js"></script>
   <script src="/names.js"></script>
@@ -117,6 +119,10 @@
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const shortDate = iso => { const [, m, d] = iso.split('-').map(Number); return `${MONTHS[m - 1]} ${d}`; };
 
+  // asOf is the last day with games. After midnight the hourly run starts a
+  // new day before anyone has played it; until a game is in, the page leads
+  // with the day that was played rather than an empty one.
+  let asOf = null, prevDate = null;
   let run = null, history = [], events = {}, sortKey = 'mcap', sortDir = -1, openTeam = null, chart = null;
 
   const COLS = [
@@ -125,7 +131,7 @@
     { key: 'mcap',   group: 'Franchise', label: 'Mkt cap', tip: "Market cap: price × 30M shares, what the market says the whole franchise is worth", get: t => t.mcap, num: true, fmt: t => yen(t.mcap, 'B') },
     { key: 'fcap',   group: 'Franchise', label: 'Fair cap', tip: "Fair value × 30M shares: what the model says the whole franchise is worth", get: t => t.value, num: true, fmt: t => yen(t.value, 'B') },
     { key: 'price',  group: 'Share', label: 'Price', tip: "What a share would trade at: fair value plus the market's mood: recent news, form, streaks and last season's finals, overdone the way markets overdo them",      get: t => t.mkt, num: true, fmt: t => '¥' + t.mkt.toFixed(2) },
-    { key: 'day',    group: 'Share', label: 'Day', tip: "Change in price since the previous day",        get: t => t.day, num: true,
+    { key: 'day',    group: 'Share', label: 'Day', tip: "Change in price since the day before the last game day",        get: t => t.day, num: true,
       fmt: t => t.day == null ? '—' : `<span class="${cls(t.day)}">${arrow(t.day)}</span> ${pct(t.day, 2)}` },
     { key: 'fair',   group: 'Share', label: 'Fair value', tip: "What a share is worth: the franchise's projected profit and sale price ÷ 30M shares. Moves only when something happens", get: t => t.price, num: true, fmt: t => '¥' + t.price.toFixed(2) },
     { key: 'prem',   group: 'Share', label: 'vs fair', tip: "Price against fair value: above 0 the market is paying up for it, below 0 it's on sale", get: t => t.prem, num: true, fmt: t => `<span class="${cls(t.prem)}">${pct(t.prem * 100)}</span>` },
@@ -380,7 +386,8 @@
     const days = history.filter(d => d.date < run.date).concat([{ date: run.date, teams: Object.fromEntries(run.teams.map(t => [t.team, { market: t.mkt }])) }]);
     const mean = d => { const v = Object.values(d.teams).map(px); return v.reduce((a, b) => a + b, 0) / v.length; };
     const level = days.map(mean);
-    index = { level: level[level.length - 1], day: level.length > 1 ? (level[level.length - 1] / level[level.length - 2] - 1) * 100 : null };
+    const prevAt = days.findIndex(d => d.date === prevDate);
+    index = { level: level[level.length - 1], day: prevAt >= 0 ? (level[level.length - 1] / level[prevAt] - 1) * 100 : null };
     for (const t of run.teams) {
       const y = t.years[0];
       t.ps = y.revenue ? t.mcap / y.revenue : null;
@@ -394,7 +401,7 @@
   function renderChips() {
     document.getElementById('chips').innerHTML = `
       <span class="ui-chip ui-chip--warning">Shadow model · not tradable</span>
-      <span class="ui-chip">As of ${esc(shortDate(run.date))}</span>
+      <span class="ui-chip">As of ${esc(shortDate(asOf))}</span>
       ${index ? `<span class="ui-chip" title="The NBN 30: the average price of all 30 franchises">NBN 30 ¥${index.level.toFixed(2)}${index.day == null ? '' : ` <span class="${cls(index.day)}">${arrow(index.day)} ${pct(index.day, 2)}</span>`}</span>` : ''}
       <a class="ui-chip" href="/invest/">Wall Street</a>`;
   }
@@ -417,10 +424,9 @@
 
   // What happened to each team each day, in words: its game, injury report
   // changes, and ledger moves. { ATL: { '2026-10-24': ['W by 8 v BOS', ...] } }
-  async function loadEvents(season, since) {
+  async function loadEvents(games, since) {
     const get = u => fetch(u).then(x => x.ok ? x.json() : null).catch(() => null);
-    const [games, injuries, ledger] = await Promise.all([
-      get(`${API}/boxscores/games?season=${encodeURIComponent(season)}`),
+    const [injuries, ledger] = await Promise.all([
       get(`${API}/injuries/history?since=${encodeURIComponent(since)}`),
       get(`${API}/transactions?limit=300`),
     ]);
@@ -473,17 +479,24 @@
         fetch(`${API}/fair-value`).then(x => x.ok ? x.json() : null),
         fetch(`${API}/fair-value/history`).then(x => x.ok ? x.json() : { days: [] }),
       ]);
+      const games = r ? await fetch(`${API}/boxscores/games?season=${encodeURIComponent(r.season)}`).then(x => x.ok ? x.json() : []).catch(() => []) : [];
       if (!r) {
         document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
         return;
       }
       run = r;
       history = h.days || [];
+      const played = (games || []).map(g => g.date).filter(d => d && d <= run.date).sort();
+      asOf = played.length && history.some(d => d.date === played[played.length - 1]) ? played[played.length - 1] : run.date;
+      const before = history.filter(d => d.date < asOf);
+      const prevRow = before[before.length - 1];
+      prevDate = prevRow ? prevRow.date : null;
       for (const t of run.teams) {
         t.mkt = t.market ?? t.price;
         t.prem = t.mkt / t.price - 1;
         t.mcap = t.mkt * run.league.shares;
-        const prev = (r.prev_market || {})[t.team] ?? r.prev[t.team];
+        const p = prevRow && prevRow.teams[t.team];
+        const prev = p ? (p.market ?? p.price) : null;
         t.day = prev ? (t.mkt / prev - 1) * 100 : null;
       }
       stockStats();
@@ -491,9 +504,14 @@
       renderHead();
       renderBody();
       renderHow();
-      if (history.length) events = await loadEvents(run.season, history[0].date);
+      if (history.length) events = await loadEvents(games, history[0].date);
+      const series = {};
+      for (const day of history) {
+        for (const [t, x] of Object.entries(day.teams)) (series[t] ||= []).push({ date: day.date, price: x.market ?? x.price });
+      }
+      MarketSummary.mount(document.getElementById('market-summary'), { end: asOf, series, notes: events });
       const d = dailyFromHistory();
-      DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, ...d });
+      DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, start: asOf, ...d });
     } catch (e) {
       document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">Couldn't load the fair value.</td></tr>`;
     }

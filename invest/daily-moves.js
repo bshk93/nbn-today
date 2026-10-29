@@ -8,6 +8,7 @@
 //     title: 'Daily moves',
 //     days:  ['2026-10-21', ...],                  // oldest first
 //     teams: { ATL: { '2026-10-21': { pct: 0.42, note: 'W by 7 v CHA' } } },
+//     start: '2026-10-21',                         // optional: the day it opens on (default the last)
 //   })
 //
 // `pct` is a percentage (0.42 means +0.42%). A team with no entry for a day
@@ -90,7 +91,8 @@
     const days = opts.days || [];
     const teams = opts.teams || {};
     const tickers = Object.keys(teams).sort();
-    const state = { i: days.length - 1, view: 'day', all: false };
+    const opened = opts.start ? days.indexOf(opts.start) : -1;
+    const state = { i: opened >= 0 ? opened : days.length - 1, view: 'day', all: false };
 
     function moved(d) {
       return tickers.filter(t => teams[t][d]).map(t => ({ team: t, ...teams[t][d] }));
