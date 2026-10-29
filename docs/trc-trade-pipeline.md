@@ -86,11 +86,11 @@ count, not a share of the committee.
    hole in the simulator too, independent of TRC.
 
 7. **Consent is per-team, from every party, including the proposer's own** —
-   one rule, no exception for whoever happened to click Submit. It's gated
-   on `is_team_owner`, not just the team role (`self_renounce`'s pattern:
-   team derived from data, never from the request body) — a front-office
-   member can draft and submit a proposal, but only the actual owner locks
-   their team into it.
+   one rule, no exception for whoever happened to click Submit. Any
+   front-office member (owner, GM, coach) can give it: it's gated on the team
+   role, with the team derived from the request's parties, never from the
+   body. Until 2026-10-29 it was owner-only (`is_team_owner`); the league
+   opened it to the whole front office. Proposing still doesn't consent.
 
 8. **No `remand` endpoint.** PDC/POEXT have one because there's an editable
    object downstream a team can revise in place; TRC's sim-built trade has
@@ -230,8 +230,8 @@ Endpoints — all under `/api/trade-requests`:
 |---|---|---|
 | `GET` `[/{id}]` | signed in; returns only requests the member is a party to (team role or owner), or all of them for `trc`/`trc_head`/`admin`. Public until 2026-10-21 | list/single, with a live `validation` block merged in |
 | `POST` | holds a role for a party team | creates, `status: awaiting_consent` |
-| `POST /{id}/consent` | `is_team_owner` of a party | consents that team; flips to `balloting` once every party has |
-| `POST /{id}/withdraw` | `is_team_owner` of a party, or `trc_head` | `status: withdrawn` |
+| `POST /{id}/consent` | holds a role for a party team | consents that team; flips to `balloting` once every party has |
+| `POST /{id}/withdraw` | holds a role for a party team, or `trc_head` | `status: withdrawn` |
 | `PUT /{id}/ballot` | `has_role("trc")` — **not** `require_role`, no admin bypass | `{decision, note}`; flips to `ready_to_finalize` at 3 approvals |
 | `POST /{id}/reject` | `require_role("trc_head")` | `status: rejected` |
 | `POST /{id}/finalize` | `require_role("trc_head")` | re-checks live legality/ownership; ownership problems always 422, illegal-but-not-stale can be pushed through with `{force: true, override_reason}` (decision 11), then `apply_trade` |
@@ -263,8 +263,8 @@ Endpoints — all under `/api/trade-requests`:
   only place consent can be given and the inbox notice links here. Before
   that, a party owner with no `trc` role hit the gate and could not consent
   anywhere. A member with no committee role sees only requests naming a team
-  they hold a role for. Consent and Withdraw key off `owner_of` from
-  `/api/auth/me`, since the server gates both on `is_team_owner`.
+  they hold a role for. Consent and Withdraw show for any team role,
+  matching the server (owner-only until 2026-10-29).
   **Rebuilt 2026-09-30 as one panel per team**, so a trade with more teams is
   more panels rather than a longer list. Each panel shows what the team
   receives and sends (name, OVR, age, this season's salary, contract

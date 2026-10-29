@@ -815,7 +815,7 @@
       const cols = abbrs.map(ab => factCol(ab, fact_sheet, cl)).join('');
 
       // Proposing needs any role for a party team (coach, GM, owner), the same
-      // check POST /api/trade-requests makes. Only consent is owner-gated.
+      // check POST /api/trade-requests makes.
       const myRoles = me.roles || [];
       const myParties = abbrs.filter(ab => myRoles.includes('admin') || myRoles.includes(ab.toLowerCase()));
       const trcBtn = myParties.length

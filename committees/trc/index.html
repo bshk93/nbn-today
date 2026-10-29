@@ -171,8 +171,8 @@
           A team proposes a trade from <a href="/tradeblock/">the tradeblock</a>'s "Propose a Trade"
           builder (or, for reference, the transaction simulator's trade mode), using the "Submit to
           TRC" button. Every team named in the trade, the proposer's included, must consent here
-          before it opens for a vote. Only a team's owner can consent, and each owner gets an inbox
-          notice when a trade naming their team is submitted. Team members see only their own trades. Three
+          before it opens for a vote. Anyone in a team's front office (owner, GM or coach) can consent
+          for it, and the team gets an inbox notice when a trade naming it is submitted. Team members see only their own trades. Three
           <b>trc</b> members must approve before it's ready; a vote needs a note because it's
           judging fairness, not legality (legality is checked live, automatically, the whole time a
           request is open). Only <b>trc_head</b> can reject or finalize a request. Finalizing
@@ -220,14 +220,11 @@
     // is holding a team's role treated as "you're a party" via admin (an
     // admin isn't magically on every team).
     function isTrc() { return (me.roles || []).includes('trc') || (me.roles || []).includes('trc_head'); }
-    // Consent and withdraw are owner-only on the server (is_team_owner), so the
-    // buttons key off owner_of — a GM holds the team role but would get a 403.
-    function ownsTeam(ab) { return (me.owner_of || []).includes(ab); }
-    // Teams whose requests this member sees without a trc role: every team they
-    // hold a role for, so a GM can follow a trade their owner has to consent to.
-    function myTeams() {
-      return Object.keys(TEAMS).filter(ab => ownsTeam(ab) || (me.roles || []).includes(ab.toLowerCase()));
-    }
+    // Consent and withdraw take any role for the team (owner, GM, coach), the
+    // same check the server makes. owner_of still counts, since admin is in it.
+    function onTeam(ab) { return (me.owner_of || []).includes(ab) || (me.roles || []).includes(ab.toLowerCase()); }
+    // Teams whose requests this member sees without a trc role.
+    function myTeams() { return Object.keys(TEAMS).filter(onTeam); }
 
     let toastTimer = null;
     function toast(msg, bad) {
@@ -556,7 +553,7 @@
       const canBallot = isTrc() && ['balloting', 'ready_to_finalize'].includes(item.status);
       const canFinalize = isTrcHead() && item.status === 'ready_to_finalize';
       const canReject = isTrcHead() && !terminal;
-      const ownedParties = item.parties.filter(ownsTeam);
+      const ownedParties = item.parties.filter(onTeam);
       const canWithdraw = !terminal && (ownedParties.length > 0 || isTrcHead());
       const pendingMine = ownedParties.filter(p => !(item.consents[p] || {}).consented);
       const canConsent = item.status === 'awaiting_consent' && pendingMine.length > 0;
