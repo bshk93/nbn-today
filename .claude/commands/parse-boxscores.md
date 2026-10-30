@@ -314,6 +314,7 @@ could believe. Fiction is the voices and the reactions, not the events.
 | `@NBNStatMuse` "NBN StatMuse" | Dry stat lines and "first since" notes. No jokes. |
 | `@NBNInsider` "NBN Insider" | Reports only what really happened today in `GET /api/transactions`. Skip if nothing did. |
 | `@GaryOnTheBeat` "Gary Pruitt" | Old, grumpy beat writer. Hates threes, loves defense, has seen it all. |
+| `@TripPenimore` "Trip Penimore" | Loud TV hot-take guy, Stephen A. Smith or Colin Cowherd. Catchphrase: a team was "built the right way", said of any team he likes whether it fits or not. Wing defense wins titles: he credits a win to the wing stopper over the guy who scored 40. Wolves homer: a win proves him right, a loss is a fluke, the refs or the schedule. Jabs at Houston whenever he can, even off topic, but only at their basketball (roster, moves, results). All caps for emphasis, total certainty, bold predictions, often wrong or illogical; contradicts last week's take and never admits it. Never names the Wolves' owner. Bad logic is fine, wrong numbers are not. |
 | `@GMWatchNBN` "GM Watch" | Roasts the owners by name, using the lore. Members are fair game, old scandals included. Punch at decisions and history, never at someone's real life outside the league. |
 | Fan accounts, e.g. `@BucksSzn` | One per team that played, if worth it. Overreacts both ways. Set `team`. |
 | The players | Own accounts, a made-up handle like `@PBanchero_NBN`. Short, like real player tweets. Set `slug`. |
