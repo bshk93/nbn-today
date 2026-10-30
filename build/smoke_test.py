@@ -135,6 +135,19 @@ SCHEMA = {
          "START_VALUE", "END_VALUE", "VS_LEAGUE"],
         30, "finances/index.html (Owners)",
     ),
+    # Pace, per-100 ratings and Four Factors (nbn-api stats_build/advanced.py).
+    # 30 teams a season plus a league row (TEAM is LG), regular season and playoffs.
+    "data/team-advanced.csv": (
+        ["TEAM", "SEASON", "TYPE", "G", "PACE", "ORTG", "DRTG", "NRTG",
+         "EFG", "TOV_PCT", "ORB_PCT", "FT_RATE", "OPP_EFG", "OPP_TOV_PCT", "DRB_PCT", "OPP_FT_RATE"],
+        31, "stats/seasons/index.html (Advanced), teams/team.js (Season History)",
+    ),
+    # Each stint's game context, for advanced-stats.js to compute rates from.
+    "players/player-advanced.csv": (
+        ["SLUG", "SEASON", "TEAM", "TYPE", "G", "TM_MIN", "TM_FGM", "TM_FGA", "TM_FTA",
+         "TM_TOV", "TM_OREB", "TM_DREB", "OPP_FGA", "OPP_3PA", "OPP_OREB", "OPP_DREB", "POSS"],
+        400, "stats/seasons/index.html (Advanced), players/index.html (Advanced)",
+    ),
     "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "h2h/index.html"),
     "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
     "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),

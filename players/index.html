@@ -612,6 +612,7 @@
 <script src="/league-time.js"></script>
 <script src="/names.js"></script>
 <script src="/radar.js"></script>
+<script src="/advanced-stats.js"></script>
 <script src="/injury-history.js"></script>
 <script src="/contract.js"></script>
 <script src="/players/subpage.js"></script>
@@ -757,7 +758,7 @@
 
   // ── Season aggregation (toggle) ──────────────────────────────────────────────
 
-  const SUM_FIELDS  = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC'];
+  const SUM_FIELDS  = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC','OREB'];
   const HIGH_FIELDS = ['HIGH_P','HIGH_R','HIGH_A','HIGH_S','HIGH_B','HIGH_3PM','HIGH_GMSC'];
 
   function aggregateBySeasonRows(rows) {
@@ -770,6 +771,7 @@
         s._teams.push(r.TEAM);
         SUM_FIELDS.forEach(f  => { s[f] = String(+s[f] + +r[f]); });
         HIGH_FIELDS.forEach(f => { s[f] = String(Math.max(+s[f], +r[f])); });
+        s._ctx = AdvancedStats.addContext(s._ctx, r._ctx);
         if (r.LAST_DATE > s.LAST_DATE) s.LAST_DATE = r.LAST_DATE;
       }
     });
@@ -784,7 +786,35 @@
   function careerStatsRow(rows) {
     const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '' };
     SUM_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => a + +row[f], 0)); });
+    r._ctx = rows.reduce((c, row) => AdvancedStats.addContext(c, row._ctx), null);
+    return Object.assign(r, advFields(r));
+  }
+
+  // ── Advanced (rate) stats ────────────────────────────────────────────────────
+
+  // Each stint's game context from /players/player-advanced.csv, keyed
+  // SEASON|TEAM|TYPE for the player on this page. Set once it loads.
+  let advContext = new Map();
+  function attachContext(r) {
+    const po = isPlayoffRow(r);
+    r._ctx = advContext.get(`${r.SEASON.replace(' Playoffs', '')}|${r.TEAM}|${po ? 'PLAYOFF' : 'REG'}`) || null;
     return r;
+  }
+
+  // The rates as row fields, so the table can sort on them. '' where a rate
+  // can't be computed, which sorts last.
+  const ADV_KEYS = { usg: 'USG_P', ast: 'AST_P', tov: 'TOV_P', orb: 'ORB_P', drb: 'DRB_P',
+                     trb: 'TRB_P', stl: 'STL_P', blk: 'BLK_P', par3: 'PAR3', ftr: 'FTR' };
+  function advFields(r) {
+    const n = k => +r[k] || 0;
+    const rates = AdvancedStats.player({ MIN: n('MIN'), FGM: n('FGM'), FGA: n('FGA'), '3PA': n('3PA'),
+      FTA: n('FTA'), TOV: n('TOV'), OREB: n('OREB'), DREB: n('REB') - n('OREB'), AST: n('AST'),
+      STL: n('STL'), BLK: n('BLK') }, r._ctx);
+    const out = {};
+    Object.entries(ADV_KEYS).forEach(([k, f]) => { out[f] = rates[k] == null ? '' : String(rates[k]); });
+    const efg = n('FGA') ? (n('FGM') + 0.5 * n('3PM')) / n('FGA') : null;
+    out.EFG_P = efg == null ? '' : String(efg);
+    return out;
   }
 
   function careerHighsRow(rows) {
@@ -1127,6 +1157,30 @@
     { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',     defaultDir: -1, cls: R, display: pg('FTA') },
   ];
 
+  const ratePct = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f] * 100).toFixed(1) + '%';
+  const rate3   = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f]).toFixed(3).replace(/^0/, '');
+  const ADV_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir:  1, iconSlot: true },
+    { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
+    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
+    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts,
+      title: 'True shooting: points per shot, counting threes and free throws' },
+    { key: 'EFG_P',  label: 'eFG%',   sortField: 'EFG_P',   defaultDir: -1, cls: R, display: ratePct('EFG_P'),
+      title: 'Effective FG%: a three counts as 1.5 makes' },
+    { key: 'PAR3',   label: '3PAr',   sortField: 'PAR3',    defaultDir: -1, cls: R, display: rate3('PAR3'), title: AdvancedStats.HELP.par3 },
+    { key: 'FTR',    label: 'FTr',    sortField: 'FTR',     defaultDir: -1, cls: R, display: rate3('FTR'),  title: AdvancedStats.HELP.ftr },
+    { key: 'USG_P',  label: 'USG%',   sortField: 'USG_P',   defaultDir: -1, cls: R, display: ratePct('USG_P'), title: AdvancedStats.HELP.usg },
+    { key: 'AST_P',  label: 'AST%',   sortField: 'AST_P',   defaultDir: -1, cls: R, display: ratePct('AST_P'), title: AdvancedStats.HELP.ast },
+    { key: 'TOV_P',  label: 'TOV%',   sortField: 'TOV_P',   defaultDir:  1, cls: R, display: ratePct('TOV_P'), title: AdvancedStats.HELP.tov },
+    { key: 'ORB_P',  label: 'ORB%',   sortField: 'ORB_P',   defaultDir: -1, cls: R, display: ratePct('ORB_P'), title: AdvancedStats.HELP.orb },
+    { key: 'DRB_P',  label: 'DRB%',   sortField: 'DRB_P',   defaultDir: -1, cls: R, display: ratePct('DRB_P'), title: AdvancedStats.HELP.drb },
+    { key: 'TRB_P',  label: 'TRB%',   sortField: 'TRB_P',   defaultDir: -1, cls: R, display: ratePct('TRB_P'), title: AdvancedStats.HELP.trb },
+    { key: 'STL_P',  label: 'STL%',   sortField: 'STL_P',   defaultDir: -1, cls: R, display: ratePct('STL_P'), title: AdvancedStats.HELP.stl },
+    { key: 'BLK_P',  label: 'BLK%',   sortField: 'BLK_P',   defaultDir: -1, cls: R, display: ratePct('BLK_P'), title: AdvancedStats.HELP.blk },
+  ];
+
   const HIGHS_COLS = [
     { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir:  1, iconSlot: true },
     { key: 'TEAM',      label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
@@ -1229,6 +1283,7 @@
       arrow.className = 'sort-arrow';
       th.appendChild(document.createTextNode(col.label ?? col.key));
       th.appendChild(arrow);
+      if (col.title) th.title = col.title;
       th.addEventListener('click', () => {
         if (sortField === col.sortField) {
           sortDir *= -1;
@@ -3144,7 +3199,7 @@
     let showGameLog  = false;
     let showSplits   = false;
     let splitsSeason = '';
-    const poRows = allPoRows.filter(r => r.SLUG === slug && +r.G > 0);
+    const poRows = allPoRows.filter(r => r.SLUG === slug && +r.G > 0).map(attachContext);
     let gameLogRows = null;
     let gameLogPage = 0;
     const GL_PAGE_SIZE = 10;
@@ -3281,7 +3336,7 @@
       const reg = bySeasonMode ? aggregateBySeasonRows(rows) : rows;
       const po = bySeasonMode ? aggregateBySeasonRows(poRows) : poRows;
       const dob = rows[0].DOB;
-      return [...reg, ...po].map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON), GS: startsFor(r) }));
+      return [...reg, ...po].map(r => ({ ...r, AGE: ageAtSeason(dob, r.SEASON), GS: startsFor(r), ...advFields(r) }));
     }
 
     function makeLeaderCheck() {
@@ -3307,6 +3362,11 @@
         ? [build(reg), { ...build(po), SEASON: 'Career Playoffs' }]
         : build(reg);
       buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn);
+      // Only once player-advanced.csv has loaded: without it every rate
+      // but the shooting ones would read "—".
+      if (advContext.size) {
+        buildSection(sections, 'Advanced', displayRows, ADV_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn);
+      }
       buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn);
     }
 
@@ -3507,8 +3567,13 @@
     fetch('/api/league-year').then(r => r.ok ? r.json() : null).catch(() => null),
     slug ? fetch('/players/player_seasons_playoffs.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
     slug ? fetch('/data/hof.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
+    slug ? fetch('/players/player-advanced.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
   ])
-    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson, poText, hofText]) => {
+    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson, poText, hofText, advText]) => {
+      if (advText) {
+        advContext = new Map(parseCSV(advText).filter(c => c.SLUG === slug)
+          .map(c => [`${c.SEASON}|${c.TEAM}|${c.TYPE}`, AdvancedStats.parseContext(c)]));
+      }
       biosData = biosJson;
       teamMap = teamMapJson;
       currentOvr = ovrJson;
@@ -3541,7 +3606,7 @@
       // bio-snapshot row (SEASON/G all NA) for any drafted player so draft info
       // flows through, but a player who hasn't played yet should render as a
       // clean bio-only page, not an empty season table.
-      const playerRows = rows.filter(r => r.SLUG === slug && +r.G > 0);
+      const playerRows = rows.filter(r => r.SLUG === slug && +r.G > 0).map(attachContext);
       if (!playerRows.length) {
         // Player exists in bios but has no played seasons yet
         const bio = biosData[slug];

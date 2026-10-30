@@ -32,6 +32,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   Depth mode has stopped keeping players at their own positions on a tie.
 - Run tests/clinch.test.js; abort if the clinched / eliminated marks on
   /standings could mark a team that isn't mathematically safe.
+- Run tests/advanced-stats.test.js; abort if the USG% / AST% / REB% / STL% /
+  BLK% formulas on /stats/seasons and player pages have drifted.
 - Run tests/award-race.test.js; abort if the /awards/race formulas have
   stopped applying their eligibility rules (games floor, draft class, starts).
 - Run tests/injury-history.test.js; abort if a player's injuries no longer fold
@@ -124,6 +126,15 @@ if clinch_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the standings clinch marks no longer hold (see FAIL lines above).')
         print('Fix Clinch.marks in clinch.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+advanced_test = Path('tests/advanced-stats.test.js')
+if advanced_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(advanced_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the player rate stat formulas no longer hold (see FAIL lines above).')
+        print('Fix AdvancedStats.player in advanced-stats.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 award_race_test = Path('tests/award-race.test.js')

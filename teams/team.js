@@ -1551,6 +1551,7 @@ function buildTable(cols, rows, initSortField, initSortDir, renderCell) {
     th.appendChild(arrow);
     th.dataset.active = String(col.sortField === sortField);
     if (col.cls?.includes('right')) th.classList.add('right');
+    if (col.title) attachTooltip(th, col.title);
     th.addEventListener('click', () => {
       if (sortField === col.sortField) sortDir *= -1;
       else { sortField = col.sortField; sortDir = col.defaultDir; }
@@ -3563,10 +3564,22 @@ const SEASON_COLS = [
     display: r => fmtSigned(r.DIFF) },
   { key: 'SEED',           label: 'Seed',    cls: 'right',       sortField: 'SEED_NUM',      defaultDir:  1,
     display: r => r.SEED || '—' },
-  { key: 'OFF_RTG',        label: 'Off Rtg', cls: 'right',       sortField: 'OFF_RTG',       defaultDir: -1,
-    display: r => fmtSigned(r.OFF_RTG, 2) },
-  { key: 'DEF_RTG',        label: 'Def Rtg', cls: 'right',       sortField: 'DEF_RTG',       defaultDir: -1,
-    display: r => fmtSigned(r.DEF_RTG, 2) },
+  // Per 100 possessions, from data/team-advanced.csv (joined in by
+  // joinTeamAdvanced). Possessions are estimated; see stats_build/advanced.py.
+  { key: 'PACE',           label: 'Pace',    cls: 'right muted', sortField: 'PACE',          defaultDir: -1,
+    title: 'Possessions per 48 minutes (estimated)', display: r => fmtNum1(r.PACE) },
+  { key: 'ORTG',           label: 'ORtg',    cls: 'right',       sortField: 'ORTG',          defaultDir: -1,
+    title: 'Points scored per 100 possessions', display: r => fmtNum1(r.ORTG) },
+  { key: 'DRTG',           label: 'DRtg',    cls: 'right',       sortField: 'DRTG',          defaultDir:  1,
+    title: 'Points allowed per 100 possessions', display: r => fmtNum1(r.DRTG) },
+  { key: 'NRTG',           label: 'Net',     cls: 'right',       sortField: 'NRTG',          defaultDir: -1,
+    title: 'ORtg minus DRtg', display: r => r.NRTG === '' || r.NRTG == null ? '—' : fmtSigned(r.NRTG) },
+  // Not per-possession ratings: points scored above what each opponent had
+  // been allowing at the time, and held below what it had been scoring.
+  { key: 'OFF_RTG',        label: 'Off +/−', cls: 'right',       sortField: 'OFF_RTG',       defaultDir: -1,
+    title: 'Points a game above what each opponent had been allowing', display: r => fmtSigned(r.OFF_RTG, 2) },
+  { key: 'DEF_RTG',        label: 'Def +/−', cls: 'right',       sortField: 'DEF_RTG',       defaultDir: -1,
+    title: 'Points a game below what each opponent had been scoring', display: r => fmtSigned(r.DEF_RTG, 2) },
   { key: 'PLAYOFF_RESULT', label: 'Playoffs', cls: '',           sortField: 'PLAYOFF_RESULT', defaultDir: -1 },
 ];
 
@@ -3617,7 +3630,21 @@ const PO_CLASS = {
   'Missed':       'po-missed',
 };
 
-const SEASON_COLOR_COLS = new Set(['DIFF', 'OFF_RTG', 'DEF_RTG']);
+const SEASON_COLOR_COLS = new Set(['DIFF', 'NRTG', 'OFF_RTG', 'DEF_RTG']);
+
+const fmtNum1 = v => (v === '' || v == null || isNaN(+v) ? '—' : (+v).toFixed(1));
+
+// Pace and the per-100 ratings onto each Season History row, from
+// data/team-advanced.csv's regular-season rows for this team.
+function joinTeamAdvanced(seasonRows, advRows) {
+  const bySeason = new Map(advRows.filter(r => r.TEAM === abbr && r.TYPE === 'REG')
+    .map(r => [r.SEASON, r]));
+  seasonRows.forEach(r => {
+    const a = bySeason.get(r.SEASON);
+    if (!a) return;
+    r.PACE = a.PACE; r.ORTG = a.ORTG; r.DRTG = a.DRTG; r.NRTG = a.NRTG;
+  });
+}
 
 function makeSeasonRenderCell(rows) {
   const ranges = {};
@@ -8386,7 +8413,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr, birdr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr, birdr, tadvr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -8414,6 +8441,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/rotations').then(r => r.ok ? r.json() : {}),
     fetch('/api/game-starters/counts').then(r => r.ok ? r.json() : null),
     fetch(`/api/bird-rights?team=${abbr}`).then(r => r.ok ? r.json() : null),
+    fetch('/data/team-advanced.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
   ]);
 
   await namesReady;
@@ -8482,6 +8510,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   if (sr.status === 'fulfilled') {
     seasonsWrap.innerHTML = '';
     seasonRows = parseCSV(sr.value);
+    if (tadvr.status === 'fulfilled') joinTeamAdvanced(seasonRows, parseCSV(tadvr.value));
     buildTimeline(seasonRows);
     seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
   } else {

@@ -63,6 +63,10 @@
         <button data-v="players">Players</button>
         <button data-v="teams">Teams</button>
       </div>
+      <div class="ui-segmented" role="group" id="f-stats">
+        <button data-v="">Basic</button>
+        <button data-v="adv">Advanced</button>
+      </div>
       <div class="ui-segmented" role="group" id="f-type">
         <button data-v="reg">Regular season</button>
         <button data-v="po">Playoffs</button>
@@ -90,6 +94,7 @@
     <button class="ui-btn ui-btn--sm ss-more" id="more" hidden></button>
   </div>
   <script src="/names.js"></script>
+  <script src="/advanced-stats.js"></script>
   <script>
   (function () {
     // Draft class whose rookie year is the first season on record (20-21).
@@ -141,6 +146,28 @@
       { key: '_GMSC',  label: 'GMSC',  cls: 'right group-start',   defaultDir: -1 },
     ];
 
+    // Advanced: rates rather than totals. The player rates come from
+    // AdvancedStats (advanced-stats.js) over the stint's game context; the
+    // team ones are read straight from data/team-advanced.csv. `help` is the
+    // header tooltip.
+    const AS = window.AdvancedStats;
+    const PLAYER_ADV_COLS = [
+      ...PLAYER_COLS.slice(0, 5),
+      { key: '_TSP',  label: 'TS%',   cls: 'right pct group-start', defaultDir: -1, help: 'True shooting: points per shot, counting threes and free throws' },
+      { key: '_EFGP', label: 'eFG%',  cls: 'right pct', defaultDir: -1, help: 'Effective FG%: a three counts as 1.5 makes' },
+      { key: '_3PAR', label: '3PAr',  cls: 'right',     defaultDir: -1, help: AS.HELP.par3 },
+      { key: '_FTR',  label: 'FTr',   cls: 'right',     defaultDir: -1, help: AS.HELP.ftr },
+      { key: '_USG',  label: 'USG%',  cls: 'right pct group-start', defaultDir: -1, help: AS.HELP.usg },
+      { key: '_ASTP', label: 'AST%',  cls: 'right pct', defaultDir: -1, help: AS.HELP.ast },
+      { key: '_TOVP', label: 'TOV%',  cls: 'right pct', defaultDir:  1, help: AS.HELP.tov },
+      { key: '_ORBP', label: 'ORB%',  cls: 'right pct group-start', defaultDir: -1, help: AS.HELP.orb },
+      { key: '_DRBP', label: 'DRB%',  cls: 'right pct', defaultDir: -1, help: AS.HELP.drb },
+      { key: '_TRBP', label: 'TRB%',  cls: 'right pct', defaultDir: -1, help: AS.HELP.trb },
+      { key: '_STLP', label: 'STL%',  cls: 'right pct group-start', defaultDir: -1, help: AS.HELP.stl },
+      { key: '_BLKP', label: 'BLK%',  cls: 'right pct', defaultDir: -1, help: AS.HELP.blk },
+      { key: '_GMSC', label: 'GMSC',  cls: 'right group-start', defaultDir: -1 },
+    ];
+
     // Team view: the same stat groups, summed over a team's player lines. Those
     // sums match the team's own box-score totals exactly (PTS/G equals the
     // standings PPG), so nothing here is an estimate. G, W, L and OPPG come from
@@ -161,6 +188,23 @@
       { key: '_OPPG',  label: 'OPPG',   cls: 'right group-start',   defaultDir:  1 },
       { key: '_DIFF',  label: 'DIFF',   cls: 'right',               defaultDir: -1 },
       ...statCols('_RPG', '_PF'),
+    ];
+
+    const TEAM_ADV_COLS = [
+      ...TEAM_COLS.slice(0, 3),
+      { key: '_WP',   label: 'W%',     cls: 'right pct', defaultDir: -1 },
+      { key: '_PACE', label: 'Pace',   cls: 'right group-start', defaultDir: -1, help: 'Possessions per 48 minutes (estimated: the box scores have no team turnovers)' },
+      { key: '_ORTG', label: 'ORtg',   cls: 'right', defaultDir: -1, help: 'Points scored per 100 possessions' },
+      { key: '_DRTG', label: 'DRtg',   cls: 'right', defaultDir:  1, help: 'Points allowed per 100 possessions' },
+      { key: '_NRTG', label: 'Net',    cls: 'right', defaultDir: -1, help: 'ORtg minus DRtg' },
+      { key: '_TEFG', label: 'eFG%',   cls: 'right pct group-start', defaultDir: -1, help: 'Offense, Four Factors: effective FG%' },
+      { key: '_TTOV', label: 'TOV%',   cls: 'right pct', defaultDir:  1, help: 'Offense, Four Factors: turnovers per 100 plays' },
+      { key: '_TORB', label: 'ORB%',   cls: 'right pct', defaultDir: -1, help: 'Offense, Four Factors: share of its own misses it rebounded' },
+      { key: '_TFTR', label: 'FT/FGA', cls: 'right',     defaultDir: -1, help: 'Offense, Four Factors: free throws made per shot' },
+      { key: '_OEFG', label: 'Opp eFG%', cls: 'right pct group-start', defaultDir: 1, help: "Defense, Four Factors: opponents' effective FG%" },
+      { key: '_OTOV', label: 'Opp TOV%', cls: 'right pct', defaultDir: -1, help: "Defense, Four Factors: opponents' turnovers per 100 plays" },
+      { key: '_TDRB', label: 'DRB%',   cls: 'right pct', defaultDir: -1, help: "Defense, Four Factors: share of opponents' misses it rebounded" },
+      { key: '_OFTR', label: 'Opp FT/FGA', cls: 'right', defaultDir: 1, help: "Defense, Four Factors: opponents' free throws made per shot" },
     ];
 
     // Leader cards. `rate` cards need a made-shots floor as well as the games
@@ -195,10 +239,31 @@
       { key: '_TPG',  name: 'Fewest turnovers', abbr: 'TPG', asc: true },
     ];
 
+    // Advanced cards also need MIN_MPG minutes a game (and, for TS%, the
+    // basic card's made-shot floor): a rate over a few minutes is noise.
+    const MIN_MPG = 15;
+    const PLAYER_ADV_CARDS = [
+      { key: '_USG',  name: 'Usage',          abbr: 'USG%', mpg: true },
+      { key: '_TSP',  name: 'True shooting %', abbr: 'TS%', made: '_FGM', floor: 300, poFloor: 20, mpg: true },
+      { key: '_ASTP', name: 'Assist %',       abbr: 'AST%', mpg: true },
+      { key: '_TRBP', name: 'Rebound %',      abbr: 'TRB%', mpg: true },
+      { key: '_STLP', name: 'Steal %',        abbr: 'STL%', mpg: true },
+      { key: '_BLKP', name: 'Block %',        abbr: 'BLK%', mpg: true },
+    ];
+    const TEAM_ADV_CARDS = [
+      { key: '_NRTG', name: 'Net rating',       abbr: 'Net' },
+      { key: '_ORTG', name: 'Offensive rating', abbr: 'ORtg' },
+      { key: '_DRTG', name: 'Defensive rating', abbr: 'DRtg', asc: true },
+      { key: '_PACE', name: 'Pace',             abbr: 'Pace' },
+      { key: '_TEFG', name: 'Effective FG%',    abbr: 'eFG%' },
+      { key: '_OEFG', name: 'Opponent eFG%',    abbr: 'Opp eFG%', asc: true },
+    ];
+
     const q = new URLSearchParams(location.search);
     const state = {
       view:    q.get('view') === 'teams' ? 'teams' : 'players',
       type:    q.get('type') === 'po' ? 'po' : 'reg',
+      stats:   q.get('stats') === 'adv' ? 'adv' : '',
       season:  q.get('season') || '',     // '' until the data says what is latest
       team:    TEAM_ABBRS.includes(q.get('team')) ? q.get('team') : '',
       rookies: q.get('rookies') === '1' ? '1' : '',
@@ -263,6 +328,12 @@
       row._TPG  = g ? row._TOV      / g : 0;
       row._PFPG = g ? row._PF       / g : 0;
       row._GMSC = g ? row._GMSC_TOT / g : 0;
+      const adv = AS.player({ MIN: row._MIN, FGM: row._FGM, FGA: row._FGA, '3PA': row._3PA,
+        FTA: row._FTA, TOV: row._TOV, OREB: row._OREB, DREB: row._DREB, AST: row._AST,
+        STL: row._STL, BLK: row._BLK }, row._ctx);
+      row._3PAR = adv.par3; row._FTR = adv.ftr; row._USG = adv.usg; row._ASTP = adv.ast;
+      row._TOVP = adv.tov;  row._ORBP = adv.orb; row._DRBP = adv.drb; row._TRBP = adv.trb;
+      row._STLP = adv.stl;  row._BLKP = adv.blk;
       return row;
     }
 
@@ -276,6 +347,7 @@
         if (!agg) { map.set(key, { ...row, _teams: [row.TEAM] }); return; }
         agg._teams.push(row.TEAM);
         SUMS.forEach(k => { agg[k] += row[k]; });
+        agg._ctx = AS.addContext(agg._ctx, row._ctx);
       });
       return Array.from(map.values()).map(row => {
         row.TEAM = row._teams.join(', ');
@@ -340,7 +412,15 @@
         case '_BPG': case '_TPG': case '_GMSC': case '_ORPG': case '_DRPG': case '_PFPG':
           return fmt1(row[key]);
         case '_FGP': case '_3PP': case '_FTP': case '_TSP': case '_EFGP':
-          return fmtPct(row[key]);
+        case '_USG': case '_ASTP': case '_TOVP': case '_ORBP': case '_DRBP': case '_TRBP':
+        case '_STLP': case '_BLKP':
+        case '_TEFG': case '_TTOV': case '_TORB': case '_OEFG': case '_OTOV': case '_TDRB':
+          return fmtPct(row[key] ?? null);
+        case '_3PAR': case '_FTR': case '_TFTR': case '_OFTR':
+          return row[key] == null ? '—' : row[key].toFixed(3).replace(/^0/, '');
+        case '_PACE': case '_ORTG': case '_DRTG':
+          return row[key] == null ? '—' : fmt1(row[key]);
+        case '_NRTG': return fmtSigned(row[key] ?? null);
         case '_W':    return row._W ?? '—';
         case '_L':    return row._L ?? '—';
         case '_WP':   return row._WP == null ? '—' : row._WP.toFixed(3).replace(/^0/, '');
@@ -382,8 +462,12 @@
     }
 
     // ── The slice on screen ────────────────────────────────────────────────
-    const COLS = () => (state.view === 'teams' ? TEAM_COLS : PLAYER_COLS);
-    const CARDS = () => (state.view === 'teams' ? TEAM_CARDS : PLAYER_CARDS)
+    const COLS = () => state.stats === 'adv'
+      ? (state.view === 'teams' ? TEAM_ADV_COLS : PLAYER_ADV_COLS)
+      : (state.view === 'teams' ? TEAM_COLS : PLAYER_COLS);
+    const CARDS = () => (state.stats === 'adv'
+      ? (state.view === 'teams' ? TEAM_ADV_CARDS : PLAYER_ADV_CARDS)
+      : (state.view === 'teams' ? TEAM_CARDS : PLAYER_CARDS))
       .filter(c => !(state.type === 'po' && c.po === false));
 
     function visibleRows() {
@@ -401,19 +485,26 @@
     // the season's games (the longest anyone played), and the NBA's made-shot
     // minimums scaled to that length. Playoffs: four games, and small fixed
     // made-shot minimums, since a first-round exit plays four.
+    // Across all seasons the floor is a full season's, or a season five
+    // games old would fill every card with five-game samples.
+    function seasonLength(season) {
+      const maxG = data.reg.maxG;
+      return state.season === 'all' ? Math.max(0, ...Object.values(maxG)) : (maxG[season] || 0);
+    }
     function minGames(season) {
       if (state.type === 'po') return 4;
-      return Math.ceil((data.reg.maxG[season] || 0) / 2);
+      return Math.ceil(seasonLength(season) / 2);
     }
     function minMade(card, season) {
       if (state.type === 'po') return card.poFloor;
-      return Math.round(card.floor * (data.reg.maxG[season] || 82) / 82);
+      return Math.round(card.floor * (seasonLength(season) || 82) / 82);
     }
     function qualifies(r, card) {
       if (state.view === 'teams') return r[card.key] != null;
       if (r[card.key] == null) return false;
       if (card.total) return r[card.key] > 0;
       if (r._G < minGames(r.SEASON)) return false;
+      if (card.mpg && r._MPG < MIN_MPG) return false;
       return !card.made || r[card.made] >= minMade(card, r.SEASON);
     }
 
@@ -427,11 +518,17 @@
     const rowLabel = r => state.season === 'all' ? `${rowName(r)} (${r.SEASON})` : rowName(r);
 
     // ── Rendering ──────────────────────────────────────────────────────────
+    // Said once, under the filters, whenever playoff advanced stats show.
+    const PO_ADV = 'Every playoff game is streamed and played out, where most regular-season games are quick-simmed, so playoff rates run differently: compare them with other playoffs. 2026 playoff offensive rebounds look under-recorded.';
+
     function renderNote() {
+      const adv = state.stats === 'adv';
       if (state.view === 'teams') {
-        $('note').textContent = state.type === 'po'
-          ? 'Playoff records come from the brackets. There is no playoff points-allowed on file.'
-          : '';
+        const parts = [];
+        if (adv) parts.push('Possessions are estimated: the box scores have no team turnovers, so pace reads slightly low and ratings slightly high, the same for every team.');
+        else if (state.type === 'po') parts.push('Playoff records come from the brackets. There is no playoff points-allowed on file.');
+        if (adv && state.type === 'po') parts.push(PO_ADV);
+        $('note').textContent = parts.join(' ');
         return;
       }
       const parts = [];
@@ -442,8 +539,9 @@
         parts.push(`Per-game leaders: at least ${minGames(s)} games`,
           `percentages also need ${[...new Set(PLAYER_CARDS.filter(c => c.made).map(c => `${minMade(c, s)} ${c.made.slice(1)}`))].join(', ')}`);
       }
+      if (adv) parts.push(`advanced leaders also need ${MIN_MPG} minutes a game`);
       if (state.team) parts.push(`only games played for ${state.team}`);
-      $('note').textContent = parts.join(' · ') + '.';
+      $('note').textContent = parts.join(' · ') + '.' + (adv && state.type === 'po' ? ' ' + PO_ADV : '');
     }
 
     function renderGrid(rows) {
@@ -501,7 +599,7 @@
       }
       const head = '<tr>' + cols.map(c => {
         const on = c.key === state.sort;
-        return `<th class="${c.cls}${on ? ' ss-primary' : ''}" data-key="${c.key}">${c.label}${on ? (state.dir === -1 ? ' ↓' : ' ↑') : ''}</th>`;
+        return `<th class="${c.cls}${on ? ' ss-primary' : ''}" data-key="${c.key}"${c.help ? ` title="${esc(c.help)}"` : ''}>${c.label}${on ? (state.dir === -1 ? ' ↓' : ' ↑') : ''}</th>`;
       }).join('') + '</tr>';
       const body = list.map(r => '<tr>' + cols.map(c => {
         const cls = c.cls + (c.key === state.sort ? ' ss-primary' : '');
@@ -530,7 +628,7 @@
     }
 
     function syncControls() {
-      [['f-view', 'view'], ['f-type', 'type'], ['f-rookies', 'rookies'], ['f-split', 'split']].forEach(([id, key]) => {
+      [['f-view', 'view'], ['f-stats', 'stats'], ['f-type', 'type'], ['f-rookies', 'rookies'], ['f-split', 'split']].forEach(([id, key]) => {
         $(id).querySelectorAll('button').forEach(b => {
           const on = b.dataset.v === state[key];
           b.classList.toggle('active', on);
@@ -546,6 +644,7 @@
       const u = new URL(location.href);
       u.search = '';
       if (state.view !== 'players') u.searchParams.set('view', state.view);
+      if (state.stats) u.searchParams.set('stats', state.stats);
       if (state.type !== 'reg') u.searchParams.set('type', state.type);
       if (state.season !== SEASONS[0]) u.searchParams.set('season', state.season);
       if (state.team) u.searchParams.set('team', state.team);
@@ -565,6 +664,7 @@
       Object.assign(state, {
         view:    q.get('view') === 'teams' ? 'teams' : 'players',
         type:    q.get('type') === 'po' ? 'po' : 'reg',
+        stats:   q.get('stats') === 'adv' ? 'adv' : '',
         season:  q.get('season') || SEASONS[0],
         team:    TEAM_ABBRS.includes(q.get('team')) ? q.get('team') : '',
         rookies: q.get('rookies') === '1' ? '1' : '',
@@ -590,7 +690,7 @@
 
     // ── Wiring ─────────────────────────────────────────────────────────────
     TEAM_ABBRS.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; $('f-team').appendChild(o); });
-    [['f-view', 'view'], ['f-type', 'type'], ['f-rookies', 'rookies'], ['f-split', 'split']].forEach(([id, key]) => {
+    [['f-view', 'view'], ['f-stats', 'stats'], ['f-type', 'type'], ['f-rookies', 'rookies'], ['f-split', 'split']].forEach(([id, key]) => {
       $(id).addEventListener('click', ev => {
         const b = ev.target.closest('button');
         if (!b || state[key] === b.dataset.v) return;
@@ -602,11 +702,29 @@
     $('f-search').addEventListener('input', ev => { state.search = ev.target.value; renderBoard(visibleRows()); });
     $('more').addEventListener('click', () => { state.shown += PAGE; renderBoard(visibleRows()); });
 
-    function prepare(rows, records) {
+    // `ctx` and `teamAdv` are this type's rows of player-advanced.csv and
+    // team-advanced.csv. Without them the advanced columns read "—".
+    function prepare(rows, records, ctx, teamAdv) {
+      const context = new Map(ctx.map(c => [`${c.SLUG}|${c.SEASON}|${c.TEAM}`, AS.parseContext(c)]));
       rows = rows.map(processRow).filter(r => r.SEASON && r._G > 0);
+      rows.forEach(r => {
+        r._ctx = context.get(`${r.SLUG}|${r.SEASON}|${r.TEAM}`) || null;
+        recomputeRates(r);
+      });
       const maxG = {};
       rows.forEach(r => { maxG[r.SEASON] = Math.max(maxG[r.SEASON] || 0, r._G); });
-      return { rows, maxG, teams: aggregateByTeamSeason(rows, records) };
+      const teams = aggregateByTeamSeason(rows, records);
+      const adv = new Map(teamAdv.map(t => [`${t.TEAM}|${t.SEASON}`, t]));
+      const num = v => (v === '' || v == null || v === 'NA' ? null : +v);
+      teams.forEach(t => {
+        const a = adv.get(`${t.TEAM}|${t.SEASON}`) || {};
+        Object.assign(t, {
+          _PACE: num(a.PACE), _ORTG: num(a.ORTG), _DRTG: num(a.DRTG), _NRTG: num(a.NRTG),
+          _TEFG: num(a.EFG), _TTOV: num(a.TOV_PCT), _TORB: num(a.ORB_PCT), _TFTR: num(a.FT_RATE),
+          _OEFG: num(a.OPP_EFG), _OTOV: num(a.OPP_TOV_PCT), _TDRB: num(a.DRB_PCT), _OFTR: num(a.OPP_FT_RATE),
+        });
+      });
+      return { rows, maxG, teams };
     }
 
     // parseCSV comes from nav.js, which loads after this script but before
@@ -619,17 +737,21 @@
       // players' games for G and shows no record.
       getCSV('/standings/standings-history.csv').catch(() => []),
       getCSV('/standings/playoff-brackets.csv').catch(() => []),
-    ]).then(([reg, po, standings, brackets]) => {
-      data.reg = prepare(reg, standings);
-      data.po = prepare(po, playoffRecords(brackets));
+      // Advanced view only; without them its columns read "—".
+      getCSV('/players/player-advanced.csv').catch(() => []),
+      getCSV('/data/team-advanced.csv').catch(() => []),
+    ]).then(([reg, po, standings, brackets, ctx, teamAdv]) => {
+      const ofType = (list, t) => list.filter(r => r.TYPE === t);
+      data.reg = prepare(reg, standings, ofType(ctx, 'REG'), ofType(teamAdv, 'REG'));
+      data.po = prepare(po, playoffRecords(brackets), ofType(ctx, 'PLAYOFF'), ofType(teamAdv, 'PLAYOFF'));
       markRookieSeasons(data.reg.rows, data.po.rows);
       SEASONS = Object.keys(data.reg.maxG).filter(s => /^\d\d-\d\d$/.test(s)).sort().reverse();
       $('f-season').innerHTML = SEASONS.map(s => `<option value="${s}">20${s.replace('-', '–')}</option>`).join('')
         + '<option value="all">All seasons</option>';
       if (!SEASONS.includes(state.season) && state.season !== 'all') state.season = SEASONS[0];
-      const sortCol = [...PLAYER_COLS, ...TEAM_COLS].find(c => c.key === state.sort);
+      const sortCol = COLS().find(c => c.key === state.sort);
       state.dir = sortCol ? sortCol.defaultDir : -1;
-      if (TEAM_CARDS.some(c => c.key === state.sort && c.asc) && state.view === 'teams') state.dir = 1;
+      if (CARDS().some(c => c.key === state.sort && c.asc)) state.dir = 1;
       render();
     }).catch(() => {
       $('grid').innerHTML = '<div id="status">Failed to load data.</div>';
