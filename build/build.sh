@@ -75,6 +75,12 @@ PY="$NBN_API_DIR/venv/bin/python3"
 ( cd "$NBN_API_DIR" && "$PY" -m stats_build.finances ) \
   || echo "!!! Front Office Ledger failed; stats are unaffected"
 
+# Pace, ratings per 100 and the Four Factors (stats_build/advanced.py). Same
+# footing as the ledger: R never wrote it, so it runs outside the port.
+echo "--- running advanced team stats ---"
+( cd "$NBN_API_DIR" && "$PY" -m stats_build.advanced ) \
+  || echo "!!! advanced team stats failed; stats are unaffected"
+
 # Verify the build's output still satisfies what the pages read. The docroot is
 # a symlink to this tree, so anything broken here is already live — surface it
 # loudly rather than letting a renamed column ship silently.
