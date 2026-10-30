@@ -759,6 +759,9 @@
   // ── Season aggregation (toggle) ──────────────────────────────────────────────
 
   const SUM_FIELDS  = ['G','MIN','PTS','REB','AST','STL','BLK','TOV','PF','FGM','FGA','3PM','3PA','FTM','FTA','GMSC','OREB'];
+  // From player-value.csv: Win Shares and VORP add up across stints; BPM
+  // is carried as BPM x minutes (VMIN) so a combined line is minutes-weighted.
+  const VALUE_SUMS  = ['OWS','DWS','WS','VORP','VMIN','BPMM','OBPMM'];
   const HIGH_FIELDS = ['HIGH_P','HIGH_R','HIGH_A','HIGH_S','HIGH_B','HIGH_3PM','HIGH_GMSC'];
 
   function aggregateBySeasonRows(rows) {
@@ -770,6 +773,7 @@
         const s = map.get(r.SEASON);
         s._teams.push(r.TEAM);
         SUM_FIELDS.forEach(f  => { s[f] = String(+s[f] + +r[f]); });
+        VALUE_SUMS.forEach(f  => { s[f] = (s[f] || 0) + (r[f] || 0); });
         HIGH_FIELDS.forEach(f => { s[f] = String(Math.max(+s[f], +r[f])); });
         s._ctx = AdvancedStats.addContext(s._ctx, r._ctx);
         if (r.LAST_DATE > s.LAST_DATE) s.LAST_DATE = r.LAST_DATE;
@@ -786,6 +790,7 @@
   function careerStatsRow(rows) {
     const r = { SEASON: 'Career', TEAM: '—', LAST_DATE: '' };
     SUM_FIELDS.forEach(f => { r[f] = String(rows.reduce((a, row) => a + +row[f], 0)); });
+    VALUE_SUMS.forEach(f => { r[f] = rows.reduce((a, row) => a + (row[f] || 0), 0); });
     r._ctx = rows.reduce((c, row) => AdvancedStats.addContext(c, row._ctx), null);
     return Object.assign(r, advFields(r));
   }
@@ -795,9 +800,17 @@
   // Each stint's game context from /players/player-advanced.csv, keyed
   // SEASON|TEAM|TYPE for the player on this page. Set once it loads.
   let advContext = new Map();
+  let advValue = new Map();   // the same keys, player-value.csv rows
   function attachContext(r) {
     const po = isPlayoffRow(r);
-    r._ctx = advContext.get(`${r.SEASON.replace(' Playoffs', '')}|${r.TEAM}|${po ? 'PLAYOFF' : 'REG'}`) || null;
+    const key = `${r.SEASON.replace(' Playoffs', '')}|${r.TEAM}|${po ? 'PLAYOFF' : 'REG'}`;
+    r._ctx = advContext.get(key) || null;
+    const v = advValue.get(key);
+    if (v) {
+      const n = k => +v[k] || 0;
+      Object.assign(r, { OWS: n('OWS'), DWS: n('DWS'), WS: n('WS'), VORP: n('VORP'), VMIN: n('MIN'),
+                         BPMM: n('BPM') * n('MIN'), OBPMM: n('OBPM') * n('MIN') });
+    }
     return r;
   }
 
@@ -814,6 +827,14 @@
     Object.entries(ADV_KEYS).forEach(([k, f]) => { out[f] = rates[k] == null ? '' : String(rates[k]); });
     const efg = n('FGA') ? (n('FGM') + 0.5 * n('3PM')) / n('FGA') : null;
     out.EFG_P = efg == null ? '' : String(efg);
+    // Win Shares, BPM, VORP: from the summed player-value fields.
+    const vmin = r.VMIN || 0;
+    const val = x => (vmin ? String(x) : '');
+    out.WS_V = val(r.WS); out.VORP_V = val(r.VORP);
+    out.WS48 = val(vmin && (r.WS * 48 / vmin));
+    out.BPM_V = val(vmin && r.BPMM / vmin);
+    out.OBPM_V = val(vmin && r.OBPMM / vmin);
+    out.DBPM_V = val(vmin && (r.BPMM - r.OBPMM) / vmin);
     return out;
   }
 
@@ -1158,7 +1179,10 @@
   ];
 
   const ratePct = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f] * 100).toFixed(1) + '%';
-  const rate3   = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f]).toFixed(3).replace(/^0/, '');
+  const rate3   = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f]).toFixed(3).replace(/^(-?)0/, '$1');
+  const num1    = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f]).toFixed(1);
+  const signed1 = f => r => r[f] === '' || r[f] == null ? '—' : ((+r[f] > 0 ? '+' : '') + (+r[f]).toFixed(1));
+  const VALUE_HELP = AdvancedStats.VALUE_HELP;
   const ADV_COLS = [
     { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir:  1, iconSlot: true },
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
@@ -1179,6 +1203,12 @@
     { key: 'TRB_P',  label: 'TRB%',   sortField: 'TRB_P',   defaultDir: -1, cls: R, display: ratePct('TRB_P'), title: AdvancedStats.HELP.trb },
     { key: 'STL_P',  label: 'STL%',   sortField: 'STL_P',   defaultDir: -1, cls: R, display: ratePct('STL_P'), title: AdvancedStats.HELP.stl },
     { key: 'BLK_P',  label: 'BLK%',   sortField: 'BLK_P',   defaultDir: -1, cls: R, display: ratePct('BLK_P'), title: AdvancedStats.HELP.blk },
+    { key: 'WS_V',   label: 'WS',     sortField: 'WS_V',    defaultDir: -1, cls: R, display: num1('WS_V'),    title: VALUE_HELP.ws },
+    { key: 'WS48',   label: 'WS/48',  sortField: 'WS48',    defaultDir: -1, cls: R, display: rate3('WS48'),   title: VALUE_HELP.ws48 },
+    { key: 'OBPM_V', label: 'OBPM',   sortField: 'OBPM_V',  defaultDir: -1, cls: R, display: signed1('OBPM_V'), title: VALUE_HELP.obpm },
+    { key: 'DBPM_V', label: 'DBPM',   sortField: 'DBPM_V',  defaultDir: -1, cls: R, display: signed1('DBPM_V'), title: VALUE_HELP.dbpm },
+    { key: 'BPM_V',  label: 'BPM',    sortField: 'BPM_V',   defaultDir: -1, cls: R, display: signed1('BPM_V'), title: VALUE_HELP.bpm },
+    { key: 'VORP_V', label: 'VORP',   sortField: 'VORP_V',  defaultDir: -1, cls: R, display: num1('VORP_V'),  title: VALUE_HELP.vorp },
   ];
 
   const HIGHS_COLS = [
@@ -3568,11 +3598,16 @@
     slug ? fetch('/players/player_seasons_playoffs.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
     slug ? fetch('/data/hof.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
     slug ? fetch('/players/player-advanced.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
+    slug ? fetch('/players/player-value.csv').then(r => r.ok ? r.text() : '').catch(() => '') : '',
   ])
-    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson, poText, hofText, advText]) => {
+    .then(([seasonsText, awardsText, biosJson, teamMapJson, ovrJson, ovrHistoryJson, attributesJson, authJson, leagueYearJson, poText, hofText, advText, valueText]) => {
       if (advText) {
         advContext = new Map(parseCSV(advText).filter(c => c.SLUG === slug)
           .map(c => [`${c.SEASON}|${c.TEAM}|${c.TYPE}`, AdvancedStats.parseContext(c)]));
+      }
+      if (valueText) {
+        advValue = new Map(parseCSV(valueText).filter(v => v.SLUG === slug)
+          .map(v => [`${v.SEASON}|${v.TEAM}|${v.TYPE}`, v]));
       }
       biosData = biosJson;
       teamMap = teamMapJson;

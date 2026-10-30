@@ -148,6 +148,12 @@ SCHEMA = {
          "TM_TOV", "TM_OREB", "TM_DREB", "OPP_FGA", "OPP_3PA", "OPP_OREB", "OPP_DREB", "POSS"],
         400, "stats/seasons/index.html (Advanced), players/index.html (Advanced)",
     ),
+    # Win Shares, BPM, VORP per stint (nbn-api stats_build/player_value.py).
+    "players/player-value.csv": (
+        ["SLUG", "SEASON", "TEAM", "TYPE", "G", "MIN", "OWS", "DWS", "WS", "WS48",
+         "OBPM", "DBPM", "BPM", "VORP"],
+        400, "stats/seasons/index.html (Advanced), players/index.html (Advanced)",
+    ),
     "data/h2h-alltime.csv": (["TEAM"] + H2H_COLS, 30, "h2h/index.html"),
     "data/h2h-playoffs.csv": (["TEAM"] + H2H_COLS, 1, "h2h/index.html"),
     "data/h2h-owners.csv": (["OWNER"] + H2H_COLS, 1, "h2h/index.html"),

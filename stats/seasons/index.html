@@ -165,6 +165,12 @@
       { key: '_TRBP', label: 'TRB%',  cls: 'right pct', defaultDir: -1, help: AS.HELP.trb },
       { key: '_STLP', label: 'STL%',  cls: 'right pct group-start', defaultDir: -1, help: AS.HELP.stl },
       { key: '_BLKP', label: 'BLK%',  cls: 'right pct', defaultDir: -1, help: AS.HELP.blk },
+      { key: '_WS',   label: 'WS',    cls: 'right group-start', defaultDir: -1, help: AS.VALUE_HELP.ws },
+      { key: '_WS48', label: 'WS/48', cls: 'right', defaultDir: -1, help: AS.VALUE_HELP.ws48 },
+      { key: '_OBPM', label: 'OBPM',  cls: 'right', defaultDir: -1, help: AS.VALUE_HELP.obpm },
+      { key: '_DBPM', label: 'DBPM',  cls: 'right', defaultDir: -1, help: AS.VALUE_HELP.dbpm },
+      { key: '_BPM',  label: 'BPM',   cls: 'right', defaultDir: -1, help: AS.VALUE_HELP.bpm },
+      { key: '_VORP', label: 'VORP',  cls: 'right', defaultDir: -1, help: AS.VALUE_HELP.vorp },
       { key: '_GMSC', label: 'GMSC',  cls: 'right group-start', defaultDir: -1 },
     ];
 
@@ -243,6 +249,9 @@
     // basic card's made-shot floor): a rate over a few minutes is noise.
     const MIN_MPG = 15;
     const PLAYER_ADV_CARDS = [
+      { key: '_WS',   name: 'Win Shares',     abbr: 'WS', total: true },
+      { key: '_BPM',  name: 'Box Plus/Minus', abbr: 'BPM', mpg: true },
+      { key: '_VORP', name: 'Value over replacement', abbr: 'VORP', total: true },
       { key: '_USG',  name: 'Usage',          abbr: 'USG%', mpg: true },
       { key: '_TSP',  name: 'True shooting %', abbr: 'TS%', made: '_FGM', floor: 300, poFloor: 20, mpg: true },
       { key: '_ASTP', name: 'Assist %',       abbr: 'AST%', mpg: true },
@@ -334,10 +343,18 @@
       row._3PAR = adv.par3; row._FTR = adv.ftr; row._USG = adv.usg; row._ASTP = adv.ast;
       row._TOVP = adv.tov;  row._ORBP = adv.orb; row._DRBP = adv.drb; row._TRBP = adv.trb;
       row._STLP = adv.stl;  row._BLKP = adv.blk;
+      const vm = row._VMIN || 0;
+      row._WS48 = vm ? row._WS * 48 / vm : null;
+      row._BPM  = vm ? row._BPMM / vm : null;
+      row._OBPM = vm ? row._OBPMM / vm : null;
+      row._DBPM = vm ? (row._BPMM - row._OBPMM) / vm : null;
       return row;
     }
 
-    const SUMS = ['_G','_MIN','_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV','_PF','_OREB','_GMSC_TOT'];
+    // _VMIN, _BPMM and _OBPMM carry BPM as BPM x minutes, so a combined line
+    // is minutes-weighted; Win Shares and VORP simply add.
+    const SUMS = ['_G','_MIN','_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_AST','_STL','_BLK','_TOV','_PF','_OREB','_GMSC_TOT',
+                  '_OWS','_DWS','_WS','_VORP','_VMIN','_BPMM','_OBPMM'];
 
     function aggregateByPlayerSeason(rows) {
       const map = new Map();
@@ -420,7 +437,12 @@
           return row[key] == null ? '—' : row[key].toFixed(3).replace(/^0/, '');
         case '_PACE': case '_ORTG': case '_DRTG':
           return row[key] == null ? '—' : fmt1(row[key]);
-        case '_NRTG': return fmtSigned(row[key] ?? null);
+        case '_NRTG': case '_BPM': case '_OBPM': case '_DBPM':
+          return fmtSigned(row[key] ?? null);
+        case '_WS': case '_VORP':
+          return row._VMIN ? fmt1(row[key]) : '—';
+        case '_WS48':
+          return row[key] == null ? '—' : row[key].toFixed(3).replace(/^(-?)0/, '$1');
         case '_W':    return row._W ?? '—';
         case '_L':    return row._L ?? '—';
         case '_WP':   return row._WP == null ? '—' : row._WP.toFixed(3).replace(/^0/, '');
@@ -704,11 +726,17 @@
 
     // `ctx` and `teamAdv` are this type's rows of player-advanced.csv and
     // team-advanced.csv. Without them the advanced columns read "—".
-    function prepare(rows, records, ctx, teamAdv) {
+    function prepare(rows, records, ctx, teamAdv, values) {
       const context = new Map(ctx.map(c => [`${c.SLUG}|${c.SEASON}|${c.TEAM}`, AS.parseContext(c)]));
+      const value = new Map(values.map(v => [`${v.SLUG}|${v.SEASON}|${v.TEAM}`, v]));
       rows = rows.map(processRow).filter(r => r.SEASON && r._G > 0);
       rows.forEach(r => {
-        r._ctx = context.get(`${r.SLUG}|${r.SEASON}|${r.TEAM}`) || null;
+        const key = `${r.SLUG}|${r.SEASON}|${r.TEAM}`;
+        r._ctx = context.get(key) || null;
+        const v = value.get(key) || {};
+        const n = k => +v[k] || 0;
+        Object.assign(r, { _OWS: n('OWS'), _DWS: n('DWS'), _WS: n('WS'), _VORP: n('VORP'),
+                           _VMIN: n('MIN'), _BPMM: n('BPM') * n('MIN'), _OBPMM: n('OBPM') * n('MIN') });
         recomputeRates(r);
       });
       const maxG = {};
@@ -740,10 +768,11 @@
       // Advanced view only; without them its columns read "—".
       getCSV('/players/player-advanced.csv').catch(() => []),
       getCSV('/data/team-advanced.csv').catch(() => []),
-    ]).then(([reg, po, standings, brackets, ctx, teamAdv]) => {
+      getCSV('/players/player-value.csv').catch(() => []),
+    ]).then(([reg, po, standings, brackets, ctx, teamAdv, values]) => {
       const ofType = (list, t) => list.filter(r => r.TYPE === t);
-      data.reg = prepare(reg, standings, ofType(ctx, 'REG'), ofType(teamAdv, 'REG'));
-      data.po = prepare(po, playoffRecords(brackets), ofType(ctx, 'PLAYOFF'), ofType(teamAdv, 'PLAYOFF'));
+      data.reg = prepare(reg, standings, ofType(ctx, 'REG'), ofType(teamAdv, 'REG'), ofType(values, 'REG'));
+      data.po = prepare(po, playoffRecords(brackets), ofType(ctx, 'PLAYOFF'), ofType(teamAdv, 'PLAYOFF'), ofType(values, 'PLAYOFF'));
       markRookieSeasons(data.reg.rows, data.po.rows);
       SEASONS = Object.keys(data.reg.maxG).filter(s => /^\d\d-\d\d$/.test(s)).sort().reverse();
       $('f-season').innerHTML = SEASONS.map(s => `<option value="${s}">20${s.replace('-', '–')}</option>`).join('')

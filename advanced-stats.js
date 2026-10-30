@@ -71,5 +71,16 @@
     ftr:  'Free throw rate: free throw attempts per field goal attempt',
   };
 
-  global.AdvancedStats = { CONTEXT, parseContext, addContext, player, HELP };
+  // Win Shares, BPM and VORP come computed from /players/player-value.csv
+  // (nbn-api stats_build/player_value.py); only their tooltips live here.
+  const VALUE_HELP = {
+    ws:   'Win Shares: wins he produced, offense plus defense. A team\'s add up to about its wins (the points-per-win rate is fitted to NBN, where margins run wider than the NBA\'s)',
+    ws48: 'Win Shares per 48 minutes. League average is about .100',
+    obpm: 'Offensive Box Plus/Minus: points per 100 possessions he adds on offense over an average player, estimated from the box score',
+    dbpm: 'Defensive Box Plus/Minus: the same on defense (BPM minus OBPM). The box score sees little defense, so read it loosely',
+    bpm:  'Box Plus/Minus: points per 100 possessions he adds over an average player (0.0). A team\'s players add up to its net rating',
+    vorp: 'Value Over Replacement Player: BPM above replacement level (-2.0), scaled by his share of the team\'s minutes over a season',
+  };
+
+  global.AdvancedStats = { CONTEXT, parseContext, addContext, player, HELP, VALUE_HELP };
 })(typeof window !== 'undefined' ? window : globalThis);
