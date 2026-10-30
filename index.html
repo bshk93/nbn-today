@@ -423,7 +423,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -436,6 +436,7 @@
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
       :root #dash-movers    { grid-area: movers; }
+      :root #dash-leaders   { grid-area: leaders; }
       :root #dash-race      { grid-area: race; }
       :root #dash-rookies   { grid-area: rookies; }
       :root #dash-milestones { grid-area: milestones; }
