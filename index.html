@@ -978,6 +978,8 @@
       <!-- The newest stream VOD and the newest Box Scores video. Each hidden until one is up. -->
       <div class="dash-card" id="dash-stream-vod" hidden></div>
       <div class="dash-card" id="dash-box-vod" hidden></div>
+      <!-- This season's per-game leaders, as /stats/seasons ranks them. In-season only. -->
+      <div class="dash-card" id="dash-leaders" hidden></div>
       <!-- The award race's leaders (award-race.js). In-season only. -->
       <div class="dash-card" id="dash-race" hidden></div>
       <!-- This season's draft class by the ROTY formula (award-race.js). In-season only. -->
@@ -2226,6 +2228,46 @@
         + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></a></div></div>`
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
+    }).catch(() => {});
+
+    // ── League leaders ────────────────────────────────────────────────────
+    //
+    // The season's leader in each counting stat, by the rule /stats/seasons
+    // uses: per game needs half the season's games (the most anyone has
+    // played), threes made is a plain total. A traded player's stints are
+    // summed, under the team of his latest one.
+    const LEADER_STATS = [
+      ['PTS', 'PTS', '_PPG'], ['REB', 'REB', '_RPG'], ['AST', 'AST', '_APG'],
+      ['STL', 'STL', '_SPG'], ['BLK', 'BLK', '_BPG'], ['3PM', '3PM', '_3PM', true],
+    ];
+    afterBandOne(() => Promise.all([liveSeasonPromise, Milestones.seasonRows()])).then(([season, rows]) => {
+      if (!season) return;
+      const by = new Map();
+      rows.filter(r => r.SEASON === season).forEach(r => {
+        const k = r.SLUG || r.PLAYER;
+        const p = by.get(k) || { slug: r.SLUG, name: r.PLAYER, team: r.TEAM, last: '', G: 0, PTS: 0, REB: 0, AST: 0, STL: 0, BLK: 0, '3PM': 0 };
+        ['G', 'PTS', 'REB', 'AST', 'STL', 'BLK', '3PM'].forEach(f => { p[f] += +r[f] || 0; });
+        if ((r.LAST_DATE || '') >= p.last) { p.last = r.LAST_DATE || ''; p.team = r.TEAM; }
+        by.set(k, p);
+      });
+      const players = [...by.values()];
+      const minG = Math.ceil(Math.max(0, ...players.map(p => p.G)) / 2);
+      const html = LEADER_STATS.map(([label, f, sort, total]) => {
+        const val = p => (total ? p[f] : p[f] / p.G);
+        const top = players.filter(p => (total ? p[f] > 0 : p.G >= minG && p.G > 0))
+          .sort((a, b) => val(b) - val(a))[0];
+        if (!top) return '';
+        const num = total ? String(top[f]) : val(top).toFixed(1);
+        return `<a class="dash-race-row" href="/stats/seasons?sort=${sort}">`
+          + `<span class="dash-race-award">${esc(label)}</span>`
+          + `<img src="/logos/sm/logo-${esc(top.team.toLowerCase())}.webp" alt="" title="${esc(top.team)}">`
+          + `<span class="dash-race-name">${esc(nbnPlayerName(top.name))}</span>`
+          + `<span class="dash-race-num">${esc(num)}</span></a>`;
+      }).join('');
+      if (!html) return;
+      $('dash-leaders').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/stats/seasons">League Leaders</a></div></div>' + html;
+      $('dash-leaders').hidden = false;
     }).catch(() => {});
 
     // ── Award race ────────────────────────────────────────────────────────
