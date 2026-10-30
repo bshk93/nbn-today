@@ -518,6 +518,9 @@
     .dash-stand-line + .dash-stand-row { border-top: none; }
     .dash-stand-mark { margin-left: 0.3rem; font-size: var(--text-xs); font-weight: 600; color: var(--success); }
     .dash-race-lead { display: flex; flex-direction: column; gap: 0.1rem; margin-bottom: 0.35rem; }
+    .dash-leaders-stats { display: flex; width: 100%; margin: 0.15rem 0 0.35rem; }
+    .dash-leaders-stats > button { flex: 1; padding: var(--space-1) 0; font-size: var(--text-xs); }
+    .dash-leaders-rank { width: 1rem; flex-shrink: 0; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .dash-race-award { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); width: 2.8rem; flex-shrink: 0; }
     .dash-race-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0; font-size: var(--text-sm); color: var(--text-secondary); text-decoration: none; }
     .dash-race-row + .dash-race-row { border-top: 1px solid var(--border-subtle); }
@@ -2233,9 +2236,9 @@
 
     // ── League leaders ────────────────────────────────────────────────────
     //
-    // The season's leader in each counting stat, by the rule /stats/seasons
-    // uses: per game needs half the season's games (the most anyone has
-    // played), threes made is a plain total. A traded player's stints are
+    // The season's top three in each counting stat, one stat at a time. Who
+    // qualifies is /stats/seasons's rule: per game needs half the season's
+    // games (the most anyone has played), threes made is a plain total. A traded player's stints are
     // summed, under the team of his latest one.
     const LEADER_STATS = [
       ['PTS', 'PTS', '_PPG'], ['REB', 'REB', '_RPG'], ['AST', 'AST', '_APG'],
@@ -2253,21 +2256,35 @@
       });
       const players = [...by.values()];
       const minG = Math.ceil(Math.max(0, ...players.map(p => p.G)) / 2);
-      const html = LEADER_STATS.map(([label, f, sort, total]) => {
+      const top3 = ([, f, , total]) => {
         const val = p => (total ? p[f] : p[f] / p.G);
-        const top = players.filter(p => (total ? p[f] > 0 : p.G >= minG && p.G > 0))
-          .sort((a, b) => val(b) - val(a))[0];
-        if (!top) return '';
-        const num = total ? String(top[f]) : val(top).toFixed(1);
-        return `<a class="dash-race-row" href="/stats/seasons?sort=${sort}">`
-          + `<span class="dash-race-award">${esc(label)}</span>`
-          + `<img src="/logos/sm/logo-${esc(top.team.toLowerCase())}.webp" alt="" title="${esc(top.team)}">`
-          + `<span class="dash-race-name">${esc(nbnPlayerName(top.name))}</span>`
-          + `<span class="dash-race-num">${esc(num)}</span></a>`;
-      }).join('');
-      if (!html) return;
-      $('dash-leaders').innerHTML =
-        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/stats/seasons">League Leaders</a></div></div>' + html;
+        return players.filter(p => (total ? p[f] > 0 : p.G >= minG && p.G > 0))
+          .sort((a, b) => val(b) - val(a)).slice(0, 3)
+          .map(p => ({ p, num: total ? String(p[f]) : val(p).toFixed(1) }));
+      };
+      const stats = LEADER_STATS.filter(st => top3(st).length);
+      if (!stats.length) return;
+      const card = $('dash-leaders');
+      const show = st => {
+        card.querySelector('.dash-leaders-list').innerHTML = top3(st).map(({ p, num }, i) =>
+          `<a class="dash-race-row" href="/stats/seasons?sort=${st[2]}">`
+          + `<span class="dash-leaders-rank">${i + 1}</span>`
+          + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
+          + `<span class="dash-race-name">${esc(nbnPlayerName(p.name))}</span>`
+          + `<span class="dash-race-num">${esc(num)}</span></a>`).join('');
+        card.querySelectorAll('.dash-leaders-stats button').forEach(b =>
+          b.setAttribute('aria-pressed', String(b.dataset.stat === st[0])));
+      };
+      card.innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/stats/seasons">League Leaders</a></div></div>'
+        + '<div class="ui-segmented dash-leaders-stats" role="group" aria-label="Stat">'
+        + stats.map(st => `<button type="button" data-stat="${esc(st[0])}">${esc(st[0])}</button>`).join('')
+        + '</div><div class="dash-leaders-list"></div>';
+      card.querySelector('.dash-leaders-stats').addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (b) show(stats.find(st => st[0] === b.dataset.stat));
+      });
+      show(stats[0]);
       $('dash-leaders').hidden = false;
     }).catch(() => {});
 
