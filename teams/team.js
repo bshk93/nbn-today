@@ -1090,7 +1090,6 @@ document.body.innerHTML = `
       <button class="tab ui-tab" data-tab="franchise">Franchise</button>
       <button class="tab ui-tab" data-tab="draft">Draft History</button>
       <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
-      <button class="tab ui-tab" data-tab="history">Historical Rosters</button>
       <button class="tab ui-tab" data-tab="irl">IRL</button>
     </div>
     <div class="tab-panel" id="tab-overview">
@@ -1200,6 +1199,11 @@ document.body.innerHTML = `
         <div class="timeline" id="timeline-wrap"></div>
         <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
       </section>
+      <section>
+        <h2 class="section-title">Historical Rosters</h2>
+        <div class="hist-controls" id="hist-controls"></div>
+        <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
+      </section>
       <section id="rivals-section" style="display:none">
         <h2 class="section-title">Rivalries</h2>
         <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
@@ -1238,13 +1242,6 @@ document.body.innerHTML = `
         <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
       </section>
     </div>
-    <div class="tab-panel hidden" id="tab-history">
-      <section>
-        <h2 class="section-title">Historical Rosters</h2>
-        <div class="hist-controls" id="hist-controls"></div>
-        <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
-      </section>
-    </div>
     <div class="tab-panel hidden" id="tab-irl"></div>
   </div>
 `;
@@ -1272,6 +1269,13 @@ function showTab(btn) {
   if (btn.dataset.tab === 'irl') mountIrlFeed();
   if (btn.dataset.tab === 'schedule') mountSchedule();
 }
+// Historical Rosters was its own tab (#history) before it moved into
+// Franchise, so an old link still lands on it.
+const HASH_ALIASES = { history: 'franchise' };
+function tabFromHash() {
+  const h = location.hash.slice(1) || 'overview';
+  return document.querySelector(`.tab[data-tab="${CSS.escape(HASH_ALIASES[h] || h)}"]:not([hidden])`);
+}
 // A tab switch is a history entry, so Back returns to the last tab instead of
 // leaving the page.
 document.querySelectorAll('.tab').forEach(btn => {
@@ -1282,8 +1286,7 @@ document.querySelectorAll('.tab').forEach(btn => {
   });
 });
 window.addEventListener('popstate', () => {
-  const tab = document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1) || 'overview')}"]:not([hidden])`)
-    || document.querySelector('.tab[data-tab="overview"]');
+  const tab = tabFromHash() || document.querySelector('.tab[data-tab="overview"]');
   if (tab) showTab(tab);
 });
 
@@ -1437,7 +1440,7 @@ async function renderSchedule(allGames, season) {
 // Open the tab named in the hash. After mountIrlFeed's state is declared, so
 // #irl doesn't hit it before initialisation.
 {
-  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]:not([hidden])`);
+  const initialTab = location.hash && tabFromHash();
   if (initialTab) showTab(initialTab);
 }
 
@@ -8800,7 +8803,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     }
   }
 
-  // Historical Rosters tab
+  // Historical Rosters (Franchise tab, under Season History)
   {
     const histWrap     = document.getElementById('hist-roster-wrap');
     const histControls = document.getElementById('hist-controls');
