@@ -72,6 +72,21 @@
 
     .empty-state { text-align: center; color: var(--text-muted); padding: 2rem; }
 
+    /* Filter bar */
+    .mem-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+    .mem-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
+    .mem-filters .ui-input { height: 2rem; font-size: var(--text-sm); width: 10rem; }
+    .mem-spacer { flex: 1; }
+    .mem-count { font-size: var(--text-xs); color: var(--text-muted); }
+    .mem-clear { font-size: var(--text-xs); }
+    .mem-clear[hidden] { display: none; }
+    .role-badges button.ui-chip { padding: 0.1rem 0.35rem; }
+    thead th.no-sort { cursor: default; }
+    @media (max-width: 480px) {
+      .mem-filters .ui-input { width: 100%; }
+      .mem-spacer { display: none; }
+    }
+
     .cosm-swatches { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
     .cosm-swatch {
       width: 1.15rem; height: 1.15rem; border-radius: 50%; cursor: pointer;
@@ -308,16 +323,36 @@
     <button class="btn-create" id="create-btn">+ Create Member</button>
   </div>
 
+  <div class="mem-filters">
+    <input class="ui-input" id="f-search" type="search" placeholder="Find a member" aria-label="Find a member">
+    <select class="ui-select" id="f-role" multiple data-placeholder="All roles" data-noun="roles" aria-label="Roles"></select>
+    <select class="ui-select" id="f-team" aria-label="Team"></select>
+    <select class="ui-select" id="f-pos" aria-label="Position">
+      <option value="">All positions</option>
+      <option value="owner">Owners</option>
+      <option value="gm">GMs</option>
+      <option value="coach">Coaches</option>
+    </select>
+    <div class="ui-segmented" role="group" id="f-status">
+      <button data-v="">Everyone</button>
+      <button data-v="active">Active</button>
+      <button data-v="former">Former</button>
+    </div>
+    <span class="mem-spacer"></span>
+    <span class="mem-count" id="f-count"></span>
+    <button class="ui-btn ui-btn--ghost ui-btn--sm mem-clear" id="f-clear" hidden>Clear</button>
+  </div>
+
   <div class="ui-table-wrap">
     <table class="ui-table">
       <thead>
         <tr>
-          <th>Member</th>
-          <th>Team</th>
-          <th>Position</th>
-          <th>Achievements</th>
-          <th>Roles</th>
-          <th id="actions-th" style="display:none"></th>
+          <th data-sort="name">Member</th>
+          <th data-sort="team">Team</th>
+          <th data-sort="pos">Position</th>
+          <th data-sort="ach">Achievements</th>
+          <th data-sort="roles">Roles</th>
+          <th id="actions-th" class="no-sort" style="display:none"></th>
         </tr>
       </thead>
       <tbody id="members-tbody">
@@ -579,9 +614,18 @@ function roleChipClass(r) {
   return 'ui-chip ui-chip--sm';
 }
 
+// Each chip is a filter toggle: clicking one shows everyone else who has it.
 function roleBadgesHtml(roles) {
   if (!roles.length) return '<span style="color:var(--text-dim)">—</span>';
-  return roles.map(r => `<span class="${roleChipClass(r)}"${TEAM_ROLES.has(r) ? ` data-team="${r.toUpperCase()}"` : ''}>${r}</span>`).join('');
+  return sortRoles(roles).map(r => `<button type="button" class="${roleChipClass(r)}" data-role="${r}"`
+    + `${TEAM_ROLES.has(r) ? ` data-team="${r.toUpperCase()}"` : ''}`
+    + ` aria-pressed="${filters.roles.includes(r)}" title="Show everyone with ${r}">${r}</button>`).join('');
+}
+
+// Named roles in NAMED_ROLES order, then team roles alphabetically.
+function sortRoles(roles) {
+  const rank = r => { const i = NAMED_ROLES.indexOf(r); return i >= 0 ? i : NAMED_ROLES.length; };
+  return [...roles].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 }
 
 function populateSel(id, opts, blank) {
@@ -673,29 +717,189 @@ function staffDot(label, members, pos) {
   return `<span class="ts-dot ts-dot-${pos}${filled ? '' : ' ts-dot-empty'}" title="${tip}">${label}</span>`;
 }
 
+// ── Filters and sorting ───────────────────────────────────────────────────────
+// State lives in the query string (?role=fac,trc&team=BOS&pos=owner&status=active
+// &q=&sort=team&dir=asc) so a filtered view can be linked. Changes only
+// replaceState: filtering is not navigation.
+
+const POS_ORDER = { owner: 0, gm: 1, coach: 2 };
+const SORT_KEYS = ['name', 'team', 'pos', 'ach', 'roles'];
+const DESC_FIRST = new Set(['ach', 'roles']);   // bigger is the interesting end
+
+const filters = (() => {
+  const q = new URLSearchParams(location.search);
+  const sort = SORT_KEYS.includes(q.get('sort')) ? q.get('sort') : 'name';
+  return {
+    q: q.get('q') || '',
+    roles: (q.get('role') || '').split(',').map(r => r.trim().toLowerCase()).filter(Boolean),
+    team: (q.get('team') || '').toUpperCase(),
+    pos: POS_ORDER[q.get('pos')] !== undefined ? q.get('pos') : '',
+    status: ['active', 'former'].includes(q.get('status')) ? q.get('status') : '',
+    sort,
+    dir: q.get('dir') === 'asc' || q.get('dir') === 'desc' ? q.get('dir') : (DESC_FIRST.has(sort) ? 'desc' : 'asc'),
+  };
+})();
+
+function writeFilterUrl() {
+  const q = new URLSearchParams();
+  if (filters.q) q.set('q', filters.q);
+  if (filters.roles.length) q.set('role', filters.roles.join(','));
+  if (filters.team) q.set('team', filters.team);
+  if (filters.pos) q.set('pos', filters.pos);
+  if (filters.status) q.set('status', filters.status);
+  if (filters.sort !== 'name') q.set('sort', filters.sort);
+  if (filters.dir !== (DESC_FIRST.has(filters.sort) ? 'desc' : 'asc')) q.set('dir', filters.dir);
+  const qs = q.toString();
+  history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+}
+
+// A former member is filed under the last team they were with.
+function memberTeam(m) {
+  const t = activeTenure(m.tenures) || lastTenure(m.tenures);
+  return t ? t.team : '';
+}
+
+function matchesFilters(m) {
+  const cur = activeTenure(m.tenures);
+  if (filters.status === 'active' && !cur) return false;
+  if (filters.status === 'former' && cur) return false;
+  if (filters.q && !m.name.toLowerCase().includes(filters.q.toLowerCase())) return false;
+  if (filters.roles.length && !filters.roles.some(r => (m.roles || []).includes(r))) return false;
+  if (filters.team && memberTeam(m) !== filters.team) return false;
+  if (filters.pos && !(cur && cur.position === filters.pos)) return false;
+  return true;
+}
+
+// Active members always come before former ones; the chosen column orders
+// within each group, and name breaks ties.
+function compareMembers(a, b) {
+  const curA = activeTenure(a.tenures), curB = activeTenure(b.tenures);
+  if (!!curA !== !!curB) return curA ? -1 : 1;
+  const dir = filters.dir === 'desc' ? -1 : 1;
+  let d = 0;
+  switch (filters.sort) {
+    case 'team': {
+      const ta = memberTeam(a), tb = memberTeam(b);
+      d = (!ta - !tb) || ta.localeCompare(tb) * dir
+        || ((POS_ORDER[curA?.position] ?? 9) - (POS_ORDER[curB?.position] ?? 9));
+      return d || a.name.localeCompare(b.name);
+    }
+    case 'pos':
+      d = ((POS_ORDER[curA?.position] ?? 9) - (POS_ORDER[curB?.position] ?? 9)) * dir
+        || memberTeam(a).localeCompare(memberTeam(b));
+      break;
+    case 'ach':
+      d = ((achCount[a.name] ?? -1) - (achCount[b.name] ?? -1)) * dir;
+      break;
+    case 'roles':
+      d = ((a.roles || []).length - (b.roles || []).length) * dir;
+      break;
+    default:
+      return a.name.localeCompare(b.name) * dir;
+  }
+  return d || a.name.localeCompare(b.name);
+}
+
+// The role and team menus list only what someone actually holds, with a count,
+// so the menu itself answers "who has this".
+function renderFilterControls() {
+  const roleSel = document.getElementById('f-role');
+  const counts = {};
+  for (const m of allMembers) for (const r of m.roles || []) counts[r] = (counts[r] || 0) + 1;
+  for (const r of filters.roles) counts[r] = counts[r] || 0;
+  const roles = sortRoles(Object.keys(counts));
+  const roleKey = roles.map(r => r + counts[r]).join('|');
+  if (roleSel.dataset.key !== roleKey) {
+    roleSel.dataset.key = roleKey;
+    roleSel.innerHTML = roles.map(r => `<option value="${r}">${r} (${counts[r]})</option>`).join('');
+  }
+  for (const o of roleSel.options) o.selected = filters.roles.includes(o.value);
+  if (window.UiSelect) UiSelect.refresh(roleSel);
+
+  const teamSel = document.getElementById('f-team');
+  if (!teamSel.options.length) {
+    teamSel.innerHTML = '<option value="">All teams</option>'
+      + TEAM_ABBRS.map(t => `<option value="${t}">${t}</option>`).join('');
+  }
+  teamSel.value = filters.team;
+  document.getElementById('f-pos').value = filters.pos;
+  if (window.UiSelect) { UiSelect.refresh(teamSel); UiSelect.refresh(document.getElementById('f-pos')); }
+
+  document.querySelectorAll('#f-status button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.v === filters.status)));
+  const search = document.getElementById('f-search');
+  if (search.value !== filters.q) search.value = filters.q;
+
+  document.getElementById('f-clear').hidden =
+    !(filters.q || filters.roles.length || filters.team || filters.pos || filters.status);
+
+  document.querySelectorAll('thead th[data-sort]').forEach(th => {
+    const on = th.dataset.sort === filters.sort;
+    th.dataset.active = String(on);
+    th.setAttribute('aria-sort', on ? (filters.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+    let arrow = th.querySelector('.sort-arrow');
+    if (!arrow) { arrow = document.createElement('span'); arrow.className = 'sort-arrow'; th.appendChild(arrow); }
+    arrow.textContent = on ? (filters.dir === 'asc' ? '↑' : '↓') : '';
+  });
+}
+
+function applyFilters() { writeFilterUrl(); renderTable(); }
+
+document.getElementById('f-search').addEventListener('input', e => { filters.q = e.target.value.trim(); applyFilters(); });
+document.getElementById('f-role').addEventListener('change', e => {
+  filters.roles = [...e.target.selectedOptions].map(o => o.value); applyFilters();
+});
+document.getElementById('f-team').addEventListener('change', e => { filters.team = e.target.value; applyFilters(); });
+document.getElementById('f-pos').addEventListener('change', e => { filters.pos = e.target.value; applyFilters(); });
+document.getElementById('f-status').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  filters.status = b.dataset.v; applyFilters();
+});
+document.getElementById('f-clear').addEventListener('click', () => {
+  Object.assign(filters, { q: '', roles: [], team: '', pos: '', status: '' }); applyFilters();
+});
+document.querySelector('thead').addEventListener('click', e => {
+  const th = e.target.closest('th[data-sort]'); if (!th) return;
+  const key = th.dataset.sort;
+  if (filters.sort === key) filters.dir = filters.dir === 'asc' ? 'desc' : 'asc';
+  else { filters.sort = key; filters.dir = DESC_FIRST.has(key) ? 'desc' : 'asc'; }
+  applyFilters();
+});
+document.getElementById('members-tbody').addEventListener('click', e => {
+  const chip = e.target.closest('button[data-role]'); if (!chip) return;
+  const r = chip.dataset.role;
+  filters.roles = filters.roles.includes(r) ? filters.roles.filter(x => x !== r) : [...filters.roles, r];
+  applyFilters();
+});
+
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 function renderTable() {
   renderSummary();
+  renderFilterControls();
   const tbody = document.getElementById('members-tbody');
   if (!allMembers.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No members found.</td></tr>';
+    document.getElementById('f-count').textContent = '';
     return;
   }
-  const sorted = [...allMembers].sort((a, b) => {
-    const aA = !!activeTenure(a.tenures), bA = !!activeTenure(b.tenures);
-    if (aA !== bA) return bA ? 1 : -1;
-    return a.name.localeCompare(b.name);
-  });
+  const shown = allMembers.filter(matchesFilters);
+  const sorted = shown.sort(compareMembers);
+  document.getElementById('f-count').textContent = shown.length === allMembers.length
+    ? `${shown.length} members` : `${shown.length} of ${allMembers.length} members`;
 
   const hasActions = isAdmin || isBod;
   tbody.innerHTML = '';
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No members match these filters.</td></tr>';
+    return;
+  }
 
   sorted.forEach(m => {
     const cur = activeTenure(m.tenures);
     const last = lastTenure(m.tenures);
     const tr = document.createElement('tr');
-    if (!cur) tr.classList.add('former-row');
+    if (!cur && filters.status !== 'former') tr.classList.add('former-row');
 
     // Name
     const tdName = tr.insertCell();
@@ -1177,7 +1381,7 @@ document.getElementById('tenure-save').addEventListener('click', async () => {
     const endpoint = isAdmin ? '/api/members' : '/api/members/public';
     const opts = isAdmin ? { headers: { Authorization: `Bearer ${currentToken}` } } : {};
     const r2 = await fetch(endpoint, opts);
-    if (r2.ok) { allMembers = await r2.ok ? await r2.json() : allMembers; renderTable(); }
+    if (r2.ok) { allMembers = await r2.json(); renderTable(); }
     document.getElementById('tenure-backdrop').classList.remove('open');
   } catch (err) {
     const el = document.getElementById('tenure-error');
