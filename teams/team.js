@@ -8208,10 +8208,15 @@ function buildTeamRadar(abbr, allSeasons, standingsRows) {
     const used = (+r.FGA || 0) + 0.44 * (+r.FTA || 0) + (+r.TOV || 0);
     if (!t.top || used > t.top.used) t.top = { used, player: r.PLAYER };
   });
-  // 240 player-minutes a game. Ten games before a season reads as a style.
+  // 240 player-minutes a game. Ten games before a season reads as a style;
+  // a season still short of 20 asks for half of what's been played, so the
+  // current season shows from its first week.
   const games = t => t.MIN / 240;
   const plays = t => t.FGA + 0.44 * t.FTA + t.TOV;
-  const qualifies = t => games(t) >= 10;
+  const FULL_G = 10;
+  const gFloor = season => Math.min(FULL_G,
+    Math.max(1, Math.max(...Object.values(teams[season]).map(games)) / 2));
+  const qualifies = (t, season) => games(t) >= gFloor(season);
 
   const DIM_DEFS = [
     { label: 'PACE',     angle: 90,  get: t => plays(t) / games(t),            fmt: v => `${v.toFixed(1)} plays a game` },
@@ -8260,15 +8265,15 @@ function buildTeamRadar(abbr, allSeasons, standingsRows) {
 
   function buildSvg(season) {
     const me = teams[season]?.[abbr];
-    if (!me || !qualifies(me)) return null;
-    const peers = Object.values(teams[season]).filter(qualifies);
+    if (!me || !qualifies(me, season)) return null;
+    const peers = Object.values(teams[season]).filter(t => qualifies(t, season));
     const dims = DIM_DEFS.map(d => {
       const v = d.get(me);
       return { label: d.label, angle: d.angle, tip: d.fmt(v, me), pct: Radar.percentile(v, peers.map(d.get)) };
     });
     const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
     const tier = tierFor(diffRank[season]?.[abbr]);
-    const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season` });
+    const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season${gFloor(season) < FULL_G ? ` · ${Math.round(games(me))} games so far` : ''}` });
 
     // The players who made that season's shape, beside it. Ranked by total
     // Game Score, not per game, so a ten-game cameo doesn't top the list.
@@ -8309,7 +8314,7 @@ function buildTeamRadar(abbr, allSeasons, standingsRows) {
     return box;
   }
 
-  const seasons = Object.keys(teams).filter(s => teams[s][abbr] && qualifies(teams[s][abbr])).sort().reverse();
+  const seasons = Object.keys(teams).filter(s => teams[s][abbr] && qualifies(teams[s][abbr], s)).sort().reverse();
   return Radar.withSeasons(seasons, buildSvg);
 }
 

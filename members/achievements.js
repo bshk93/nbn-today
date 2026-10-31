@@ -577,7 +577,7 @@
     // (proxied as April 15 of the closing year). Avoids crediting members who departed
     // before the playoffs began, or who joined after the playoffs ended.
     const memberPlayoffSeasons = memberSeasons.filter(s =>
-      s.PLAYOFF_RESULT !== 'Missed' &&
+      s.PLAYOFF_RESULT && s.PLAYOFF_RESULT !== 'Missed' &&
       memberAtTeamOnDate(tenures, s.TEAM, playoffProxyDate(s.SEASON)));
 
     const hadBestOffRtg = memberSeasons.some(ms => {

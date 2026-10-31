@@ -279,9 +279,11 @@
         // Awards reveal config.
         const awardsConfig = configRes.ok ? await configRes.json() : {};
 
-        // Build live rows for any season beyond the cutoff that has bracket data.
+        // Build live rows for any season beyond the cutoff: one with bracket
+        // data, or the season in progress, which has stat leaders but no
+        // playoffs yet.
         const liveSeasons = [...new Set(
-          allBrackets.filter(r => r.SEASON > LEGACY_CUTOFF).map(r => r.SEASON)
+          [...allBrackets, ...allCsvRows].filter(r => r.SEASON > LEGACY_CUTOFF).map(r => r.SEASON)
         )].sort();
 
         const liveRows = [];

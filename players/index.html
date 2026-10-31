@@ -2258,8 +2258,14 @@
     }
     function ratio(r, num, den) { return +r[den] > 0 ? +r[num] / +r[den] : 0; }
     // Per-36 blows up tiny samples, so both the player and the peers they are
-    // ranked against need 20 games at 10+ minutes a game.
-    function qualifies(r) { return +r.G >= 20 && +r.MIN / Math.max(1, +r.G) >= 10; }
+    // ranked against need 20 games at 10+ minutes a game. A season still short
+    // of 40 games asks for half of what's been played, so the current season
+    // shows from its first weeks instead of vanishing until December.
+    const FULL_G = 20;
+    const seasonMaxG = {};
+    allRows.forEach(r => { seasonMaxG[r.SEASON] = Math.max(seasonMaxG[r.SEASON] || 0, +r.G || 0); });
+    const gFloor = season => Math.min(FULL_G, Math.max(1, Math.ceil((seasonMaxG[season] || 0) / 2)));
+    function qualifies(r, floor = gFloor(r.SEASON)) { return +r.G >= floor && +r.MIN / Math.max(1, +r.G) >= 10; }
 
     // Style axes, per 36 minutes: how a player plays, not how much. Usage says
     // how much of the offense they run, 3P and FT rate where their shots come
@@ -2321,7 +2327,7 @@
       const { name, runnerUp } = Radar.nearest(dims.map(d => d.pct), ARCHETYPES);
       const prodPct = Radar.percentile(gsPerGame(agg), peers.map(gsPerGame));
       const tier = tierFor(prodPct);
-      const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season · per 36 min` });
+      const svg = Radar.draw({ dims, title: name, tier, runnerUp, footer: `${season} season · per 36 min${gFloor(season) < FULL_G ? ` · ${agg.G} games so far` : ''}` });
 
       // The three closest seasons by three other players, any year: the same eight
       // style percentiles plus how productive they were (Game Score per game,
@@ -2376,8 +2382,10 @@
           x._teams.push(r.TEAM);
         }
       });
+      // Matches come from established seasons only: a few weeks of the
+      // current one is too thin to be someone else's comparison.
       bySeason.forEach((m, season) => {
-        const peers = [...m.values()].filter(qualifies);
+        const peers = [...m.values()].filter(r => qualifies(r, FULL_G));
         const cols = DIM_DEFS.map(d => peers.map(d.get).sort((a, b) => a - b));
         const gs = peers.map(gsPerGame).sort((a, b) => a - b);
         // Share of the season strictly below, by binary search on the sorted column.
