@@ -284,6 +284,8 @@
     .mine-warn b { color: var(--text-primary); }
     .mine-warn ul { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     .mine-warn li { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .req-day { display: inline-flex; gap: 0.3rem; flex-wrap: wrap; }
+    .req-day-none { font-size: var(--text-xs); color: var(--text-muted); }
     .stream-req { font-size: var(--text-xs); color: var(--gold, var(--gold)); white-space: nowrap; margin-right: 0.3rem; }
     .mine-day {
       border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.8rem; overflow: hidden;
@@ -1078,12 +1080,35 @@
         const li = document.createElement('li');
         li.appendChild(span('', `${fmtDayHdr(g.date)} · ${g.away_team} @ ${g.home_team} · ${fmtTime(g.time_et)} `
           + `— ${g.stream_request} wants to buy it`));
+        li.appendChild(dayStreamers(g));
         li.appendChild(requestButtons(g));
         ul.appendChild(li);
       });
       card.appendChild(ul);
       box.appendChild(card);
       return reqs.length;
+    }
+
+    // Who has claimed games on the requested game's date, so whoever answers
+    // can see whether that day already has a streamer lined up.
+    function dayStreamers(g) {
+      const wrap = span('req-day');
+      const counts = new Map();
+      games.filter(x => x.date === g.date && x.streamer)
+        .forEach(x => counts.set(x.streamer, (counts.get(x.streamer) || 0) + 1));
+      if (!counts.size) {
+        wrap.appendChild(span('req-day-none', 'No streamer that day yet'));
+        return wrap;
+      }
+      [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).forEach(([name, n]) => {
+        const chip = span('streamer-chip' + (name === me.name ? ' mine' : ''));
+        chip.dataset.icon = 'tv';
+        const label = g.streamer === name ? `${name} · this game` : name;
+        chip.appendChild(document.createTextNode(n > 1 ? `${label} · ${n} games` : label));
+        chip.title = `${name} has claimed ${n} game${n > 1 ? 's' : ''} on ${fmtDayHdr(g.date)}`;
+        wrap.appendChild(chip);
+      });
+      return wrap;
     }
 
     function requestButtons(g) {
