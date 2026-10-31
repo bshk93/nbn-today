@@ -463,7 +463,9 @@
         // Today is the real date (league time), not the day after the last box
         // score: that froze "today" at the Finals all offseason, and listed
         // the draft and July vesting dates as still to come in October.
-        leagueToday = nbnToday();
+        // The game day: tonight's games stay "upcoming" while the stream
+        // runs past midnight.
+        leagueToday = await nbnGameDay();
         const [y, m] = leagueToday.split('-').map(Number);
         viewYear    = y;
         viewMonth   = m - 1;

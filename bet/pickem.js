@@ -125,11 +125,16 @@
     return gameDays;
   }
 
-  /** The day to open on: ?date=, else today, else the next game day. */
+  // The day no ?date= means: the game day, so a stream running past midnight
+  // keeps the page on that night's games (nbnGameDay in /league-time.js).
+  let gameDay = nbnToday();
+
+  /** The day to open on: ?date=, else the game day, else the next game day. */
   async function defaultDate() {
+    gameDay = await nbnGameDay();
     const want = new URLSearchParams(location.search).get('date');
     if (want) return want;
-    const today = nbnToday();
+    const today = gameDay;
     const days = await loadGameDays();
     return days.includes(today) || !days.length ? today : (days.find(d => d > today) || today);
   }
@@ -191,7 +196,7 @@
   function dateToUrl(d) {
     const q = new URLSearchParams(location.search);
     if (view === 'day') q.delete('view');
-    if (d === nbnToday()) q.delete('date'); else q.set('date', d);
+    if (d === gameDay) q.delete('date'); else q.set('date', d);
     const url = location.pathname + (q.toString() ? `?${q}` : '') + location.hash;
     if (url !== location.pathname + location.search + location.hash) history.pushState(null, '', url);
   }

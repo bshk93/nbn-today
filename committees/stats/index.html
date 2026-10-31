@@ -316,9 +316,11 @@
   const jget = (url, opts) =>
     fetch(url, opts).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
 
-  // Today in league time (Eastern), as a date string compared as a string. Not
-  // toISOString(): that is UTC, which is already tomorrow after 8pm ET.
-  const today = nbnToday();
+  // The game day in league time (Eastern), as a date string compared as a
+  // string. Not toISOString(): that is UTC, which is already tomorrow after 8pm
+  // ET. Set from nbnGameDay() before the worklist draws, so a night whose
+  // stream runs past midnight isn't owed until it ends.
+  let today = nbnToday();
 
   const daysAgo = d => Math.floor((Date.parse(today) - Date.parse(d)) / 86400000);
 
@@ -917,6 +919,7 @@
         jget(`/api/boxscore/screenshots?season=${season}`).catch(() => []),
         jget('/api/streaming-days').catch(() => ({})),
         jget('/api/injuries/screenshots').catch(() => []),
+        nbnGameDay().then(d => { today = d; }),
       ]);
       games.forEach(g => W.entered.set(gameKey(g.date, g.home_team, g.away_team), g));
       shots.forEach(it => W.shots.set(gameKey(it.date, it.home_team, it.away_team), it));

@@ -1121,7 +1121,10 @@
       + (recs && recs[abbr] ? `<span class="dash-game-rec">${esc(recs[abbr])}</span>` : '')
       + `</a>`;
 
-    const today = nbnToday();
+    // The game day, not the ET date: past midnight, while the night's stream
+    // runs, "Tonight" is still that night. Set before anything reads the
+    // schedule (schedulePromise waits for it); the ET date until then.
+    let today = nbnToday();
     const previewHref = g => `/preview/?away=${encodeURIComponent(g.away_team)}`
       + `&home=${encodeURIComponent(g.home_team)}&date=${encodeURIComponent(g.date)}`;
     const dayBefore = (d, n = 1) => new Date(at(d) - n * 86400000).toISOString().slice(0, 10);
@@ -1155,7 +1158,10 @@
     // the page worth loading when you have no team.
 
     // One schedule fetch serves both this band and band 1's next-games list.
-    const schedulePromise = jget('/api/schedule').catch(() => null);
+    const schedulePromise = Promise.all([
+      jget('/api/schedule').catch(() => null),
+      nbnGameDay().then(d => { today = d; }),
+    ]).then(([sched]) => sched);
     // Per-date status; the card reads only each night's Box Scores video from it.
     const streamingDaysPromise = jget('/api/streaming-days').catch(() => ({}));
 

@@ -28,6 +28,24 @@ function nbnToday() {
   return _nbnDateFmt.format(new Date());
 }
 
+let _nbnGameDayP = null;
+/**
+ * Promise of the game day, "YYYY-MM-DD": which night's games are being
+ * played now. It is nbnToday() except while a night's stream runs past
+ * midnight, when it stays on that night (GET /api/game-day). Use it, not
+ * nbnToday(), for "tonight's games". Falls back to nbnToday() if the API
+ * can't answer. Asked once per page load.
+ */
+function nbnGameDay() {
+  if (!_nbnGameDayP) {
+    _nbnGameDayP = fetch('/api/game-day')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => (d && /^\d{4}-\d\d-\d\d$/.test(d.date) ? d.date : nbnToday()))
+      .catch(() => nbnToday());
+  }
+  return _nbnGameDayP;
+}
+
 /** Format a Date instant as its league-time civil date, "YYYY-MM-DD". */
 function nbnFormatDate(d) {
   return _nbnDateFmt.format(d);

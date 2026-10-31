@@ -161,6 +161,7 @@
       jget('/api/ovr/current'),                                 // 7
       Milestones.load(),                                        // 8
       jget('/api/rotations'),                                   // 9
+      nbnGameDay(),                                             // 10
     ]).then(res => {
       const val = (i, dflt) => (res[i].status === 'fulfilled' && res[i].value) || dflt;
       const sched = val(0, {});
@@ -257,7 +258,8 @@
       // otherwise the auto-sort over standard contracts, as the team page does.
       // Today's rosters say nothing about a game already played, so this and
       // the milestones are left off a past game's page.
-      const upcomingGame = !played && DATE >= nbnToday();
+      // The game day, so tonight's game still counts while its stream runs past midnight.
+      const upcomingGame = !played && DATE >= val(10, nbnToday());
       const roster = t => ms ? Object.keys(ms.rosterTeam).filter(s => ms.rosterTeam[s] === t) : [];
       for (const t of upcomingGame ? [AWAY, HOME] : []) {
         const pool = roster(t).filter(s => ['player', 'two-way'].includes((bios[s] || {}).type))
