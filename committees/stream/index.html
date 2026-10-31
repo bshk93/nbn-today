@@ -310,6 +310,12 @@
     .mine-team.pending .st { color: var(--gold, var(--gold)); font-weight: 600; }
     .mine-team .acts { margin-left: auto; display: flex; gap: 0.3rem; }
     .mine-detail { grid-column: 1 / -1; padding: 0.4rem 0; }
+    /* Starters 2K actually used, for a team with no lineup entered. */
+    .st-pick { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.4rem; margin-top: 0.4rem; }
+    .st-pick label { display: flex; flex-direction: column; gap: 0.15rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .st-pick select { font-size: var(--text-sm); min-width: 9rem; }
+    .st-unknown { margin-bottom: 1rem; }
+    .st-unknown .pos-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.25rem 0; }
 
     /* Positions to set in 2K: a changed secondary, or a player the team
        pinned to be checked before every game. */
@@ -426,6 +432,7 @@
       </div>
 
       <div class="tab-panel hidden" id="tab-coaching">
+        <div id="starters-unknown"></div>
         <div id="coaching-dash-wrap">
           <h2>Coaching Settings</h2>
           <div class="ui-table-wrap">
@@ -489,6 +496,8 @@
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
     let positionChecks = {};    // team abbr -> {items, ...}, from GET /api/position-checks
     let coachingNotes = {};     // team abbr -> {text, updated_at, cleared_at, ...}, from GET /api/coaching-notes
+    let startersReports = {};  // game key -> team -> {starters, reported_by, ...}, from GET /api/game-starters/reports
+    let startersUnknown = [];  // played games with a team's five unknown, from GET /api/game-starters/unknown
     let streamingDays = {};  // "YYYY-MM-DD" -> {done, done_at, done_by, youtube_url, ...}, from GET /api/streaming-days
     // League "today" (Eastern), from /league-time.js.
     const today = nbnToday();
@@ -531,6 +540,7 @@
         coachingNotes = {};
       }
       renderCoachingDashboard();
+      renderStartersUnknown();
       renderMine();
     }
 
@@ -917,6 +927,186 @@
       }
     }
 
+    // ── Starters ────────────────────────────────────────────────────
+    //
+    // Who started is recorded from the lineup a streamer entered. A team
+    // whose owner never saved one has nothing to enter, so 2K picks its own
+    // five and nobody knows who. For those teams the streamer reads the five
+    // off 2K (the lineup screen at tip, or the VOD afterwards) and records it
+    // per game: POST /api/game-starters/report. A report beats the entered
+    // five, since it is what 2K actually used.
+
+    const STARTER_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+    function gameKey(date, type, home, away) {
+      const [a, b] = [home, away].sort();
+      return `${date}|${type}|${a}|${b}`;
+    }
+
+    // Mirrors _entered_snapshot in nbn-api's coaching_settings.py: does 2K
+    // have a five from this team, entered by a streamer?
+    function hasEnteredFive(team) {
+      const rec = coachingSettings[team];
+      if (!rec) return false;
+      const m = rec.entered_minutes || ((rec.entered_at && !rec.pending) ? rec.minutes : null);
+      return !!m && STARTER_SLOTS.every(s => m[s] && (m[s].slug || typeof m[s] === 'string'));
+    }
+
+    async function loadStarters() {
+      try {
+        const [reports, unknown] = await Promise.all([
+          fetch('/api/game-starters/reports').then(r => r.ok ? r.json() : {}),
+          fetch('/api/game-starters/unknown').then(r => r.ok ? r.json() : { games: [] }),
+        ]);
+        startersReports = reports || {};
+        startersUnknown = (unknown && unknown.games) || [];
+      } catch (e) {
+        startersReports = {};
+        startersUnknown = [];
+      }
+      renderStartersUnknown();
+      renderMine();
+    }
+
+    // [{slug, name}] for a team's current roster, best OVR first.
+    async function rosterChoices(team) {
+      const [lookup, text] = await Promise.all([
+        playerLookup(),
+        fetch(`/data/${team.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
+      ]);
+      const lines = text.trim().split(/\r?\n/);
+      const col = (lines.shift() || '').split(',').indexOf('SLUG');
+      if (col < 0) return [];
+      return lines.map(l => l.split(',')[col]).filter(Boolean)
+        .map(slug => ({ slug, name: lookup.resolveName(slug) || slug, ovr: +lookup.resolveOvr(slug) || 0 }))
+        .sort((a, b) => b.ovr - a.ovr);
+    }
+
+    // Five selects, PG to C, and a Save. `game` is {date, game_type,
+    // home_team, away_team}; `onSaved` gets the API's response.
+    function startersPicker(box, game, team, players, onSaved) {
+      box.innerHTML = '';
+      const form = div('st-pick');
+      const sels = STARTER_SLOTS.map(slot => {
+        const label = document.createElement('label');
+        label.textContent = slot;
+        const sel = document.createElement('select');
+        sel.appendChild(new Option('—', ''));
+        players.forEach(p => sel.appendChild(new Option(
+          nbnPlayerName(p.name) + (p.min != null ? ` (${p.min} min)` : ''), p.slug)));
+        label.appendChild(sel);
+        form.appendChild(label);
+        return sel;
+      });
+      const save = document.createElement('button');
+      save.className = 'cd-btn';
+      save.textContent = 'Save starters';
+      save.onclick = async () => {
+        const five = sels.map(s => s.value);
+        if (five.some(v => !v) || new Set(five).size !== 5) {
+          alert('Pick five different players, PG to C.');
+          return;
+        }
+        save.disabled = true;
+        const token = storedToken();
+        try {
+          const r = await fetch('/api/game-starters/report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+            body: JSON.stringify({ ...game, team, starters: five }),
+          });
+          const out = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            alert(`Starters not saved: ${out.detail || r.status}`);
+            save.disabled = false;
+            return;
+          }
+          (startersReports[out.key] = startersReports[out.key] || {})[team] = out.report;
+          startersUnknown = startersUnknown.filter(u =>
+            !(gameKey(u.date, u.game_type, u.home_team, u.away_team) === out.key && u.team === team));
+          toast(`${team} starters saved`);
+          onSaved(out);
+        } catch (e) {
+          alert('Network error');
+          save.disabled = false;
+        }
+      };
+      form.appendChild(save);
+      box.appendChild(form);
+    }
+
+    // Played games where a team's five was never known. Each names who
+    // streamed it and links the VOD, which is where the five can be read.
+    function renderStartersUnknown() {
+      const wrap = document.getElementById('starters-unknown');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      if (!startersUnknown.length) return;
+      const box = div('pos-list st-unknown');
+      box.appendChild(div('pos-head', `Starters unknown (${startersUnknown.length})`));
+      box.appendChild(div('pos-why', 'No lineup was entered for these teams, so 2K picked the five. '
+        + 'Read it off the VOD at tip and record it.'));
+      startersUnknown.forEach(u => {
+        const row = div('pos-row');
+        const b = document.createElement('b');
+        b.textContent = `${fmtShort(u.date)} ${u.team}`;
+        row.appendChild(b);
+        row.appendChild(span('', `${u.away_team} @ ${u.home_team}`));
+        const g = games.find(x => x.date === u.date && x.home_team === u.home_team && x.away_team === u.away_team);
+        if (g && g.streamer) row.appendChild(span('pos-why', `streamed by ${g.streamer}`));
+        if (g && g.youtube_url) {
+          const a = document.createElement('a');
+          a.href = g.youtube_url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.textContent = 'VOD';
+          row.appendChild(a);
+        }
+        const pick = div('');
+        const btn = document.createElement('button');
+        btn.className = 'cd-btn';
+        btn.textContent = 'Record starters';
+        btn.onclick = () => {
+          btn.hidden = true;
+          startersPicker(pick, { date: u.date, game_type: u.game_type, home_team: u.home_team, away_team: u.away_team },
+            u.team, u.players, () => { renderStartersUnknown(); renderMine(); });
+        };
+        row.appendChild(btn);
+        box.appendChild(row);
+        box.appendChild(pick);
+      });
+      wrap.appendChild(box);
+    }
+
+    // The My games control for one team in one game: nothing when 2K has the
+    // team's entered five, else who recorded it or a button to record it.
+    function startersControl(g, team, res) {
+      const key = gameKey(g.date, 'REG', g.home_team, g.away_team);
+      const rep = (startersReports[key] || {})[team];
+      if (rep) return span('st', `Starters recorded by ${rep.reported_by || 'a streamer'}`);
+      const unknown = startersUnknown.find(u => u.team === team && u.date === g.date
+        && u.home_team === g.home_team && u.away_team === g.away_team);
+      if (hasEnteredFive(team) && !unknown) return null;
+      if (res && !unknown) return null;  // played, and its five is on record
+      const box = div('mine-detail');
+      const btn = document.createElement('button');
+      btn.className = 'cd-btn';
+      btn.textContent = 'Record starters';
+      btn.title = 'No lineup on file: record the five 2K starts';
+      btn.onclick = async () => {
+        btn.disabled = true;
+        const players = unknown ? unknown.players : await rosterChoices(team);
+        btn.hidden = true;
+        startersPicker(box, { date: g.date, game_type: 'REG', home_team: g.home_team, away_team: g.away_team },
+          team, players, () => { renderStartersUnknown(); renderMine(); });
+      };
+      const wrap = div('');
+      wrap.appendChild(span('st', 'No lineup on file. '));
+      wrap.appendChild(btn);
+      wrap.appendChild(box);
+      return wrap;
+    }
+
     // ── My games tab ────────────────────────────────────────────────
     //
     // The streamer's game day on one screen: the days they've claimed, each
@@ -1042,6 +1232,11 @@
             }
             box.appendChild(acts);
             teams.appendChild(box);
+            const st = startersControl(g, team, res);
+            if (st) {
+              st.classList.add('mine-detail');
+              teams.appendChild(st);
+            }
             teams.appendChild(detail);
           });
           row.appendChild(teams);
@@ -2038,6 +2233,7 @@
 
       loadCoachingDashboard();
       loadStreamingDays();
+      loadStarters();
 
       try {
         seasons = await fetch('/api/schedule/seasons').then(r => r.json());

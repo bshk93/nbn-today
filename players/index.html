@@ -768,10 +768,11 @@
     const map = new Map();
     rows.forEach(r => {
       if (!map.has(r.SEASON)) {
-        map.set(r.SEASON, { ...r, _teams: [r.TEAM] });
+        map.set(r.SEASON, { ...r, _teams: [r.TEAM], _g: { [r.TEAM]: +r.G } });
       } else {
         const s = map.get(r.SEASON);
         s._teams.push(r.TEAM);
+        s._g[r.TEAM] = (s._g[r.TEAM] || 0) + +r.G;
         SUM_FIELDS.forEach(f  => { s[f] = String(+s[f] + +r[f]); });
         VALUE_SUMS.forEach(f  => { s[f] = (s[f] || 0) + (r[f] || 0); });
         HIGH_FIELDS.forEach(f => { s[f] = String(Math.max(+s[f], +r[f])); });
@@ -3358,8 +3359,12 @@
       const po = isPlayoffRow(r);
       const s = starts[`${r.SEASON.replace(' Playoffs', '')}|${po ? 'PLAYOFF' : 'REG'}`];
       const teams = r._teams || [r.TEAM];
-      // A team whose starters were never recorded is unknown, not 0 starts.
-      if (!s || !teams.some(t => s.known[t])) return undefined;
+      const games = r._g || { [r.TEAM]: +r.G };
+      // A team with fewer games on record than he played for it has games
+      // nobody knows the starters of. A count over the known ones alone would
+      // read as complete (5 unknown IND games and 1 WAS start showed "1"), so
+      // the row is unknown until those games are filled in.
+      if (!s || teams.some(t => (s.known[t] || 0) < (games[t] || 0))) return undefined;
       return teams.reduce((n, t) => n + (s.by[t] || 0), 0);
     }
     function getDisplayRows() {
