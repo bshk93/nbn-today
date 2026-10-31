@@ -213,6 +213,28 @@
       <div id="worklist"><div class="card-body">Loading…</div></div>
     </div>
 
+    <div class="card" id="parse-card" hidden>
+      <div class="card-head">
+        <h2>Parsing the screenshots</h2>
+        <span class="note">Needs Claude Code</span>
+      </div>
+      <div class="card-body ui-prose">
+        <p>Turning a Ready to parse game into a box score takes
+          <a href="https://claude.com/claude-code">Claude Code</a>. Nothing on this page does it.
+          The only other way in is typing the game by hand (Tools, below).</p>
+        <ol>
+          <li>Clone the site repo: <code>git clone https://github.com/bshk93/nbn-today.git</code></li>
+          <li>Set your member token (the one you sign in with, which needs the stats role) as
+            <code>NBN_TOKEN</code> in your shell. If it isn't set, Claude asks you to paste it.</li>
+          <li>Start Claude Code in the repo folder and run <code>/parse-boxscores</code>.</li>
+        </ol>
+        <p>One run takes every ready game, then any pending injury screens, then the night's
+          NBN Twitter posts. It works from any machine; it talks to the API, not the server's disk.
+          A game that fails a check is held and named in the report, and nothing of it is written.
+          Injuries alone: <code>/parse-injuries</code>.</p>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-head">
         <h2>Build</h2>
@@ -220,10 +242,8 @@
       </div>
       <div class="card-body">
         <p id="build-text">Checking…</p>
-        <div class="links" id="build-actions"></div>
-        <p class="footnote" id="build-auto-note" style="margin-top:0.6rem;" hidden>
-          A build also runs automatically after every box score commit — this button is
-          for re-running it without submitting a new game (e.g. after a manual data fix).
+        <p class="footnote" style="margin-top:0.6rem;">
+          A build runs automatically after every box score commit.
         </p>
       </div>
     </div>
@@ -336,12 +356,10 @@
         + (st.error ? `<br><code>${esc(st.error)}</code>` : '');
       note.textContent = st.status;
     }
-    renderBuildActions();
   }
 
-  // Keeps checking every few seconds while a build is in flight — a build
-  // takes longer than the one-shot delay after clicking Trigger, so without
-  // this the page would sit on "running" until a manual reload.
+  // Keeps checking every few seconds while a build is in flight, so the page
+  // doesn't sit on "running" until a manual reload.
   function pollBuildStatus() {
     if (buildPollTimer) return;
     buildPollTimer = setInterval(() => {
@@ -361,31 +379,6 @@
     if (mins < 60 * 24) return `${Math.floor(mins / 60)}h ago`;
     const days = Math.floor(mins / (60 * 24));
     return days === 1 ? 'yesterday' : `${days} days ago`;
-  }
-
-  function renderBuildActions() {
-    const wrap = document.getElementById('build-actions');
-    wrap.textContent = '';
-    document.getElementById('build-auto-note').hidden = !hasStatsRole();
-    if (!hasStatsRole()) return;
-    const btn = document.createElement('button');
-    btn.className = 'btn';
-    btn.textContent = 'Trigger a build';
-    btn.addEventListener('click', async () => {
-      btn.disabled = true;
-      btn.textContent = 'Triggering…';
-      try {
-        await fetch('/api/build/trigger', { method: 'POST', headers: authHeaders() })
-          .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)));
-        btn.textContent = 'Build started';
-        // Give the service a moment to move the status off whatever it was.
-        setTimeout(() => jget('/api/build/status').then(renderBuild).catch(() => {}), 2000);
-      } catch (e) {
-        btn.disabled = false;
-        btn.textContent = 'Trigger failed — retry';
-      }
-    });
-    wrap.appendChild(btn);
   }
 
   // ── Box scores by day ─────────────────────────────────────────────────────
@@ -907,7 +900,7 @@
       me.roles = me.roles || [];
     } catch (e) { me = { name: null, roles: [] }; }
 
-    renderBuildActions();
+    document.getElementById('parse-card').hidden = !hasStatsRole();
     renderQueue();
 
     jget('/api/build/status').then(renderBuild).catch(() => {
