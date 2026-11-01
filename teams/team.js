@@ -336,6 +336,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-name { font-weight: 600; }
   .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
   .ts-name .ts-injury { margin-left: 0.4rem; font-weight: 600; white-space: nowrap; }
+  .roster-injury { font-weight: 600; white-space: nowrap; font-style: normal; }
   .ts-2w-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--gold); }
   .ts-illegal-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--danger-light); }
   .ts-table tbody tr.ts-illegal td { background: var(--danger-bg); }
@@ -550,7 +551,10 @@ const coachingConfigReady = new Promise(resolve => {
   .picks-traded td     { color: var(--text-muted); font-style: italic; }
   .picks-uncertain td  { color: var(--warning); font-style: italic; }
   .picks-legacy td     { color: var(--danger); font-style: italic; }
-  .picks-legacy td:nth-child(7) { color: var(--text-secondary); font-style: normal; }
+  .picks-legacy td.pick-frozen { color: var(--text-secondary); font-style: normal; }
+  .picks-table td.pick-year { font-weight: 700; font-size: var(--text-base); color: var(--text-primary); font-style: normal; }
+  .picks-table tr.pick-year-start td { border-top: 2px solid var(--border); }
+  .picks-table .pick-round { font-style: normal; }
   .picks-legend {
     display: flex;
     flex-wrap: wrap;
@@ -2546,7 +2550,20 @@ function computeStatFields(seasonRow) {
 // plus a bench by OVR (see computeStartingFive, or the team's own `rotation` — `{slot: slug}`
 // from GET /api/rotations — when one is set). `latestSeasonBySlug` comes
 // from computeLatestSeasonBySlug(allSeasons), computed once at page load.
-function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null) {
+// One player's entry on the current injury report (GET /api/injuries) as a
+// badge: red for Out, gold for anything less. Shared by the roster table and
+// the Roster Settings table.
+function injuryBadge(inj, extraCls = '') {
+  const tag = document.createElement('span');
+  tag.className = `ui-badge ${extraCls} ${isInjuredOut(inj) ? 'ui-badge--danger' : 'ui-badge--warning'}`;
+  tag.textContent = inj.duration ? `${inj.status} · ${inj.duration}` : (inj.status || 'Injured');
+  const ovrNote = inj.ovr ? ` Playing at ${inj.ovr} OVR${inj.ovr_delta ? ` (${inj.ovr_delta > 0 ? '+' : ''}${inj.ovr_delta})` : ''}.` : '';
+  attachTooltip(tag, `${inj.injury || 'Injured'}, ${inj.duration || 'duration unknown'}.${ovrNote}`);
+  return tag;
+}
+const isInjuredOut = inj => !!inj && /^out$/i.test(inj.status || '');
+
+function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null, injuries = {}) {
   if (!rows.length) return null;
   // Neither format's key column: the CSV came back as something else (a
   // truncated or error response). Rendering it threw on the first row once,
@@ -2699,6 +2716,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         _photo:              bio.photo_url || '',
         _notes:              bio.notes || '',
         _stash:              _type === 'draft-rights' ? (bio.stash || null) : null,
+        _injury:             (injuries || {})[row.SLUG] || null,
         ...computeStatFields(latestSeasonBySlug[row.SLUG]),
         ...computeRatingFields((attributesData || {})[row.SLUG]),
       };
@@ -2796,7 +2814,9 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   ];
 
   const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
-  const byOvrDesc = (a, b) => (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
+  // Players listed Out sink to the bottom of their group; Day-to-Day stays put.
+  const outLast = (a, b) => isInjuredOut(a._injury) - isInjuredOut(b._injury);
+  const byOvrDesc = (a, b) => outLast(a, b) || (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
 
   // Row order and the subheaders that break it up. Every mode but 'depth'
   // groups by contract type; 'depth' splits the standard players into a
@@ -2813,7 +2833,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
     const rotationPool = augmented.filter(a => a.SLUG && !a._erc && (a._type === 'player' || a._type === 'two-way'));
     const fromRotation = rotationFive(rotationPool, rotation);
     const useRotation = !!fromRotation;
-    const five = fromRotation || computeStartingFive(starterPool);
+    // The auto five skips anyone Out; a saved rotation is the team's call.
+    const five = fromRotation || computeStartingFive(starterPool.filter(a => !isInjuredOut(a._injury)));
     const started = new Set(five.filter(Boolean));
 
     const starterRows = five.map((p, i) => {
@@ -2989,6 +3010,8 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         }
 
         if (row._type === 'two-way' && row.SLUG) topRow.appendChild(twoWayGamesBadge(row.SLUG));
+
+        if (row._injury) topRow.appendChild(injuryBadge(row._injury, 'roster-injury'));
 
         cell.appendChild(topRow);
 
@@ -3451,68 +3474,89 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
 
   const stepienLocked = computeStepienLocked(picks, allPicks, teamAbbr);
 
+  // Year and round lead each row and are what a reader scans for, so the
+  // year is printed once per group (with a rule above it) and the round is a
+  // pill. Protection / Swap / Frozen / Notes are hidden when no row has one.
+  const frozenLabel = p => p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN'
+    : (p._kind !== 'traded' && stepienLocked.has(`${p.round}:${p.year}:${p.orig}`) ? 'STEPIEN' : ''));
+  const COLS = [
+    { key: 'year',   label: 'Year',       cls: 'pick-year' },
+    { key: 'round',  label: 'Rnd',        cls: 'center' },
+    { key: 'orig',   label: 'Orig',       cls: 'muted center', value: p => origCell(p, teamAbbr) },
+    { key: 'owner',  label: 'Owner',      cls: 'muted center', value: p => (PICK_KIND_DISPLAY[p._kind].ownerCell || ownerCell)(p) },
+    { key: 'prot',   label: 'Protection', cls: 'muted', optional: true,
+      value: p => p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p) },
+    { key: 'swap',   label: 'Swap',       cls: 'muted', optional: true, value: p => formatSwapLeaves(p) },
+    { key: 'frozen', label: 'Frozen',     cls: 'muted pick-frozen', optional: true, value: frozenLabel },
+    { key: 'notes',  label: 'Notes',      cls: 'muted', optional: true, value: p => cleanNotes(p) },
+  ];
+  const shown = [...rows, ...traded];
+  const cols = COLS.filter(c => !c.optional || shown.some(p => c.value(p)));
+
   const table = document.createElement('table');
+  table.className = 'picks-table';
   const thead = table.createTHead();
   const hr = thead.insertRow();
-  ['Year', 'Rnd', 'Orig', 'Owner', 'Protection', 'Swap', 'Frozen', 'Notes'].forEach(label => {
+  cols.forEach(col => {
     const th = document.createElement('th');
-    th.textContent = label;
-    if (label === 'Year' || label === 'Rnd') th.classList.add('right');
-    if (label === 'Orig' || label === 'Owner') th.classList.add('center');
-    if (label !== 'Year' && label !== 'Rnd') th.classList.add('muted');
+    th.textContent = col.label;
+    if (col.cls.includes('center')) th.classList.add('center');
+    if (col.key !== 'year' && col.key !== 'round') th.classList.add('muted');
     hr.appendChild(th);
   });
 
   const tbody = table.createTBody();
 
+  let lastYear = null;
   const renderRow = p => {
-    const { cls, ownerCell: ownerCellFn } = PICK_KIND_DISPLAY[p._kind];
+    const { cls } = PICK_KIND_DISPLAY[p._kind];
     const tr = tbody.insertRow();
     if (cls) tr.className = cls;
+    const newYear = p.year !== lastYear;
+    if (newYear && lastYear !== null) tr.classList.add('pick-year-start');
+    lastYear = p.year;
 
-    const protLabel = p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p);
-    const isStepienLocked = p._kind !== 'traded' && stepienLocked.has(`${p.round}:${p.year}:${p.orig}`);
-    const cells = [
-      [String(p.year),                'right',        ],
-      [p.round === 1 ? '1st' : '2nd', 'right',        ],
-      [origCell(p, teamAbbr),          'muted center', ],
-      [(ownerCellFn || ownerCell)(p),  'muted center', ],
-      [protLabel,                      'muted',        ],
-      [formatSwapLeaves(p),            'muted',        ],
-      [p.legacy ? 'LEGACY' : (p.frozen ? 'FROZEN' : (isStepienLocked ? 'STEPIEN' : '')), 'muted', ],
-      [cleanNotes(p),                  'muted',        ],
-    ];
-    cells.forEach(([text, cellCls]) => {
-      const td = tr.insertCell();
-      if (cellCls) cellCls.split(' ').forEach(c => td.classList.add(c));
-      td.textContent = text;
+    const td = {};
+    cols.forEach(col => {
+      const cell = tr.insertCell();
+      col.cls.split(' ').forEach(c => c && cell.classList.add(c));
+      td[col.key] = cell;
+      if (col.key === 'year') {
+        cell.textContent = newYear ? String(p.year) : '';
+      } else if (col.key === 'round') {
+        const pill = document.createElement('span');
+        pill.className = 'ui-badge pick-round' + (p.round === 1 ? ' ui-badge--accent' : '');
+        pill.textContent = p.round === 1 ? '1st' : '2nd';
+        cell.appendChild(pill);
+      } else {
+        cell.textContent = col.value(p);
+      }
     });
     // A `legacy` pick is ALWAYS frozen from re-trade by design (until someone
     // manually converts its notes into real structure) regardless of the
     // flat FROZEN column, which was never set for it — so this can't just
     // reuse the `p.frozen` check above.
-    if (p.legacy) {
-      const legacyTd = tr.cells[tr.cells.length - 2];
-      legacyTd.style.color = 'var(--danger)';
-      legacyTd.style.fontWeight = '700';
-      attachTooltip(legacyTd, 'This pick predates the site\'s conveyance model and '
+    const frozenTd = td.frozen;
+    const kind = frozenLabel(p);
+    if (frozenTd && kind === 'LEGACY') {
+      frozenTd.style.color = 'var(--danger)';
+      frozenTd.style.fontWeight = '700';
+      attachTooltip(frozenTd, 'This pick predates the site\'s conveyance model and '
         + 'isn’t tracked automatically — the real terms are whatever Notes says. '
         + 'Frozen from re-trade until manually converted to real structure.');
-    } else if (p.frozen) {
-      const frozenTd = tr.cells[tr.cells.length - 2];
+    } else if (frozenTd && kind === 'FROZEN') {
       frozenTd.style.color = 'var(--danger)';
       frozenTd.style.fontWeight = '700';
       if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
-    } else if (isStepienLocked) {
-      const stepienTd = tr.cells[tr.cells.length - 2];
-      stepienTd.style.color = 'var(--danger-alt)';
-      stepienTd.style.fontWeight = '700';
-      attachTooltip(stepienTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
+    } else if (frozenTd && kind === 'STEPIEN') {
+      frozenTd.style.color = 'var(--danger-alt)';
+      frozenTd.style.fontWeight = '700';
+      attachTooltip(frozenTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
         + 'now would leave a two-year gap with no first-round pick, violating the Stepien Rule (§ 7.2).');
     }
     if (p.leaves && p.leaves.length) {
       p.leaves.forEach(l => (l.txn_ids || []).forEach(t => _fetchTxnDesc(t.id)));
-      attachTooltip(tr.cells[3], () => buildLeavesTooltip(p));
+      attachTooltip(td.owner, () => buildLeavesTooltip(p));
     }
   };
 
@@ -3522,8 +3566,9 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     const sep = tbody.insertRow();
     sep.className = 'subheader';
     const td = sep.insertCell();
-    td.colSpan = 8;
+    td.colSpan = cols.length;
     td.textContent = 'Traded Away';
+    lastYear = null;
     traded.forEach(renderRow);
   }
 
@@ -6008,12 +6053,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
   function addInjuryBadge(td, slug) {
     const inj = injuries[slug];
     if (!inj || td.querySelector('.ts-injury')) return;
-    const tag = document.createElement('span');
-    tag.className = `ui-badge ts-injury ${/^out$/i.test(inj.status || '') ? 'ui-badge--danger' : 'ui-badge--warning'}`;
-    tag.textContent = inj.duration ? `${inj.status} · ${inj.duration}` : (inj.status || 'Injured');
-    const ovrNote = inj.ovr ? ` Playing at ${inj.ovr} OVR${inj.ovr_delta ? ` (${inj.ovr_delta > 0 ? '+' : ''}${inj.ovr_delta})` : ''}.` : '';
-    attachTooltip(tag, `${inj.injury || 'Injured'}, ${inj.duration || 'duration unknown'}.${ovrNote}`);
-    td.appendChild(tag);
+    td.appendChild(injuryBadge(inj, 'ts-injury'));
   }
   const jerseyWaiting = slug => (posChecks.items || []).some(i => i.slug === slug && i.jersey_changed);
 
@@ -8443,7 +8483,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr, birdr, tadvr] = await Promise.allSettled([
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr, birdr, tadvr, injr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -8472,6 +8512,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch('/api/game-starters/counts').then(r => r.ok ? r.json() : null),
     fetch(`/api/bird-rights?team=${abbr}`).then(r => r.ok ? r.json() : null),
     fetch('/data/team-advanced.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
+    fetch('/api/injuries').then(r => r.ok ? r.json() : null),
   ]);
 
   await namesReady;
@@ -8530,6 +8571,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // The public half of that record: who holds each depth-chart slot, never
   // the minutes. Drives the Overview tab's starting five for every visitor.
   const rotation = (rotr.status === 'fulfilled' && rotr.value && rotr.value[abbr]) || null;
+  // slug -> entry on the current injury report, for the roster table's badges.
+  const injuriesBySlug = Object.fromEntries(((injr.status === 'fulfilled' && injr.value && injr.value.players) || [])
+    .map(p => [p.slug, p]));
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
   renderTradeRequestBanner(biosData);
@@ -8915,7 +8959,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     const renderRoster = rowsForDisplay => buildRosterTable(
       rowsForDisplay, biosData, capLevels, currentOvr, deadCapRows, seasonStates, attributesData, rosterMode, latestSeasonBySlug,
       MOVE_MODES.includes(rosterMode) ? moveActions : null,
-      rotation,
+      rotation, injuriesBySlug,
     );
     function rerenderRosterWrap() {
       rosterWrap.innerHTML = '';
