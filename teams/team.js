@@ -4521,7 +4521,7 @@ function openQualifyingOfferDialog(slug, bio, abbr, action) {
 function openOptionDialog(slug, bio, abbr, decision, year) {
   const name = displayNameFromBio(bio.name || slug);
   const verb = decision === 'accept' ? 'Exercise' : 'Decline';
-  let capHoldSelect;
+  let capHoldSelect, eapsSelect;
   openConfirmModal({
     title: `${verb} ${name}’s ${year} team option?`,
     sub: decision === 'accept'
@@ -4531,11 +4531,11 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
     danger: decision === 'decline',
     render: async (body, ctl) => {
       ctl.setEnabled(false);
-      const loading = document.createElement('div');
-      loading.className = 'confirm-check ok';
-      loading.textContent = 'Running § 6.1 checks…';
-      body.appendChild(loading);
 
+      // A Full Bird hold is 150% or 190% of his salary depending on which side
+      // of EAPS it is (§ 3.10). Until the season has an EAPS, the owner says
+      // which; the API suggests one from this season's average salary.
+      let eapsWrap;
       if (decision === 'decline') {
         const label = document.createElement('label');
         label.textContent = 'Resulting free-agent status';
@@ -4550,30 +4550,67 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
         note.textContent = 'RFA only makes him eligible for a qualifying offer (§ 3.1) — he becomes a ' +
           'restricted free agent once you extend one, from this menu, before July 1.';
         body.appendChild(note);
+
+        eapsWrap = document.createElement('div');
+        eapsWrap.hidden = true;
+        const eapsLabel = document.createElement('label');
+        eapsLabel.textContent = `His salary vs ${year} EAPS (sets the cap hold, § 3.10)`;
+        eapsSelect = document.createElement('select');
+        [['', 'Choose…'], ['below', 'At or below EAPS (190% hold)'], ['above', 'Above EAPS (150% hold)']]
+          .forEach(([v, l]) => {
+            const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
+            eapsSelect.appendChild(opt);
+          });
+        eapsWrap.append(eapsLabel, eapsSelect);
+        body.appendChild(eapsWrap);
       }
 
-      let data;
-      try {
-        data = await apiFetchPublic('/api/validate/option', {
-          player: slug, decision, option_type: 'TEAM_OPT', year, cap_hold_type: 'UFA',
-        });
-      } catch (e) {
-        loading.className = 'confirm-check error';
-        loading.textContent = `Could not validate: ${e.message}`;
-        return;
-      }
-      loading.remove();
+      const results = document.createElement('div');
+      body.appendChild(results);
 
-      (data.checks || []).forEach(c => body.appendChild(checkRow(c)));
+      const run = async () => {
+        ctl.setEnabled(false);
+        results.replaceChildren();
+        const loading = document.createElement('div');
+        loading.className = 'confirm-check ok';
+        loading.textContent = 'Running § 6.1 checks…';
+        results.appendChild(loading);
 
-      if (!data.legal) {
-        const stop = document.createElement('div');
-        stop.className = 'confirm-check error';
-        stop.textContent = `This ${decision} is not legal, so it cannot be submitted.`;
-        body.appendChild(stop);
-        return;   // confirm stays disabled
-      }
-      ctl.setEnabled(true);
+        let data;
+        try {
+          data = await apiFetchPublic('/api/validate/option', {
+            player: slug, decision, option_type: 'TEAM_OPT', year, cap_hold_type: 'UFA',
+            eaps_assumption: (eapsSelect && eapsSelect.value) || null,
+          });
+        } catch (e) {
+          loading.className = 'confirm-check error';
+          loading.textContent = `Could not validate: ${e.message}`;
+          return;
+        }
+        loading.remove();
+
+        const hold = (data.fact_sheet || {}).hold;
+        if (eapsWrap && hold && hold.needs_eaps) {
+          eapsWrap.hidden = false;
+          if (!eapsSelect.value && hold.suggested) {
+            eapsSelect.value = hold.suggested;   // re-runs with the suggestion
+            return run();
+          }
+        }
+
+        (data.checks || []).forEach(c => results.appendChild(checkRow(c)));
+
+        if (!data.legal) {
+          const stop = document.createElement('div');
+          stop.className = 'confirm-check error';
+          stop.textContent = `This ${decision} is not legal, so it cannot be submitted.`;
+          results.appendChild(stop);
+          return;   // confirm stays disabled
+        }
+        ctl.setEnabled(true);
+      };
+      if (eapsSelect) eapsSelect.addEventListener('change', run);
+      await run();
     },
     onConfirm: () => new Promise((resolve, reject) => {
       withToken(async token => {
@@ -4583,6 +4620,7 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
             body: JSON.stringify({
               player: slug, decision,
               cap_hold_type: (capHoldSelect && capHoldSelect.value) || 'UFA',
+              eaps_assumption: (eapsSelect && eapsSelect.value) || null,
               description: `${abbr} ${decision}s ${name}’s ${year} team option`,
             }),
           }, token);
