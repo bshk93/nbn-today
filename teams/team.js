@@ -1266,6 +1266,20 @@ document.head.appendChild(_badgeScript);
 document.getElementById('team-share-btn').onclick = e =>
   window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
 
+// Work for a tab other than Roster runs the first time that tab is shown, so
+// a visit that never opens it doesn't fetch that tab's data or build its
+// tables while the roster is loading. If the tab is already showing (a
+// #franchise link), it runs straight away.
+const _tabFirstShow = {};
+function whenTabShown(tab, fn) {
+  const panel = document.getElementById('tab-' + tab);
+  if (panel && !panel.classList.contains('hidden')) { fn(); return; }
+  (_tabFirstShow[tab] ||= []).push(fn);
+}
+// A fetch's text in Promise.allSettled's result shape, for the deferred loads.
+const settledText = url => fetch(url).then(r => { if (!r.ok) throw r; return r.text(); })
+  .then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
+
 // The open tab is kept in the URL hash (#coaching), so the reload after a save
 // lands back on the tab the save was made from, and a tab can be linked to.
 function showTab(btn) {
@@ -1273,6 +1287,8 @@ function showTab(btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   btn.classList.add('active');
   document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+  const queued = _tabFirstShow[btn.dataset.tab];
+  if (queued) { delete _tabFirstShow[btn.dataset.tab]; queued.forEach(fn => fn()); }
   if (btn.dataset.tab === 'irl') mountIrlFeed();
   if (btn.dataset.tab === 'schedule') mountSchedule();
 }
@@ -8483,7 +8499,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
-  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, txnsr, ter, attrr, blockr, offersr, recr, poextr, coachr, stdr, rotr, gsr, birdr, tadvr, injr] = await Promise.allSettled([
+  // Only what the Roster tab and the header need. The other tabs fetch their
+  // own data the first time they're opened (whenTabShown).
+  const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, ter, attrr, blockr, offersr, poextr, coachr, rotr, gsr, birdr, injr] = await Promise.allSettled([
     fetch(`/data/${slug}-seasons.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-players.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch(`/data/${slug}-roster.csv`).then(r => { if (!r.ok) throw r; return r.text(); }),
@@ -8499,19 +8517,15 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
     fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
-    fetch('/api/transactions?limit=500').then(r => r.ok ? r.json() : { transactions: [] }),
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/attributes/current').then(r => r.ok ? r.json() : {}),
     fetch('/api/trading-block').then(r => r.ok ? r.json() : {}),
     fetch(`/api/offer-sheets/open?team=${abbr}`).then(r => r.ok ? r.json() : []),
-    fetch('/data/franchise-records.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
-    fetch('/api/poext/eligible').then(r => r.ok ? r.json() : []),
+    fetch(`/api/poext/eligible?team=${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/coaching-settings', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : {}),
-    fetch('/standings/standings-history.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/rotations').then(r => r.ok ? r.json() : {}),
     fetch('/api/game-starters/counts').then(r => r.ok ? r.json() : null),
     fetch(`/api/bird-rights?team=${abbr}`).then(r => r.ok ? r.json() : null),
-    fetch('/data/team-advanced.csv').then(r => { if (!r.ok) throw r; return r.text(); }),
     fetch('/api/injuries').then(r => r.ok ? r.json() : null),
   ]);
 
@@ -8551,14 +8565,13 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const teamState   = tsr.status  === 'fulfilled'  ? tsr.value   : null;
   const seasonStates = teamState?.seasons || {};
   const deadCapRows = dcr.status  === 'fulfilled'  ? dcr.value : [];
-  const allTxns     = txnsr.status === 'fulfilled' ? (txnsr.value.transactions || []) : [];
   const membersData = memr.status  === 'fulfilled' ? memr.value  : [];
   const allGames    = gamesr.status === 'fulfilled' ? gamesr.value : [];
   const tradeExceptions = ter.status === 'fulfilled' ? ter.value : [];
   const attributesData = attrr.status === 'fulfilled' ? attrr.value : {};
   const myBlockEntries = ((blockr.status === 'fulfilled' ? blockr.value : {})[abbr] || {}).players || [];
-  // slug -> {eligible, reason}, filtered to this team — GET /api/poext/eligible
-  // is league-wide, so the roster Moves menu only needs its own team's slice.
+  // slug -> {eligible, reason} for this team (?team=; the filter here stays
+  // in case the API predates it).
   const poextEligible = {};
   if (poextr.status === 'fulfilled' && Array.isArray(poextr.value)) {
     poextr.value.forEach(e => { if (e.team === abbr) poextEligible[e.player] = e; });
@@ -8582,18 +8595,21 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   let seasonRows = [];
   if (sr.status === 'fulfilled') {
-    seasonsWrap.innerHTML = '';
     seasonRows = parseCSV(sr.value);
-    if (tadvr.status === 'fulfilled') joinTeamAdvanced(seasonRows, parseCSV(tadvr.value));
-    buildTimeline(seasonRows);
-    seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
+    whenTabShown('franchise', async () => {
+      const tadvr = await settledText('/data/team-advanced.csv');
+      if (tadvr.status === 'fulfilled') joinTeamAdvanced(seasonRows, parseCSV(tadvr.value));
+      seasonsWrap.innerHTML = '';
+      buildTimeline(seasonRows);
+      seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
+    });
   } else {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
   }
 
   _teamGamesResolve(allGames);
   buildPersonnelSection(membersData, allGames);
-  renderRivalries(allGames);
+  whenTabShown('franchise', () => renderRivalries(allGames));
   renderHeaderFacts(seasonRows, membersData);
 
   if (pr.status === 'fulfilled') {
@@ -8607,7 +8623,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // Sourced from data/franchise-records.csv (top 5 per stat per team), which the
   // build writes alongside the league-wide game-highs; a franchise with no
   // all-time great never cracks those, but still has its own record book.
-  {
+  whenTabShown('alltime', async () => {
+    const recr = await settledText('/data/franchise-records.csv');
     const recordsWrap = document.getElementById('records-wrap');
     const escAttr = s => String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -8669,21 +8686,22 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         ? `<div class="rec-grid">${cards}</div>`
         : '<div class="status">No games recorded for this franchise yet.</div>';
     }
-  }
+  });
 
   const allSeasons = psr.status === 'fulfilled' ? parseCSV(psr.value) : [];
   const latestSeasonBySlug = computeLatestSeasonBySlug(allSeasons,
     gsr.status === 'fulfilled' ? gsr.value : null);
   TWO_WAY_GAMES = computeSeasonGames(allSeasons, currentSeasonYr());
 
-  {
+  whenTabShown('franchise', async () => {
+    const stdr = await settledText('/standings/standings-history.csv');
     const standingsRows = stdr.status === 'fulfilled' ? parseCSV(stdr.value) : [];
     const radarEl = buildTeamRadar(abbr, allSeasons, standingsRows);
     if (radarEl) {
       document.getElementById('identity-wrap').appendChild(radarEl);
       document.getElementById('identity-section').style.display = '';
     }
-  }
+  });
 
   // Season Records — the season-total analog of the single-game records above:
   // this franchise's best regular season, and the best single season by any
@@ -8780,7 +8798,10 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // pick is entered "for real" (transactions / Article VII). Career stats are
   // joined from player_seasons by SLUG; a just-drafted rookie with no games yet
   // still appears (with zeroed stats).
-  {
+  whenTabShown('draft', async () => {
+    const allTxns = await fetch('/api/transactions?limit=500')
+      .then(r => r.ok ? r.json() : { transactions: [] })
+      .then(v => v.transactions || [], () => []);
     draftedWrap.innerHTML = '';
     {
       // Build rights-trade map from transactions (same logic as /draft page):
@@ -8901,7 +8922,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
       }
     }
-  }
+  });
 
   // Historical Rosters tab
   {
@@ -9206,8 +9227,8 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
 // The Front Office Ledger's line on this franchise (Franchise tab). Flavor,
 // from data/franchise-finances.csv; the full books are /finances. Fetched on
-// its own so a missing file costs the page nothing.
-(function renderFrontOffice() {
+// its own so a missing file costs the page nothing, and only once the tab opens.
+whenTabShown('franchise', function renderFrontOffice() {
   const money = v => {
     const a = Math.abs(v), sign = v < 0 ? '-' : '';
     return a >= 1e9 ? `${sign}NB¥${(a / 1e9).toFixed(2)}B` : `${sign}NB¥${Math.round(a / 1e6)}M`;
@@ -9246,4 +9267,4 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       }).catch(() => {});
     })
     .catch(() => {});
-})();
+});

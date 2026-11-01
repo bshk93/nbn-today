@@ -470,6 +470,7 @@ imported across routers.
 ```
 GET    /api/poext/eligible                     public — every rostered player,
                                                `eligible` + server-composed `reason`
+                                               (`?team=` for one team's players)
 POST   /api/poext/proposals                    team role — draft
 PATCH  /api/poext/proposals/{id}               team role — while draft/returned
 DELETE /api/poext/proposals/{id}               team role — while draft
