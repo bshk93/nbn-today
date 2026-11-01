@@ -4033,11 +4033,11 @@ const canViewCoachingSettings = abbr =>
 // the office does administer.
 const canEditTradeBlock = abbr => AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_ROLES.includes('admin');
 
-// Teams this member currently *owns*, from GET /api/auth/me. Ownership is a
-// tenure position, not a role — every FO member of a team carries the team role
-// (it gates the trading block and jersey numbers), but only the owner may move
-// real roster state. The server computes this with the same `is_team_owner` its
-// write endpoints gate on, so the menu can't offer a move the API would refuse.
+// Teams whose front office (owner, GM or coach) this member is on now, from
+// GET /api/auth/me's `owner_of` (named before 2026-11-01, when the moves were
+// opened up from owners only). It reads current tenures, not the team role. The
+// server computes it with the same `is_front_office` its write endpoints gate
+// on, so the menu can't offer a move the API would refuse.
 let AUTH_OWNER_OF = [];
 const canRenounce = abbr => AUTH_OWNER_OF.includes(abbr.toUpperCase());
 
@@ -5025,7 +5025,7 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   addItem('Renounce…', {
     enabled: elig.ok && owner,
     danger: true,
-    why: !owner ? 'Only the team owner can renounce.' : elig.why,
+    why: !owner ? 'Only the team’s front office can renounce.' : elig.why,
     onClick: () => openRenounceDialog(slug, bio, abbr),
   });
 
@@ -5047,13 +5047,13 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   if (qo.relevant) {
     addItem('Extend qualifying offer…', {
       enabled: qo.extend.ok && owner,
-      why: !owner ? 'Only the team owner can make a qualifying offer.' : qo.extend.why,
+      why: !owner ? 'Only the team’s front office can make a qualifying offer.' : qo.extend.why,
       onClick: () => openQualifyingOfferDialog(slug, bio, abbr, 'extend'),
     });
     addItem('Withdraw qualifying offer…', {
       enabled: qo.withdraw.ok && owner,
       danger: true,
-      why: !owner ? 'Only the team owner can withdraw a qualifying offer.' : qo.withdraw.why,
+      why: !owner ? 'Only the team’s front office can withdraw a qualifying offer.' : qo.withdraw.why,
       onClick: () => openQualifyingOfferDialog(slug, bio, abbr, 'withdraw'),
     });
   }
@@ -5064,13 +5064,13 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   const optElig = optionEligibility(bio);
   addItem('Exercise team option…', {
     enabled: optElig.ok && owner,
-    why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
+    why: !owner ? 'Only the team’s front office can act on a team option.' : optElig.why,
     onClick: () => openOptionDialog(slug, bio, abbr, 'accept', optElig.year),
   });
   addItem('Decline team option…', {
     enabled: optElig.ok && owner,
     danger: true,
-    why: !owner ? 'Only the team owner can act on a team option.' : optElig.why,
+    why: !owner ? 'Only the team’s front office can act on a team option.' : optElig.why,
     onClick: () => openOptionDialog(slug, bio, abbr, 'decline', optElig.year),
   });
 
@@ -5080,7 +5080,7 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   addItem('Release…', {
     enabled: relElig.ok && owner,
     danger: true,
-    why: !owner ? 'Only the team owner can release.' : relElig.why,
+    why: !owner ? 'Only the team’s front office can release.' : relElig.why,
     onClick: () => openReleaseDialog(slug, bio, abbr),
   });
 
@@ -5090,7 +5090,7 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   const twElig = twoWayEligibility(bio);
   addItem('Convert to standard contract…', {
     enabled: twElig.ok && owner,
-    why: !owner ? 'Only the team owner can act on a two-way contract.' : twElig.why,
+    why: !owner ? 'Only the team’s front office can act on a two-way contract.' : twElig.why,
     onClick: () => openConvertTwoWayDialog(slug, bio, abbr),
   });
 
@@ -5099,7 +5099,7 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   const spElig = signPickEligibility(bio);
   addItem('Sign to rookie scale…', {
     enabled: spElig.ok && owner,
-    why: !owner ? 'Only the team owner can sign a draft pick.' : spElig.why,
+    why: !owner ? 'Only the team’s front office can sign a draft pick.' : spElig.why,
     onClick: () => openSignPickDialog(slug, bio, abbr),
   });
 
@@ -5108,7 +5108,7 @@ function openMovesMenu(anchor, slug, bio, abbr, blockState, afterBlockChange, po
   const stElig = stashEligibility(bio);
   addItem(bio.stash ? 'Update stash…' : 'Stash draft rights…', {
     enabled: stElig.ok && owner,
-    why: !owner ? 'Only the team owner can stash a draft pick.' : stElig.why,
+    why: !owner ? 'Only the team’s front office can stash a draft pick.' : stElig.why,
     onClick: () => openStashDialog(slug, bio, abbr),
   });
 

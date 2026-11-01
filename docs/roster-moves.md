@@ -31,18 +31,18 @@ Two permission tiers, and they are genuinely different:
 | Action | Gate | Endpoint |
 |---|---|---|
 | Add/remove from trade block | team's own role **or** admin (`canEditTradeBlock`) | `PUT`/`DELETE /api/trading-block/{team}/player/{slug}` |
-| Renounce (§ 3.10) | **owner tenure** (`canRenounce`, server: `auth.is_team_owner`) | `POST /api/self/renounce` |
-| Stash draft rights (§ 7.1 / § 7.4) | **owner tenure**, same as renounce | `POST /api/self/stash` |
+| Renounce (§ 3.10) | **front-office tenure** (`canRenounce`, server: `auth.is_front_office`) | `POST /api/self/renounce` |
+| Stash draft rights (§ 7.1 / § 7.4) | **front-office tenure**, same as renounce | `POST /api/self/stash` |
 | Make an offer (a free agent's new contract, Bird Rights included) | team's own role, same as the trade block. Shown only for a UFA/RFA hold `renounceEligibility` accepts. A link, not a move: it opens `/free-agency/?player=&team=`, which goes straight into that team's offer form when the board is taking offers | none here — the offer is `POST /api/fa/offers` on `/free-agency` |
-| Extend / withdraw a qualifying offer (§ 3.1) | **owner tenure**, same as renounce. Shown only for an RFA-tagged player or one with a QO out (`qoEligibility`) | `POST /api/self/qualifying-offer` |
+| Extend / withdraw a qualifying offer (§ 3.1) | **front-office tenure**, same as renounce. Shown only for an RFA-tagged player or one with a QO out (`qoEligibility`) | `POST /api/self/qualifying-offer` |
 
-**Ownership is a tenure position, not a role.** Every front-office member of a
-team carries the team role (`phx`, `bkn`, …) — it gates cosmetic/soft writes like
-jersey numbers and the trading block. Only a member with a *current* `owner`-position
-tenure in members.json may move real roster state, so a GM or coach passes the role
-check and fails `is_team_owner`. `GET /api/auth/me` returns `owner_of` computed by
-that same function, so the UI can't offer a move the API would refuse. Admin passes
-everything, consistent with every other check in `auth.py`.
+**The gate is a current tenure, not the team role.** Every front-office member of a
+team carries the team role (`phx`, `bkn`, …), but a role can outlive the job. The
+roster moves need a *current* tenure in members.json as owner, GM or coach
+(`is_front_office`). They were owner-only until 2026-11-01, when a coach couldn't
+exercise his team's rookie options. `GET /api/auth/me` returns `owner_of` (the
+old name) computed by that same function, so the UI can't offer a move the API
+would refuse. Admin passes everything, consistent with every other check in `auth.py`.
 
 The scoped trading-block endpoints exist because the whole-block `PUT` is a
 last-write-wins replace — fine for the `/tradeblock` editor which owns the entire
