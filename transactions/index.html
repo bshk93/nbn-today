@@ -941,6 +941,7 @@
       <div class="form-field" id="f-opt-hold-field" style="display:none">
         <label>Cap Hold Type</label>
         <select id="f-opt-hold">
+          <option value="">Auto (§ 3.1, from his experience)</option>
           <option value="UFA">UFA Hold</option>
           <option value="RFA">RFA Hold</option>
         </select>
@@ -3532,7 +3533,7 @@ async function submitTransaction() {
     const year = document.getElementById('f-opt-year').value;
     const option_type = document.getElementById('f-opt-type').value;
     const decision = document.querySelector('input[name="opt-decision"]:checked').value;
-    const cap_hold_type   = document.getElementById('f-opt-hold').value;
+    const cap_hold_type   = document.getElementById('f-opt-hold').value || null;
     const cap_hold_amount = document.getElementById('f-opt-hold-amount').value.trim() || null;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!year || !option_type) { setStatus('err', 'Select a player with an option year.'); return; }

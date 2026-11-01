@@ -4521,7 +4521,7 @@ function openQualifyingOfferDialog(slug, bio, abbr, action) {
 function openOptionDialog(slug, bio, abbr, decision, year) {
   const name = displayNameFromBio(bio.name || slug);
   const verb = decision === 'accept' ? 'Exercise' : 'Decline';
-  let capHoldSelect, eapsSelect;
+  let eapsSelect;
   openConfirmModal({
     title: `${verb} ${name}’s ${year} team option?`,
     sub: decision === 'accept'
@@ -4536,21 +4536,9 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
       // of EAPS it is (§ 3.10). Until the season has an EAPS, the owner says
       // which; the API suggests one from this season's average salary.
       let eapsWrap;
+      // UFA vs RFA isn't asked: § 3.1 decides it from his experience, and the
+      // checks below say which.
       if (decision === 'decline') {
-        const label = document.createElement('label');
-        label.textContent = 'Resulting free-agent status';
-        capHoldSelect = document.createElement('select');
-        ['UFA', 'RFA'].forEach(v => {
-          const opt = document.createElement('option'); opt.value = v; opt.textContent = v;
-          capHoldSelect.appendChild(opt);
-        });
-        body.append(label, capHoldSelect);
-        const note = document.createElement('div');
-        note.className = 'confirm-check warn';
-        note.textContent = 'RFA only makes him eligible for a qualifying offer (§ 3.1) — he becomes a ' +
-          'restricted free agent once you extend one, from this menu, before July 1.';
-        body.appendChild(note);
-
         eapsWrap = document.createElement('div');
         eapsWrap.hidden = true;
         const eapsLabel = document.createElement('label');
@@ -4579,7 +4567,7 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
         let data;
         try {
           data = await apiFetchPublic('/api/validate/option', {
-            player: slug, decision, option_type: 'TEAM_OPT', year, cap_hold_type: 'UFA',
+            player: slug, decision, option_type: 'TEAM_OPT', year,
             eaps_assumption: (eapsSelect && eapsSelect.value) || null,
           });
         } catch (e) {
@@ -4619,7 +4607,6 @@ function openOptionDialog(slug, bio, abbr, decision, year) {
             method: 'POST',
             body: JSON.stringify({
               player: slug, decision,
-              cap_hold_type: (capHoldSelect && capHoldSelect.value) || 'UFA',
               eaps_assumption: (eapsSelect && eapsSelect.value) || null,
               description: `${abbr} ${decision}s ${name}’s ${year} team option`,
             }),
