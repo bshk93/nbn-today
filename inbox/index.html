@@ -24,43 +24,103 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-    
-            
-            
-    button {
-      font-family: inherit; cursor: pointer; border-radius: var(--radius-sm);
-      font-size: var(--text-sm); font-weight: 500; padding: 0.35rem 0.8rem;
-      border: 1px solid transparent; transition: background 0.1s;
-    }
-                
-    .empty { text-align: center; padding: 3rem 1rem; color: var(--text-dim); font-size: var(--text-base); }
+    /* ── Toolbar: views, search, kind chips ──────────────────────────────── */
+    /* The site's filter row (/members, /stats/totals): search first, then
+       dropdowns and views, then the count and a Clear that shows when needed. */
+    .ibx-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-4); }
+    .ibx-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
+    .ibx-filters .ui-input { height: 2rem; font-size: var(--text-sm); width: 12rem; }
+    .ibx-spacer { flex: 1; }
+    .ibx-total { font-size: var(--text-xs); color: var(--text-muted); }
+    .ibx-clear { font-size: var(--text-xs); }
+    .ibx-clear[hidden] { display: none; }
+    .ibx-kinds { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
 
-    .item-list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .item {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 0.85rem 1.1rem; display: flex; align-items: flex-start; gap: 0.75rem;
+    /* ── Notification settings ───────────────────────────────────────────── */
+    .ibx-prefs { padding: var(--space-4) 0; margin-bottom: var(--space-4); border-top: 2px solid var(--text-primary); border-bottom: 1px solid var(--border-subtle); }
+    .ibx-prefs p { font-size: var(--text-sm); color: var(--text-muted); margin: var(--space-2) 0 var(--space-3); }
+    .ibx-prefs .ui-chip[aria-pressed="false"] { text-decoration: line-through; color: var(--text-dim); }
+
+    /* ── Bulk bar ────────────────────────────────────────────────────────── */
+    .ibx-bulk {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3);
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
     }
-    .item.unread { border-color: var(--accent-dark); }
-    .item-dot {
-      width: 8px; height: 8px; border-radius: 50%; margin-top: 0.4rem; flex-shrink: 0;
-      background: var(--accent); visibility: hidden;
+    .ibx-bulk[hidden] { display: none; }
+    .ibx-bulk-count { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-right: auto; }
+
+    /* ── Sections and rows. Ruled, not boxed, like the homepage feed. ────── */
+    .ibx-section + .ibx-section { margin-top: var(--space-6); }
+    .ibx-section > .ui-section-title { margin-bottom: var(--space-2); }
+    .ibx-day {
+      display: block; color: var(--text-secondary);
+      padding: var(--space-5) 0 var(--space-2);
+      border-bottom: 1px solid var(--border-subtle);
     }
-    .item.unread .item-dot { visibility: visible; }
-    .item-body { flex: 1; min-width: 0; }
-    .item-text { font-size: var(--text-base); color: var(--text-secondary); }
-    .item.unread .item-text { color: var(--text-primary); }
-    .item-meta { font-size: var(--text-xs); color: var(--text-dim); margin-top: 0.3rem; display: flex; align-items: center; gap: 0.5rem; }
-    .item-meta a { color: var(--link); text-decoration: none; }
-    .item-meta a:hover { text-decoration: underline; }
-    .item-actions { flex-shrink: 0; }
-    .item-actions button { background: none; border: none; padding: 0; font-size: var(--text-xs); color: var(--text-dim); font-family: inherit; text-decoration: underline; }
-    .item-actions button:hover { color: var(--text-secondary); }
+    .ibx-day:first-child { padding-top: 0; }
+
+    /* A message is one condensed line; clicking it opens it in place. */
+    .ibx-row { border-bottom: 1px solid var(--border-subtle); }
+    .ibx-head {
+      display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto auto;
+      grid-template-areas: "kind text tag when";
+      gap: var(--space-3); align-items: center;
+      padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+      cursor: pointer; outline: none;
+    }
+    .ibx-selecting .ibx-head { grid-template-columns: auto 6.5rem minmax(0, 1fr) auto auto; grid-template-areas: "check kind text tag when"; }
+    .ibx-head:hover { background: var(--bg-hover); }
+    .ibx-head:focus-visible { box-shadow: var(--focus-ring); }
+    .ibx-row.is-focused > .ibx-head { background: var(--bg-hover); }
+    .ibx-row.is-unread > .ibx-head { box-shadow: inset 3px 0 0 var(--accent); }
+    .ibx-row.is-selected > .ibx-head { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+    .ibx-row.is-open { background: var(--bg-subtle); }
+
+    .ibx-check { grid-area: check; margin: 0; }
+    .ibx-kind { grid-area: kind; justify-self: start; }
+    .ibx-text {
+      grid-area: text; min-width: 0;
+      font-size: var(--text-sm); color: var(--text-secondary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .is-unread .ibx-text { color: var(--text-primary); font-weight: 600; }
+    /* Open: the line itself unfolds to the whole message. */
+    .ibx-row.is-open .ibx-text {
+      white-space: normal; overflow: visible; overflow-wrap: anywhere;
+      font-size: var(--text-base); line-height: 1.45; color: var(--text-primary);
+    }
+    .ibx-row.is-open > .ibx-head { align-items: baseline; }
+    .ibx-need-tag { grid-area: tag; }
+    .ibx-when { grid-area: when; font-size: var(--text-xs); color: var(--text-dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    /* The open message: full text, its buttons, and what you can do with it. */
+    .ibx-body { padding: 0 var(--space-3) var(--space-4) calc(6.5rem + var(--space-3) * 2); }
+    .ibx-selecting .ibx-body { padding-left: calc(6.5rem + var(--space-3) * 3 + 1rem); }
+    .ibx-full-when { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .ibx-full-when .ui-chip { display: none; }
+    .ibx-opts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+
+    .ibx-more { display: flex; justify-content: center; padding: var(--space-4) 0; }
+
+    @media (max-width: 640px) {
+      /* No room for the tag column: the kind is the stripe's colour. */
+      .ibx-head, .ibx-selecting .ibx-head { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "check text tag when"; }
+      .ibx-head { padding-left: var(--space-3); }
+      .ibx-head .ibx-kind { display: none; }
+      .ibx-body, .ibx-selecting .ibx-body { padding-left: var(--space-4); }
+      .ibx-full-when .ui-chip { display: inline-flex; }
+      .ibx-filters .ui-input { width: 100%; }
+      .ibx-spacer { display: none; }
+    }
 
     /* Buttons a message carries (`actions` on the item — nbn-api inbox.py).
        Each runs server-side and then reads as done, on every copy. */
     .msg-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.55rem; }
     .msg-action {
       background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
+      font-family: inherit; cursor: pointer; border-radius: var(--radius-sm);
       font-size: var(--text-xs); padding: 0.3rem 0.65rem;
     }
     /* A group (one player's Remove / Still available) is one row: the name
@@ -79,7 +139,7 @@
     }
     .msg-group-btns .msg-action:not(.msg-action-primary) { border-color: var(--text-dim); }
     .msg-action:hover:not(:disabled) { border-color: var(--accent); }
-    .msg-action-primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+    .msg-action-primary { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--text-on-accent); }
     .msg-action-primary:hover:not(:disabled) { filter: brightness(1.1); }
     .msg-action:disabled { cursor: default; opacity: 0.6; }
     .msg-action-done {
@@ -87,148 +147,438 @@
       color: var(--text-secondary); border: 1px dashed var(--border);
     }
     .msg-action-error { font-size: var(--text-xs); color: var(--danger); align-self: center; }
-
-    .signin-hint { color: var(--text-dim); font-size: var(--text-base); }
-
-    /* Modal (token sign-in) */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      z-index: 100; align-items: center; justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 1.5rem; width: 100%; max-width: 420px; margin: 1rem;
-    }
-    .modal h2 { font-size: var(--text-base); font-weight: 700; margin-bottom: 0.75rem; }
-    .modal input {
-      width: 100%; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-primary);
-      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: var(--text-base);
-      margin-bottom: 0.75rem; font-family: var(--font-mono);
-    }
-    .modal input:focus { outline: none; border-color: var(--accent); }
-    .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-    .modal p.note { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.75rem; }
   </style>
 </head>
 <body>
 <div class="page ui-page">
-  <nav class="nav"></nav>
+  <nav class="nav" data-no-home></nav>
 
   <header class="ui-header">
     <div>
       <h1 class="ui-title">Inbox</h1>
+      <p class="ui-subtitle" id="subtitle"></p>
     </div>
-    <div class="right-bar ui-header-actions">
-      <button class="btn-ghost" id="btn-mark-all" style="display:none;" onclick="markAllRead()">Mark all read</button>
+    <div class="ui-header-actions" id="header-actions" hidden>
+      <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-select">Select</button>
+      <button type="button" class="ui-btn ui-btn--sm" id="btn-mark-all">Mark all read</button>
+      <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="btn-prefs" aria-expanded="false"
+              aria-controls="prefs" aria-label="Notification settings" title="Notification settings">
+        <i class="ui-icon ui-icon--gear" aria-hidden="true"></i>
+      </button>
     </div>
   </header>
 
-  <div id="content">
-    <div class="empty">Loading…</div>
-  </div>
-</div>
+  <section class="ibx-prefs" id="prefs" hidden>
+    <h2 class="ui-section-title">Notifications</h2>
+    <p>Turn a kind off and those messages stop arriving. Messages with buttons always arrive.</p>
+    <div class="ibx-kinds" id="prefs-kinds"></div>
+  </section>
 
-<!-- Auth modal -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeAuthModal(event)">
-  <div class="modal">
-    <h2>Sign in with your member token</h2>
-    <p class="note">A member token is required to view your inbox. It's stored locally in your browser.</p>
-    <input type="password" id="token-input" placeholder="Paste your token" autocomplete="off">
-    <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeAuthModal()">Cancel</button>
-      <button class="btn-primary" onclick="doSignIn()">Sign in</button>
+  <div id="chrome" hidden>
+    <div class="ibx-filters">
+      <input class="ui-input" id="q" type="search" placeholder="Find a message" aria-label="Find a message" autocomplete="off">
+      <select class="ui-select" id="f-kind" aria-label="Kind"><option value="">All kinds</option></select>
+      <div class="ui-segmented" role="group" aria-label="View" id="views"></div>
+      <span class="ibx-spacer"></span>
+      <span class="ibx-total" id="f-count"></span>
+      <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm ibx-clear" id="f-clear" hidden>Clear</button>
     </div>
+    <div class="ibx-bulk" id="bulk" hidden></div>
   </div>
+
+  <div id="list"><div class="ui-loading">Loading…</div></div>
+
 </div>
 
 <script>
 const API = '/api';
+const PAGE_SIZE = 50;
+const REFRESH_MS = 60000;
+
+// The short name a row's tag uses; the long name for the filter chips comes
+// from the API. Kinds are told apart by name, not colour: colour on this page
+// means unread (the accent edge) or waiting on you (the Answer tag).
+const KIND_STYLE = {
+  fa:           { short: 'FA' },
+  extensions:   { short: 'Extension' },
+  trades:       { short: 'Trades' },
+  tradeblock:   { short: 'Trade block' },
+  transactions: { short: 'Transaction' },
+  games:        { short: 'Games' },
+  news:         { short: 'News' },
+  suggestions:  { short: 'Suggestion' },
+  finances:     { short: 'Finances' },
+  committees:   { short: 'Committee' },
+  account:      { short: 'Account' },
+  other:        { short: 'Other' },
+};
+const VIEWS = [
+  { id: 'all',      label: 'Inbox' },
+  { id: 'unread',   label: 'Unread' },
+  { id: 'action',   label: 'Needs you' },
+  { id: 'archived', label: 'Archived' },
+];
+
 let me = null;
 let items = [];
+let kinds = [];          // [{id, label}] from the API
+let muted = new Set();
+const st = {
+  view: 'all', kind: null, q: '',
+  selecting: false, selected: new Set(),
+  focusId: null, openId: null, limit: PAGE_SIZE,
+  order: [],             // ids in the order they're drawn, for j/k
+};
 
-function fmtDateTime(iso) {
-  if (!iso) return '';
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function authHeaders(extra) {
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(extra || {}) };
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, { ...opts, headers: authHeaders(opts.headers) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'That didn’t work');
+  return data;
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function kindOf(it) { return KIND_STYLE[it.kind] ? it.kind : 'other'; }
+function kindLabel(k) { return (kinds.find(x => x.id === k) || {}).label || KIND_STYLE[k]?.short || k; }
+
+function kindChip(k, cls) {
+  return el('span', 'ui-chip ui-chip--sm ' + (cls || ''), KIND_STYLE[k]?.short || k);
+}
+
+// A button still waiting on this member: not pressed, in a group nobody answered.
+function needsAction(it) {
+  const acts = it.actions || [];
+  const answered = new Set(acts.filter(a => a.done_at && a.group).map(a => a.group));
+  return acts.some(a => !a.done_at && !(a.group && answered.has(a.group)));
+}
+
+function dayKey(d) { return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+
+function dayLabel(d) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const that = new Date(d); that.setHours(0, 0, 0, 0);
+  const days = Math.round((today - that) / 864e5);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return that.toLocaleDateString('en-US', { weekday: 'long' });
+  return that.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: that.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+}
+
+function fmtFull(iso) {
+  return new Date(iso).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+// Recent: "12m ago". Older: the clock time — the day header already says which day.
+function fmtWhen(iso) {
   const d = new Date(iso);
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  const mins = Math.floor((Date.now() - d) / 6e4);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 12 * 60) return `${Math.floor(mins / 60)}h ago`;
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-function escHtml(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function unreadCount() { return items.filter(i => !i.read && !i.archived).length; }
+
+function syncBadge() {
+  // nav.js keeps the sidebar, menu-button and header badges; tell it the new count.
+  if (typeof window.nbnSetInboxUnread === 'function') window.nbnSetInboxUnread(unreadCount());
 }
 
-function authHeaders() {
-  const token = localStorage.getItem('nbn_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+// ── Filtering ────────────────────────────────────────────────────────────────
+
+function inView(it, view = st.view) {
+  if (view === 'archived') return !!it.archived;
+  if (it.archived) return false;
+  if (view === 'unread') return !it.read;
+  if (view === 'action') return needsAction(it);
+  return true;
 }
+
+function matches(it) {
+  if (!inView(it)) return false;
+  if (st.kind && kindOf(it) !== st.kind) return false;
+  if (st.q && !String(it.text || '').toLowerCase().includes(st.q.toLowerCase())) return false;
+  return true;
+}
+
+// ── URL state (replaceState: filters shouldn't each cost a Back) ─────────────
+
+function readUrl() {
+  const p = new URLSearchParams(location.search);
+  if (VIEWS.some(v => v.id === p.get('view'))) st.view = p.get('view');
+  st.kind = p.get('kind') || null;
+  st.q = p.get('q') || '';
+  document.getElementById('q').value = st.q;
+}
+
+function writeUrl() {
+  const p = new URLSearchParams();
+  if (st.view !== 'all') p.set('view', st.view);
+  if (st.kind) p.set('kind', st.kind);
+  if (st.q) p.set('q', st.q);
+  const qs = p.toString();
+  history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+}
+
+// ── Loading ──────────────────────────────────────────────────────────────────
 
 async function loadInbox() {
-  const content = document.getElementById('content');
-  if (!me) {
-    content.innerHTML = '<div class="empty signin-hint">Sign in to see your inbox.</div>';
-    return;
-  }
-  try {
-    const res = await fetch(`${API}/inbox`, { headers: authHeaders() });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    items = data.items || [];
-  } catch {
-    content.innerHTML = '<div class="empty">Could not load your inbox.</div>';
-    return;
-  }
-  document.getElementById('btn-mark-all').style.display = items.some(i => !i.read) ? '' : 'none';
-  renderItems();
+  const data = await api('/inbox');
+  items = data.items || [];
+  if (data.kinds) kinds = data.kinds;
+  else kinds = [...new Set(items.map(kindOf))].map(id => ({ id, label: KIND_STYLE[id]?.short || id }));
+  muted = new Set(data.muted || []);
+  // Drop selections for messages that have since aged out.
+  const ids = new Set(items.map(i => i.id));
+  st.selected.forEach(id => { if (!ids.has(id)) st.selected.delete(id); });
+  if (st.focusId && !ids.has(st.focusId)) st.focusId = null;
 }
 
-function renderItems() {
-  const content = document.getElementById('content');
-  if (!items.length) {
-    content.innerHTML = '<div class="empty">Nothing here yet.</div>';
+async function refresh() {
+  if (!me || document.visibilityState !== 'visible') return;
+  if (document.querySelector('.msg-action:disabled')) return; // an action is in flight
+  try { await loadInbox(); } catch { return; }
+  render();
+  syncBadge();
+}
+
+// ── Rendering ────────────────────────────────────────────────────────────────
+
+function render() {
+  const n = unreadCount();
+  const open = items.filter(i => !i.archived && needsAction(i)).length;
+  document.getElementById('subtitle').textContent =
+    [n ? `${n} unread` : 'All read', open ? `${open} need${open === 1 ? 's' : ''} you` : null].filter(Boolean).join(' · ');
+  document.getElementById('btn-mark-all').disabled = !items.some(i => !i.read && !i.archived && (!st.kind || kindOf(i) === st.kind));
+  document.getElementById('btn-mark-all').title = st.kind ? `Mark every ${kindLabel(st.kind)} message read` : 'Mark every message read';
+  document.getElementById('btn-select').textContent = st.selecting ? 'Done' : 'Select';
+  renderViews();
+  renderFilters();
+  renderBulk();
+  renderList();
+}
+
+function renderViews() {
+  const box = document.getElementById('views');
+  box.innerHTML = '';
+  VIEWS.forEach(v => {
+    const b = el('button', null, v.label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(st.view === v.id));
+    b.addEventListener('click', () => setView(v.id));
+    box.appendChild(b);
+  });
+}
+
+// The kind dropdown, the count and Clear — kept in step with the state the
+// same way /members keeps its filter row.
+function renderFilters() {
+  const sel = document.getElementById('f-kind');
+  const want = ['', ...kinds.map(k => k.id)].join('|');
+  if ([...sel.options].map(o => o.value).join('|') !== want) {
+    sel.innerHTML = '<option value="">All kinds</option>';
+    kinds.forEach(k => sel.appendChild(new Option(k.label, k.id)));
+  }
+  if (sel.value !== (st.kind || '')) {
+    sel.value = st.kind || '';
+    if (window.UiSelect) UiSelect.refresh(sel);
+  }
+  const q = document.getElementById('q');
+  if (q.value.trim() !== st.q) q.value = st.q;
+  const all = items.filter(it => inView(it, st.view === 'archived' ? 'archived' : 'all')).length;
+  const shown = items.filter(matches).length;
+  const noun = n => n === 1 ? 'message' : 'messages';
+  document.getElementById('f-count').textContent = shown === all ? `${all} ${noun(all)}` : `${shown} of ${all} ${noun(all)}`;
+  document.getElementById('f-clear').hidden = !(st.q || st.kind || st.view !== 'all');
+}
+
+function renderBulk() {
+  const bar = document.getElementById('bulk');
+  bar.hidden = !st.selecting;
+  if (!st.selecting) return;
+  bar.innerHTML = '';
+  const n = st.selected.size;
+  bar.appendChild(el('span', 'ibx-bulk-count', n ? `${n} selected` : 'Select messages'));
+  const btn = (label, fn, opts = {}) => {
+    const b = el('button', 'ui-btn ui-btn--sm' + (opts.ghost ? ' ui-btn--ghost' : ''), label);
+    b.type = 'button';
+    b.disabled = !!opts.disabled;
+    b.addEventListener('click', fn);
+    bar.appendChild(b);
+  };
+  const shown = st.order;
+  const allShown = shown.length && shown.every(id => st.selected.has(id));
+  btn(allShown ? 'Select none' : 'Select all', () => {
+    if (allShown) st.selected.clear(); else shown.forEach(id => st.selected.add(id));
+    render();
+  }, { ghost: true });
+  btn('Mark read', () => bulk('read'), { disabled: !n });
+  btn('Mark unread', () => bulk('unread'), { disabled: !n });
+  if (st.view === 'archived') btn('Unarchive', () => bulk('unarchive'), { disabled: !n });
+  else btn('Archive', () => bulk('archive'), { disabled: !n });
+}
+
+// The list as an ordered set of blocks: an optional "Needs you" section, then
+// days. Every message is its own row; nothing is folded away.
+function buildBlocks(list) {
+  const blocks = [];
+  let rest = list;
+  if ((st.view === 'all' || st.view === 'unread') && !st.q) {
+    const need = list.filter(needsAction);
+    if (need.length) {
+      blocks.push({ type: 'section', title: 'Needs you', cls: 'ibx-need', rows: need });
+      rest = list.filter(it => !needsAction(it));
+    }
+  }
+  const days = [];
+  rest.forEach(it => {
+    const d = new Date(it.ts);
+    let day = days[days.length - 1];
+    if (!day || day.key !== dayKey(d)) days.push(day = { key: dayKey(d), label: dayLabel(d), rows: [] });
+    day.rows.push(it);
+  });
+  if (days.length) blocks.push({ type: 'days', days, title: blocks.length ? 'Everything else' : null });
+  return blocks;
+}
+
+function renderList() {
+  const box = document.getElementById('list');
+  box.innerHTML = '';
+  box.classList.toggle('ibx-selecting', st.selecting);
+  st.order = [];
+  const list = items.filter(matches);
+  if (!list.length) {
+    const msg = !items.length ? 'Nothing here yet.'
+      : st.q ? `No messages match “${st.q}”.`
+      : st.view === 'unread' ? 'You’re all caught up.'
+      : st.view === 'action' ? 'Nothing is waiting on you.'
+      : st.view === 'archived' ? 'Nothing archived.'
+      : 'No messages here.';
+    box.appendChild(el('div', 'ui-empty', msg));
     return;
   }
-  const list = document.createElement('div');
-  list.className = 'item-list';
-  items.forEach(it => list.appendChild(renderItem(it)));
-  content.innerHTML = '';
-  content.appendChild(list);
-}
 
-function renderItem(it) {
-  const el = document.createElement('div');
-  el.className = 'item' + (it.read ? '' : ' unread');
+  let budget = st.limit;
+  let cut = false;
+  const addRow = (parent, it) => {
+    if (budget <= 0) { cut = true; return; }
+    budget--;
+    parent.appendChild(renderRow(it));
+    st.order.push(it.id);
+  };
 
-  const dot = document.createElement('div');
-  dot.className = 'item-dot';
-  el.appendChild(dot);
+  buildBlocks(list).forEach(b => {
+    if (cut) return;
+    const sec = el('section', 'ibx-section ' + (b.cls || ''));
+    if (b.title) sec.appendChild(el('h2', 'ui-section-title', b.title));
+    if (b.type === 'section') b.rows.forEach(it => addRow(sec, it));
+    else b.days.forEach(day => {
+      if (cut) return;
+      sec.appendChild(el('div', 'ui-kicker ibx-day', day.label));
+      day.rows.forEach(it => addRow(sec, it));
+    });
+    box.appendChild(sec);
+  });
 
-  const body = document.createElement('div');
-  body.className = 'item-body';
-  const text = document.createElement('div');
-  text.className = 'item-text';
-  text.textContent = it.text;
-  body.appendChild(text);
-
-  const meta = document.createElement('div');
-  meta.className = 'item-meta';
-  meta.innerHTML = `<span>${fmtDateTime(it.ts)}</span>`
-    + (it.link ? `<span>&middot;</span><a href="${escHtml(it.link)}">Open</a>` : '');
-  body.appendChild(meta);
-  if (it.actions && it.actions.length) body.appendChild(renderMsgActions(it));
-  el.appendChild(body);
-
-  if (!it.read) {
-    const actions = document.createElement('div');
-    actions.className = 'item-actions';
-    const btn = document.createElement('button');
-    btn.textContent = 'Mark read';
-    btn.addEventListener('click', () => markRead(it.id));
-    actions.appendChild(btn);
-    el.appendChild(actions);
+  if (cut) {
+    const more = el('div', 'ibx-more');
+    const b = el('button', 'ui-btn ui-btn--sm', `Show more (${list.length - st.order.length} older)`);
+    b.type = 'button';
+    b.addEventListener('click', () => { st.limit += PAGE_SIZE; render(); });
+    more.appendChild(b);
+    box.appendChild(more);
   }
-
-  return el;
 }
+
+function renderRow(it) {
+  const row = el('div', 'ibx-row');
+  const open = st.openId === it.id;
+  row.dataset.id = it.id;
+  row.classList.toggle('is-unread', !it.read && !it.archived);
+  row.classList.toggle('is-focused', st.focusId === it.id);
+  row.classList.toggle('is-selected', st.selected.has(it.id));
+  row.classList.toggle('is-open', open);
+
+  const head = el('div', 'ibx-head');
+  head.tabIndex = 0;
+  head.setAttribute('role', 'button');
+  head.setAttribute('aria-expanded', String(open));
+  if (st.selecting) {
+    const cb = el('input', 'ibx-check');
+    cb.type = 'checkbox';
+    cb.checked = st.selected.has(it.id);
+    cb.setAttribute('aria-label', 'Select message');
+    cb.addEventListener('click', e => { e.stopPropagation(); toggleSelect(it.id); });
+    head.appendChild(cb);
+  }
+  head.appendChild(kindChip(kindOf(it), 'ibx-kind'));
+  const text = el('div', 'ibx-text', it.text);
+  if (!open) text.title = it.text;
+  head.appendChild(text);
+  if (needsAction(it)) head.appendChild(el('span', 'ui-chip ui-chip--sm ui-chip--warning ibx-need-tag', 'Answer'));
+  // Only today's messages carry a time on the line; for older ones the day
+  // header says enough, and the full date is there once the message is open.
+  if (dayKey(new Date(it.ts)) === dayKey(new Date())) {
+    const t = el('time', 'ibx-when', fmtWhen(it.ts));
+    t.dateTime = it.ts;
+    t.title = fmtFull(it.ts);
+    head.appendChild(t);
+  }
+  head.addEventListener('click', e => {
+    if (e.target.closest('button, input')) return;
+    if (st.selecting) { toggleSelect(it.id); return; }
+    toggleOpen(it);
+  });
+  head.addEventListener('focus', () => {
+    if (st.focusId === it.id) return;
+    st.focusId = it.id;
+    document.querySelectorAll('.ibx-row.is-focused').forEach(r => r.classList.remove('is-focused'));
+    row.classList.add('is-focused');
+  });
+  head.addEventListener('keydown', e => {
+    if (e.key === ' ') { e.preventDefault(); toggleOpen(it); }
+  });
+  row.appendChild(head);
+
+  if (open) {
+    const body = el('div', 'ibx-body');
+    const when = el('div', 'ibx-full-when');
+    when.appendChild(kindChip(kindOf(it)));
+    when.appendChild(el('span', null, fmtFull(it.ts)));
+    body.appendChild(when);
+    if (it.actions && it.actions.length) body.appendChild(renderMsgActions(it));
+    const opts = el('div', 'ibx-opts');
+    const btn = (label, cls, fn) => {
+      const b = el('button', 'ui-btn ui-btn--sm ' + cls, label);
+      b.type = 'button';
+      b.addEventListener('click', fn);
+      opts.appendChild(b);
+    };
+    if (it.link) btn('Open', 'ui-btn--primary', () => { location.href = it.link; });
+    if (!it.archived) btn(it.read ? 'Mark unread' : 'Mark read', '', () => setRead(it, !it.read));
+    btn(it.archived ? 'Unarchive' : 'Archive', 'ui-btn--ghost', () => setArchived(it, !it.archived));
+    body.appendChild(opts);
+    row.appendChild(body);
+  }
+  return row;
+}
+
+// ── Message actions (unchanged contract: POST /api/inbox/{id}/actions/{i}) ───
 
 function renderMsgActions(it) {
   // Ungrouped actions sit in one wrapping line. Actions sharing a `group` are
@@ -280,7 +630,8 @@ function renderMsgActions(it) {
 function doneChip(a) {
   const done = document.createElement('span');
   done.className = 'msg-action-done';
-  done.textContent = '\u2713 ' + (a.done_label || a.label)
+  done.dataset.icon = 'check';
+  done.textContent = (a.done_label || a.label)
     + (me && a.done_by && a.done_by !== me.name ? ` (${a.done_by})` : '');
   return done;
 }
@@ -288,6 +639,7 @@ function doneChip(a) {
 function actionButton(it, i, wrap, text) {
   const a = it.actions[i];
   const btn = document.createElement('button');
+  btn.type = 'button';
   btn.className = 'msg-action' + (a.kind === 'tradeblock_remove' ? ' msg-action-primary' : '');
   btn.textContent = text;
   btn.addEventListener('click', () => runMsgAction(it, i, btn, wrap));
@@ -299,124 +651,221 @@ async function runMsgAction(it, i, btn, wrap) {
   wrap.querySelectorAll('.msg-action-error').forEach(e => e.remove());
   let data;
   try {
-    const res = await fetch(`${API}/inbox/${it.id}/actions/${i}`, { method: 'POST', headers: authHeaders() });
-    data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || 'That didn\u2019t work');
+    data = await api(`/inbox/${it.id}/actions/${i}`, { method: 'POST' });
   } catch (e) {
     btn.disabled = false;
     const err = document.createElement('span');
     err.className = 'msg-action-error';
-    err.textContent = e.message || 'That didn\u2019t work';
+    err.textContent = e.message || 'That didn’t work';
     wrap.appendChild(err);
     return;
   }
   it.actions[i] = data.action;
   it.read = true;
-  document.getElementById('btn-mark-all').style.display = items.some(x => !x.read) ? '' : 'none';
-  renderItems();
+  render();
+  syncBadge();
 }
 
-async function markRead(id) {
-  try {
-    await fetch(`${API}/inbox/${id}/read`, { method: 'POST', headers: authHeaders() });
-  } catch { return; }
-  const it = items.find(i => i.id === id);
-  if (it) it.read = true;
-  document.getElementById('btn-mark-all').style.display = items.some(i => !i.read) ? '' : 'none';
-  renderItems();
-}
+// ── Mutations ────────────────────────────────────────────────────────────────
 
-async function markAllRead() {
-  try {
-    await fetch(`${API}/inbox/read-all`, { method: 'POST', headers: authHeaders() });
-  } catch { return; }
-  items.forEach(i => i.read = true);
-  document.getElementById('btn-mark-all').style.display = 'none';
-  renderItems();
-}
-
-// ── Auth ──────────────────────────────────────────────────────────────────────
-
-async function initAuth() {
-  const token = localStorage.getItem('nbn_token');
-  if (!token) { updateAuthUI(null); return; }
-  try {
-    const res = await fetch(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) {
-      me = await res.json();
-      updateAuthUI(me);
-    } else {
-      if (res.status === 401) localStorage.removeItem('nbn_token');
-      updateAuthUI(null);
-    }
-  } catch {
-    me = { name: '…', roles: [] };
-    updateAuthUI(me);
+// Optimistic: the page changes at once and puts it back if the server says no.
+async function mutate(its, flags, request) {
+  const before = its.map(it => ({ it, read: it.read, archived: it.archived }));
+  its.forEach(it => Object.assign(it, flags));
+  render();
+  syncBadge();
+  try { await request(); }
+  catch (e) {
+    before.forEach(b => { b.it.read = b.read; b.it.archived = b.archived; });
+    render();
+    syncBadge();
+    if (typeof toast === 'function') toast(e.message || 'That didn’t work', true);
   }
 }
 
-function updateAuthUI(info) {
-  // The page's own sign-in bar was removed in favour of the header's Sign in
-  // button and profile menu (nav.js), so these may not exist; {} absorbs the
-  // writes below without touching the rest of this function.
-  const label = document.getElementById('auth-label') || {};
-  const name = document.getElementById('auth-name') || {};
-  const btn = document.getElementById('btn-auth') || {};
-  if (info) {
-    label.textContent = 'Signed in as';
-    name.textContent = info.name;
-    btn.textContent = 'Sign out';
-    btn.onclick = doSignOut;
-  } else {
-    label.textContent = 'Not signed in';
-    name.textContent = '';
-    btn.textContent = 'Sign in';
-    btn.onclick = openAuthModal;
-    document.getElementById('btn-mark-all').style.display = 'none';
+function setRead(it, read) {
+  return mutate([it], { read }, () => api(`/inbox/${it.id}/${read ? 'read' : 'unread'}`, { method: 'POST' }));
+}
+
+function setArchived(it, archived) {
+  return mutate([it], archived ? { archived, read: true } : { archived },
+    () => api(`/inbox/${it.id}/${archived ? 'archive' : 'unarchive'}`, { method: 'POST' }));
+}
+
+function bulk(op) {
+  const its = items.filter(i => st.selected.has(i.id));
+  const flags = { read: { read: true }, unread: { read: false }, archive: { archived: true, read: true }, unarchive: { archived: false } }[op];
+  st.selected.clear();
+  return mutate(its, flags, () => api('/inbox/bulk', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: its.map(i => i.id), op }),
+  }));
+}
+
+function markAllRead() {
+  const its = items.filter(i => !i.read && (!st.kind || kindOf(i) === st.kind));
+  if (!its.length) return;
+  return mutate(its, { read: true },
+    () => api('/inbox/read-all' + (st.kind ? `?kind=${encodeURIComponent(st.kind)}` : ''), { method: 'POST' }));
+}
+
+// Open (or close) a message in place; opening it marks it read.
+function toggleOpen(it) {
+  st.focusId = it.id;
+  st.openId = st.openId === it.id ? null : it.id;
+  if (st.openId && !it.read && !it.archived) {
+    it.read = true;
+    api(`/inbox/${it.id}/read`, { method: 'POST' }).catch(() => {});
+    syncBadge();
   }
+  render();
 }
 
-function openAuthModal() {
-  document.getElementById('modal-overlay').classList.add('open');
-  setTimeout(() => document.getElementById('token-input').focus(), 50);
+function openLink(it) {
+  if (!it.link) return;
+  if (!it.read && !it.archived) {
+    it.read = true;
+    // keepalive, so leaving the page doesn't cancel it.
+    fetch(`${API}/inbox/${it.id}/read`, { method: 'POST', headers: authHeaders(), keepalive: true }).catch(() => {});
+  }
+  location.href = it.link;
 }
 
-function closeAuthModal(e) {
-  if (e && e.target !== document.getElementById('modal-overlay')) return;
-  document.getElementById('modal-overlay').classList.remove('open');
-  document.getElementById('token-input').value = '';
+function toggleSelect(id) {
+  if (st.selected.has(id)) st.selected.delete(id); else st.selected.add(id);
+  render();
 }
 
-async function doSignIn() {
-  const token = document.getElementById('token-input').value.trim();
-  if (!token) return;
-  try {
-    const res = await fetch(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) { toast('That token was not accepted.', true); return; }
-    me = await res.json();
-    localStorage.setItem('nbn_token', token);
-    document.getElementById('modal-overlay').classList.remove('open');
-    document.getElementById('token-input').value = '';
-    updateAuthUI(me);
-    loadInbox();
-  } catch { toast('Could not sign in. Check your connection.', true); }
+function setView(v) {
+  st.view = v;
+  applyFilters();
 }
 
-function doSignOut() {
-  localStorage.removeItem('nbn_token');
-  me = null;
-  updateAuthUI(null);
-  loadInbox();
+// ── Notification settings ────────────────────────────────────────────────────
+
+function renderPrefs() {
+  const box = document.getElementById('prefs-kinds');
+  box.innerHTML = '';
+  kinds.forEach(k => {
+    const b = el('button', 'ui-chip', k.label);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(!muted.has(k.id)));
+    b.title = muted.has(k.id) ? 'Off: these won’t arrive' : 'On';
+    b.addEventListener('click', async () => {
+      const next = new Set(muted);
+      if (next.has(k.id)) next.delete(k.id); else next.add(k.id);
+      const prev = muted;
+      muted = next;
+      renderPrefs();
+      try {
+        await api('/inbox/prefs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ muted: [...next] }) });
+      } catch (e) {
+        muted = prev;
+        renderPrefs();
+        if (typeof toast === 'function') toast(e.message || 'Couldn’t save that', true);
+      }
+    });
+    box.appendChild(b);
+  });
 }
 
-document.getElementById('token-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSignIn();
-  if (e.key === 'Escape') closeAuthModal();
+function togglePrefs() {
+  const panel = document.getElementById('prefs');
+  panel.hidden = !panel.hidden;
+  document.getElementById('btn-prefs').setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) renderPrefs();
+}
+
+// ── Keyboard ─────────────────────────────────────────────────────────────────
+
+function moveFocus(step) {
+  if (!st.order.length) return;
+  const i = st.order.indexOf(st.focusId);
+  const next = st.order[Math.max(0, Math.min(st.order.length - 1, i < 0 ? 0 : i + step))];
+  st.focusId = next;
+  render();
+  document.querySelector(`.ibx-row[data-id="${next}"]`)?.scrollIntoView({ block: 'nearest' });
+}
+
+document.addEventListener('keydown', e => {
+  if (!me || e.ctrlKey || e.metaKey || e.altKey) return;
+  const typing = e.target.closest('input, textarea, select, [contenteditable]');
+  if (typing) {
+    if (e.key === 'Escape' && e.target.id === 'q') e.target.blur();
+    return;
+  }
+  if (document.querySelector('.dlg-overlay, .search-overlay.open')) return;
+  const it = items.find(i => i.id === st.focusId);
+  switch (e.key) {
+    case 'j': moveFocus(1); break;
+    case 'k': moveFocus(-1); break;
+    case 'Enter': if (it) toggleOpen(it); else return; break;
+    case 'o': if (it && it.link) openLink(it); else return; break;
+    case 'u': if (it && !it.archived) setRead(it, !it.read); else return; break;
+    case 'e': if (it) setArchived(it, !it.archived); else return; break;
+    case 'x':
+      if (!it) return;
+      st.selecting = true;
+      toggleSelect(it.id);
+      break;
+    case '/': document.getElementById('q').focus(); break;
+    case 'A': if (e.shiftKey) markAllRead(); else return; break;
+    case 'Escape':
+      if (st.selecting) { st.selecting = false; st.selected.clear(); render(); }
+      else if (st.openId) { st.openId = null; render(); }
+      else if (st.focusId) { st.focusId = null; render(); }
+      else return;
+      break;
+    default: return;
+  }
+  e.preventDefault();
 });
 
+// ── Wiring ───────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-mark-all').addEventListener('click', markAllRead);
+document.getElementById('btn-prefs').addEventListener('click', togglePrefs);
+document.getElementById('btn-select').addEventListener('click', () => {
+  st.selecting = !st.selecting;
+  st.selected.clear();
+  render();
+});
+function applyFilters() { st.limit = PAGE_SIZE; st.selected.clear(); writeUrl(); render(); }
+document.getElementById('q').addEventListener('input', e => { st.q = e.target.value.trim(); applyFilters(); });
+document.getElementById('f-kind').addEventListener('change', e => { st.kind = e.target.value || null; applyFilters(); });
+document.getElementById('f-clear').addEventListener('click', () => {
+  Object.assign(st, { q: '', kind: null, view: 'all' });
+  applyFilters();
+});
+document.addEventListener('visibilitychange', refresh);
+setInterval(refresh, REFRESH_MS);
+
 (async () => {
-  await initAuth();
-  await loadInbox();
+  readUrl();
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  const list = document.getElementById('list');
+  if (!token) {
+    // Signing in is the sidebar's job (design-system.md § Signing in).
+    list.innerHTML = '<div class="ui-empty">Sign in to see your inbox.</div>';
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/me`, { headers: authHeaders() });
+    if (res.status === 401) {
+      try { localStorage.removeItem('nbn_token'); } catch { /* ignore */ }
+      list.innerHTML = '<div class="ui-empty">Sign in to see your inbox.</div>';
+      return;
+    }
+    me = res.ok ? await res.json() : { name: null, roles: [] };
+    await loadInbox();
+  } catch {
+    list.innerHTML = '<div class="ui-empty">Could not load your inbox.</div>';
+    return;
+  }
+  document.getElementById('chrome').hidden = false;
+  document.getElementById('header-actions').hidden = false;
+  render();
 })();
 </script>
 <script src="/nav.js"></script>
