@@ -342,6 +342,23 @@ function _unreadCount() {
   return _unreadPromise;
 }
 
+// The inbox page reports its count as it changes (mark read, archive, an
+// action), so every badge follows without a reload: the sidebar row, the
+// phone menu button and the header button on a page without the sidebar.
+function nbnSetInboxUnread(n) {
+  _unreadPromise = Promise.resolve(n);
+  _setBadge('/inbox/', n, `${n} unread`);
+  document.querySelectorAll('.inbox-badge').forEach(b => {
+    b.textContent = n > 99 ? '99+' : String(n);
+    b.classList.toggle('show', n > 0);
+  });
+  const menu = document.querySelector('.nav-menu-btn');
+  if (menu) {
+    menu.classList.toggle('has-unread', n > 0);
+    menu.setAttribute('aria-label', n ? `Menu — ${n} unread` : 'Menu');
+  }
+}
+
 // ── This member ──────────────────────────────────────────────────────────────
 // Who's signed in, fetched once per page and shared by the sidebar's account
 // block (bottom left), its committee badges, search's role-gated pages and
