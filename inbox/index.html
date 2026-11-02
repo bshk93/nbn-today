@@ -105,7 +105,7 @@
     .ibx-more { display: flex; justify-content: center; padding: var(--space-4) 0; }
 
     @media (max-width: 640px) {
-      /* No room for the tag column: the kind is the stripe's colour. */
+      /* No room for the kind column: the expanded row names it instead. */
       .ibx-head, .ibx-selecting .ibx-head { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "check text tag when"; }
       .ibx-head { padding-left: var(--space-3); }
       .ibx-head .ibx-kind { display: none; }
