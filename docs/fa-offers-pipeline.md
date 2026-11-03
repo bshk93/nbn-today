@@ -23,6 +23,18 @@ team its FFA window (§ 4.1) whenever the owner wasn't around. `submitted_by` an
 `created_by` still record who did which. The team is always derived from the stored
 offer, never from the request body, so the role is the only thing that widened.
 
+**Releasing to make room (rulebook § 2.1).** An offer can name players its team
+releases only if the offer wins (`offer.releases`, a `SignDetails` field like the
+rest of the terms). Waiver claims take the same list. They count in the roster
+check at submit and are carried out by `apply_sign` right after the winning
+signing, each as an ordinary § 5.1 release. A rival's RFA offer carries them onto
+its offer sheet, and they happen only on `not_matched`. A team's submitted offers
+and open waiver claims can't name the same player twice (`_release_named_elsewhere`
+in both `free_agency.py` and `waivers.py`), since two winners couldn't share one
+cut. A named player who has left the team by the time the offer wins is a
+warning and is skipped; the roster check decides. API detail:
+`nbn-api/docs/transactions.md` § `sign`.
+
 Three rules this page holds and must keep holding:
 
 - **No cap math in the page.** Every dollar comes off the fact sheet

@@ -2341,6 +2341,8 @@
     if (yx !== null && yx !== undefined) {
       put('NBA experience', `${yx} yr${yx === 1 ? '' : 's'} as of Year 1 (§ 3.12 scale tier)`);
     }
+    // § 2.1: who the team cuts to make roster room, released only if this wins.
+    if ((o.offer.releases || []).length) put('Releases if it wins', o.offer.releases.map(nameOf).join(', '));
     put('Submitted', when(o.submitted_at) + ' · ' + (o.submitted_by || '—'));
     if (o.created_by && o.created_by !== o.submitted_by) put('Drafted by', o.created_by);
     card.appendChild(kv);

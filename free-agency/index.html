@@ -166,6 +166,9 @@
 
     .checkbox-line { display: flex; align-items: center; gap: 0.4rem; font-size: var(--text-xs); color: var(--text-secondary); margin-top: 1.1rem; }
     .checkbox-line input { width: auto; }
+    .release-pick > summary { cursor: pointer; font-size: var(--text-xs); color: var(--text-secondary); }
+    .release-pick .checkbox-line { margin-top: 0.35rem; }
+    .release-pick .checkbox-line input:checked + span { color: var(--danger); }
 
     .panel { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; font-size: var(--text-xs);
              color: var(--text-secondary); line-height: 1.5; }
@@ -528,6 +531,65 @@
     let LEAGUE_YEAR = null;
     let BIOS = {};         // slug -> bio, for draft_year (minimum-salary tier lookups)
     let CAP_LEVELS = {};   // season -> { min_salary_scale, ... }, from GET /api/cap-levels
+    let TEAM_MAP = {};     // slug -> team abbr, from GET /api/team-map
+
+    // § 2.1 / § 5.1. A team at the roster limit names the player it would cut
+    // on the offer or claim itself, and he is released only if it wins — so
+    // losing the lottery or the waiver priority costs it nobody. Candidates are
+    // the team's players with a contract this season (a hold or draft rights
+    // has nothing to release); the validator has the last word on each.
+    function releaseCandidates(team, exclude) {
+      const yr = curYr();
+      return Object.keys(TEAM_MAP).filter(s => {
+        if (TEAM_MAP[s] !== team || s === exclude) return false;
+        const b = BIOS[s] || {};
+        if (b.type === 'draft-rights' || b.type === 'dead') return false;
+        const sal = (b.salaries || {})[yr];
+        const tag = (b.cap_holds || {})[yr];
+        if (!sal || tag === 'UFA' || tag === 'RFA' || tag === 'TEAM_OPT') return false;
+        return b.type === 'two-way' || parseMoney(sal) > 0;
+      }).sort((a, b) => displayName((BIOS[a] || {}).name || a).localeCompare(displayName((BIOS[b] || {}).name || b)));
+    }
+
+    function releasePicker(team, exclude, selected, readOnly, onChange, what) {
+      const d = document.createElement('details');
+      d.className = 'release-pick';
+      d.open = selected.length > 0;
+      const sum = document.createElement('summary');
+      const label = () => `Release to make room if this ${what} wins`
+        + (selected.length ? ` (${selected.length})` : '');
+      sum.textContent = label();
+      d.appendChild(sum);
+      const note = document.createElement('div');
+      note.className = 'sub';
+      note.textContent = `Only if ${team} is at the roster limit. Nobody is released unless this ${what} `
+        + 'wins; then each player here is released as usual (§ 5.1: dead cap, waivers).';
+      d.appendChild(note);
+      const yr = curYr();
+      releaseCandidates(team, exclude).forEach(slug => {
+        const line = document.createElement('label');
+        line.className = 'checkbox-line';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = selected.includes(slug);
+        box.disabled = readOnly;
+        box.addEventListener('change', () => {
+          const i = selected.indexOf(slug);
+          if (box.checked && i === -1) selected.push(slug);
+          if (!box.checked && i !== -1) selected.splice(i, 1);
+          sum.textContent = label();
+          onChange();
+        });
+        const b = BIOS[slug] || {};
+        const text = document.createElement('span');
+        text.textContent = `${displayName(b.name || slug)} · ${formatSalary((b.salaries || {})[yr])}`
+          + (b.type === 'two-way' ? ' · two-way' : '');
+        line.appendChild(box);
+        line.appendChild(text);
+        d.appendChild(line);
+      });
+      return d;
+    }
 
     // The `.nbn.today` session cookie covers /api/fa/* (§ 3.3), so a member who
     // has signed in anywhere on the site needs no token here. The header still
@@ -855,6 +917,7 @@
         // year when there is one; null means "not established yet".
         exp: derivedExp(row.slug),
         pitch: '', promises: { mpg: null, playoffs: false, role: 'none' },
+        releases: [],
       };
       if (existing) {
         const c = existing.offer.contract || {};
@@ -876,6 +939,7 @@
         F.method = existing.offer.signing_method || '';
         F.bird = existing.offer.bird_rights_type || '';
         F.eaps = existing.offer.eaps_assumption || '';
+        F.releases = (existing.offer.releases || []).slice();
         F.pitch = existing.pitch || '';
         F.promises = Object.assign({ mpg: null, playoffs: false, role: 'none' }, existing.promises || {});
       } else {
@@ -928,6 +992,7 @@
         signing_method: F.method || null,
         bird_rights_type: F.bird || null,
         eaps_assumption: F.eaps || null,
+        releases: F.releases,
       };
     }
 
@@ -1319,6 +1384,14 @@
         ff.appendChild(fr);
         box.appendChild(ff);
 
+        // ── roster room ──────────────────────────────────────────────────────
+        if (!readOnly || F.releases.length) {
+          const rf = el('fieldset', 'fs');
+          rf.appendChild(el('legend', null, 'Roster room (§ 2.1)'));
+          rf.appendChild(releasePicker(team, slug, F.releases, readOnly, () => revalidate(), 'offer'));
+          box.appendChild(rf);
+        }
+
         // ── pitch and promises ───────────────────────────────────────────────
         const pf = el('fieldset', 'fs');
         pf.appendChild(el('legend', null, 'Pitch'));
@@ -1594,7 +1667,7 @@
             body: {
               contract: body.contract, signing_method: body.signing_method,
               bird_rights_type: body.bird_rights_type, eaps_assumption: body.eaps_assumption,
-              pitch: F.pitch, promises,
+              releases: body.releases, pitch: F.pitch, promises,
             },
           });
           return patched;
@@ -1640,6 +1713,10 @@
           list.appendChild(el('div', 'checkline ok',
             `${th.season} — ${th.type} hold`
             + (th.amount != null ? `, ${compactMoney(th.amount)}` : ', amount set by the office')));
+        }
+        if (F.releases.length) {
+          list.appendChild(el('div', 'checkline warn', 'If this offer wins, ' + team + ' releases '
+            + F.releases.map(s => displayName((BIOS[s] || {}).name || s)).join(', ') + ' (§ 5.1).'));
         }
         box.appendChild(list);
 
@@ -1798,6 +1875,7 @@
       // as an MLE signing (2026-10-19).
       const twoWay = (w.contract || {}).type === 'two-way';
       let method = '';
+      const releases = [];
       let validateTimer = null, validateSeq = 0;
 
       const scrim = document.createElement('div');
@@ -1852,6 +1930,11 @@
         methodField.appendChild(sel);
         if (!twoWay) box.appendChild(methodField);
 
+        const relWrap = el('div');
+        relWrap.style.marginTop = '0.7rem';
+        relWrap.appendChild(releasePicker(team, w.player, releases, false, () => revalidate(true), 'claim'));
+        box.appendChild(relWrap);
+
         const panel = el('div', 'panel');
         panel.id = 'claim-legality-panel';
         panel.style.marginTop = '0.7rem';
@@ -1872,7 +1955,7 @@
           try {
             await api(`/waivers/${w.txn_id}/claim`, {
               method: 'POST',
-              body: { team, signing_method: method || null },
+              body: { team, signing_method: method || null, releases },
             });
             close();
             toast(`${team}'s waiver claim on ${playerName} is filed.`);
@@ -1905,7 +1988,7 @@
             const res = await fetch(`/api/validate/waiver_claim?txn_id=${w.txn_id}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ team, signing_method: method || null }),
+              body: JSON.stringify({ team, signing_method: method || null, releases }),
             });
             if (seq !== validateSeq) return;
             data = await res.json();
@@ -1953,6 +2036,7 @@
 
         POOL = pool;
         BIOS = biosJson;
+        TEAM_MAP = teamMapJson || {};
         CAP_LEVELS = capLevelsJson || {};
         ME = me || ME;
         if (board) BOARD = board;

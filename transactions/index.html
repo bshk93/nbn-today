@@ -816,6 +816,12 @@
         </select>
       </div>
 
+      <!-- sign / offer_sheet: § 2.1 roster room, released only if the signing happens -->
+      <div class="form-field" id="f-releases-field" style="display:none">
+        <label>Release if signed</label>
+        <select id="f-releases" multiple data-placeholder="Nobody" data-noun="players"></select>
+      </div>
+
       <div class="form-field" id="f-offer-outcome-field" style="display:none">
         <label>Outcome</label>
         <p class="doc-note" style="margin:0">Extending an offer sheet no longer records the result. The offer goes on the books
@@ -1557,6 +1563,8 @@ function setupTypeSwitch() {
       document.getElementById('f-team-field').style.display          = (isSign || isSetHardCap) ? '' : 'none';
       document.getElementById('f-offer-team-field').style.display    = isOfferSheet ? '' : 'none';
       document.getElementById('f-offer-outcome-field').style.display = isOfferSheet ? '' : 'none';
+      document.getElementById('f-releases-field').style.display = (isSign || isOfferSheet) ? '' : 'none';
+      fillReleaseOptions();
       document.getElementById('f-hardcap-level-field').style.display = isSetHardCap ? '' : 'none';
       document.getElementById('f-stash-basis-field').style.display = v === 'stash' ? '' : 'none';
       document.getElementById('f-void-keep-rights-field').style.display = v === 'void_player' ? '' : 'none';
@@ -1817,6 +1825,46 @@ function updateMleHint() {
 document.getElementById('f-signing-method').addEventListener('change', () => { updateMleHint(); updateContractEntryMode(); });
 document.getElementById('f-team').addEventListener('change', updateMleHint);
 document.getElementById('f-offer-team').addEventListener('change', updateMleHint);
+document.getElementById('f-team').addEventListener('change', fillReleaseOptions);
+document.getElementById('f-offer-team').addEventListener('change', fillReleaseOptions);
+document.getElementById('f-releases').addEventListener('change', () => scheduleSignRubric());
+
+// § 2.1 / § 5.1. A team at the roster limit can name the player it cuts on the
+// signing itself; the API releases him right after the signing is written.
+// Offered: the signing team's players with a contract this season (a hold or
+// draft rights has nothing to release). The validator judges each one.
+function fillReleaseOptions() {
+  const type = document.getElementById('f-type').value;
+  const team = type === 'offer_sheet'
+    ? document.getElementById('f-offer-team').value
+    : document.getElementById('f-team').value;
+  const sel = document.getElementById('f-releases');
+  const keep = new Set(selectedReleases());
+  const yr = currentSeasonStr();
+  const signee = document.getElementById('f-player-slug').value;
+  sel.innerHTML = '';
+  Object.keys(teamMap).filter(slug => {
+    if (!team || teamMap[slug] !== team || slug === signee) return false;
+    const b = bios[slug] || {};
+    if (b.type === 'draft-rights' || b.type === 'dead') return false;
+    const sal = (b.salaries || {})[yr];
+    const tag = (b.cap_holds || {})[yr];
+    if (!sal || tag === 'UFA' || tag === 'RFA' || tag === 'TEAM_OPT') return false;
+    return b.type === 'two-way' || parseDollarJs(sal) > 0;
+  }).sort((a, b) => bioDisplayName(bios[a] || {}).localeCompare(bioDisplayName(bios[b] || {})))
+    .forEach(slug => {
+      const o = document.createElement('option');
+      o.value = slug;
+      o.textContent = bioDisplayName(bios[slug] || {}) || slug;
+      o.selected = keep.has(slug);
+      sel.appendChild(o);
+    });
+  if (window.UiSelect) UiSelect.refresh(sel);
+}
+
+function selectedReleases() {
+  return [...document.getElementById('f-releases').selectedOptions].map(o => o.value);
+}
 
 document.getElementById('f-trade-sat').addEventListener('change', function() {
   document.getElementById('f-trade-sat-txn-field').style.display = this.checked ? '' : 'none';
@@ -2796,6 +2844,8 @@ function collectSignValidationBody() {
     player, contract: { type: 'player', salaries, cap_holds, ...collectYearsExp() },
     signing_method: method, bird_rights_type: bird, eaps_assumption: eaps,
   };
+  const releases = selectedReleases();
+  if (releases.length) base.releases = releases;
   return type === 'sign'
     ? { url: '/api/validate/sign', body: { ...base, team } }
     : { url: '/api/validate/offer_sheet', body: { ...base, offering_team: team } };
@@ -3494,11 +3544,13 @@ async function submitTransaction() {
       ? (document.getElementById('f-bird-rights-type').value || null) : null;
     if (!date) { setStatus('err', 'Date is required.'); return; }
     if (!team) { setStatus('err', 'Select a team.'); return; }
+    const releases = selectedReleases();
     details = {
       player: playerSlug, team, contract,
       ...(signingMethod ? { signing_method: signingMethod } : {}),
       ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
       ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}),
+      ...(releases.length ? { releases } : {}),
     };
   } else if (type === 'offer_sheet') {
     date = document.getElementById('f-date').value;
@@ -3511,10 +3563,12 @@ async function submitTransaction() {
     if (!Object.keys(contract.salaries || {}).length) {
       setStatus('err', 'At least one salary year is required (offer sheet must cover ≥2 years — § 3.15).'); return;
     }
+    const releases = selectedReleases();
     details = { player: playerSlug, offering_team, contract,
       ...(signingMethod ? { signing_method: signingMethod } : {}),
       ...(birdRightsType ? { bird_rights_type: birdRightsType } : {}),
       ...(eapsAssumption ? { eaps_assumption: eapsAssumption } : {}),
+      ...(releases.length ? { releases } : {}),
     };
   } else if (type === 'pick') {
     date = document.getElementById('f-date').value;
