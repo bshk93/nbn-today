@@ -3,7 +3,7 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last full review: **2026-10-06**. **31 open items**: 5 P1, 10 P2, 14 P3, plus
+Last full review: **2026-10-06**. **32 open items**: 5 P1, 11 P2, 14 P3, plus
 2 nice-to-haves (counted from the `###` headings and the § 4 bullets). The
 previous count, from 2026-09-19, matched neither its own split nor the
 headings, so recount rather than adjust. Not re-measured in the 2026-10-06
@@ -412,6 +412,23 @@ A stashed pick carries no hold (league decision, 2026-09-25), so the rule is:
 unsigned, 1st round, no `stash` → hold. `_rookie_scale_contract` already gives
 the Year 1 figure. It has to go in the one salary helper every reader shares,
 not per page, and it doesn't count as outgoing salary in trade matching.
+
+### [P2] No cap on re-signing a player whose rookie-scale option was declined
+In the NBA, a team that declines a first-round pick's 3rd- or 4th-year
+rookie-scale option can't re-sign him for a first-year salary above the
+declined option amount. The NBN rulebook doesn't say this, so by the
+constitution's "follow the CBA where the rules are silent" it arguably
+applies, but adding it is a rule change, so it needs a league decision
+first. Found 2026-11-03 while fixing declined rookie-scale options to leave
+a UFA hold (§ 6.1).
+
+Live now: Tyler Smith (SAS), Bobi Klintman (POR), Tyler Kolek (BOS) and Cody
+Williams (UTA) were declined for 27-28 and can re-sign with their own team in
+free agency at any amount. If the rule is adopted: add it to § 3.1 or § 6.1,
+then a check in `_validate_sign` keyed off the decline's ledger entry (the
+option year's amount is gone from the bio once the hold replaces it, so read
+it from the bio's `contracts` or the pre-decline salary in `edits.jsonl`,
+or start recording it on the decline).
 
 ### [P2] An RFA match doesn't link back to the holds that funded the offer
 `rescind_renounce` shipped 2026-08-08 alongside owner self-serve renounce, and
