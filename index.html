@@ -2430,14 +2430,17 @@
     //
     // Made-up accounts reacting to the latest game day, written by the box
     // score run, plus whatever members post (nbn-api routers/tweets.py). Fiction, but the numbers in them
-    // are the box score's. A player's own account shows his face, a fan
-    // account its team's logo, anyone else an initial.
+    // are the box score's. A member's saved identity shows the picture they
+    // gave it, a player's own account his face, a fan account its team's
+    // logo, anyone else an initial.
     const TW_PAGE = 6;
     const twCount = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'
       : n >= 1e4 ? Math.round(n / 1e3) + 'K'
       : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n);
     const twRow = t => {
-      const av = t.slug
+      const av = t.avatar
+        ? `<img class="dash-tw-av" src="${esc(t.avatar)}" alt="" loading="lazy">`
+        : t.slug
         ? `<img class="dash-tw-av" src="/api/players/${encodeURIComponent(t.slug)}/headshot" alt="" loading="lazy">`
         : t.team
           ? `<img class="dash-tw-av dash-tw-av--logo" src="/logos/sm/logo-${esc(t.team.toLowerCase())}.webp" alt="">`
@@ -2461,7 +2464,11 @@
     const twCompose = () => `<form class="dash-tw-new" id="dash-tw-new">`
       + `<textarea class="ui-textarea" id="tw-text" maxlength="280" rows="2" placeholder="What's happening?"></textarea>`
       + `<div class="dash-tw-new-row"><select class="ui-select" id="tw-as" aria-label="Post as"></select>`
-      + `<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="tw-forget" hidden>Forget identity</button></div>`
+      + `<img class="dash-tw-av" id="tw-pic-now" alt="" style="flex:none" hidden>`
+      + `<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="tw-pic-btn" hidden>Add picture</button>`
+      + `<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="tw-pic-del" hidden>Remove picture</button>`
+      + `<button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" id="tw-forget" hidden>Forget identity</button>`
+      + `<input type="file" id="tw-pic" accept="image/jpeg,image/png,image/webp,image/gif" hidden></div>`
       + `<div class="dash-tw-new-row" id="tw-anon" hidden>`
       + `<input class="ui-input" id="tw-name" maxlength="50" placeholder="Display name">`
       + `<input class="ui-input" id="tw-handle" maxlength="15" placeholder="handle">`
@@ -2524,6 +2531,9 @@
     function setupTwCompose(onPosted) {
       const text = $('tw-text'), as = $('tw-as'), post = $('tw-post'), err = $('tw-err');
       let ids = { self: null, profiles: [] };
+      // A picture picked for a new identity waits until the identity is saved.
+      let pendingPic = null;
+      const picked = () => ids.profiles.find(p => 'p' + p.id === as.value);
       const fill = keep => {
         as.innerHTML = `<option value="self">Post as me (@${esc(ids.self.handle)})</option>`
           + ids.profiles.map(p => `<option value="p${p.id}">${esc(p.name)} (@${esc(p.handle)})</option>`).join('')
@@ -2534,6 +2544,14 @@
       const sync = () => {
         $('tw-anon').hidden = as.value !== 'anon';
         $('tw-forget').hidden = !as.value.startsWith('p');
+        const p = picked(), anonSave = as.value === 'anon' && $('tw-save').checked;
+        const now = p ? p.avatar : null;
+        $('tw-pic-now').hidden = !now;
+        if (now) $('tw-pic-now').src = now;
+        $('tw-pic-btn').hidden = !p && !anonSave;
+        $('tw-pic-btn').textContent = p ? (now ? 'Change picture' : 'Add picture')
+          : (pendingPic ? `Picture: ${pendingPic.name.slice(0, 18)}` : 'Add picture');
+        $('tw-pic-del').hidden = !now;
         const left = 280 - text.value.length;
         $('tw-count').textContent = left;
         post.disabled = !text.value.trim();
@@ -2542,6 +2560,30 @@
       load().catch(() => { $('dash-tw-new').remove(); });
       text.addEventListener('input', sync);
       as.addEventListener('change', sync);
+      $('tw-save').addEventListener('change', sync);
+      const putPic = (p, file) => {
+        const fd = new FormData();
+        fd.append('file', file);
+        return fetch(`/api/tweets/profiles/${p.id}/avatar`, { method: 'PUT', headers: auth, body: fd })
+          .then(r => r.json().then(j => {
+            if (!r.ok) throw new Error(typeof j.detail === 'string' ? j.detail : 'Could not save the picture');
+          }));
+      };
+      $('tw-pic-btn').onclick = () => $('tw-pic').click();
+      $('tw-pic').onchange = () => {
+        const file = $('tw-pic').files[0];
+        $('tw-pic').value = '';
+        if (!file) return;
+        const p = picked();
+        err.textContent = '';
+        if (!p) { pendingPic = file; sync(); return; }
+        putPic(p, file).then(() => load(as.value)).catch(e => { err.textContent = e.message; });
+      };
+      $('tw-pic-del').onclick = () => {
+        const p = picked();
+        if (!p || !confirm(`Remove @${p.handle}'s picture?`)) return;
+        fetch(`/api/tweets/profiles/${p.id}/avatar`, { method: 'DELETE', headers: auth }).then(() => load(as.value));
+      };
       $('tw-forget').onclick = () => {
         const p = ids.profiles.find(p => 'p' + p.id === as.value);
         if (!p || !confirm(`Forget @${p.handle}? Tweets already posted under it stay up, and nobody else can take the handle.`)) return;
@@ -2571,9 +2613,14 @@
             text.value = '';
             if (body.identity === 'anon' && body.save) {
               ['tw-name', 'tw-handle'].forEach(id => { $(id).value = ''; });
+              const pic = pendingPic;
+              pendingPic = null;
               load().then(() => {
                 const p = ids.profiles.find(p => p.handle === j.handle);
-                if (p) { as.value = 'p' + p.id; sync(); }
+                if (!p) return;
+                as.value = 'p' + p.id;
+                sync();
+                if (pic) putPic(p, pic).then(() => load(as.value)).catch(e => { err.textContent = e.message; });
               });
             } else sync();
           })
