@@ -437,8 +437,8 @@
       <div class="tabs">
         <button class="tab active" data-tab="mine">My games<span class="tab-badge" id="mine-tab-badge" hidden></span></button>
         <button class="tab" data-tab="claim">Claim Games</button>
-        <button class="tab" data-tab="planner">Planner</button>
         <button class="tab" data-tab="coaching">Coaching Settings<span class="tab-badge" id="coaching-tab-badge" hidden></span></button>
+        <button class="tab" data-tab="planner">Planner</button>
       </div>
 
       <div class="tab-panel" id="tab-mine">
@@ -2676,6 +2676,20 @@
       }
     }
 
+    // On a phone the tab bar scrolls sideways: keep the open tab in view.
+    // The count badges arrive after first paint and widen the tabs, so this
+    // runs again whenever a tab changes size, not just on switching.
+    function revealTab() {
+      const btn = document.querySelector('.tab.active');
+      if (!btn) return;
+      const bar = btn.parentElement, b = btn.getBoundingClientRect(), r = bar.getBoundingClientRect();
+      if (b.right > r.right || b.left < r.left) bar.scrollLeft += b.left - r.left - (r.width - b.width) / 2;
+    }
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => revealTab());
+      document.querySelectorAll('.tab').forEach(t => ro.observe(t));
+    }
+
     async function init() {
       const p = new URLSearchParams(location.search);
       const wantTeam = (p.get('team') || '').toUpperCase();
@@ -2695,6 +2709,8 @@
         document.querySelectorAll('.tab-panel').forEach(tp => tp.classList.add('hidden'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
+        // On a phone the bar scrolls sideways; keep the open tab in view.
+        revealTab();
         if (btn.dataset.tab === 'planner') setupPlanner();
       };
       document.querySelectorAll('.tab').forEach(btn => {
