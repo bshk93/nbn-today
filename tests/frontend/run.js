@@ -75,7 +75,7 @@ const PAGES = [
   { path: '/hof/',                    selector: 'table tbody tr',  min: 100, what: 'the HOF board' },
   { path: '/stats/highs/',            selector: 'table tbody tr',  min: 50, what: 'single-game points highs' },
   { path: '/stats/highs/?stat=TD&type=po&team=DEN', selector: 'table tbody tr', min: 1, what: 'a filtered feat board' },
-  { path: '/stats/stream-sim/',       selector: '#t-summary tbody tr', min: 20, what: 'streamed vs simmed comparison' },
+  { path: '/stats/stream-sim/',       selector: '#t-metrics tbody tr', min: 50, what: 'streamed vs simmed comparison' },
   { path: '/stats/totals/',           selector: 'table tbody tr',  min: 50, what: 'career points leaders' },
   { path: '/stats/totals/?stat=AST&type=po&per=pg', selector: 'table tbody tr', min: 20, what: 'a filtered career board' },
   { path: '/season-summary/',         selector: '.ss-season',      min: 5,  what: 'a card per season' },

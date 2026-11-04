@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Stream vs Sim | Stats</title>
   <!-- NBN:og -->
-  <meta name="description" content="How streamed NBN games differ from quick-simmed ones: pace, shooting, fouls, rotations, and which players go off on stream.">
+  <meta name="description" content="How streamed NBN games differ from quick-simmed ones: about 60 team measures side by side, with the biggest real gaps called out.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
   <meta property="og:title" content="NBN | Stream vs Sim | Stats">
-  <meta property="og:description" content="How streamed NBN games differ from quick-simmed ones: pace, shooting, fouls, rotations, and which players go off on stream.">
+  <meta property="og:description" content="How streamed NBN games differ from quick-simmed ones: about 60 team measures side by side, with the biggest real gaps called out.">
   <meta property="og:url" content="https://nbn.today/stats/stream-sim/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -25,20 +25,38 @@
   <!-- /NBN:og -->
   <style>
     .ss-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
-    .ss-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
     .ss-filters[hidden] { display: none; }
+    .ss-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
     .ss-note { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-5); }
     .ss-section { margin-top: var(--space-6); }
+
+    /* The biggest real gaps, one tile each. */
+    .ss-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6); }
+    .ss-tile { padding: var(--space-3) var(--space-4); background: var(--bg-hover); }
+    .ss-tile-label { font-size: var(--text-sm); color: var(--text-secondary); }
+    .ss-tile-big { font-family: var(--font-display); font-size: var(--text-xl); color: var(--text-primary); line-height: 1.2; margin: var(--space-1) 0; }
+    .ss-tile-vs { font-size: var(--text-xs); color: var(--text-muted); }
+    @media (max-width: 560px) {
+      .ss-tiles { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+      .ss-tile { padding: var(--space-2) var(--space-3); }
+      .ss-tile-big { font-size: var(--text-lg); }
+    }
+
     .ss-group td { padding-top: var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-    .ss-up { color: var(--success); }
-    .ss-down { color: var(--danger); }
-    .ss-table th[data-sort] { cursor: pointer; }
-    .ss-table th[data-sort]:hover { color: var(--text-secondary); }
-    .ss-table th.ss-sorted { color: var(--accent-light); }
-    .ss-table th.ss-split { border-left: 1px solid var(--border); }
-    .ss-table td.ss-split { border-left: 1px solid var(--border); }
-    .ss-player a { color: var(--text-primary); font-weight: 600; }
-    .ss-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
+    .ss-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+    .ss-table td { vertical-align: middle; }
+
+    /* Gap bar: the relative difference, centred on zero; GAP_FULL fills a side. */
+    .ss-gap { display: flex; align-items: center; gap: var(--space-2); min-width: 280px; }
+    .ss-track { position: relative; flex: 1; height: 10px; }
+    .ss-track::before { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--border); }
+    .ss-fill { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+    .ss-fill.is-likely { opacity: 0.6; }
+    .ss-fill.is-noise, .ss-fill.is-none { opacity: 0.2; }
+    .ss-rel { width: 4.2em; text-align: right; font-variant-numeric: tabular-nums; font-size: var(--text-sm); }
+    .ss-dim td { color: var(--text-muted); }
+    .ss-dim td.strong { color: var(--text-secondary); }
+
     .ss-win { font-weight: 700; color: var(--text-primary); }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
   </style>
@@ -51,154 +69,136 @@
         <h1 class="ui-title">Stream vs Sim</h1>
       </div>
     </header>
-    <div class="ss-filters" id="filters" hidden>
+    <div class="ss-filters" id="season-row" hidden>
       <select class="ui-select" id="f-season" aria-label="Season"></select>
     </div>
     <p class="ss-note" id="note"></p>
     <div id="status">Loading…</div>
     <div id="body" hidden>
-      <h2 class="ui-section-title">How the games differ</h2>
-      <div class="ui-table-wrap"><table class="ui-table" id="t-summary"></table></div>
+      <h2 class="ui-section-title">Biggest differences</h2>
+      <div class="ss-tiles" id="tiles"></div>
 
-      <h2 class="ui-section-title ss-section">Players</h2>
-      <p class="ss-note" id="players-note"></p>
+      <h2 class="ui-section-title">Every measure</h2>
       <div class="ss-filters">
-        <div class="ui-segmented" role="group" id="f-view">
-          <button data-v="pg">Per game</button>
-          <button data-v="p36">Per 36</button>
+        <div class="ui-segmented" role="group" id="f-order">
+          <button data-v="group">By category</button>
+          <button data-v="gap">Biggest gap first</button>
+        </div>
+        <div class="ui-segmented" role="group" id="f-show">
+          <button data-v="all">All</button>
+          <button data-v="real">Real gaps only</button>
         </div>
       </div>
-      <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first ss-table" id="t-players"></table></div>
+      <p class="ss-note" id="legend"></p>
+      <div class="ui-table-wrap"><table class="ui-table ss-table" id="t-metrics"></table></div>
 
       <h2 class="ui-section-title ss-section">Streamed games</h2>
       <div class="ui-table-wrap"><table class="ui-table" id="t-games"></table></div>
     </div>
   </div>
-  <script src="/names.js"></script>
   <script>
   (function () {
     // Every number is computed by GET /api/stream-vs-sim (nbn-api
-    // routers/stream_sim.py): the split by the schedule's stream flag, the
-    // per team-game averages and the player lines. The page only draws them.
+    // routers/stream_sim.py): the split by the schedule's stream flag, each
+    // measure both ways, and whether a gap is more than noise (`signal`).
+    // The page only draws them.
     const $ = id => document.getElementById(id);
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    const name = n => (window.nbnPlayerName ? nbnPlayerName(n) : n);
+    const TILES = 8;
+    // A gap this size (as a share of the simmed figure) fills one side of the bar.
+    const GAP_FULL = 0.6;
+    const SIGNAL = {
+      clear:  { label: 'Clear',          tone: 'ui-chip--accent' },
+      likely: { label: 'Likely',         tone: '' },
+      noise:  { label: 'Could be noise', tone: '' },
+      none:   { label: 'Too few games',  tone: '' },
+    };
+    const REAL = new Set(['clear', 'likely']);
 
     const q = new URLSearchParams(location.search);
     const state = {
       season: /^\d\d-\d\d$/.test(q.get('season') || '') ? q.get('season') : '',
-      view: q.get('view') === 'p36' ? 'p36' : 'pg',
-      sort: 'diff', dir: -1,
+      order: q.get('order') === 'gap' ? 'gap' : 'group',
+      show: q.get('show') === 'real' ? 'real' : 'all',
     };
     let data = null;
 
-    const num = d => v => v == null ? '—' : v.toFixed(d);
-    const pct = d => v => v == null ? '—' : (v * 100).toFixed(d) + '%';
-    // A percentage's difference is in percentage points.
-    const ROWS = [
-      { group: 'Tempo and scoring' },
-      { key: 'pts',   label: 'Points per team',             f: num(1) },
-      { key: 'pace',  label: 'Possessions per team',        f: num(1) },
-      { key: 'ortg',  label: 'Points per 100 possessions',  f: num(1) },
-      { group: 'Shooting' },
-      { key: 'fg_pct',   label: 'FG%',                      f: pct(1), pp: true },
-      { key: 'tp_pct',   label: '3P%',                      f: pct(1), pp: true },
-      { key: 'ft_pct',   label: 'FT%',                      f: pct(1), pp: true },
-      { key: 'ts_pct',   label: 'True shooting',            f: pct(1), pp: true },
-      { key: 'fga',      label: 'FGA per team',             f: num(1) },
-      { key: 'tpa_rate', label: 'Share of shots from three', f: pct(1), pp: true },
-      { key: 'fta_rate', dd: 3, label: 'Free throws per shot',     f: num(3) },
-      { group: 'Possession game' },
-      { key: 'tov_pct',  label: 'Turnovers per 100 possessions', f: num(1) },
-      { key: 'oreb_pct', label: 'Offensive rebound rate',   f: pct(1), pp: true },
-      { key: 'ast_rate', label: 'Assisted field goals',     f: pct(1), pp: true },
-      { key: 'reb',      label: 'Rebounds per team',        f: num(1) },
-      { key: 'stl',      label: 'Steals per team',          f: num(1) },
-      { key: 'blk',      label: 'Blocks per team',          f: num(1) },
-      { key: 'pf',       label: 'Fouls per team',           f: num(1) },
-      { group: 'How games end' },
-      { key: 'margin',       label: 'Average margin',       f: num(1) },
-      { key: 'close_pct', dd: 0,    label: 'Decided by 5 or fewer', f: pct(0), pp: true },
-      { key: 'blowout_pct', dd: 0,  label: 'Decided by 20 or more', f: pct(0), pp: true },
-      { key: 'ot_pct', dd: 0,       label: 'Went to overtime',     f: pct(0), pp: true },
-      { key: 'home_win_pct', dd: 0, label: 'Home team won',        f: pct(0), pp: true },
-      { group: 'Rotations' },
-      { key: 'top_min',       label: "Most minutes by one player",   f: num(1) },
-      { key: 'players_used',  label: 'Players who got minutes',      f: num(1) },
-      { key: 'top_pts_share', dd: 0, label: "Top scorer's share of points", f: pct(0), pp: true },
-    ];
+    const DEC = { n1: 1, n2: 2, n3: 3 };
+    function fmt(m, v) {
+      if (v == null) return '—';
+      return m.fmt === 'pct' ? (v * 100).toFixed(1) + '%' : v.toFixed(DEC[m.fmt] ?? 1);
+    }
+    // A percentage's difference is in percentage points, written as %.
+    function fmtDiff(m, d) {
+      if (d == null) return '—';
+      const sign = d > 0 ? '+' : d < 0 ? '−' : '';
+      return m.fmt === 'pct' ? sign + Math.abs(d * 100).toFixed(1) + '%' : sign + Math.abs(d).toFixed(DEC[m.fmt] ?? 1);
+    }
+    function fmtRel(r) {
+      if (r == null) return '—';
+      const p = Math.round(r * 100);
+      return (p > 0 ? '+' : p < 0 ? '−' : '') + Math.abs(p) + '%';
+    }
 
-    function renderSummary() {
-      const st = data.summary.stream, sm = data.summary.sim;
-      let h = `<thead><tr><th></th><th class="num">Streamed</th><th class="num">Simmed</th><th class="num">Difference</th></tr></thead><tbody>`;
-      h += `<tr><td>Games</td><td class="num">${st.games}</td><td class="num">${sm.games}</td><td></td></tr>`;
-      for (const r of ROWS) {
-        if (r.group) { h += `<tr class="ss-group"><td colspan="4">${esc(r.group)}</td></tr>`; continue; }
-        const a = st[r.key], b = sm[r.key];
-        let diff = '';
-        if (a != null && b != null) {
-          const d = r.pp ? (a - b) * 100 : a - b;
-          const txt = (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(r.dd ?? 1) + (r.pp ? '%' : '');
-          diff = txt;
+    function renderTiles() {
+      // One tile per family, so fouls and fouls per 100 don't take two.
+      const seen = new Set();
+      const top = data.metrics
+        .filter(m => m.signal === 'clear' && m.rel != null)
+        .sort((a, b) => Math.abs(b.rel) - Math.abs(a.rel))
+        .filter(m => !seen.has(m.family) && seen.add(m.family))
+        .slice(0, TILES);
+      $('tiles').innerHTML = top.map(m => {
+        const word = m.rel > 0 ? 'higher' : 'lower';
+        return `<div class="ss-tile">
+          <div class="ss-tile-label">${esc(m.label)}</div>
+          <div class="ss-tile-big">${Math.abs(Math.round(m.rel * 100))}% ${word}</div>
+          <div class="ss-tile-vs">${fmt(m, m.stream)} streamed, ${fmt(m, m.sim)} simmed</div>
+        </div>`;
+      }).join('') || '<p class="ss-note">No gap is big enough yet to tell from noise.</p>';
+    }
+
+    function gapCell(m) {
+      if (m.rel == null) return '<td></td>';
+      const w = Math.min(Math.abs(m.rel) / GAP_FULL, 1) * 50;
+      const pos = m.rel >= 0 ? `left:50%;width:${w}%` : `left:${50 - w}%;width:${w}%`;
+      return `<td><div class="ss-gap" title="Streamed is ${fmtRel(m.rel)} vs simmed">
+        <div class="ss-track"><div class="ss-fill is-${m.signal}" style="${pos}"></div></div>
+        <span class="ss-rel">${fmtRel(m.rel)}</span></div></td>`;
+    }
+
+    function row(m) {
+      const s = SIGNAL[m.signal] || SIGNAL.none;
+      return `<tr class="${REAL.has(m.signal) ? '' : 'ss-dim'}">
+        <td>${esc(m.label)}${m.note ? `<span class="ss-sub">${esc(m.note)}</span>` : ''}</td>
+        <td class="num strong">${fmt(m, m.stream)}</td>
+        <td class="num">${fmt(m, m.sim)}</td>
+        <td class="num">${fmtDiff(m, m.diff)}</td>
+        ${gapCell(m)}
+        <td><span class="ui-chip ui-chip--sm ${s.tone}">${s.label}</span></td>
+      </tr>`;
+    }
+
+    function renderTable() {
+      let ms = data.metrics.filter(m => state.show === 'all' || REAL.has(m.signal));
+      let h = `<thead><tr><th>Measure</th><th class="num">Streamed</th><th class="num">Simmed</th>
+        <th class="num">Difference</th><th>Gap</th><th>Real?</th></tr></thead><tbody>`;
+      if (state.order === 'gap') {
+        ms = [...ms].sort((a, b) => Math.abs(b.rel ?? 0) - Math.abs(a.rel ?? 0));
+        h += ms.map(row).join('');
+      } else {
+        let group = null;
+        for (const m of ms) {
+          if (m.group !== group) { group = m.group; h += `<tr class="ss-group"><td colspan="6">${esc(group)}</td></tr>`; }
+          h += row(m);
         }
-        h += `<tr><td>${esc(r.label)}</td><td class="num strong">${r.f(a)}</td><td class="num">${r.f(b)}</td><td class="num">${diff}</td></tr>`;
       }
-      $('t-summary').innerHTML = h + '</tbody>';
-    }
-
-    // Player columns, drawn once per side. `p36` scales counting stats by minutes.
-    const PCOLS = [
-      { key: 'g',   label: 'G',   f: v => v, raw: true },
-      { key: 'min', label: 'MIN', f: num(1), raw: true },
-      { key: 'pts', label: 'PTS', f: num(1) },
-      { key: 'reb', label: 'REB', f: num(1) },
-      { key: 'ast', label: 'AST', f: num(1) },
-      { key: 'fga', label: 'FGA', f: num(1) },
-      { key: 'ts_pct', label: 'TS%', f: pct(1), raw: true },
-    ];
-    const val = (side, c) => {
-      const v = side[c.key];
-      if (v == null || c.raw || state.view === 'pg') return v;
-      return side.min ? v * 36 / side.min : null;
-    };
-    const diffOf = p => (val(p.stream, PCOLS[2]) ?? 0) - (val(p.sim, PCOLS[2]) ?? 0);
-
-    function sortKey(p) {
-      if (state.sort === 'diff') return diffOf(p);
-      if (state.sort === 'player') return p.player;
-      const [side, key] = state.sort.split('.');
-      return val(p[side], PCOLS.find(c => c.key === key)) ?? -Infinity;
-    }
-
-    function renderPlayers() {
-      const rows = [...data.players].sort((a, b) => {
-        const x = sortKey(a), y = sortKey(b);
-        return (x < y ? -1 : x > y ? 1 : 0) * state.dir;
-      });
-      const th = (key, label, cls = '') =>
-        `<th data-sort="${key}" class="${cls} ${state.sort === key ? 'ss-sorted' : ''}">${label}</th>`;
-      let h = '<thead><tr><th></th>'
-        + `<th colspan="${PCOLS.length}" class="ss-split">Streamed</th>`
-        + `<th colspan="${PCOLS.length}" class="ss-split">Simmed</th><th class="ss-split"></th></tr><tr>`
-        + th('player', 'Player');
-      for (const side of ['stream', 'sim'])
-        PCOLS.forEach((c, i) => { h += th(`${side}.${c.key}`, c.label, 'num' + (i === 0 ? ' ss-split' : '')); });
-      h += th('diff', 'PTS +/−', 'num ss-split') + '</tr></thead><tbody>';
-      for (const p of rows) {
-        h += `<tr><td class="ss-player"><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(name(p.player))}</a><span class="ss-sub">${esc(p.teams.join(', '))}</span></td>`;
-        for (const side of ['stream', 'sim'])
-          PCOLS.forEach((c, i) => { h += `<td class="num${i === 0 ? ' ss-split' : ''}">${c.f(val(p[side], c))}</td>`; });
-        const d = diffOf(p);
-        h += `<td class="num ss-split"><span class="${d > 0 ? 'ss-up' : d < 0 ? 'ss-down' : ''}">${(d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(1)}</span></td></tr>`;
-      }
-      $('t-players').innerHTML = h + '</tbody>';
-      $('players-note').textContent =
-        `${rows.length} players who have played at least ${data.min_mpg} minutes a game both ways. `
-        + 'Most have only one or two streamed games, so a single big night moves a line a long way.';
-      document.querySelectorAll('#f-view button').forEach(b => {
-        const on = b.dataset.v === state.view;
-        b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
-      });
+      $('t-metrics').innerHTML = h + '</tbody>';
+      for (const [id, key] of [['f-order', 'order'], ['f-show', 'show']])
+        document.querySelectorAll(`#${id} button`).forEach(b => {
+          const on = b.dataset.v === state[key];
+          b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+        });
     }
 
     function renderGames() {
@@ -219,21 +219,24 @@
     }
 
     function render() {
-      const st = data.summary.stream, sm = data.summary.sim;
-      $('note').textContent = `${data.season} regular season: ${st.games} streamed games and ${sm.games} quick-simmed.`
+      const g = data.games;
+      $('note').textContent = `${data.season} regular season: ${g.stream} streamed games and ${g.sim} quick-simmed.`
         + (data.unmatched ? ` ${data.unmatched} box score${data.unmatched === 1 ? '' : 's'} with no schedule entry left out.` : '')
         + ' Streams have only been tracked since 26-27. Playoff games are all streamed, so they are left out.';
+      $('legend').textContent = 'Per team per game unless it says otherwise. Gap is how much higher or lower streamed games run, '
+        + 'as a share of the simmed figure. Real? weighs the gap against how much games vary from night to night: '
+        + `Clear means the gap is ${data.thresholds.clear}+ times its likely error, Likely ${data.thresholds.likely}+ times. `
+        + 'With this few streamed games, a big gap in something rare (40-point games, overtime) can still be luck.';
       $('status').hidden = true;
       $('body').hidden = false;
-      renderSummary();
-      renderPlayers();
-      renderGames();
+      renderTiles(); renderTable(); renderGames();
     }
 
     function syncUrl() {
       const p = new URLSearchParams();
       if (state.season && data && state.season !== data.seasons[0]) p.set('season', state.season);
-      if (state.view === 'p36') p.set('view', 'p36');
+      if (state.order === 'gap') p.set('order', 'gap');
+      if (state.show === 'real') p.set('show', 'real');
       history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
     }
 
@@ -246,8 +249,8 @@
           const sel = $('f-season');
           sel.innerHTML = d.seasons.map(s => `<option value="${s}">${s}</option>`).join('');
           sel.value = d.season;
-          $('filters').hidden = d.seasons.length < 2;
-          if (!d.summary.stream.games) {
+          $('season-row').hidden = d.seasons.length < 2;
+          if (!d.games.stream) {
             $('status').textContent = 'No streamed games with a box score yet this season.';
             return;
           }
@@ -257,19 +260,12 @@
     }
 
     $('f-season').addEventListener('change', ev => { state.season = ev.target.value; load(); });
-    $('f-view').addEventListener('click', ev => {
-      const b = ev.target.closest('button');
-      if (!b || b.dataset.v === state.view) return;
-      state.view = b.dataset.v; renderPlayers(); syncUrl();
-    });
-    $('t-players').addEventListener('click', ev => {
-      const th = ev.target.closest('th[data-sort]');
-      if (!th) return;
-      const k = th.dataset.sort;
-      if (state.sort === k) state.dir = -state.dir;
-      else { state.sort = k; state.dir = k === 'player' ? 1 : -1; }
-      renderPlayers();
-    });
+    for (const [id, key] of [['f-order', 'order'], ['f-show', 'show']])
+      $(id).addEventListener('click', ev => {
+        const b = ev.target.closest('button');
+        if (!b || b.dataset.v === state[key]) return;
+        state[key] = b.dataset.v; renderTable(); syncUrl();
+      });
     load();
   })();
   </script>
