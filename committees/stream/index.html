@@ -351,42 +351,92 @@
     }
 
     /* ── Planner tab ─────────────────────────────────────────────────── */
-    .pl-intro { margin: 0 0 0.9rem; max-width: 46rem; line-height: 1.5; }
+    .pl-intro { margin: 0 0 0.9rem; max-width: 52rem; line-height: 1.5; }
     .pl-field { display: inline-flex; align-items: center; gap: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
     .pl-field .ui-input { height: 2rem; }
+    .pl-fold { display: flex; gap: 0.3rem; }
     .pl-legend-body { padding: 0.6rem 0.8rem; font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.6; }
     .pl-legend-body dl { display: grid; grid-template-columns: max-content 3.5rem 1fr; gap: 0.15rem 0.7rem; margin: 0; }
     .pl-legend-body dt { color: var(--text-primary); font-weight: 600; }
     .pl-legend-body dd { margin: 0; }
     .pl-legend-body .pl-w { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 
-    .pl-day { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); margin-bottom: 1rem; overflow: hidden; }
-    .pl-day-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.7rem; padding: 0.6rem 0.8rem; background: var(--bg-subtle); border-bottom: 1px solid var(--border-subtle); }
-    .pl-day-head h3 { font-size: var(--text-base); font-weight: 700; margin: 0; color: var(--text-primary); }
+    /* Two columns on a wide screen: the plan, and the tally beside it. */
+    .pl-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+    .pl-main { min-width: 0; }
+    @media (min-width: 1100px) {
+      .pl-layout { grid-template-columns: minmax(0, 1fr) 19rem; }
+      .pl-main { grid-column: 1; grid-row: 1; }
+      .pl-side { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; align-self: start;
+                 max-height: calc(100vh - 2rem); overflow-y: auto; }
+    }
+
+    .pl-side { display: flex; flex-direction: column; gap: 0.75rem; }
+    .pl-panel { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); }
+    .pl-panel > summary { cursor: pointer; padding: 0.55rem 0.8rem; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.07em;
+                          text-transform: uppercase; color: var(--text-dim); list-style: none; }
+    .pl-panel > summary::-webkit-details-marker { display: none; }
+    .pl-panel[open] > summary { border-bottom: 1px solid var(--border-subtle); }
+    .pl-panel-body { padding: 0.55rem 0.8rem 0.7rem; font-size: var(--text-xs); color: var(--text-secondary); }
+    .pl-stats { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 0.8rem; margin: 0; }
+    .pl-stats dt { color: var(--text-muted); }
+    .pl-stats dd { margin: 0; text-align: right; color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .pl-asof { margin: 0.55rem 0 0; color: var(--text-muted); }
+    .pl-tally { display: grid; grid-template-columns: 2.6rem 1fr 2.4rem; align-items: center; gap: 0.25rem 0.5rem; }
+    .pl-tally button { font: inherit; font-weight: 600; color: var(--text-secondary); background: none; border: none; padding: 0; text-align: left; cursor: pointer; }
+    .pl-tally button:hover, .pl-tally button.on { color: var(--accent-light); }
+    .pl-tbar { position: relative; height: 0.5rem; background: var(--border-subtle); border-radius: var(--radius-sm); }
+    .pl-tbar > i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: var(--radius-sm); background: var(--accent); }
+    .pl-tbar > i.pick { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+    .pl-tbar.over > i { background: var(--gold); }
+    .pl-tbar.over > i.pick { background: color-mix(in srgb, var(--gold) 45%, transparent); }
+    .pl-tbar > b { position: absolute; top: -0.15rem; bottom: -0.15rem; width: 2px; background: var(--text-muted); }
+    .pl-tnum { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
+    .pl-key { display: flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; margin-top: 0.5rem; color: var(--text-muted); }
+    .pl-key i { display: inline-block; width: 0.7rem; height: 0.45rem; border-radius: var(--radius-sm); background: var(--accent); margin-right: 0.3rem; }
+    .pl-key i.pick { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+    .pl-key i.mark { width: 2px; height: 0.7rem; background: var(--text-muted); vertical-align: -0.1rem; }
+    .pl-sub { margin: 0.7rem 0 0.3rem; font-weight: 700; color: var(--text-primary); }
+    .pl-sub:first-child { margin-top: 0; }
+
+    .pl-day { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); margin-bottom: 0.6rem; overflow: hidden; }
+    .pl-day.hl { border-color: var(--accent); }
+    .pl-day-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.7rem; padding: 0.55rem 0.8rem; background: var(--bg-subtle); }
+    .pl-day.open .pl-day-head { border-bottom: 1px solid var(--border-subtle); }
+    .pl-toggle { display: inline-flex; align-items: center; gap: 0.5rem; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+    .pl-toggle::before { transition: transform 0.12s; transform: rotate(-90deg); color: var(--text-muted); }
+    .pl-day.open .pl-toggle::before { transform: none; }
+    .pl-toggle h3 { font-size: var(--text-base); font-weight: 700; margin: 0; color: var(--text-primary); }
     .pl-day-meta { font-size: var(--text-xs); color: var(--text-muted); }
-    .pl-day-head .ui-chip { margin-left: auto; }
-    .pl-day.locked .pl-day-head { border-bottom: none; }
-    .pl-locked, .pl-bought, .pl-none { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; padding: 0.55rem 0.8rem; font-size: var(--text-sm); color: var(--text-secondary); }
-    .pl-day.locked .pl-locked { border-top: 1px solid var(--border-subtle); }
-    .pl-bought { border-bottom: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted); }
-    .pl-none { color: var(--text-muted); font-size: var(--text-xs); }
+    .pl-day-tools { margin-left: auto; display: flex; align-items: center; gap: 0.4rem; }
+    .pl-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem; padding: 0.5rem 0.8rem; font-size: var(--text-sm); color: var(--text-secondary); }
+    .pl-line + .pl-line { border-top: 1px solid var(--border-subtle); }
+    .pl-line .pl-num { font-size: var(--text-base); min-width: 0; }
+    .pl-line.muted { color: var(--text-muted); font-size: var(--text-xs); }
+    .pl-day.open .pl-line.pick { display: none; }
+    .pl-body { display: none; }
+    .pl-day.open .pl-body { display: block; }
 
     .pl-game { border-top: 1px solid var(--border-subtle); }
     .pl-game:first-of-type { border-top: none; }
     .pl-game > summary { list-style: none; cursor: pointer; display: grid; align-items: center; gap: 0.3rem 0.8rem; padding: 0.55rem 0.8rem;
-      grid-template-columns: 1.6rem 4.6rem minmax(12rem, 1.3fr) minmax(8rem, 1fr) minmax(10rem, 1.4fr) auto; }
+      grid-template-columns: 1.6rem 4.6rem minmax(13rem, 1.4fr) minmax(7rem, 0.8fr) minmax(9rem, 1.3fr) auto; }
     .pl-game > summary::-webkit-details-marker { display: none; }
     .pl-game > summary:hover { background: var(--bg-subtle); }
     .pl-game[open] > summary { background: var(--bg-subtle); }
-    .pl-game.top > summary { box-shadow: inset 3px 0 0 var(--accent); }
+    .pl-game.picked > summary { box-shadow: inset 3px 0 0 var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+    .pl-game.cool:not(.picked) > summary { opacity: 0.62; }
+    .pl-game.hl > summary { box-shadow: inset 3px 0 0 var(--gold); }
     .pl-rank { font-family: var(--font-display); font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-    .pl-game.top .pl-rank { color: var(--accent-light); }
+    .pl-game.picked .pl-rank { color: var(--accent-light); }
     .pl-time { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
     .pl-match { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
     .pl-teams { display: flex; align-items: center; gap: 0.35rem; font-size: var(--text-sm); flex-wrap: wrap; }
     .pl-teams a { color: var(--text-primary); font-weight: 600; }
     .pl-rec { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
-    .pl-owners { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-owners, .pl-meet { font-size: var(--text-xs); color: var(--text-muted); }
+    .pl-owners { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-meet [data-icon]::before { margin-right: 0.2em; }
     .pl-score { display: flex; align-items: center; gap: 0.5rem; }
     .pl-bar { flex: 1; height: 0.45rem; border-radius: var(--radius-sm); background: var(--border-subtle); overflow: hidden; min-width: 3rem; }
     .pl-bar > i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
@@ -396,6 +446,7 @@
     .pl-why { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
     .pl-why::before { transition: transform 0.12s; }
     .pl-game[open] .pl-why::before { transform: rotate(180deg); }
+    .pl-picked { display: inline-flex; align-items: center; gap: 0.3rem; font-size: var(--text-xs); font-weight: 700; color: var(--accent-light); white-space: nowrap; }
 
     .pl-break { padding: 0.3rem 0.8rem 0.8rem 3.2rem; }
     .pl-break table { width: 100%; border-collapse: collapse; font-size: var(--text-xs); }
@@ -409,6 +460,34 @@
     .pl-break .pl-bar > i.neg { background: var(--danger); }
     .pl-break .pl-src { color: var(--text-muted); font-style: italic; }
 
+    /* Calendar: one grid per month, a day's games open under its week. */
+    .pl-month { margin-bottom: 1.2rem; }
+    .pl-month h3 { font-size: var(--text-base); margin: 0 0 0.5rem; color: var(--text-primary); }
+    .pl-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.3rem; }
+    .pl-dow { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-dim); padding: 0 0.2rem; }
+    .pl-cell { min-height: 5.2rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.35rem 0.4rem;
+               background: var(--bg-card); display: flex; flex-direction: column; gap: 0.2rem; text-align: left; font: inherit; color: inherit; min-width: 0; }
+    .pl-cell.out { background: transparent; border-style: dashed; opacity: 0.45; }
+    button.pl-cell { cursor: pointer; }
+    button.pl-cell:hover { border-color: var(--text-muted); }
+    .pl-cell.sel { border-color: var(--accent); outline: 1px solid var(--accent); }
+    .pl-cell.hl { border-color: var(--gold); }
+    .pl-cell-n { font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .pl-cell-m { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); line-height: 1.25; overflow-wrap: anywhere; }
+    .pl-cell-s { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-cell.set .pl-cell-m { color: var(--success); }
+    .pl-cell.skip .pl-cell-m { color: var(--text-muted); font-weight: 500; }
+    .pl-cell.pick .pl-cell-m { color: var(--accent-light); }
+    .pl-cal-detail { grid-column: 1 / -1; }
+    .pl-cal-detail .pl-day { margin: 0.2rem 0 0.4rem; }
+
+    .pl-savebar { position: sticky; bottom: 0; z-index: 5; margin-top: 0.8rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.8rem;
+                  padding: 0.65rem 0.9rem; background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+                  box-shadow: var(--shadow-overlay); font-size: var(--text-sm); color: var(--text-secondary); }
+    .pl-savebar b { color: var(--text-primary); }
+    .pl-savebar .pl-save-tools { margin-left: auto; display: flex; gap: 0.4rem; }
+    .pl-updating { color: var(--text-muted); font-size: var(--text-xs); }
+
     @media (max-width: 760px) {
       .pl-game > summary { grid-template-columns: 1.4rem 1fr auto; grid-template-areas: "rank match act" ". score score" ". reasons reasons" ". time time"; }
       .pl-rank { grid-area: rank; } .pl-match { grid-area: match; } .pl-act { grid-area: act; }
@@ -417,6 +496,9 @@
       .pl-break td.pl-f { width: auto; }
       .pl-break td.pl-mini { display: none; }
       .pl-why { display: none; }
+      .pl-cell { min-height: 3.6rem; padding: 0.25rem; }
+      .pl-cell-s { display: none; }
+      .pl-cell-m { font-size: var(--text-xs); white-space: normal; }
     }
   </style>
 </head>
@@ -502,7 +584,7 @@
       </div>
 
       <div class="tab-panel hidden" id="tab-planner">
-        <p class="sub pl-intro">Each day's games ranked by how much they're worth putting on stream: one scheduled stream a day, bought streams on top. Make stream flags a game; a day with a flagged game is set.</p>
+        <p class="sub pl-intro">One scheduled stream a day, bought streams on top. Every open day starts with its suggested game picked; swap or skip any day, and the days after re-rank around your picks. Save all flags them in one go.</p>
         <div class="controls pl-controls">
           <label class="pl-field"><span>From</span><input type="date" class="ui-input" id="pl-from"></label>
           <label class="pl-field"><span>To</span><input type="date" class="ui-input" id="pl-to"></label>
@@ -511,30 +593,26 @@
             <button data-days="14">14 days</button>
             <button data-days="month" title="From the start date to the end of its month">Month</button>
           </div>
-        </div>
-        <div class="summary" id="pl-summary"></div>
-        <details class="sc-wrap pl-legend" id="pl-legend">
-          <summary>How games are scored</summary>
-          <div class="pl-legend-body" id="pl-legend-body"></div>
-        </details>
-        <details class="sc-wrap" id="pl-exposure" hidden>
-          <summary id="pl-exposure-head"></summary>
-          <div class="ui-table-wrap sc-scroll">
-            <table class="data-table sc-table">
-              <thead>
-                <tr>
-                  <th>Team</th>
-                  <th class="right">Scheduled</th>
-                  <th class="right">Projected</th>
-                  <th class="right">Bought</th>
-                  <th class="right">vs share</th>
-                </tr>
-              </thead>
-              <tbody id="pl-exposure-list"></tbody>
-            </table>
+          <div class="seg" id="pl-view">
+            <button data-view="list">List</button>
+            <button data-view="calendar">Calendar</button>
           </div>
-        </details>
-        <div id="pl-days"><div class="ui-loading">Loading…</div></div>
+          <div class="pl-fold" id="pl-fold">
+            <button class="ui-btn ui-btn--sm ui-btn--ghost" data-fold="open">Expand all</button>
+            <button class="ui-btn ui-btn--sm ui-btn--ghost" data-fold="close">Collapse all</button>
+          </div>
+        </div>
+        <div class="pl-layout">
+          <aside class="pl-side" id="pl-side"></aside>
+          <div class="pl-main">
+            <details class="sc-wrap pl-legend" id="pl-legend">
+              <summary>How games are scored</summary>
+              <div class="pl-legend-body" id="pl-legend-body"></div>
+            </details>
+            <div id="pl-days"><div class="ui-loading">Loading…</div></div>
+          </div>
+        </div>
+        <div class="pl-savebar" id="pl-savebar" hidden></div>
       </div>
 
       <div class="tab-panel hidden" id="tab-coaching">
@@ -2302,15 +2380,28 @@
     // scoring is the API's (nbn-api routers/stream_planner.py), this only
     // draws it. Milestones are the one page-side factor (+5), from the same
     // milestones.js /preview uses, so there is one milestone implementation.
-    // Make stream is the existing POST /api/schedule/{id}/stream.
+    //
+    // Every open day starts with the API's suggested pick. Chuck's swaps and
+    // skips (plChoices) go back as picks= / skip=, so the API re-ranks every
+    // later day around what he actually chose. Save all flags the whole plan
+    // with one POST /api/schedule/stream-batch, all or nothing.
 
     const PL_MILESTONE_PTS = 5;
     const PL_MILESTONE_HORIZON = 4;   // team games ahead a milestone estimate is trusted
     const PL_MAX_SPAN = 31;
+    const PL_STRONG = 0.6;            // a factor at 60% of its max counts as a rivalry / bubble game
     let plLoaded = false;
     let plSeq = 0;
+    let plTimer = null;
+    let plData = null;
     let plSchedule = null;          // {season, games}, for counting games before a date
     let plMilestones = null;        // Milestones.load() result, or false when it failed
+    const plChoices = new Map();    // date -> game id, or null for a skipped day
+    const plOpenDays = new Set();   // expanded days (the list starts all collapsed)
+    let plView = 'list';
+    let plCalDay = null;            // the calendar day showing its games
+    let plHighlight = null;         // a team picked in the tally
+    let plSaving = false;
 
     function plEl(tag, cls, text) {
       const e = document.createElement(tag);
@@ -2323,7 +2414,19 @@
       if (icon) c.dataset.icon = icon;
       return c;
     }
+    function plBtn(text, cls, onclick, icon) {
+      const b = plEl('button', 'ui-btn ui-btn--sm' + (cls ? ' ' + cls : ''), text);
+      if (icon) b.dataset.icon = icon;
+      b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); onclick(ev); };
+      return b;
+    }
+    function plMatch(away, home) {
+      const m = span('g-match');
+      m.append(logo(away), teamLink(away), span('g-at', '@'), logo(home), teamLink(home));
+      return m;
+    }
     const plFmtPts = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(Math.abs(n) % 1 ? 1 : 0);
+    const plHas = (g, t) => !!t && (g.away === t || g.home === t);
 
     function plRange() {
       return { from: document.getElementById('pl-from').value, to: document.getElementById('pl-to').value };
@@ -2351,39 +2454,68 @@
     function plSpanDays({ from, to }) {
       return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000) + 1;
     }
+    function plMarkView() {
+      document.querySelectorAll('#pl-view button').forEach(b => b.classList.toggle('active', b.dataset.view === plView));
+      document.getElementById('pl-fold').hidden = plView !== 'list';
+    }
 
     function setupPlanner() {
       if (plLoaded) return;
       plLoaded = true;
       plSetSpan('7');
+      plMarkView();
       const onChange = () => { plMarkSpan(); loadPlanner(); };
       document.getElementById('pl-from').onchange = onChange;
       document.getElementById('pl-to').onchange = onChange;
       document.querySelectorAll('#pl-span button').forEach(b => {
         b.onclick = () => { plSetSpan(b.dataset.days); loadPlanner(); };
       });
+      document.querySelectorAll('#pl-view button').forEach(b => {
+        b.onclick = () => { plView = b.dataset.view; plMarkView(); if (plData) renderPlanner(plData); };
+      });
+      document.querySelectorAll('#pl-fold button').forEach(b => {
+        b.onclick = () => {
+          if (!plData) return;
+          if (b.dataset.fold === 'open') plData.days.forEach(d => plOpenDays.add(d.date));
+          else plOpenDays.clear();
+          renderPlanner(plData);
+        };
+      });
       loadPlanner();
     }
 
-    async function loadPlanner() {
+    // A pick or skip changed: re-rank the range around it, keeping the page
+    // where it is. Quick changes in a row share one request.
+    function plReplan() {
+      clearTimeout(plTimer);
+      if (plData) renderPlanner(plData, true);
+      plTimer = setTimeout(() => loadPlanner(true), 250);
+    }
+
+    async function loadPlanner(quiet) {
       const seq = ++plSeq;
       const box = document.getElementById('pl-days');
       const range = plRange();
-      document.getElementById('pl-summary').innerHTML = '';
-      document.getElementById('pl-exposure').hidden = true;
-      if (!range.from || !range.to) { box.replaceChildren(plEl('div', 'empty', 'Pick a start and end date.')); return; }
-      if (range.to < range.from) { box.replaceChildren(plEl('div', 'empty', "The end date is before the start date.")); return; }
+      const fail = msg => { plData = null; box.replaceChildren(plEl('div', 'empty', msg));
+                            document.getElementById('pl-side').replaceChildren(); plRenderSaveBar(); };
+      if (!range.from || !range.to) return fail('Pick a start and end date.');
+      if (range.to < range.from) return fail('The end date is before the start date.');
       if (plSpanDays(range) > PL_MAX_SPAN) {
-        box.replaceChildren(plEl('div', 'empty', `That's ${plSpanDays(range)} days. The planner looks at up to ${PL_MAX_SPAN} at a time.`));
-        return;
+        return fail(`That's ${plSpanDays(range)} days. The planner looks at up to ${PL_MAX_SPAN} at a time.`);
       }
-      box.replaceChildren(plEl('div', 'ui-loading', 'Ranking games…'));
+      if (!quiet) box.replaceChildren(plEl('div', 'ui-loading', 'Ranking games…'));
+      const picks = [], skips = [];
+      for (const [d, id] of plChoices) {
+        if (d < range.from || d > range.to) continue;
+        if (id) picks.push(id); else skips.push(d);
+      }
+      const q = new URLSearchParams({ from: range.from, to: range.to });
+      if (picks.length) q.set('picks', picks.join(','));
+      if (skips.length) q.set('skip', skips.join(','));
       const token = storedToken();
       let data;
       try {
-        const r = await fetch(`/api/stream-planner?from=${range.from}&to=${range.to}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const r = await fetch(`/api/stream-planner?${q}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!r.ok) {
           const detail = await r.json().then(j => j.detail).catch(() => null);
           throw new Error(typeof detail === 'string' ? detail : `HTTP ${r.status}`);
@@ -2391,18 +2523,28 @@
         data = await r.json();
       } catch (e) {
         if (seq !== plSeq) return;
+        plData = null;
         const err = plEl('div', 'empty');
         err.append(plEl('div', '', `Couldn't load the planner: ${e.message}`));
         const retry = plEl('button', 'ui-btn ui-btn--sm', 'Try again');
         retry.style.marginTop = '0.6rem';
-        retry.onclick = loadPlanner;
+        retry.onclick = () => loadPlanner();
         err.append(retry);
         box.replaceChildren(err);
+        document.getElementById('pl-side').replaceChildren();
+        plRenderSaveBar();
         return;
       }
       await plAddMilestones(data);
       if (seq !== plSeq) return;
+      // A choice the API couldn't use (the day got set elsewhere) is dropped.
+      for (const id of data.ignored_picks || []) {
+        for (const [d, v] of plChoices) if (v === id) plChoices.delete(d);
+      }
+      plData = data;
+      const y = window.scrollY;
       renderPlanner(data);
+      if (quiet) window.scrollTo(0, y);
     }
 
     // Milestones as a factor: a player whose next milestone lands in this
@@ -2420,7 +2562,7 @@
       const list = plMilestones ? Milestones.upcoming(plMilestones, { maxGames: 40 }) : null;
       for (const day of data.days) {
         for (const g of day.games) {
-          if (!list) {
+          if (!list || !plSchedule) {
             g.factors.milestones = { pts: 0, max: PL_MILESTONE_PTS, label: 'Milestones', detail: "Couldn't load career totals", page: true };
             continue;
           }
@@ -2447,29 +2589,32 @@
           };
           g.score = Math.round((g.score + pts) * 10) / 10;
         }
-        // The page's bonus can reorder a day; the API's pick stays the
-        // projection the later days were scored against, so say which it was.
         day.games.sort((a, b) => b.score - a.score || a.rank - b.rank);
       }
     }
 
-    function renderPlanner(data) {
-      const days = data.days;
-      const open = days.filter(d => !d.locked && d.games.length).length;
-      const locked = days.filter(d => d.locked).length;
-      const noGames = days.filter(d => !d.games_count).length;
+    // The plan as it stands: each open day and its picked game (or none).
+    function plSelection(data) {
+      return data.days.filter(d => !d.locked && d.games.length).map(d => ({
+        day: d, game: d.games.find(g => g.id === d.projected_pick) || null,
+      }));
+    }
 
-      const sum = document.getElementById('pl-summary');
-      sum.replaceChildren();
-      const add = (b, rest) => { const s = plEl('span'); s.append(plEl('b', '', b), document.createTextNode(rest)); sum.append(s); };
-      add(String(open), open === 1 ? ' day to pick' : ' days to pick');
-      add(String(locked), ' set');
-      if (noGames) add(String(noGames), noGames === 1 ? ' with no games' : ' with no games');
-      add(data.share.toFixed(1), ' scheduled streams per team, even share');
-      sum.append(plEl('span', 'dim', data.odds_as_of ? `Playoff odds as of ${fmtShort(data.odds_as_of)}` : 'No playoff odds yet: ratings from rosters'));
+    function renderPlanner(data, pending) {
+      plRenderLegend(data);
+      plRenderSide(data);
+      const box = document.getElementById('pl-days');
+      if (!data.days.some(d => d.games_count)) {
+        box.replaceChildren(plEl('div', 'empty', `No games scheduled between ${fmtShort(data.from)} and ${fmtShort(data.to)}.`));
+      } else if (plView === 'calendar') {
+        box.replaceChildren(...plCalendar(data));
+      } else {
+        box.replaceChildren(...data.days.map(d => plDayCard(d, data)));
+      }
+      plRenderSaveBar(pending);
+    }
 
-      const legend = document.getElementById('pl-legend-body');
-      const dl = plEl('dl');
+    function plRenderLegend(data) {
       const DESC = {
         quality: 'Both teams good: the playoff-odds rating, with players who are Out taken off.',
         closeness: 'A small projected spread.',
@@ -2478,8 +2623,9 @@
         stakes: 'Playoff odds near a coin flip, and same-conference teams projected close; grows late in the season.',
         stars: 'Each side’s best healthy player.',
         fairness: 'Teams under their even share of scheduled streams gain, teams over it lose. Bought streams don’t count.',
-        repeat: 'A team already on stream within 3 days of the date (bought streams count here).',
+        repeat: `A team on stream within ${data.cooldown_days || 7} days either side; more off within 3 (bought streams count here).`,
       };
+      const dl = plEl('dl');
       for (const [k, w] of Object.entries(data.weights)) {
         dl.append(plEl('dt', '', data.labels[k]),
                   plEl('dd', 'pl-w', k === 'repeat' ? `−${w}` : k === 'fairness' ? `±${w}` : String(w)),
@@ -2487,47 +2633,112 @@
       }
       dl.append(plEl('dt', '', 'Milestones'), plEl('dd', 'pl-w', String(PL_MILESTONE_PTS)),
                 plEl('dd', '', 'A player’s next career milestone, or a pass into the all-time top 5, lands in this game. Only within each team’s next 4 games, where the estimate holds (worked out on this page).'));
-      const note = plEl('p', '', 'Days are scored in order, assuming each open day’s top game is the one streamed, so one team isn’t the pick every day.');
+      const note = plEl('p', '', `A team on stream within ${data.cooldown_days || 7} days either side (set, bought, or picked earlier in the plan) can’t be the suggested pick; its games are dimmed with the clash named. Days are planned in order, so each pick, yours or suggested, re-ranks the days after it.`);
       note.style.margin = '0.6rem 0 0';
-      legend.replaceChildren(dl, note);
-
-      renderPlannerExposure(data);
-
-      const box = document.getElementById('pl-days');
-      box.replaceChildren();
-      for (const day of days) box.append(plDayCard(day, data));
-      if (!days.some(d => d.games_count)) {
-        box.replaceChildren(plEl('div', 'empty', `No games scheduled between ${fmtShort(data.from)} and ${fmtShort(data.to)}.`));
-      }
+      document.getElementById('pl-legend-body').replaceChildren(dl, note);
     }
 
-    function renderPlannerExposure(data) {
-      const det = document.getElementById('pl-exposure');
-      const under = data.exposure.filter(e => e.vs_share <= -0.5).length;
-      const head = document.getElementById('pl-exposure-head');
-      head.replaceChildren(plEl('b', '', 'Streams by team'),
-        document.createTextNode(` · ${under} team${under === 1 ? '' : 's'} under the even share, counting this range's top picks`));
-      const tb = document.getElementById('pl-exposure-list');
-      tb.replaceChildren();
-      for (const e of data.exposure) {
-        const tr = plEl('tr');
-        const t = plEl('td');
-        const m = span('g-match');
-        m.append(logo(e.team), teamLink(e.team));
-        t.append(m);
-        const heat = plEl('td', 'right ui-heat', plFmtPts(e.vs_share).replace(/\.0$/, ''));
-        heat.style.setProperty('--heat', String(Math.max(0, Math.min(1, 0.5 - e.vs_share / 4))));
-        tr.append(t, plEl('td', 'right', String(e.scheduled)), plEl('td', 'right', e.projected ? String(e.projected) : '–'),
-                  plEl('td', 'right', e.bought ? String(e.bought) : '–'), heat);
-        tb.append(tr);
+    // ── The tally beside the plan ──
+    function plRenderSide(data) {
+      const side = document.getElementById('pl-side');
+      const wide = window.matchMedia('(min-width: 1100px)').matches;
+      const sel = plSelection(data);
+      const picked = sel.filter(s => s.game);
+      const locked = data.days.filter(d => d.locked);
+      const covered = new Set();
+      picked.forEach(s => { covered.add(s.game.away); covered.add(s.game.home); });
+      locked.forEach(d => { covered.add(d.locked.away); covered.add(d.locked.home); });
+      const strong = (g, k) => g.factors[k] && g.factors[k].pts >= PL_STRONG * g.factors[k].max;
+      const avg = picked.length ? picked.reduce((a, s) => a + s.game.score, 0) / picked.length : 0;
+
+      const panel = (title, open, body) => {
+        const d = plEl('details', 'pl-panel');
+        d.open = open;
+        d.append(plEl('summary', '', title));
+        const b = plEl('div', 'pl-panel-body');
+        b.append(...body);
+        d.append(b);
+        return d;
+      };
+
+      const stats = plEl('dl', 'pl-stats');
+      const stat = (k, v) => stats.append(plEl('dt', '', k), plEl('dd', '', v));
+      stat('Days picked', `${picked.length} / ${sel.length}`);
+      if (sel.length - picked.length) stat('Skipped', String(sel.length - picked.length));
+      if (locked.length) stat('Already set', String(locked.length));
+      stat('Teams on stream', `${covered.size} / 30`);
+      stat('Average score', picked.length ? avg.toFixed(1) : '–');
+      stat('Rivalry games', String(picked.filter(s => strong(s.game, 'owner_rivalry') || strong(s.game, 'franchise_rivalry')).length));
+      stat('Bubble games', String(picked.filter(s => strong(s.game, 'stakes')).length));
+      const forced = data.days.filter(d => d.forced).length;
+      if (forced) stat('No fresh matchup', String(forced));
+      const asof = plEl('p', 'pl-asof', data.odds_as_of ? `Playoff odds as of ${fmtShort(data.odds_as_of)}` : 'No playoff odds yet: ratings from rosters');
+
+      // Streams per team: had + flagged (solid) and picked in this plan (pale),
+      // against the even share (the line). Lowest first.
+      const rows = data.exposure.slice().sort((a, b) => (a.scheduled + a.picked) - (b.scheduled + b.picked) || a.team.localeCompare(b.team));
+      const max = Math.max(data.share, ...rows.map(r => r.scheduled + r.picked), 1);
+      const tally = plEl('div', 'pl-tally');
+      for (const r of rows) {
+        const b = plEl('button', r.team === plHighlight ? 'on' : '', r.team);
+        b.title = `${TEAMS[r.team] || r.team}: ${r.scheduled} scheduled, ${r.picked} picked here${r.bought ? `, ${r.bought} bought` : ''}`
+                + (r.last_stream ? ` · last on stream ${fmtShort(r.last_stream)}` : ' · not on stream yet');
+        b.onclick = () => { plHighlight = plHighlight === r.team ? null : r.team; renderPlanner(plData); };
+        const bar = plEl('div', 'pl-tbar' + (r.vs_share > 0.5 ? ' over' : ''));
+        const had = plEl('i'); had.style.width = `${r.scheduled / max * 100}%`;
+        const pk = plEl('i', 'pick'); pk.style.left = `${r.scheduled / max * 100}%`; pk.style.width = `${r.picked / max * 100}%`;
+        const mark = plEl('b'); mark.style.left = `${Math.min(100, data.share / max * 100)}%`;
+        bar.append(had, pk, mark);
+        tally.append(b, bar, plEl('span', 'pl-tnum', r.picked ? `${r.scheduled}+${r.picked}` : String(r.scheduled)));
       }
-      det.hidden = false;
+      const key = plEl('div', 'pl-key');
+      key.innerHTML = '<span><i></i>Had or set</span><span><i class="pick"></i>Picked here</span><span><i class="mark"></i>Even share</span>';
+
+      const bal = [];
+      const balRows = (title, groups) => {
+        bal.push(plEl('div', 'pl-sub', title));
+        const t = plEl('div', 'pl-tally');
+        const bmax = Math.max(...groups.map(g => Math.max(g.appearances, g.share)), 1);
+        for (const g of groups) {
+          const bar = plEl('div', 'pl-tbar' + (g.appearances - g.share > g.teams * 0.5 ? ' over' : ''));
+          const i = plEl('i'); i.style.width = `${g.appearances / bmax * 100}%`;
+          const mark = plEl('b'); mark.style.left = `${Math.min(100, g.share / bmax * 100)}%`;
+          bar.append(i, mark);
+          const name = plEl('span', '', g.name.replace('Northwest', 'NW').replace('Southwest', 'SW').replace('Southeast', 'SE'));
+          name.title = g.name;
+          t.append(name, bar, plEl('span', 'pl-tnum', `${g.appearances}/${Math.round(g.share)}`));
+        }
+        bal.push(t);
+      };
+      balRows('Conferences', data.balance.conferences);
+      balRows('Divisions', data.balance.divisions);
+      const balNote = plEl('p', 'pl-asof', 'Team appearances on stream (both sides of each game), with this plan’s picks, against an even share.');
+
+      side.replaceChildren(
+        panel('Plan summary', true, [stats, asof]),
+        panel('Streams per team', wide, [tally, key]),
+        panel('League balance', wide, [...bal, balNote]),
+      );
     }
 
-    function plDayCard(day, data) {
-      const card = plEl('section', 'pl-day' + (day.locked ? ' locked' : ''));
+    // ── One day ──
+    function plDayCard(day, data, opts = {}) {
+      const open = opts.open || plOpenDays.has(day.date);
+      const sel = day.games.find(g => g.id === day.projected_pick) || null;
+      const hl = plHighlight && ((sel && plHas(sel, plHighlight))
+                 || (day.locked && plHas(day.locked, plHighlight)) || day.games.some(g => plHas(g, plHighlight)));
+      const card = plEl('section', 'pl-day' + (open ? ' open' : '') + (day.locked ? ' locked' : '') + (hl ? ' hl' : ''));
       const head = plEl('header', 'pl-day-head');
-      head.append(plEl('h3', '', fmtDayHdr(day.date)));
+      const toggle = plEl('button', 'pl-toggle');
+      toggle.dataset.icon = 'chevron';
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.append(plEl('h3', '', fmtDayHdr(day.date)));
+      toggle.onclick = () => {
+        if (opts.open) { plCalDay = null; renderPlanner(plData); return; }
+        if (plOpenDays.has(day.date)) plOpenDays.delete(day.date); else plOpenDays.add(day.date);
+        renderPlanner(plData);
+      };
+      head.append(toggle);
       head.append(plEl('span', 'pl-day-meta', day.games_count ? `${day.games_count} game${day.games_count === 1 ? '' : 's'}` : 'No games'));
       const claimers = [...new Set((plSchedule ? plSchedule.games : []).filter(x => x.date === day.date && x.streamer).map(x => x.streamer))];
       if (claimers.length) {
@@ -2536,41 +2747,87 @@
         c.append(document.createTextNode(claimers.join(', ')));
         head.append(c);
       }
-      if (day.locked) head.append(plChip('Set', 'success', 'check'));
-      else if (day.games.length) head.append(plChip('To pick', 'warning'));
+      const tools = plEl('div', 'pl-day-tools');
+      if (day.locked) tools.append(plChip('Set', 'success', 'check'));
+      else if (day.games.length) {
+        if (day.skipped) tools.append(plChip('Skipped'));
+        else if (plChoices.has(day.date)) tools.append(plChip('Your pick', 'accent'));
+        else tools.append(plChip('Suggested', 'warning'));
+        tools.append(day.skipped
+          ? plBtn('Undo skip', 'ui-btn--ghost', () => { plChoices.delete(day.date); plReplan(); })
+          : plBtn('Skip day', 'ui-btn--ghost', () => { plChoices.set(day.date, null); plReplan(); }));
+      }
+      head.append(tools);
       card.append(head);
 
+      // What's on stream that day: the one line a collapsed day shows.
       if (day.locked) {
-        const l = plEl('div', 'pl-locked');
+        const l = plEl('div', 'pl-line');
         l.dataset.icon = 'lock';
-        l.append(document.createTextNode('Stream: '));
-        const m = span('g-match');
-        m.append(logo(day.locked.away), teamLink(day.locked.away), span('g-at', '@'), logo(day.locked.home), teamLink(day.locked.home));
-        l.append(m, plEl('span', 'pl-rec', fmtTime(day.locked.time_et)));
+        l.append(document.createTextNode('Stream:'), plMatch(day.locked.away, day.locked.home),
+                 plEl('span', 'pl-rec', fmtTime(day.locked.time_et)));
         card.append(l);
+      } else if (sel) {
+        const l = plEl('div', 'pl-line pick');
+        l.dataset.icon = 'check';
+        l.append(plMatch(sel.away, sel.home), plEl('span', 'pl-rec', fmtTime(sel.time_et)), plEl('span', 'pl-num', String(Math.round(sel.score))));
+        const top = Object.values(sel.factors).filter(f => f.pts > 0).sort((a, b) => b.pts / b.max - a.pts / a.max)[0];
+        if (top) l.append(plChip(`${top.label} ${plFmtPts(top.pts)}`));
+        if (day.forced) l.append(plChip('No fresh matchup', 'warning', 'warning'));
+        else if (sel.cooldown) l.append(plChip(`${sel.cooldown.team} on stream ${fmtShort(sel.cooldown.date)}`, 'warning'));
+        card.append(l);
+      } else if (day.skipped) {
+        card.append(plEl('div', 'pl-line pick muted', 'Skipped: no scheduled stream this day.'));
+      } else if (!day.games_count) {
+        card.append(plEl('div', 'pl-line muted', 'No games this day.'));
       }
       for (const b of day.bought) {
-        const l = plEl('div', 'pl-bought');
+        const l = plEl('div', 'pl-line muted');
         l.dataset.icon = 'coins';
-        l.append(document.createTextNode(`Also streaming, bought${b.buyer ? ` by ${b.buyer}` : ''}: `));
-        const m = span('g-match');
-        m.append(logo(b.away), teamLink(b.away), span('g-at', '@'), logo(b.home), teamLink(b.home));
-        l.append(m);
+        l.append(document.createTextNode(`Also streaming, bought${b.buyer ? ` by ${b.buyer}` : ''}:`), plMatch(b.away, b.home));
         card.append(l);
       }
-      if (day.locked) return card;
-      if (!day.games.length) {
-        card.append(plEl('div', 'pl-none', day.games_count ? 'Every game this day is already streaming.' : 'No games this day.'));
-        return card;
+      if (!day.locked && day.games.length) {
+        const body = plEl('div', 'pl-body');
+        const top = Math.max(day.games[0].score, 1);
+        day.games.forEach((g, i) => body.append(plGameRow(g, i, top, day)));
+        card.append(body);
       }
-      const best = day.games[0].score;
-      const top = Math.max(best, 1);
-      day.games.forEach((g, i) => card.append(plGameRow(g, i, top, day)));
       return card;
     }
 
+    function plMeetLine(g) {
+      const box = plEl('div', 'pl-meet');
+      const played = g.meetings.filter(m => m.home_pts != null && m.date < g.date);
+      const next = g.meetings.find(m => m.home_pts == null && m.date > g.date);
+      if (played.length) {
+        played.slice(-2).forEach((m, i) => {
+          if (i) box.append(document.createTextNode(' · '));
+          const s = plEl('span', '', `${i ? '' : 'Met '}${fmtShort(m.date)}: ${m.away} ${m.away_pts}–${m.home_pts} ${m.home}`);
+          if (m.streamed) { s.dataset.icon = 'tv'; s.title = 'On stream'; }
+          box.append(s);
+        });
+        if (played.length > 2) box.append(document.createTextNode(` (+${played.length - 2} more)`));
+      } else {
+        box.append(document.createTextNode('First meeting this season'));
+      }
+      if (next) box.append(document.createTextNode(` · next ${fmtShort(next.date)}`));
+      // Last stream from the API (on or before today); the next one already
+      // flagged, from the schedule, so "never" doesn't hide a stream tomorrow.
+      const ls = g.last_stream || {};
+      const nextOf = t => {
+        const n = (plSchedule ? plSchedule.games : []).filter(x => x.stream && x.date > today
+          && (x.away_team === t || x.home_team === t)).map(x => x.date).sort()[0];
+        return n ? ` (next ${fmtShort(n)})` : '';
+      };
+      const last = t => (ls[t === g.away ? 'away' : 'home'] ? fmtShort(ls[t === g.away ? 'away' : 'home']) : 'never') + nextOf(t);
+      return [box, plEl('div', 'pl-meet', `Last on stream: ${g.away} ${last(g.away)} · ${g.home} ${last(g.home)}`)];
+    }
+
     function plGameRow(g, i, top, day) {
-      const det = plEl('details', 'pl-game' + (i === 0 ? ' top' : ''));
+      const isPick = g.id === day.projected_pick;
+      const det = plEl('details', 'pl-game' + (isPick ? ' picked' : '') + (g.cooldown ? ' cool' : '')
+                                 + (plHas(g, plHighlight) ? ' hl' : ''));
       const s = plEl('summary');
       s.append(plEl('span', 'pl-rank', String(i + 1)));
       s.append(plEl('span', 'pl-time', fmtTime(g.time_et)));
@@ -2585,6 +2842,7 @@
       if (g.away_owner || g.home_owner) {
         match.append(plEl('div', 'pl-owners', `${g.away_owner || '—'} vs ${g.home_owner || '—'}`));
       }
+      match.append(...plMeetLine(g));
       s.append(match);
 
       const score = plEl('div', 'pl-score');
@@ -2599,18 +2857,22 @@
       const facs = Object.entries(g.factors);
       const pos = facs.filter(([, f]) => f.pts > 0).sort((a, b) => b[1].pts / b[1].max - a[1].pts / a[1].max).slice(0, 3);
       const neg = facs.filter(([, f]) => f.pts < 0).sort((a, b) => a[1].pts - b[1].pts).slice(0, 1);
+      if (g.cooldown) reasons.append(plChip(`${g.cooldown.team} on stream ${fmtShort(g.cooldown.date)}`, 'warning'));
       for (const [k, f] of pos) reasons.append(plChip(`${f.label} ${plFmtPts(f.pts)}`, k === 'milestones' ? 'accent' : null, k === 'milestones' ? 'trophy' : null));
       for (const [, f] of neg) reasons.append(plChip(`${f.label} ${plFmtPts(f.pts)}`, 'danger'));
-      if (i === 0 && g.id === day.projected_pick) reasons.prepend(plChip('Top pick', 'accent', 'star'));
       s.append(reasons);
 
       const act = plEl('div', 'pl-act');
       const why = plEl('span', 'pl-why', 'Why');
       why.dataset.icon = 'chevron';
-      const btn = plEl('button', 'ui-btn ui-btn--sm' + (i === 0 ? ' ui-btn--primary' : ''), 'Make stream');
-      btn.dataset.icon = 'stream';
-      btn.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); plMakeStream(g, day, btn); };
-      act.append(why, btn);
+      act.append(why);
+      if (isPick) {
+        const p = plEl('span', 'pl-picked', 'Picked');
+        p.dataset.icon = 'check';
+        act.append(p);
+      } else {
+        act.append(plBtn('Pick', i === 0 ? '' : 'ui-btn--ghost', () => { plChoices.set(day.date, g.id); plReplan(); }));
+      }
       s.append(act);
       det.append(s);
 
@@ -2639,40 +2901,141 @@
       return det;
     }
 
-    async function plMakeStream(g, day, btn) {
+    // ── Calendar: a grid per month, a day's games opening under its week ──
+    function plCalendar(data) {
+      const byDate = new Map(data.days.map(d => [d.date, d]));
+      const months = [];
+      for (let m = data.from.slice(0, 7); m <= data.to.slice(0, 7);) {
+        months.push(m);
+        const [y, mo] = m.split('-').map(Number);
+        m = mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, '0')}`;
+      }
+      return months.map(m => {
+        const wrap = plEl('section', 'pl-month');
+        const [y, mo] = m.split('-').map(Number);
+        wrap.append(plEl('h3', '', `${MONTHS[mo - 1]} ${y}`));
+        const grid = plEl('div', 'pl-cal');
+        DAYS.forEach(d => grid.append(plEl('div', 'pl-dow', d)));
+        const first = new Date(Date.UTC(y, mo - 1, 1)).getUTCDay();
+        const last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+        for (let i = 0; i < first; i++) grid.append(plEl('div'));
+        let week = [];
+        for (let dn = 1; dn <= last; dn++) {
+          const ds = `${m}-${String(dn).padStart(2, '0')}`;
+          const day = byDate.get(ds);
+          grid.append(plCell(ds, dn, day));
+          week.push(ds);
+          const dow = (first + dn - 1) % 7;
+          if (dow === 6 || dn === last) {
+            if (plCalDay && week.includes(plCalDay) && byDate.get(plCalDay)) {
+              const detail = plEl('div', 'pl-cal-detail');
+              detail.append(plDayCard(byDate.get(plCalDay), data, { open: true }));
+              grid.append(detail);
+            }
+            week = [];
+          }
+        }
+        wrap.append(grid);
+        return wrap;
+      });
+    }
+
+    function plCell(ds, dn, day) {
+      if (!day) {
+        const c = plEl('div', 'pl-cell out');
+        c.append(plEl('span', 'pl-cell-n', String(dn)));
+        return c;
+      }
+      const sel = day.games.find(g => g.id === day.projected_pick) || null;
+      const state = day.locked ? 'set' : day.skipped ? 'skip' : sel ? 'pick' : 'none';
+      const g = day.locked || sel;
+      const hl = plHighlight && g && plHas(g, plHighlight);
+      const c = plEl(day.games_count ? 'button' : 'div', `pl-cell ${state}` + (plCalDay === ds ? ' sel' : '') + (hl ? ' hl' : ''));
+      c.append(plEl('span', 'pl-cell-n', String(dn)));
+      if (day.locked) {
+        const m = plEl('span', 'pl-cell-m', `${g.away} @ ${g.home}`);
+        m.dataset.icon = 'lock';
+        c.append(m, plEl('span', 'pl-cell-s', day.locked.streamer || 'Set'));
+      } else if (sel) {
+        const m = plEl('span', 'pl-cell-m', `${g.away} @ ${g.home}`);
+        m.dataset.icon = 'check';
+        c.append(m, plEl('span', 'pl-cell-s', `${Math.round(sel.score)}${plChoices.has(ds) ? ' · your pick' : ''}${day.forced ? ' · no fresh matchup' : ''}`));
+      } else if (day.skipped) {
+        c.append(plEl('span', 'pl-cell-m', 'Skipped'));
+      }
+      if (day.games_count) {
+        c.title = `${fmtDayHdr(ds)}: ${day.games_count} games`;
+        c.onclick = () => { plCalDay = plCalDay === ds ? null : ds; renderPlanner(plData); };
+      }
+      return c;
+    }
+
+    // ── Save all ──
+    function plRenderSaveBar(pending) {
+      const bar = document.getElementById('pl-savebar');
+      if (!plData) { bar.hidden = true; return; }
+      const sel = plSelection(plData);
+      const picked = sel.filter(s => s.game);
+      if (!sel.length) { bar.hidden = true; return; }
+      bar.hidden = false;
+      const text = plEl('span');
+      text.append(plEl('b', '', String(picked.length)), document.createTextNode(` of ${sel.length} open day${sel.length === 1 ? '' : 's'} picked`));
+      const parts = [text];
+      if (pending) parts.push(plEl('span', 'pl-updating', 'Updating…'));
+      const tools = plEl('div', 'pl-save-tools');
+      if (plChoices.size) tools.append(plBtn('Back to suggestions', 'ui-btn--ghost', () => { plChoices.clear(); plReplan(); }));
+      const save = plBtn(plSaving ? 'Saving…' : `Save ${picked.length} stream${picked.length === 1 ? '' : 's'}`, 'ui-btn--primary', plSaveAll, 'stream');
+      save.disabled = plSaving || pending || !picked.length;
+      tools.append(save);
+      parts.push(tools);
+      bar.replaceChildren(...parts);
+    }
+
+    async function plSaveAll() {
+      const picked = plSelection(plData).filter(s => s.game);
+      if (!picked.length) return;
       const ok = await confirmDialog({
-        title: `Stream ${g.away} @ ${g.home}?`,
-        body: `${fmtDayHdr(day.date)}, ${fmtTime(g.time_et)}. This flags it as the day's stream; the rest of the day's games stay Sim.`,
-        confirmLabel: 'Make stream',
+        title: `Save ${picked.length} stream${picked.length === 1 ? '' : 's'}?`,
+        body: 'Each of these becomes its day’s stream; the rest of each day’s games stay Sim. If any day was set in the meantime, nothing is saved.',
+        details: picked.map(s => `${fmtDayHdr(s.day.date)}: ${s.game.away} @ ${s.game.home}, ${fmtTime(s.game.time_et)}`),
+        confirmLabel: 'Save all',
       });
       if (!ok) return;
       const token = storedToken();
-      btn.disabled = true;
-      btn.textContent = 'Flagging…';
+      plSaving = true;
+      plRenderSaveBar();
       try {
-        const r = await fetch(`/api/schedule/${g.id}/stream?season=${encodeURIComponent(plSchedule ? plSchedule.season : season)}`, {
+        const r = await fetch(`/api/schedule/stream-batch?season=${encodeURIComponent(plData.season)}`, {
           method: 'POST',
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ picks: picked.map(s => ({ date: s.day.date, game_id: s.game.id })) }),
         });
         if (!r.ok) {
           const detail = await r.json().then(j => j.detail).catch(() => null);
-          throw new Error(detail || `HTTP ${r.status}`);
+          if (detail && detail.problems) {
+            await confirmDialog({ title: 'Nothing was saved', body: 'These days need another look:',
+                                  details: detail.problems, confirmLabel: 'OK' });
+            plSaving = false;
+            loadPlanner(true);
+            return;
+          }
+          throw new Error(typeof detail === 'string' ? detail : `HTTP ${r.status}`);
         }
-        toast(`${g.away} @ ${g.home} is the stream for ${fmtShort(day.date)}.`);
-        const local = games.find(x => x.id === g.id);
-        if (local) {
-          local.stream = true;
-          render();
-          renderStreamCounts();
-          renderMine();
+        const ids = new Set(picked.map(s => s.game.id));
+        for (const list of [games, plSchedule ? plSchedule.games : []]) {
+          for (const x of list) if (ids.has(x.id)) x.stream = true;
         }
-        const sched = plSchedule && plSchedule.games.find(x => x.id === g.id);
-        if (sched) sched.stream = true;
-        loadPlanner();
+        picked.forEach(s => plChoices.delete(s.day.date));
+        render();
+        renderStreamCounts();
+        renderMine();
+        toast(`Saved ${picked.length} stream${picked.length === 1 ? '' : 's'}.`);
+        plSaving = false;
+        loadPlanner(true);
       } catch (e) {
-        btn.disabled = false;
-        btn.textContent = 'Make stream';
-        toast(`Could not flag that game as a stream: ${e.message}`, true);
+        plSaving = false;
+        plRenderSaveBar();
+        toast(`Could not save the streams: ${e.message}`, true);
       }
     }
 
@@ -2711,6 +3074,7 @@
         document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
         // On a phone the bar scrolls sideways; keep the open tab in view.
         revealTab();
+        document.querySelector('.page').classList.toggle('ui-page--wide', btn.dataset.tab === 'planner');
         if (btn.dataset.tab === 'planner') setupPlanner();
       };
       document.querySelectorAll('.tab').forEach(btn => {
