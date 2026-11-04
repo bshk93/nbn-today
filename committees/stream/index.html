@@ -509,6 +509,7 @@
           <div class="seg" id="pl-span">
             <button data-days="7">7 days</button>
             <button data-days="14">14 days</button>
+            <button data-days="month" title="From the start date to the end of its month">Month</button>
           </div>
         </div>
         <div class="summary" id="pl-summary"></div>
@@ -2327,11 +2328,25 @@
     function plRange() {
       return { from: document.getElementById('pl-from').value, to: document.getElementById('pl-to').value };
     }
-    function plSetSpan(days) {
+    // The last day of the month a YYYY-MM-DD date falls in.
+    function plMonthEnd(d) {
+      const [y, m] = d.split('-').map(Number);
+      const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      return `${d.slice(0, 7)}-${String(last).padStart(2, '0')}`;
+    }
+    // A span is '7', '14' or 'month' (From through the end of its month,
+    // never over 31 days, so it fits the API's limit).
+    function plSetSpan(span) {
       const from = document.getElementById('pl-from').value || today;
       document.getElementById('pl-from').value = from;
-      document.getElementById('pl-to').value = addDays(from, days - 1);
-      document.querySelectorAll('#pl-span button').forEach(b => b.classList.toggle('active', +b.dataset.days === days));
+      document.getElementById('pl-to').value = span === 'month' ? plMonthEnd(from) : addDays(from, +span - 1);
+      plMarkSpan();
+    }
+    function plMarkSpan() {
+      const r = plRange();
+      const days = String(plSpanDays(r));
+      const active = ['7', '14'].includes(days) ? days : (r.to === plMonthEnd(r.from) ? 'month' : null);
+      document.querySelectorAll('#pl-span button').forEach(b => b.classList.toggle('active', b.dataset.days === active));
     }
     function plSpanDays({ from, to }) {
       return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000) + 1;
@@ -2340,16 +2355,12 @@
     function setupPlanner() {
       if (plLoaded) return;
       plLoaded = true;
-      plSetSpan(7);
-      const onChange = () => {
-        const days = plSpanDays(plRange());
-        document.querySelectorAll('#pl-span button').forEach(b => b.classList.toggle('active', +b.dataset.days === days));
-        loadPlanner();
-      };
+      plSetSpan('7');
+      const onChange = () => { plMarkSpan(); loadPlanner(); };
       document.getElementById('pl-from').onchange = onChange;
       document.getElementById('pl-to').onchange = onChange;
       document.querySelectorAll('#pl-span button').forEach(b => {
-        b.onclick = () => { plSetSpan(+b.dataset.days); loadPlanner(); };
+        b.onclick = () => { plSetSpan(b.dataset.days); loadPlanner(); };
       });
       loadPlanner();
     }
