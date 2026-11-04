@@ -130,6 +130,7 @@ PAGES = {
  '/standings/': (None, 'NBN standings season by season, with every playoff bracket.'),
  '/stats/': (None, 'The NBN stat lab — season stats, career leaders, single-game highs, head-to-head records and data viz.'),
  '/stats/highs/': (None, 'The biggest single games in NBN history in 15 categories, and the most triple-doubles, 50-point games and more — for any season, franchise or the playoffs.'),
+ '/stats/stream-sim/': (None, 'How streamed NBN games differ from quick-simmed ones: pace, shooting, fouls, rotations, and which players go off on stream.'),
  '/stats/highs/p/': (None, 'Moved — the biggest scoring games are now on /stats/highs.'),
  '/stats/highs/r/': (None, 'Moved — the biggest rebounding games are now on /stats/highs.'),
  '/stats/highs/a/': (None, 'Moved — the biggest assist games are now on /stats/highs.'),

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Stream vs Sim | Stats</title>
+  <!-- NBN:og -->
+  <meta name="description" content="How streamed NBN games differ from quick-simmed ones: pace, shooting, fouls, rotations, and which players go off on stream.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Stream vs Sim | Stats">
+  <meta property="og:description" content="How streamed NBN games differ from quick-simmed ones: pace, shooting, fouls, rotations, and which players go off on stream.">
+  <meta property="og:url" content="https://nbn.today/stats/stream-sim/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .ss-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+    .ss-filters .ui-select { height: 2rem; font-size: var(--text-sm); }
+    .ss-filters[hidden] { display: none; }
+    .ss-note { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-5); }
+    .ss-section { margin-top: var(--space-6); }
+    .ss-group td { padding-top: var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+    .ss-up { color: var(--success); }
+    .ss-down { color: var(--danger); }
+    .ss-table th[data-sort] { cursor: pointer; }
+    .ss-table th[data-sort]:hover { color: var(--text-secondary); }
+    .ss-table th.ss-sorted { color: var(--accent-light); }
+    .ss-table th.ss-split { border-left: 1px solid var(--border); }
+    .ss-table td.ss-split { border-left: 1px solid var(--border); }
+    .ss-player a { color: var(--text-primary); font-weight: 600; }
+    .ss-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); font-weight: 400; }
+    .ss-win { font-weight: 700; color: var(--text-primary); }
+    #status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
+  </style>
+</head>
+<body>
+  <div class="page ui-page ui-page--wide">
+    <nav class="nav"></nav>
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title">Stream vs Sim</h1>
+      </div>
+    </header>
+    <div class="ss-filters" id="filters" hidden>
+      <select class="ui-select" id="f-season" aria-label="Season"></select>
+    </div>
+    <p class="ss-note" id="note"></p>
+    <div id="status">Loading…</div>
+    <div id="body" hidden>
+      <h2 class="ui-section-title">How the games differ</h2>
+      <div class="ui-table-wrap"><table class="ui-table" id="t-summary"></table></div>
+
+      <h2 class="ui-section-title ss-section">Players</h2>
+      <p class="ss-note" id="players-note"></p>
+      <div class="ss-filters">
+        <div class="ui-segmented" role="group" id="f-view">
+          <button data-v="pg">Per game</button>
+          <button data-v="p36">Per 36</button>
+        </div>
+      </div>
+      <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first ss-table" id="t-players"></table></div>
+
+      <h2 class="ui-section-title ss-section">Streamed games</h2>
+      <div class="ui-table-wrap"><table class="ui-table" id="t-games"></table></div>
+    </div>
+  </div>
+  <script src="/names.js"></script>
+  <script>
+  (function () {
+    // Every number is computed by GET /api/stream-vs-sim (nbn-api
+    // routers/stream_sim.py): the split by the schedule's stream flag, the
+    // per team-game averages and the player lines. The page only draws them.
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    const name = n => (window.nbnPlayerName ? nbnPlayerName(n) : n);
+
+    const q = new URLSearchParams(location.search);
+    const state = {
+      season: /^\d\d-\d\d$/.test(q.get('season') || '') ? q.get('season') : '',
+      view: q.get('view') === 'p36' ? 'p36' : 'pg',
+      sort: 'diff', dir: -1,
+    };
+    let data = null;
+
+    const num = d => v => v == null ? '—' : v.toFixed(d);
+    const pct = d => v => v == null ? '—' : (v * 100).toFixed(d) + '%';
+    // A percentage's difference is in percentage points.
+    const ROWS = [
+      { group: 'Tempo and scoring' },
+      { key: 'pts',   label: 'Points per team',             f: num(1) },
+      { key: 'pace',  label: 'Possessions per team',        f: num(1) },
+      { key: 'ortg',  label: 'Points per 100 possessions',  f: num(1) },
+      { group: 'Shooting' },
+      { key: 'fg_pct',   label: 'FG%',                      f: pct(1), pp: true },
+      { key: 'tp_pct',   label: '3P%',                      f: pct(1), pp: true },
+      { key: 'ft_pct',   label: 'FT%',                      f: pct(1), pp: true },
+      { key: 'ts_pct',   label: 'True shooting',            f: pct(1), pp: true },
+      { key: 'fga',      label: 'FGA per team',             f: num(1) },
+      { key: 'tpa_rate', label: 'Share of shots from three', f: pct(1), pp: true },
+      { key: 'fta_rate', dd: 3, label: 'Free throws per shot',     f: num(3) },
+      { group: 'Possession game' },
+      { key: 'tov_pct',  label: 'Turnovers per 100 possessions', f: num(1) },
+      { key: 'oreb_pct', label: 'Offensive rebound rate',   f: pct(1), pp: true },
+      { key: 'ast_rate', label: 'Assisted field goals',     f: pct(1), pp: true },
+      { key: 'reb',      label: 'Rebounds per team',        f: num(1) },
+      { key: 'stl',      label: 'Steals per team',          f: num(1) },
+      { key: 'blk',      label: 'Blocks per team',          f: num(1) },
+      { key: 'pf',       label: 'Fouls per team',           f: num(1) },
+      { group: 'How games end' },
+      { key: 'margin',       label: 'Average margin',       f: num(1) },
+      { key: 'close_pct', dd: 0,    label: 'Decided by 5 or fewer', f: pct(0), pp: true },
+      { key: 'blowout_pct', dd: 0,  label: 'Decided by 20 or more', f: pct(0), pp: true },
+      { key: 'ot_pct', dd: 0,       label: 'Went to overtime',     f: pct(0), pp: true },
+      { key: 'home_win_pct', dd: 0, label: 'Home team won',        f: pct(0), pp: true },
+      { group: 'Rotations' },
+      { key: 'top_min',       label: "Most minutes by one player",   f: num(1) },
+      { key: 'players_used',  label: 'Players who got minutes',      f: num(1) },
+      { key: 'top_pts_share', dd: 0, label: "Top scorer's share of points", f: pct(0), pp: true },
+    ];
+
+    function renderSummary() {
+      const st = data.summary.stream, sm = data.summary.sim;
+      let h = `<thead><tr><th></th><th class="num">Streamed</th><th class="num">Simmed</th><th class="num">Difference</th></tr></thead><tbody>`;
+      h += `<tr><td>Games</td><td class="num">${st.games}</td><td class="num">${sm.games}</td><td></td></tr>`;
+      for (const r of ROWS) {
+        if (r.group) { h += `<tr class="ss-group"><td colspan="4">${esc(r.group)}</td></tr>`; continue; }
+        const a = st[r.key], b = sm[r.key];
+        let diff = '';
+        if (a != null && b != null) {
+          const d = r.pp ? (a - b) * 100 : a - b;
+          const txt = (d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(r.dd ?? 1) + (r.pp ? '%' : '');
+          diff = txt;
+        }
+        h += `<tr><td>${esc(r.label)}</td><td class="num strong">${r.f(a)}</td><td class="num">${r.f(b)}</td><td class="num">${diff}</td></tr>`;
+      }
+      $('t-summary').innerHTML = h + '</tbody>';
+    }
+
+    // Player columns, drawn once per side. `p36` scales counting stats by minutes.
+    const PCOLS = [
+      { key: 'g',   label: 'G',   f: v => v, raw: true },
+      { key: 'min', label: 'MIN', f: num(1), raw: true },
+      { key: 'pts', label: 'PTS', f: num(1) },
+      { key: 'reb', label: 'REB', f: num(1) },
+      { key: 'ast', label: 'AST', f: num(1) },
+      { key: 'fga', label: 'FGA', f: num(1) },
+      { key: 'ts_pct', label: 'TS%', f: pct(1), raw: true },
+    ];
+    const val = (side, c) => {
+      const v = side[c.key];
+      if (v == null || c.raw || state.view === 'pg') return v;
+      return side.min ? v * 36 / side.min : null;
+    };
+    const diffOf = p => (val(p.stream, PCOLS[2]) ?? 0) - (val(p.sim, PCOLS[2]) ?? 0);
+
+    function sortKey(p) {
+      if (state.sort === 'diff') return diffOf(p);
+      if (state.sort === 'player') return p.player;
+      const [side, key] = state.sort.split('.');
+      return val(p[side], PCOLS.find(c => c.key === key)) ?? -Infinity;
+    }
+
+    function renderPlayers() {
+      const rows = [...data.players].sort((a, b) => {
+        const x = sortKey(a), y = sortKey(b);
+        return (x < y ? -1 : x > y ? 1 : 0) * state.dir;
+      });
+      const th = (key, label, cls = '') =>
+        `<th data-sort="${key}" class="${cls} ${state.sort === key ? 'ss-sorted' : ''}">${label}</th>`;
+      let h = '<thead><tr><th></th>'
+        + `<th colspan="${PCOLS.length}" class="ss-split">Streamed</th>`
+        + `<th colspan="${PCOLS.length}" class="ss-split">Simmed</th><th class="ss-split"></th></tr><tr>`
+        + th('player', 'Player');
+      for (const side of ['stream', 'sim'])
+        PCOLS.forEach((c, i) => { h += th(`${side}.${c.key}`, c.label, 'num' + (i === 0 ? ' ss-split' : '')); });
+      h += th('diff', 'PTS +/−', 'num ss-split') + '</tr></thead><tbody>';
+      for (const p of rows) {
+        h += `<tr><td class="ss-player"><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(name(p.player))}</a><span class="ss-sub">${esc(p.teams.join(', '))}</span></td>`;
+        for (const side of ['stream', 'sim'])
+          PCOLS.forEach((c, i) => { h += `<td class="num${i === 0 ? ' ss-split' : ''}">${c.f(val(p[side], c))}</td>`; });
+        const d = diffOf(p);
+        h += `<td class="num ss-split"><span class="${d > 0 ? 'ss-up' : d < 0 ? 'ss-down' : ''}">${(d > 0 ? '+' : d < 0 ? '−' : '') + Math.abs(d).toFixed(1)}</span></td></tr>`;
+      }
+      $('t-players').innerHTML = h + '</tbody>';
+      $('players-note').textContent =
+        `${rows.length} players who have played at least ${data.min_mpg} minutes a game both ways. `
+        + 'Most have only one or two streamed games, so a single big night moves a line a long way.';
+      document.querySelectorAll('#f-view button').forEach(b => {
+        const on = b.dataset.v === state.view;
+        b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+      });
+    }
+
+    function renderGames() {
+      const fmtDate = s => {
+        const d = new Date(s + 'T12:00:00');
+        return isNaN(d) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      };
+      let h = '<thead><tr><th>Date</th><th>Game</th><th>Streamer</th><th>Video</th></tr></thead><tbody>';
+      for (const g of [...data.stream_games].reverse()) {
+        const awayWon = g.away_score > g.home_score;
+        const box = `/boxscores/?date=${g.date}&game=${g.away_team}-${g.home_team}`;
+        h += `<tr><td>${fmtDate(g.date)}</td>`
+          + `<td><a href="${box}"><span class="${awayWon ? 'ss-win' : ''}">${g.away_team} ${g.away_score ?? ''}</span> at <span class="${awayWon ? '' : 'ss-win'}">${g.home_team} ${g.home_score ?? ''}</span></a></td>`
+          + `<td>${esc(g.streamer || '—')}</td>`
+          + `<td>${g.youtube_url ? `<a href="${esc(g.youtube_url)}" target="_blank" rel="noopener">Watch</a>` : '—'}</td></tr>`;
+      }
+      $('t-games').innerHTML = h + '</tbody>';
+    }
+
+    function render() {
+      const st = data.summary.stream, sm = data.summary.sim;
+      $('note').textContent = `${data.season} regular season: ${st.games} streamed games and ${sm.games} quick-simmed.`
+        + (data.unmatched ? ` ${data.unmatched} box score${data.unmatched === 1 ? '' : 's'} with no schedule entry left out.` : '')
+        + ' Streams have only been tracked since 26-27. Playoff games are all streamed, so they are left out.';
+      $('status').hidden = true;
+      $('body').hidden = false;
+      renderSummary();
+      renderPlayers();
+      renderGames();
+    }
+
+    function syncUrl() {
+      const p = new URLSearchParams();
+      if (state.season && data && state.season !== data.seasons[0]) p.set('season', state.season);
+      if (state.view === 'p36') p.set('view', 'p36');
+      history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
+    }
+
+    function load() {
+      $('status').hidden = false; $('status').textContent = 'Loading…';
+      fetch('/api/stream-vs-sim' + (state.season ? `?season=${state.season}` : ''))
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(d => {
+          data = d; state.season = d.season;
+          const sel = $('f-season');
+          sel.innerHTML = d.seasons.map(s => `<option value="${s}">${s}</option>`).join('');
+          sel.value = d.season;
+          $('filters').hidden = d.seasons.length < 2;
+          if (!d.summary.stream.games) {
+            $('status').textContent = 'No streamed games with a box score yet this season.';
+            return;
+          }
+          render(); syncUrl();
+        })
+        .catch(() => { $('status').textContent = 'Failed to load data.'; });
+    }
+
+    $('f-season').addEventListener('change', ev => { state.season = ev.target.value; load(); });
+    $('f-view').addEventListener('click', ev => {
+      const b = ev.target.closest('button');
+      if (!b || b.dataset.v === state.view) return;
+      state.view = b.dataset.v; renderPlayers(); syncUrl();
+    });
+    $('t-players').addEventListener('click', ev => {
+      const th = ev.target.closest('th[data-sort]');
+      if (!th) return;
+      const k = th.dataset.sort;
+      if (state.sort === k) state.dir = -state.dir;
+      else { state.sort = k; state.dir = k === 'player' ? 1 : -1; }
+      renderPlayers();
+    });
+    load();
+  })();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>

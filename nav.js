@@ -1610,6 +1610,7 @@ const NAV_SECTIONS = [
     { title: 'Stat Lab', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
     { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
     { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
+    { title: 'Stream vs Sim', href: '/stats/stream-sim', icon: 'tv', searchOnly: true, keywords: ['streamed', 'quick sim', 'pace'] },
     { title: 'Head to Head', href: '/h2h', icon: 'versus', searchOnly: true },
     { title: 'Frivolities & Viz', href: '/frivolities', icon: 'pie', searchOnly: true },
     { title: 'Box Scores', href: '/boxscores/', icon: 'table' },
