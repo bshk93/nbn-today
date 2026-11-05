@@ -65,6 +65,7 @@
       </div>
       <div class="ui-segmented" role="group" id="f-stats">
         <button data-v="">Basic</button>
+        <button data-v="p36">Per 36</button>
         <button data-v="adv">Advanced</button>
       </div>
       <div class="ui-segmented" role="group" id="f-type">
@@ -145,6 +146,26 @@
       { key: '_PF',    label: 'PF',    cls: 'right',               defaultDir:  1 },
       { key: '_GMSC',  label: 'GMSC',  cls: 'right group-start',   defaultDir: -1 },
     ];
+
+    // Per 36: the counting stats over 36 minutes (percentages as in Basic).
+    // Players only: every team plays 240 minutes a game.
+    const p36 = (key, label, cls) => ({ key: key + '36', label, cls: 'right' + (cls ? ' ' + cls : ''), defaultDir: -1 });
+    const PLAYER_P36_COLS = [
+      ...PLAYER_COLS.slice(0, 5),
+      p36('_FGM', 'FGM', 'group-start'), p36('_FGA', 'FGA'),
+      { key: '_FGP',  label: 'FG%',   cls: 'right pct',             defaultDir: -1 },
+      p36('_3PM', '3PM', 'group-start'), p36('_3PA', '3PA'),
+      { key: '_3PP',  label: '3P%',   cls: 'right pct',             defaultDir: -1 },
+      p36('_FTM', 'FTM', 'group-start'), p36('_FTA', 'FTA'),
+      { key: '_FTP',  label: 'FT%',   cls: 'right pct',             defaultDir: -1 },
+      { key: '_TSP',  label: 'TS%',   cls: 'right pct group-start', defaultDir: -1 },
+      p36('_PTS', 'PTS', 'group-start'),
+      p36('_REB', 'REB', 'group-start'), p36('_OREB', 'OREB'), p36('_DREB', 'DREB'),
+      p36('_AST', 'AST', 'group-start'), p36('_STL', 'STL'), p36('_BLK', 'BLK'),
+      p36('_TOV', 'TOV', 'group-start'), { ...p36('_PF', 'PF'), defaultDir: 1 },
+      p36('_GMSC', 'GMSC', 'group-start'),
+    ];
+    const P36_KEYS = ['_FGM','_FGA','_3PM','_3PA','_FTM','_FTA','_PTS','_REB','_OREB','_DREB','_AST','_STL','_BLK','_TOV','_PF','_GMSC'];
 
     // Advanced: rates rather than totals. The player rates come from
     // AdvancedStats (advanced-stats.js) over the stint's game context; the
@@ -245,6 +266,19 @@
       { key: '_TPG',  name: 'Fewest turnovers', abbr: 'TPG', asc: true },
     ];
 
+    // Per-36 cards need MIN_MPG minutes a game too (mpg), or a few minutes'
+    // garbage time tops every card.
+    const PLAYER_P36_CARDS = [
+      { key: '_PTS36',  name: 'Points',        abbr: 'PTS/36',  mpg: true },
+      { key: '_REB36',  name: 'Rebounds',      abbr: 'REB/36',  mpg: true },
+      { key: '_AST36',  name: 'Assists',       abbr: 'AST/36',  mpg: true },
+      { key: '_STL36',  name: 'Steals',        abbr: 'STL/36',  mpg: true },
+      { key: '_BLK36',  name: 'Blocks',        abbr: 'BLK/36',  mpg: true },
+      { key: '_3PM36',  name: 'Threes made',   abbr: '3PM/36',  mpg: true },
+      { key: '_OREB36', name: 'Offensive rebounds', abbr: 'OREB/36', mpg: true },
+      { key: '_GMSC36', name: 'Game Score',    abbr: 'GmSc/36', mpg: true },
+    ];
+
     // Advanced cards also need MIN_MPG minutes a game (and, for TS%, the
     // basic card's made-shot floor): a rate over a few minutes is noise.
     const MIN_MPG = 15;
@@ -268,11 +302,12 @@
       { key: '_OEFG', name: 'Opponent eFG%',    abbr: 'Opp eFG%', asc: true },
     ];
 
+    const STATS_MODES = ['p36', 'adv'];
     const q = new URLSearchParams(location.search);
     const state = {
       view:    q.get('view') === 'teams' ? 'teams' : 'players',
       type:    q.get('type') === 'po' ? 'po' : 'reg',
-      stats:   q.get('stats') === 'adv' ? 'adv' : '',
+      stats:   STATS_MODES.includes(q.get('stats')) ? q.get('stats') : '',
       season:  q.get('season') || '',     // '' until the data says what is latest
       team:    TEAM_ABBRS.includes(q.get('team')) ? q.get('team') : '',
       rookies: q.get('rookies') === '1' ? '1' : '',
@@ -337,6 +372,8 @@
       row._TPG  = g ? row._TOV      / g : 0;
       row._PFPG = g ? row._PF       / g : 0;
       row._GMSC = g ? row._GMSC_TOT / g : 0;
+      const m = row._MIN;
+      P36_KEYS.forEach(k => { row[k + '36'] = m ? (k === '_GMSC' ? row._GMSC_TOT : row[k]) * 36 / m : null; });
       const adv = AS.player({ MIN: row._MIN, FGM: row._FGM, FGA: row._FGA, '3PA': row._3PA,
         FTA: row._FTA, TOV: row._TOV, OREB: row._OREB, DREB: row._DREB, AST: row._AST,
         STL: row._STL, BLK: row._BLK }, row._ctx);
@@ -424,6 +461,7 @@
     function fmtPct(n) { return n === null ? '—' : (n * 100).toFixed(1) + '%'; }
 
     function cellText(key, row) {
+      if (key.endsWith('36')) return row[key] == null ? '—' : fmt1(row[key]);
       switch (key) {
         case '_MPG': case '_PPG': case '_RPG': case '_APG': case '_SPG':
         case '_BPG': case '_TPG': case '_GMSC': case '_ORPG': case '_DRPG': case '_PFPG':
@@ -486,9 +524,11 @@
     // ── The slice on screen ────────────────────────────────────────────────
     const COLS = () => state.stats === 'adv'
       ? (state.view === 'teams' ? TEAM_ADV_COLS : PLAYER_ADV_COLS)
+      : state.stats === 'p36' ? PLAYER_P36_COLS
       : (state.view === 'teams' ? TEAM_COLS : PLAYER_COLS);
     const CARDS = () => (state.stats === 'adv'
       ? (state.view === 'teams' ? TEAM_ADV_CARDS : PLAYER_ADV_CARDS)
+      : state.stats === 'p36' ? PLAYER_P36_CARDS
       : (state.view === 'teams' ? TEAM_CARDS : PLAYER_CARDS))
       .filter(c => !(state.type === 'po' && c.po === false));
 
@@ -562,6 +602,7 @@
           `percentages also need ${[...new Set(PLAYER_CARDS.filter(c => c.made).map(c => `${minMade(c, s)} ${c.made.slice(1)}`))].join(', ')}`);
       }
       if (adv) parts.push(`advanced leaders also need ${MIN_MPG} minutes a game`);
+      if (state.stats === 'p36') parts.push(`per-36 leaders also need ${MIN_MPG} minutes a game, and lines short of that sort last`);
       if (state.team) parts.push(`only games played for ${state.team}`);
       $('note').textContent = parts.join(' · ') + '.' + (adv && state.type === 'po' ? ' ' + PO_ADV : '');
     }
@@ -595,12 +636,17 @@
       const cols = COLS();
       const what = state.view === 'teams' ? 'Teams' : 'Players';
       const when = state.season === 'all' ? 'every season' : `20${state.season.replace('-', '–')}`;
-      const kind = state.type === 'po' ? 'playoffs' : 'regular season';
+      const kind = (state.type === 'po' ? 'playoffs' : 'regular season') + (state.stats === 'p36' ? ' · per 36 minutes' : '');
       $('board-title').innerHTML = `${what} · ${esc(when)} ${kind}<span class="ss-count" id="count"></span>`;
       $('f-search').hidden = state.view === 'teams';
 
       const needle = state.search.trim().toLowerCase();
+      // A per-36 rate over a few minutes is noise: lines that miss the leader
+      // floor sort after the ones that make it, whichever way the column runs.
+      const floor36 = state.stats === 'p36' && state.sort.endsWith('36');
+      const ok36 = r => r._G >= minGames(r.SEASON) && r._MPG >= MIN_MPG;
       let list = rows.slice().sort((a, b) => {
+        if (floor36 && ok36(a) !== ok36(b)) return ok36(a) ? -1 : 1;
         const va = sortVal(a, state.sort), vb = sortVal(b, state.sort);
         if (va < vb) return state.dir === 1 ? -1 : 1;
         if (va > vb) return state.dir === 1 ? 1 : -1;
@@ -658,6 +704,7 @@
         });
       });
       $('f-rookies').hidden = $('f-split').hidden = state.view === 'teams';
+      $('f-stats').querySelector('[data-v="p36"]').hidden = state.view === 'teams';
       $('f-season').value = state.season;
       $('f-team').value = state.team;
     }
@@ -686,7 +733,7 @@
       Object.assign(state, {
         view:    q.get('view') === 'teams' ? 'teams' : 'players',
         type:    q.get('type') === 'po' ? 'po' : 'reg',
-        stats:   q.get('stats') === 'adv' ? 'adv' : '',
+        stats:   STATS_MODES.includes(q.get('stats')) ? q.get('stats') : '',
         season:  q.get('season') || SEASONS[0],
         team:    TEAM_ABBRS.includes(q.get('team')) ? q.get('team') : '',
         rookies: q.get('rookies') === '1' ? '1' : '',
@@ -698,9 +745,10 @@
       render();
     });
 
-    const defaultSort = () => (state.view === 'teams' ? '_WP' : '_GMSC');
+    const defaultSort = () => (state.view === 'teams' ? '_WP' : state.stats === 'p36' ? '_GMSC36' : '_GMSC');
 
     function render() {
+      if (state.view === 'teams' && state.stats === 'p36') state.stats = '';
       if (!COLS().some(c => c.key === state.sort)) { state.sort = defaultSort(); state.dir = -1; }
       syncControls();
       syncURL();
