@@ -3023,7 +3023,9 @@
       } else if (sel) {
         const m = plEl('span', 'pl-cell-m', `${g.away} @ ${g.home}`);
         m.dataset.icon = 'check';
-        c.append(m, plEl('span', 'pl-cell-s', `${Math.round(sel.score)}${plChoices.has(ds) ? ' · your pick' : ''}${day.forced ? ' · no fresh matchup' : ''}`));
+        c.append(m);
+        const notes = [plChoices.has(ds) && 'Your pick', day.forced && 'No fresh matchup'].filter(Boolean);
+        if (notes.length) c.append(plEl('span', 'pl-cell-s', notes.join(' · ')));
       } else if (day.skipped) {
         c.append(plEl('span', 'pl-cell-m', 'Skipped'));
       }
