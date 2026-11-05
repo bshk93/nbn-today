@@ -144,10 +144,6 @@ DOWN_AFTER = 3
 DISCORD_ALERT_CHANNEL = os.environ.get("DISCORD_ALERT_CHANNEL", "").strip()
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
 DISCORD_ADMIN_ID = os.environ.get("DISCORD_ADMIN_ID", "").strip()
-# Where "new 2K ratings are in" goes. Not an alert, so no admin mention, and
-# it can be a different channel; defaults to the alert channel.
-DISCORD_2K_UPDATES_CHANNEL = (os.environ.get("DISCORD_2K_UPDATES_CHANNEL", "").strip()
-                              or DISCORD_ALERT_CHANNEL)
 
 SUFFIX_RE = re.compile(r'\b(JR|SR|II|III|IV)\.?$')
 POSITION_ORDER = ["PG", "SG", "SF", "PF", "C"]
@@ -677,11 +673,6 @@ def main():
         print(recovered)
         post_discord(DISCORD_ALERT_CHANNEL, f"**2K ratings sync**\n{recovered}")
     post_alert(alerts)
-    if appended - stubs > 0:
-        msg = (f"**New 2K ratings are in.** {appended - stubs} player(s) changed, "
-               f"{ovr_synced} with a new OVR. https://nbn.today/ratings-changes")
-        print(msg)
-        post_discord(DISCORD_2K_UPDATES_CHANNEL, msg)
     return 0
 
 
