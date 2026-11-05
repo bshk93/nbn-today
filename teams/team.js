@@ -1914,6 +1914,22 @@ let IN_SEASON;
 // The current league year's last regular-season game, from the same call.
 // Null when it has no schedule yet.
 let SEASON_LAST_GAME = null;
+// And its opening night, for § 3.12's in-season proration of minimums.
+let SEASON_OPENING_NIGHT = null;
+
+// § 3.12: a minimum signed after opening night pays full-season minimum × days
+// left ÷ days in the regular season, today counted as left. Mirrors
+// _minimum_proration / _prorate in nbn-api's transactions.py. {days, of}, or
+// null when nothing is prorated (offseason, opening night, no schedule).
+function minimumProrationToday() {
+  const open = SEASON_OPENING_NIGHT, last = SEASON_LAST_GAME;
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  if (!open || !last || today < open || today > last) return null;
+  const day = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 86400000;
+  const days = day(last) - day(today) + 1, of = day(last) - day(open) + 1;
+  return days < of ? { days, of } : null;
+}
 
 function currentSeasonYr() {
   if (LEAGUE_YEAR) return LEAGUE_YEAR;
@@ -7665,17 +7681,20 @@ function buildContractYearsController(startSeason) {
 // 2-year veteran minimum, regardless of the player's actual experience tier
 // — the league reimburses the difference — so tiers at 2+ years all collapse
 // to the 2-yr scale amount here; only the 0/1-yr tiers (already at or below
-// that number) keep their own scale value. Returns null if no scale is
+// that number) keep their own scale value. In-season, the current season's
+// figures are prorated to the days left (§ 3.12). Returns null if no scale is
 // configured for `startSeason`.
 function buildMinSalaryPresetRow(capLevels, startSeason, yc) {
   const scale = (capLevels?.[startSeason] || {}).min_salary_scale || {};
   const twoYrAmt = parseSalaryNum(scale['2']) || 0;
+  const proration = startSeason === currentSeasonYr() ? minimumProrationToday() : null;
+  const prorate = n => proration ? Math.round(n * proration.days / proration.of) : n;
   const presetTiers = MIN_SALARY_EXP_TIERS
     .map(t => {
-      const raw = parseSalaryNum(scale[t.key]);
-      if (raw <= 0) return null;
-      const capped = (t.key === '0' || t.key === '1' || !twoYrAmt) ? raw : Math.min(raw, twoYrAmt);
-      return { ...t, amt: capped, raw };
+      const full = parseSalaryNum(scale[t.key]);
+      if (full <= 0) return null;
+      const capped = (t.key === '0' || t.key === '1' || !twoYrAmt) ? full : Math.min(full, twoYrAmt);
+      return { ...t, amt: prorate(capped), raw: prorate(full) };
     })
     .filter(Boolean);
   if (!presetTiers.length) return null;
@@ -7684,6 +7703,7 @@ function buildMinSalaryPresetRow(capLevels, startSeason, yc) {
   presetWrap.style.cssText = 'display:flex;gap:0.3rem;flex-wrap:wrap;width:100%;align-items:center';
   const presetLbl = document.createElement('span');
   presetLbl.textContent = '1-yr Vet Min:';
+  if (proration) presetLbl.title = `Prorated to ${proration.days} of ${proration.of} regular-season days left (§ 3.12).`;
   presetLbl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);font-weight:700;text-transform:uppercase';
   presetWrap.appendChild(presetLbl);
   presetTiers.forEach(t => {
@@ -8542,6 +8562,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   if (birdr.status === 'fulfilled' && birdr.value?.players) BIRD_RIGHTS = birdr.value.players;
   if (lyr.status === 'fulfilled' && typeof lyr.value?.in_season === 'boolean') IN_SEASON = lyr.value.in_season;
   if (lyr.status === 'fulfilled') SEASON_LAST_GAME = lyr.value?.calendar?.last_regular_season_game || null;
+  if (lyr.status === 'fulfilled') SEASON_OPENING_NIGHT = lyr.value?.calendar?.opening_night || null;
 
   // Roles drive which edit buttons render below; default to none if the call failed.
   AUTH_ROLES = (authr.status === 'fulfilled' && Array.isArray(authr.value?.roles)) ? authr.value.roles : [];

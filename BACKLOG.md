@@ -364,24 +364,6 @@ proposal from Team A for a player headed to Team B. Until then a team marks
 a proposal "extend-and-trade" itself (`ExtensionDetails.kind`), which only
 tightens the raise limit, and the trade goes through TRC separately.
 
-### [P2] Proration is practiced but undocumented
-The league prorates in-season minimum signings, but the rulebook says nothing
-about it — zero occurrences of "prorat" anywhere in `rulebook/index.html`.
-Confirmed as real practice 2026-08-07.
-
-This matters now that § 3.12 minimums are enforced. `_check_minimum_salary`
-lets Year 1 of a signing made on or after opening night fall below the
-full-season minimum, with a warning to confirm the proration. A signing before
-opening night, and every later contract year, is a hard error. Since
-2026-10-06 opening night comes off the schedule
-(`_signed_after_opening_night`); before that it was a Jul–Sep guess. A league
-year with no schedule on file still uses the guess.
-
-What's left is the rule itself: a § 3.12 subsection stating that in-season
-minimum signings prorate, and the basis (days? games?). Then the warning can
-become a real computed check. Grant Williams' 2026-04-11 signing ($39,820) is
-the live example.
-
 ### [P2] § 3.10's rookie-scale hold row isn't built — Prosper's 28-29 hold is still $1
 The 250%/300% hold for a player off the final year of a rookie-scale deal has
 no implementation, so `_autofill_fa_hold_amounts` would price it as a Bird

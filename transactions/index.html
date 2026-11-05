@@ -1110,7 +1110,7 @@
               </label>
             </div>
             <button type="button" class="ch-generate-btn" id="mch-generate-btn">Generate rows from scale</button>
-            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale starting at the "NBA experience" tier above and climbing one tier per contract year. A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
+            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale starting at the "NBA experience" tier above and climbing one tier per contract year. A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Signed after opening night, Year 1 is prorated to the regular-season days left from the transaction date. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
           </div>
         </div>
 
@@ -1343,6 +1343,9 @@ let LEAGUE_YEAR = null;
 // nbn-api's _season_for_date, since a release can be entered for any date,
 // not just today.
 let LEAGUE_ROLLOVERS = {};
+// The current league year's opening night and last regular-season game, from
+// GET /api/league-year — what § 3.12's in-season proration counts days against.
+let LEAGUE_CALENDAR = null;
 
 function rolesCanManage(roles) {
   roles = roles || [];
@@ -1411,6 +1414,7 @@ async function fetchAllTransactions() {
   // reflects the real cap/contract clock, not a local calendar-cutoff guess.
   if (lyrRes.status === 'fulfilled' && lyrRes.value?.current_season) LEAGUE_YEAR = lyrRes.value.current_season;
   if (lyrRes.status === 'fulfilled' && lyrRes.value?.rollovers) LEAGUE_ROLLOVERS = lyrRes.value.rollovers;
+  if (lyrRes.status === 'fulfilled' && lyrRes.value?.calendar) LEAGUE_CALENDAR = lyrRes.value.calendar;
   addSalaryRow();
 
   if (biosRes.status === 'fulfilled') bios = biosRes.value;
@@ -2623,6 +2627,21 @@ function minScaleForSeason(season) {
   return last ? capLevelsData[last].min_salary_scale : null;
 }
 
+// § 3.12 in-season proration: a minimum signed after opening night pays
+// full-season minimum × days left ÷ days in the regular season, the signing
+// day counted as left. Mirrors _minimum_proration / _prorate in nbn-api's
+// transactions.py, which is what the rubric checks the figure against.
+// Returns {days, of} or null (offseason, opening night, after the last game,
+// or no schedule). Only the current league year is known here, which is the
+// only one a signing today can prorate.
+function minimumProration(dateStr) {
+  const open = LEAGUE_CALENDAR?.opening_night, last = LEAGUE_CALENDAR?.last_regular_season_game;
+  if (!open || !last || !dateStr || dateStr < open || dateStr > last) return null;
+  const day = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 86400000;
+  const days = day(last) - day(dateStr) + 1, of = day(last) - day(open) + 1;
+  return days < of ? { days, of } : null;
+}
+
 // § 3.12: a minimum contract is a pure function of (start season, years of
 // NBA experience, that season's scale) — no dollar figure to type in. Reads
 // years of experience off f-years-exp (prefilled from draft_year elsewhere)
@@ -2658,6 +2677,8 @@ async function generateMinimumContractRows() {
     confirmLabel: 'Replace rows',
   })) return;
 
+  const signDate = document.getElementById('f-date').value || nbnToday();
+  const proration = startSeason === currentSeasonStr() ? minimumProration(signDate) : null;
   let season = startSeason;
   const rows = [];
   for (let i = 0; i < totalYears; i++) {
@@ -2669,6 +2690,8 @@ async function generateMinimumContractRows() {
     if (isOneYearDeal && scale['2'] && tier !== '0' && tier !== '1') {
       amount = Math.min(amount, scale['2']);
     }
+    // Year 1 only: every later year is a full season.
+    if (i === 0 && proration) amount = Math.round(amount * proration.days / proration.of);
     const holdType = i >= gtdYears ? optType : '';
     rows.push({ season, amount, holdType });
     season = nextSeasonStr(season);
@@ -2682,7 +2705,8 @@ async function generateMinimumContractRows() {
     addSalaryRow(season, '', trailingHold);
   }
   updateContractEntryMode();
-  setStatus('ok', `Generated ${totalYears} salary row(s) off the § 3.12 scale${trailingHold ? ` + a trailing ${trailingHold} hold` : ''}.`);
+  const prorNote = proration ? `, ${startSeason} prorated to ${proration.days} of ${proration.of} regular-season days` : '';
+  setStatus('ok', `Generated ${totalYears} salary row(s) off the § 3.12 scale${prorNote}${trailingHold ? ` + a trailing ${trailingHold} hold` : ''}.`);
   scheduleSignRubric();
 }
 
