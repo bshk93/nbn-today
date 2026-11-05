@@ -2807,8 +2807,13 @@
       }
 
       // Your team's own next games, also used for the header countdown below.
+      // A game tonight that already has a box score is a result, not a next
+      // game: matched on date + both teams, unordered, as the stats committee
+      // matches them.
+      const gameKey = g => `${g.date}|${[g.home_team, g.away_team].sort().join('-')}`;
+      const played = new Set((Array.isArray(results) ? results : []).map(gameKey));
       const mine = ((sched && sched.games) || [])
-        .filter(g => (g.home_team === team || g.away_team === team) && g.date >= today)
+        .filter(g => (g.home_team === team || g.away_team === team) && g.date >= today && !played.has(gameKey(g)))
         .sort((a, b) => a.date.localeCompare(b.date));
 
       // In the preseason this counts to *your opener*, not to the league's
