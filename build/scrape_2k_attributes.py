@@ -88,11 +88,15 @@ Writing:
   very next run.
 
 Alerting (--apply only):
-  Posted to DISCORD_ALERT_CHANNEL (the channel the box score integrity check
-  uses; inert if it or DISCORD_BOT_TOKEN is unset) when:
-    - the API call fails, or returns fewer than MIN_CURRENT_PLAYERS players;
-    - the feed's newest lastUpdated is more than STALE_DAYS old (it claims
-      weekly updates -- the old scrape went seven weeks dead unnoticed);
+  The timer runs this hourly, so every alert fires once per episode, never
+  once per run. Posted to DISCORD_ALERT_CHANNEL (the channel the box score
+  integrity check uses; inert if it or DISCORD_BOT_TOKEN is unset) when:
+    - the API call fails, or returns fewer than MIN_CURRENT_PLAYERS players,
+      DOWN_AFTER runs in a row (one blip is not an outage). A run that works
+      again after that posts that the feed is back;
+    - the feed's newest lastUpdated goes more than STALE_DAYS old (it claims
+      weekly updates -- the old scrape went seven weeks dead unnoticed).
+      Alerted once until the feed updates again;
     - a rostered player is newly unmatched (the team page will show no
       primary position for him). "Newly" is against the previous run's list,
       kept in SYNC_STATE_FILE, so a player 2kratings has no page for is
@@ -134,10 +138,16 @@ UA = "nbn.today ratings sync (https://nbn.today)"
 # truncated, and merging it would just leave most of the league unrefreshed.
 MIN_CURRENT_PLAYERS = 500
 STALE_DAYS = 14
+# Consecutive failed runs before the feed counts as down. Hourly, so ~3 hours.
+DOWN_AFTER = 3
 
 DISCORD_ALERT_CHANNEL = os.environ.get("DISCORD_ALERT_CHANNEL", "").strip()
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
 DISCORD_ADMIN_ID = os.environ.get("DISCORD_ADMIN_ID", "").strip()
+# Where "new 2K ratings are in" goes. Not an alert, so no admin mention, and
+# it can be a different channel; defaults to the alert channel.
+DISCORD_2K_UPDATES_CHANNEL = (os.environ.get("DISCORD_2K_UPDATES_CHANNEL", "").strip()
+                              or DISCORD_ALERT_CHANNEL)
 
 SUFFIX_RE = re.compile(r'\b(JR|SR|II|III|IV)\.?$')
 POSITION_ORDER = ["PG", "SG", "SF", "PF", "C"]
@@ -370,16 +380,19 @@ def post_alert(lines):
     if not lines:
         return
     print("\nALERT:\n  " + "\n  ".join(lines))
-    if not (DISCORD_ALERT_CHANNEL and DISCORD_BOT_TOKEN):
-        print("  (DISCORD_ALERT_CHANNEL / DISCORD_BOT_TOKEN unset -- not posted)")
-        return
     mention = f"<@{DISCORD_ADMIN_ID}> " if DISCORD_ADMIN_ID else ""
     body = "\n".join(f"• {l}" for l in lines[:15])
     if len(lines) > 15:
         body += f"\n• …and {len(lines) - 15} more"
-    text = f"{mention}**2K ratings sync**\n{body}"
+    post_discord(DISCORD_ALERT_CHANNEL, f"{mention}**2K ratings sync**\n{body}")
+
+
+def post_discord(channel, text):
+    if not (channel and DISCORD_BOT_TOKEN):
+        print("  (Discord channel / DISCORD_BOT_TOKEN unset -- not posted)")
+        return
     req = urllib.request.Request(
-        f"https://discord.com/api/v10/channels/{DISCORD_ALERT_CHANNEL}/messages",
+        f"https://discord.com/api/v10/channels/{channel}/messages",
         data=json.dumps({"content": text[:1990]}).encode(),
         headers={"Authorization": f"Bot {DISCORD_BOT_TOKEN}", "Content-Type": "application/json",
                  "User-Agent": UA},
@@ -405,34 +418,46 @@ def main():
     team_map = load_roster_team_map()
     alerts = []
 
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    def failed(reason):
+        print(reason)
+        if not args.apply:
+            return 1
+        streak = state.get("fail_streak", 0) + 1
+        state["fail_streak"] = streak
+        state.setdefault("down_since", now)
+        if streak == DOWN_AFTER:
+            post_alert([f"nba2kapi has failed {streak} runs in a row (since {state['down_since'][:16]} UTC): "
+                        f"{reason} Ratings are not being refreshed. I'll post again when it's back."])
+        SYNC_STATE_FILE.write_text(json.dumps(state, indent=2))
+        return 1
+
     key = load_api_key()
     if not key:
-        print(f"No API key: set NBA2KAPI_KEY or write it to {NBA2KAPI_KEY_FILE}")
-        if args.apply:
-            post_alert(["No nba2kapi key on the box -- ratings are not being refreshed."])
-        return 1
+        return failed(f"No nba2kapi key on the box (set NBA2KAPI_KEY or write {NBA2KAPI_KEY_FILE}).")
     try:
         api = fetch_current_players(key)
     except Exception as e:
-        print(f"nba2kapi fetch failed: {e}")
-        if args.apply:
-            post_alert([f"nba2kapi fetch failed: {e}. Ratings were not refreshed."])
-        return 1
+        return failed(f"nba2kapi fetch failed: {e}.")
     print(f"nba2kapi: {len(api)} current players")
     if len(api) < MIN_CURRENT_PLAYERS:
-        print(f"Refusing to sync: fewer than {MIN_CURRENT_PLAYERS} players")
-        if args.apply:
-            post_alert([f"nba2kapi returned only {len(api)} current players (expected {MIN_CURRENT_PLAYERS}+). "
-                        "Nothing was merged."])
-        return 1
+        return failed(f"nba2kapi returned only {len(api)} current players "
+                      f"(expected {MIN_CURRENT_PLAYERS}+); nothing was merged.")
+
+    recovered = None
+    if state.get("fail_streak", 0) >= DOWN_AFTER:
+        recovered = f"nba2kapi is back after {state['fail_streak']} failed runs (down since {state.get('down_since', '?')[:16]} UTC)."
 
     newest = max((p.get("lastUpdated") or "" for p in api), default="")
+    stale = False
     if newest:
         age = datetime.now(timezone.utc) - datetime.fromisoformat(newest.replace("Z", "+00:00"))
         print(f"  newest lastUpdated {newest[:10]} ({age.days} days ago)")
-        if age.days > STALE_DAYS:
+        stale = age.days > STALE_DAYS
+        if stale and not state.get("stale_alerted"):
             alerts.append(f"nba2kapi's data is {age.days} days old (newest update {newest[:10]}). "
-                          "It may have lost access to 2kratings.")
+                          "It may have lost access to 2kratings. Not repeated until it updates.")
 
     by_page = {}
     for p in api:
@@ -639,14 +664,24 @@ def main():
     print(f"Synced {ovr_synced} OVR change(s) into {OVR_HISTORY_FILE} ({ovr_skipped_stub} stub entries skipped)")
 
     SYNC_STATE_FILE.write_text(json.dumps({
-        "last_run": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "last_run": now,
         "feed_players": len(api),
         "feed_newest_update": newest,
         "matched": len(results),
         "appended": appended,
         "rostered_unmatched": rostered_unmatched,
+        "fail_streak": 0,
+        "stale_alerted": stale,
     }, indent=2))
+    if recovered:
+        print(recovered)
+        post_discord(DISCORD_ALERT_CHANNEL, f"**2K ratings sync**\n{recovered}")
     post_alert(alerts)
+    if appended - stubs > 0:
+        msg = (f"**New 2K ratings are in.** {appended - stubs} player(s) changed, "
+               f"{ovr_synced} with a new OVR. https://nbn.today/ratings-changes")
+        print(msg)
+        post_discord(DISCORD_2K_UPDATES_CHANNEL, msg)
     return 0
 
 
