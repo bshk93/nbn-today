@@ -355,6 +355,10 @@
     .pl-field { display: inline-flex; align-items: center; gap: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
     .pl-field .ui-input { height: 2rem; }
     .pl-fold { display: flex; gap: 0.3rem; }
+    .pl-hide { display: inline-flex; align-items: center; gap: 0.35rem; font-size: var(--text-xs); color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+    .pl-prio-wrap { display: inline-flex; align-items: center; gap: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); flex-wrap: wrap; }
+    .pl-prio-wrap[hidden] { display: none; }
+    .pl-short { margin: 0 0 0.6rem; font-size: var(--text-xs); color: var(--text-muted); }
     .pl-fold[hidden] { display: none; }
     .pl-legend-body { padding: 0.6rem 0.8rem; font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.6; }
     .pl-legend-body dl { display: grid; grid-template-columns: max-content 3.5rem 1fr; gap: 0.15rem 0.7rem; margin: 0; }
@@ -421,7 +425,7 @@
     .pl-game { border-top: 1px solid var(--border-subtle); }
     .pl-game:first-of-type { border-top: none; }
     .pl-game > summary { list-style: none; cursor: pointer; display: grid; align-items: center; gap: 0.3rem 0.8rem; padding: 0.55rem 0.8rem;
-      grid-template-columns: 1.6rem 4.6rem minmax(13rem, 1.4fr) minmax(7rem, 0.8fr) minmax(9rem, 1.3fr) auto; }
+      grid-template-columns: 1.6rem minmax(13rem, 1.4fr) minmax(7rem, 0.8fr) minmax(9rem, 1.3fr) auto; }
     .pl-game > summary::-webkit-details-marker { display: none; }
     .pl-game > summary:hover { background: var(--bg-subtle); }
     .pl-game[open] > summary { background: var(--bg-subtle); }
@@ -430,7 +434,6 @@
     .pl-game.hl > summary { box-shadow: inset 3px 0 0 var(--gold); }
     .pl-rank { font-family: var(--font-display); font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .pl-game.picked .pl-rank { color: var(--accent-light); }
-    .pl-time { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
     .pl-match { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
     .pl-teams { display: flex; align-items: center; gap: 0.35rem; font-size: var(--text-sm); flex-wrap: wrap; }
     .pl-teams a { color: var(--text-primary); font-weight: 600; }
@@ -490,9 +493,9 @@
     .pl-updating { color: var(--text-muted); font-size: var(--text-xs); }
 
     @media (max-width: 760px) {
-      .pl-game > summary { grid-template-columns: 1.4rem 1fr auto; grid-template-areas: "rank match act" ". score score" ". reasons reasons" ". time time"; }
+      .pl-game > summary { grid-template-columns: 1.4rem 1fr auto; grid-template-areas: "rank match act" ". score score" ". reasons reasons"; }
       .pl-rank { grid-area: rank; } .pl-match { grid-area: match; } .pl-act { grid-area: act; }
-      .pl-score { grid-area: score; } .pl-reasons { grid-area: reasons; } .pl-time { grid-area: time; }
+      .pl-score { grid-area: score; } .pl-reasons { grid-area: reasons; }
       .pl-break { padding-left: 0.8rem; }
       .pl-break td.pl-f { width: auto; }
       .pl-break td.pl-mini { display: none; }
@@ -594,6 +597,8 @@
             <button data-days="14">14 days</button>
             <button data-days="month" title="From the start date to the end of its month">Month</button>
           </div>
+          <label class="pl-hide" title="Hide days whose stream is already set. 7 and 14 days then mean the next 7 or 14 undecided days."><input type="checkbox" id="pl-hide-saved"> Hide saved days</label>
+          <div class="pl-prio-wrap" id="pl-prio-wrap" hidden><span>Prioritize</span><div class="seg" id="pl-priority"></div></div>
           <div class="seg" id="pl-view">
             <button data-view="list">List</button>
             <button data-view="calendar">Calendar</button>
@@ -2403,6 +2408,14 @@
     let plCalDay = null;            // the calendar day showing its games
     let plHighlight = null;         // a team picked in the tally
     let plSaving = false;
+    let plSpan = '7';               // '7' | '14' | 'month', or null for a hand-set To
+    const plStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; };
+    let plHideSaved = plStore('nbn_pl_hide_saved') === '1';
+    let plPriority = plStore('nbn_pl_priority') || 'balanced';
+    // With Hide saved days on, 7 / 14 days are counted in undecided days
+    // (the API's open_days), not calendar days.
+    const plOpenSpan = () => plHideSaved && (plSpan === '7' || plSpan === '14');
+    const plHidden = day => plHideSaved && (day.locked || !day.games_count);
 
     function plEl(tag, cls, text) {
       const e = document.createElement(tag);
@@ -2441,16 +2454,35 @@
     // A span is '7', '14' or 'month' (From through the end of its month,
     // never over 31 days, so it fits the API's limit).
     function plSetSpan(span) {
+      plSpan = span;
       const from = document.getElementById('pl-from').value || today;
       document.getElementById('pl-from').value = from;
+      // An open-day span's To comes back from the API; this is only a placeholder.
       document.getElementById('pl-to').value = span === 'month' ? plMonthEnd(from) : addDays(from, +span - 1);
       plMarkSpan();
     }
     function plMarkSpan() {
-      const r = plRange();
-      const days = String(plSpanDays(r));
-      const active = ['7', '14'].includes(days) ? days : (r.to === plMonthEnd(r.from) ? 'month' : null);
-      document.querySelectorAll('#pl-span button').forEach(b => b.classList.toggle('active', b.dataset.days === active));
+      document.querySelectorAll('#pl-span button').forEach(b => b.classList.toggle('active', b.dataset.days === plSpan));
+    }
+    function plRenderPriorities(list) {
+      const seg = document.getElementById('pl-priority');
+      if (!seg.childElementCount && list && list.length) {
+        for (const p of list) {
+          const b = plEl('button', '', p.label);
+          b.dataset.priority = p.key;
+          b.title = p.desc;
+          b.onclick = () => {
+            if (plPriority === p.key) return;
+            plPriority = p.key;
+            plStore('nbn_pl_priority', p.key);
+            plRenderPriorities();
+            loadPlanner(true);
+          };
+          seg.append(b);
+        }
+        document.getElementById('pl-prio-wrap').hidden = false;
+      }
+      seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.priority === plPriority));
     }
     function plSpanDays({ from, to }) {
       return Math.round((new Date(to + 'T00:00:00') - new Date(from + 'T00:00:00')) / 86400000) + 1;
@@ -2465,9 +2497,19 @@
       plLoaded = true;
       plSetSpan('7');
       plMarkView();
-      const onChange = () => { plMarkSpan(); loadPlanner(); };
-      document.getElementById('pl-from').onchange = onChange;
-      document.getElementById('pl-to').onchange = onChange;
+      document.getElementById('pl-from').onchange = () => {
+        if (plSpan) plSetSpan(plSpan);
+        loadPlanner();
+      };
+      document.getElementById('pl-to').onchange = () => { plSpan = null; plMarkSpan(); loadPlanner(); };
+      const hide = document.getElementById('pl-hide-saved');
+      hide.checked = plHideSaved;
+      hide.onchange = () => {
+        plHideSaved = hide.checked;
+        plStore('nbn_pl_hide_saved', plHideSaved ? '1' : '0');
+        if (plSpan) plSetSpan(plSpan);
+        loadPlanner();
+      };
       document.querySelectorAll('#pl-span button').forEach(b => {
         b.onclick = () => { plSetSpan(b.dataset.days); loadPlanner(); };
       });
@@ -2501,16 +2543,17 @@
                             document.getElementById('pl-side').replaceChildren(); plRenderSaveBar(); };
       if (!range.from || !range.to) return fail('Pick a start and end date.');
       if (range.to < range.from) return fail('The end date is before the start date.');
-      if (plSpanDays(range) > PL_MAX_SPAN) {
+      if (!plOpenSpan() && plSpanDays(range) > PL_MAX_SPAN) {
         return fail(`That's ${plSpanDays(range)} days. The planner looks at up to ${PL_MAX_SPAN} at a time.`);
       }
       if (!quiet) box.replaceChildren(plEl('div', 'ui-loading', 'Ranking games…'));
       const picks = [], skips = [];
       for (const [d, id] of plChoices) {
-        if (d < range.from || d > range.to) continue;
+        if (d < range.from || (!plOpenSpan() && d > range.to)) continue;
         if (id) picks.push(id); else skips.push(d);
       }
-      const q = new URLSearchParams({ from: range.from, to: range.to });
+      const q = new URLSearchParams({ from: range.from, priority: plPriority });
+      if (plOpenSpan()) q.set('open_days', plSpan); else q.set('to', range.to);
       if (picks.length) q.set('picks', picks.join(','));
       if (skips.length) q.set('skip', skips.join(','));
       const token = storedToken();
@@ -2543,6 +2586,8 @@
         for (const [d, v] of plChoices) if (v === id) plChoices.delete(d);
       }
       plData = data;
+      if (plOpenSpan()) document.getElementById('pl-to').value = data.to;
+      plRenderPriorities(data.priorities);
       const y = window.scrollY;
       renderPlanner(data);
       if (quiet) window.scrollTo(0, y);
@@ -2610,7 +2655,16 @@
       } else if (plView === 'calendar') {
         box.replaceChildren(...plCalendar(data));
       } else {
-        box.replaceChildren(...data.days.map(d => plDayCard(d, data)));
+        const shown = data.days.filter(d => !plHidden(d));
+        const cards = shown.map(d => plDayCard(d, data));
+        if (!shown.length) cards.push(plEl('div', 'empty', `Every day from ${fmtShort(data.from)} to ${fmtShort(data.to)} is already set.`));
+        box.replaceChildren(...cards);
+      }
+      if (data.open_days_short) {
+        const n = data.open_days_found;
+        box.prepend(plEl('p', 'pl-short', n
+          ? `Only ${n} undecided day${n === 1 ? '' : 's'} in the next ${PL_MAX_SPAN} days.`
+          : `No undecided days in the next ${PL_MAX_SPAN} days.`));
       }
       plRenderSaveBar(pending);
     }
@@ -2636,7 +2690,12 @@
                 plEl('dd', '', 'A player’s next career milestone, or a pass into the all-time top 5, lands in this game. Only within each team’s next 4 games, where the estimate holds (worked out on this page).'));
       const note = plEl('p', '', `A team on stream within ${data.cooldown_days || 7} days either side (set, bought, or picked earlier in the plan) can’t be the suggested pick; its games are dimmed with the clash named. Days are planned in order, so each pick, yours or suggested, re-ranks the days after it.`);
       note.style.margin = '0.6rem 0 0';
-      document.getElementById('pl-legend-body').replaceChildren(dl, note);
+      const pr = (data.priorities || []).find(p => p.key === data.priority);
+      const head = plEl('p', '', pr && data.priority !== 'balanced'
+        ? `Prioritizing ${pr.label}: ${pr.desc.charAt(0).toLowerCase() + pr.desc.slice(1)}. The weights below are already adjusted.`
+        : 'Balanced: the standard weights.');
+      head.style.margin = '0 0 0.6rem';
+      document.getElementById('pl-legend-body').replaceChildren(head, dl, note);
     }
 
     // ── The tally beside the plan ──
@@ -2765,13 +2824,12 @@
       if (day.locked) {
         const l = plEl('div', 'pl-line');
         l.dataset.icon = 'lock';
-        l.append(document.createTextNode('Stream:'), plMatch(day.locked.away, day.locked.home),
-                 plEl('span', 'pl-rec', fmtTime(day.locked.time_et)));
+        l.append(document.createTextNode('Stream:'), plMatch(day.locked.away, day.locked.home));
         card.append(l);
       } else if (sel) {
         const l = plEl('div', 'pl-line pick');
         l.dataset.icon = 'check';
-        l.append(plMatch(sel.away, sel.home), plEl('span', 'pl-rec', fmtTime(sel.time_et)), plEl('span', 'pl-num', String(Math.round(sel.score))));
+        l.append(plMatch(sel.away, sel.home), plEl('span', 'pl-num', String(Math.round(sel.score))));
         const top = Object.values(sel.factors).filter(f => f.pts > 0).sort((a, b) => b.pts / b.max - a.pts / a.max)[0];
         if (top) l.append(plChip(`${top.label} ${plFmtPts(top.pts)}`));
         if (day.forced) l.append(plChip('No fresh matchup', 'warning', 'warning'));
@@ -2831,7 +2889,6 @@
                                  + (plHas(g, plHighlight) ? ' hl' : ''));
       const s = plEl('summary');
       s.append(plEl('span', 'pl-rank', String(i + 1)));
-      s.append(plEl('span', 'pl-time', fmtTime(g.time_et)));
 
       const match = plEl('div', 'pl-match');
       const teams = plEl('div', 'pl-teams');
@@ -2942,6 +2999,12 @@
     }
 
     function plCell(ds, dn, day) {
+      if (day && plHidden(day)) {
+        const c = plEl('div', 'pl-cell out');
+        c.append(plEl('span', 'pl-cell-n', String(dn)));
+        c.title = day.locked ? 'Saved' : 'No games';
+        return c;
+      }
       if (!day) {
         const c = plEl('div', 'pl-cell out');
         c.append(plEl('span', 'pl-cell-n', String(dn)));
@@ -2998,7 +3061,7 @@
       const ok = await confirmDialog({
         title: `Save ${picked.length} stream${picked.length === 1 ? '' : 's'}?`,
         body: 'Each of these becomes its day’s stream; the rest of each day’s games stay Sim. If any day was set in the meantime, nothing is saved.',
-        details: picked.map(s => `${fmtDayHdr(s.day.date)}: ${s.game.away} @ ${s.game.home}, ${fmtTime(s.game.time_et)}`),
+        details: picked.map(s => `${fmtDayHdr(s.day.date)}: ${s.game.away} @ ${s.game.home}`),
         confirmLabel: 'Save all',
       });
       if (!ok) return;
