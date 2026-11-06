@@ -206,7 +206,10 @@
 
   <script src="/names.js"></script>
   <script>
+    // RANK is the row's place in the current sort, not a CSV column; ties
+    // on a numeric sort share it.
     const COLS = [
+      { key: 'RANK',         label: '#',         cls: 'right muted',          sortField: null,           numeric: false },
       { key: 'PLAYER',       label: 'Player',    cls: 'player-name',          sortField: 'PLAYER',       numeric: false, defaultDir:  1 },
       { key: 'TEAMS',        label: 'Teams',     cls: 'teams',                sortField: 'TEAMS',        numeric: false, defaultDir:  1,
         display: r => r.TEAMS ? r.TEAMS.replace(/,/g, ', ') : '—' },
@@ -298,7 +301,10 @@
     function rebuildBody() {
       const sorted = sortRows(allRows);
       tbody.innerHTML = '';
-      sorted.forEach(row => {
+      const numericSort = COLS.find(c => c.sortField === sortField)?.numeric;
+      let rank = 0;
+      sorted.forEach((row, i) => {
+        if (!(numericSort && i && sortVal(row, sortField) === sortVal(sorted[i - 1], sortField))) rank = i + 1;
         const tr = tbody.insertRow();
         COLS.forEach(col => {
           const td = tr.insertCell();
@@ -308,7 +314,9 @@
             td.classList.add('col-best');
           }
 
-          if (col.key === 'PLAYER') {
+          if (col.key === 'RANK') {
+            td.textContent = rank;
+          } else if (col.key === 'PLAYER') {
             const a = document.createElement('a');
             a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
             a.textContent = nbnPlayerName(row.PLAYER);
@@ -351,7 +359,7 @@
 
       const groupRow = thead.insertRow();
       const groups = [
-        { label: '',          span: 3, bordered: false },
+        { label: '',          span: 4, bordered: false },
         { label: 'Accolades', span: 12, bordered: true  },
         { label: 'Career',    span: 6, bordered: true  },
       ];
@@ -375,6 +383,7 @@
         if (col.key === 'HOF_POINTS') th.appendChild(formulaIcon());
         th.appendChild(arrow);
         th.dataset.active = col.sortField === sortField;
+        if (!col.sortField) { th.style.cursor = 'default'; thEls.push(th); hr.appendChild(th); return; }
         th.addEventListener('click', () => {
           if (sortField === col.sortField) {
             sortDir *= -1;
