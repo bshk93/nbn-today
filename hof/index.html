@@ -215,6 +215,18 @@
         display: r => r.TEAMS ? r.TEAMS.replace(/,/g, ', ') : '—' },
       { key: 'HOF_POINTS',   label: 'Score',     cls: 'score',                sortField: 'HOF_POINTS',   numeric: true,  defaultDir: -1,
         display: r => { const n = parseFloat(r.HOF_POINTS); return (isNaN(n) || n <= 0) ? '—' : n.toFixed(1); } },
+      { key: 'G',            label: 'G',         cls: 'right border-left',    sortField: 'G',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.G) },
+      { key: 'P',            label: 'PTS',       cls: 'right',                sortField: 'P',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.P) },
+      { key: 'R',            label: 'REB',       cls: 'right',                sortField: 'R',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.R) },
+      { key: 'A',            label: 'AST',       cls: 'right',                sortField: 'A',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.A) },
+      { key: 'S',            label: 'STL',       cls: 'right',                sortField: 'S',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.S) },
+      { key: 'B',            label: 'BLK',       cls: 'right',                sortField: 'B',            numeric: true,  defaultDir: -1,
+        display: r => fmtInt(r.B) },
       { key: 'RINGS',        label: 'Rings',     cls: 'center border-left',   sortField: 'RINGS',        numeric: true,  defaultDir: -1,
         display: r => parseInt(r.RINGS) > 0 ? r.RINGS : '—' },
       { key: 'PLAYOFF_APPS', label: 'PO',        cls: 'center',               sortField: 'PLAYOFF_APPS', numeric: true,  defaultDir: -1,
@@ -239,18 +251,6 @@
         display: r => parseInt(r.ROY) > 0 ? r.ROY : '—' },
       { key: 'MIP',          label: 'MIP',       cls: 'center',               sortField: 'MIP',          numeric: true,  defaultDir: -1,
         display: r => parseInt(r.MIP) > 0 ? r.MIP : '—' },
-      { key: 'G',            label: 'G',         cls: 'right border-left',    sortField: 'G',            numeric: true,  defaultDir: -1,
-        display: r => fmtInt(r.G) },
-      { key: 'P',            label: 'PTS',       cls: 'right',                sortField: 'P',            numeric: true,  defaultDir: -1,
-        display: r => fmtInt(r.P) },
-      { key: 'R',            label: 'REB',       cls: 'right',                sortField: 'R',            numeric: true,  defaultDir: -1,
-        display: r => fmtInt(r.R) },
-      { key: 'A',            label: 'AST',       cls: 'right',                sortField: 'A',            numeric: true,  defaultDir: -1,
-        display: r => fmtInt(r.A) },
-      { key: 'S',            label: 'STL',       cls: 'right',                sortField: 'S',            numeric: true,  defaultDir: -1,
-        display: r => fmtInt(r.S) },
-      { key: 'B',            label: 'BLK',       cls: 'right',                sortField: 'B',            numeric: true,  defaultDir: -1,
-        display: r => fmtInt(r.B) },
     ];
 
     let sortField = 'HOF_POINTS';
@@ -360,8 +360,8 @@
       const groupRow = thead.insertRow();
       const groups = [
         { label: '',          span: 4, bordered: false },
-        { label: 'Accolades', span: 12, bordered: true  },
         { label: 'Career',    span: 6, bordered: true  },
+        { label: 'Accolades', span: 12, bordered: true  },
       ];
       groups.forEach(g => {
         const th = document.createElement('th');
