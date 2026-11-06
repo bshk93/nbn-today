@@ -80,6 +80,8 @@ const PAGES = [
   { path: '/stats/totals/?stat=AST&type=po&per=pg', selector: 'table tbody tr', min: 20, what: 'a filtered career board' },
   { path: '/season-summary/',         selector: '.ss-season',      min: 5,  what: 'a card per season' },
   { path: '/nbntv-classics/',         selector: '.classic-entry',  min: 10, what: 'the classics list' },
+  { path: '/finances/',              selector: '#tbody tr.row',   min: 30, what: 'a share price per franchise (Market tab)' },
+  { path: '/finances/?team=PHX#books', selector: '#ledger tbody tr', min: 10, what: 'one team\'s books' },
   { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
   { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },

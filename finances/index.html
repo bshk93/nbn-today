@@ -5,13 +5,13 @@
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
-  <title>NBN | Front Office Ledger</title>
+  <title>NBN | Franchise Finances</title>
   <!-- NBN:og -->
-  <meta name="description" content="Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.">
+  <meta name="description" content="A share price for every NBN franchise, built on its fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="NBN | Front Office Ledger">
-  <meta property="og:description" content="Every NBN franchise’s fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.">
+  <meta property="og:title" content="NBN | Franchise Finances">
+  <meta property="og:description" content="A share price for every NBN franchise, built on its fake books: ticket sales, payroll, the luxury tax and what the franchise is worth, back to 20-21.">
   <meta property="og:url" content="https://nbn.today/finances/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -23,6 +23,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <style>
     .fo-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
     .fo-controls .ui-select { height: 2rem; font-size: var(--text-sm); }
@@ -67,6 +68,59 @@
     .fo-bid .ui-input[name=bid] { width: 8rem; }
     .fo-bid-err { color: var(--danger); font-size: var(--text-sm); width: 100%; }
     #status { text-align: center; padding: 3rem; color: var(--text-muted); }
+    .fo-controls[hidden] { display: none; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Market tab (finances/market.js) */
+    .fv-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+    .fv-table .team-in { display: flex; align-items: center; gap: 0.5rem; }
+    /* # and Team both stay put while the table scrolls sideways. */
+    .fv-table > thead > tr#thead > :first-child, .fv-table > tbody > tr.row > :first-child { width: 2.5rem; min-width: 2.5rem; box-sizing: border-box; }
+    .fv-table > thead > tr#thead > :nth-child(2), .fv-table > tbody > tr.row > :nth-child(2) { position: sticky; left: 2.5rem; background: var(--bg-page); z-index: 1; }
+    .fv-years td:first-child { position: static; background: none; }
+    .fv-table > tbody > tr.row:is(:hover, .open) > td { background: var(--bg-hover); }
+    /* A mask, like the tab strip's: the right edge fades while there are columns off to the side. */
+    .fv-wrap.more .ui-table-wrap { mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent); }
+    /* Column groups: a short label over each run of columns, ruled underneath. */
+    .fv-table #thgroup th { border-bottom: none; padding-bottom: 0; font-size: var(--text-xs); letter-spacing: 0.08em; color: var(--text-dim); text-align: center; }
+    .fv-table #thgroup th span { display: block; border-bottom: 1px solid var(--border); padding-bottom: var(--space-1); }
+    .fv-table #thgroup th.blank { position: sticky; left: 0; background: var(--bg-page); z-index: 1; }
+    .fv-table td.gstart, .fv-table #thead th.gstart { border-left: 1px solid var(--border-subtle); }
+    .fv-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--space-2); margin-bottom: var(--space-4); }
+    .fv-tile { border-left: 2px solid var(--border); padding: var(--space-1) var(--space-3); }
+    .fv-tile .ui-kicker { color: var(--text-muted); font-size: var(--text-xs); }
+    .fv-tile .ui-statline { margin-top: var(--space-1); }
+    .fv-tile .ui-statline > b.up { color: var(--market-positive); }
+    .fv-tile .ui-statline > b.dn { color: var(--danger); }
+    .fv-table .logo { width: 20px; height: 20px; object-fit: contain; }
+    .fv-table th[data-sort] { cursor: pointer; }
+    .fv-table th.sorted { color: var(--text-primary); }
+    .fv-table tbody tr.row { cursor: pointer; }
+    .fv-table td.mono, .fv-years td.mono { font-family: var(--font-mono); }
+    .fv-detail > td { white-space: normal; padding: 0; background: var(--bg-card); }
+    .ui-table tbody tr.fv-detail:hover > td { background: var(--bg-card); }
+    .fv-years tr:hover td { background: none; }
+    /* The cell spans the whole scrolling table; its content is held to the
+       visible width (set from JS) so prose never runs off the side. */
+    .fv-detail-in { position: sticky; left: 0; box-sizing: border-box; padding: var(--space-3) var(--space-4); border-left: 3px solid var(--accent); }
+    .fv-years { width: 100%; border-collapse: collapse; font-size: var(--text-xs); margin-bottom: var(--space-3); }
+    .fv-years th, .fv-years td { padding: 0.3rem 0.5rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); }
+    .fv-years th:first-child, .fv-years td:first-child { text-align: left; }
+    .fv-years th { color: var(--text-muted); font-weight: 600; }
+    .fv-sum { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6; }
+    .fv-sum b { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
+    .fv-chart { position: relative; height: 240px; }
+    .up { color: var(--market-positive); }
+    .dn { color: var(--danger); }
+    .fv-how { margin-top: var(--space-6); }
+    .fv-how summary { cursor: pointer; color: var(--text-secondary); font-weight: 600; }
+    .fv-how .ui-prose { margin-top: var(--space-3); font-size: var(--text-sm); }
+    .fv-scroll { overflow-x: auto; }
+    .fv-tip { cursor: help; }
+    .fv-cols { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); margin: 0; }
+    .fv-cols dt { font-weight: 600; color: var(--text-primary); }
+    .fv-cols dd { margin: 0; }
   </style>
 </head>
 <body>
@@ -74,55 +128,69 @@
     <nav class="nav"></nav>
     <header class="ui-header">
       <div>
-        <h1 class="ui-title">Front Office Ledger</h1>
+        <h1 class="ui-title">Franchise Finances</h1>
       </div>
-      <div class="ui-header-actions fo-controls">
+      <div class="ui-header-actions fo-controls" id="team-controls" hidden>
         <select class="ui-select" id="f-team" aria-label="Franchise"></select>
       </div>
     </header>
+    <div class="ui-tabs" role="tablist">
+      <button class="ui-tab active" role="tab" aria-selected="true" data-tab="market">Market</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="books">Books</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="arenas">Arenas</button>
+    </div>
 
-    <div id="status">Loading…</div>
-    <div id="content" hidden>
-      <h2 class="ui-section-title">Franchise value</h2>
-      <div class="fo-legend" id="legend"></div>
-      <div class="fo-chart" id="chart">
-        <div class="fo-tip" id="tip" hidden></div>
+    <div class="tab-panel active" id="tab-market"></div>
+
+    <div class="tab-panel" id="tab-books">
+      <div id="status">Loading…</div>
+      <div id="content" hidden>
+        <h2 class="ui-section-title">Franchise value</h2>
+        <div class="fo-legend" id="legend"></div>
+        <div class="fo-chart" id="chart">
+          <div class="fo-tip" id="tip" hidden></div>
+        </div>
+        <p class="fo-note" id="chart-note"></p>
+        <h2 class="ui-section-title" id="ledger-title">Team ledger</h2>
+        <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first fo-ledger" id="ledger"></table></div>
+        <p class="fo-note">These numbers are for fun. They are not NB¥ you can spend. They are worked out from real game results,
+          and the Market tab's prices are built on them.
+          Dead money is pay still owed to players the team released. It is part of payroll, not on top of it.</p>
+        <div class="ui-header">
+          <h2 class="ui-section-title">Most valuable franchises</h2>
+          <div class="ui-header-actions fo-controls">
+            <select class="ui-select" id="f-season" aria-label="Season"></select>
+          </div>
+        </div>
+        <div class="ui-table-wrap"><table class="ui-table fo-table" id="board"></table></div>
+        <p class="fo-note" id="model-note"></p>
+        <div class="ui-header">
+          <h2 class="ui-section-title">Owners</h2>
+          <div class="ui-header-actions fo-controls">
+            <div class="ui-segmented" role="group" id="f-owners">
+              <button data-v="best" aria-pressed="true">Best owners</button>
+              <button data-v="worst" aria-pressed="false">Worst owners</button>
+            </div>
+          </div>
+        </div>
+        <div class="ui-table-wrap"><table class="ui-table" id="owners"></table></div>
+        <p class="fo-note">Each season counts for whoever owned the team on January 1. "Beat the league by" is how much more (or less) the franchise's value grew than the league average grew over the same seasons. Owning a team for a long time doesn't score points on its own.</p>
       </div>
-      <p class="fo-note" id="chart-note"></p>
+    </div>
 
-      <h2 class="ui-section-title" id="ledger-title">Team ledger</h2>
-      <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first fo-ledger" id="ledger"></table></div>
-      <p class="fo-note">These numbers are for fun. They are not NB¥ you can spend, and they are not the
-        <a href="/invest">Wall Street</a> share price. They are worked out from real game results.
-        Dead money is pay still owed to players the team released. It is part of payroll, not on top of it.</p>
-
+    <div class="tab-panel" id="tab-arenas">
       <h2 class="ui-section-title" id="arenas">Arena naming rights</h2>
       <div class="ui-table-wrap"><table class="ui-table" id="arena-table"></table></div>
       <p class="fo-note" id="arena-note">Name any team's arena, yours or a rival's. Bids are real NB¥ and the price only goes up: the next bid has to beat the last by 10%. If someone outbids you, the NB¥ you paid is gone. The name shows on that team's box scores from the day you buy it.</p>
-
-      <div class="ui-header">
-        <h2 class="ui-section-title">Most valuable franchises</h2>
-        <div class="ui-header-actions fo-controls">
-          <select class="ui-select" id="f-season" aria-label="Season"></select>
-        </div>
-      </div>
-      <div class="ui-table-wrap"><table class="ui-table fo-table" id="board"></table></div>
-      <p class="fo-note" id="model-note"></p>
-
-      <div class="ui-header">
-        <h2 class="ui-section-title">Owners</h2>
-        <div class="ui-header-actions fo-controls">
-          <div class="ui-segmented" role="group" id="f-owners">
-            <button data-v="best" aria-pressed="true">Best owners</button>
-            <button data-v="worst" aria-pressed="false">Worst owners</button>
-          </div>
-        </div>
-      </div>
-      <div class="ui-table-wrap"><table class="ui-table" id="owners"></table></div>
-      <p class="fo-note">Each season counts for whoever owned the team on January 1. "Beat the league by" is how much more (or less) the franchise's value grew than the league average grew over the same seasons. Owning a team for a long time doesn't score points on its own.</p>
     </div>
   </div>
-
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+  <script src="/names.js"></script>
+  <script src="/feed-types.js"></script>
+  <script src="/finances/daily-moves.js"></script>
+  <script src="/finances/market-summary.js"></script>
+  <script src="/finances/market.js"></script>
   <script>
   (function () {
     const START_VALUE = 3e9;
@@ -163,7 +231,7 @@
       'Second Round': 'Second round', 'First Round': 'First round', 'Missed': 'Missed playoffs' };
 
     let rows = [], seasons = [], teams = [], by = {}, avg = {}, model = '';
-    const state = { team: null, season: null };
+    const state = { team: null, season: null, picked: false };
 
     function load(text) {
       rows = parseCSV(text).map(r => {
@@ -523,28 +591,87 @@
       drawLegend(); drawChart(); drawLedger(); drawBoard();
     }
 
-    // A team is an item on this page (pushState, so Back returns to it); the
-    // season is a filter (replaceState).
+    // ── Tabs, and the one team the page is on ──────────────────────────────
+    // Market leads. The tab is the hash (#books, #arenas); the team and the
+    // books' season are the query. A team is an item on this page (pushState,
+    // so Back returns to it), and so is a tab; the season is a filter
+    // (replaceState). The books always draw a team; the market opens that
+    // team's row only once one has been picked (?team=, a row, the picker).
+    const TABS = ['market', 'books', 'arenas'];
+    const tabOf = () => TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'market';
+    function showTab(name) {
+      document.querySelectorAll('.ui-tab').forEach(b => {
+        const on = b.dataset.tab === name;
+        b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
+      });
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+      document.getElementById('team-controls').hidden = name !== 'books' || !rows.length;
+    }
     function url() {
       const p = new URLSearchParams();
-      p.set('team', state.team);
-      if (state.season !== seasons[seasons.length - 1]) p.set('season', state.season);
-      return `${location.pathname}?${p}`;
+      if (state.picked) p.set('team', state.team);
+      if (seasons.length && state.season !== seasons[seasons.length - 1]) p.set('season', state.season);
+      const tab = tabOf();
+      return `${location.pathname}${String(p) ? '?' + p : ''}${tab === 'market' ? '' : '#' + tab}`;
+    }
+    function go(push) {
+      const u = url();
+      if (new URL(u, location.href).href !== location.href) history[push ? 'pushState' : 'replaceState'](null, '', u);
     }
     function pickTeam(t) {
-      if (t === state.team) return;
-      state.team = t;
-      history.pushState(null, '', url());
-      drawAll();
+      if (t === state.team && state.picked) return;
+      state.team = t; state.picked = true;
+      go(true);
+      FinMarket.open(t);
+      if (rows.length) drawAll();
     }
     function readUrl() {
       const p = new URLSearchParams(location.search);
-      const latest = seasons[seasons.length - 1];
       const t = (p.get('team') || '').toUpperCase();
-      state.season = seasons.includes(p.get('season')) ? p.get('season') : latest;
-      state.team = teams.includes(t) ? t
-        : rows.filter(r => r.SEASON === latest).sort((a, b) => b.VALUE - a.VALUE)[0].TEAM;
+      state.picked = /^[A-Z]{3}$/.test(t);
+      state.team = state.picked ? t : null;
+      state.season = p.get('season');
+      if (!rows.length) return;
+      const latest = seasons[seasons.length - 1];
+      if (!seasons.includes(state.season)) state.season = latest;
+      if (!teams.includes(state.team)) {
+        state.picked = false;
+        state.team = rows.filter(r => r.SEASON === latest).sort((a, b) => b.VALUE - a.VALUE)[0].TEAM;
+      }
     }
+
+    function switchTab(name) {
+      showTab(name);
+      const u = url().replace(/#.*$/, '') + (name === 'market' ? '' : '#' + name);
+      if (new URL(u, location.href).href !== location.href) history.pushState(null, '', u);
+      window.scrollTo(0, 0);
+    }
+    document.querySelectorAll('.ui-tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+    // A link to another tab (the market's "See the books") switches in place.
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[data-tab-link]');
+      if (!a) return;
+      e.preventDefault();
+      switchTab(a.dataset.tabLink);
+    });
+    window.addEventListener('popstate', () => {
+      readUrl();
+      showTab(tabOf());
+      FinMarket.open(state.picked ? state.team : null);
+      if (rows.length) drawAll();
+    });
+
+    readUrl();
+    showTab(tabOf());
+    FinMarket.mount(document.getElementById('tab-market'), {
+      open: state.picked ? state.team : null,
+      // Closing a row un-picks the team; the books keep showing it.
+      onOpen: t => {
+        if (t) { state.team = t; state.picked = true; } else state.picked = false;
+        go(true);
+        if (rows.length) drawAll();
+      },
+    });
 
     fetch('/data/franchise-finances.csv')
       .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
@@ -556,26 +683,23 @@
         readUrl();
         document.getElementById('status').hidden = true;
         document.getElementById('content').hidden = false;
+        showTab(tabOf());
         drawAll();
-        // The page is hidden until the books load, so a #arenas link can't land on its own.
-        if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
         document.getElementById('f-team').addEventListener('change', e => pickTeam(e.target.value));
         document.getElementById('f-season').addEventListener('change', e => {
           state.season = e.target.value;
-          history.replaceState(null, '', url());
+          go(false);
           drawBoard();
         });
-        window.addEventListener('popstate', () => { readUrl(); drawAll(); });
+        // The chart has no width while its tab is hidden; it draws when shown.
         let w = 0;
         new ResizeObserver(() => {
           const now = document.getElementById('chart').clientWidth;
           if (now !== w) { w = now; drawChart(); }
         }).observe(document.getElementById('chart'));
       })
-      .catch(() => { document.getElementById('status').textContent = 'The finance data didn\'t load. It should be back after the next stats build.'; });
+      .catch(() => { document.getElementById('status').textContent = 'The books didn\'t load. They should be back after the next stats build.'; });
   })();
   </script>
-  <script src="/nav.js"></script>
-  <script src="/token-badge.js"></script>
 </body>
 </html>

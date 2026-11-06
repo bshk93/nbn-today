@@ -1,8 +1,8 @@
 // Daily moves: what every team did on one day, and the last two weeks at a glance.
 //
-// Shared by /invest (Wall Street, from GET /api/invest/daily) and the hidden
-// /invest/fair (fair value, from GET /api/fair-value/history). The page turns its
-// data into one shape and this draws it:
+// Used by the Market tab of /finances (finances/market.js, from
+// GET /api/fair-value/history). The page turns its data into one shape and this
+// draws it:
 //
 //   DailyMoves.mount(el, {
 //     title: 'Daily moves',

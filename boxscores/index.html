@@ -288,7 +288,7 @@
       const a = g.attendance;
       if (!a) return '';
       const where = a.arena ? ` · ${esc(a.arena)}` : '';
-      return `<div class="gm-att"><a href="/finances/?team=${encodeURIComponent(g.home_team)}" onclick="event.stopPropagation()" title="From the Front Office Ledger">Attendance ${a.count.toLocaleString()}${a.sellout ? ' (sellout)' : ''}</a>${where}</div>`;
+      return `<div class="gm-att"><a href="/finances/?team=${encodeURIComponent(g.home_team)}" onclick="event.stopPropagation()" title="From Franchise Finances">Attendance ${a.count.toLocaleString()}${a.sellout ? ' (sellout)' : ''}</a>${where}</div>`;
     }
 
     function buildGame(g) {

@@ -1,6 +1,6 @@
 // Market Summary: the top five risers and fallers over a chosen window, with a
-// sparkline each. Used by the hidden /invest/fair (Wall Street 2), whose prices
-// are one row per day. /invest has its own per-game version (computeMovers in
+// sparkline each. Used by the Market tab of /finances (finances/market.js), whose
+// prices are one row per day. /invest has its own per-game version (computeMovers in
 // invest/index.html); this is the same look, drawn from daily rows.
 //
 //   MarketSummary.mount(el, {
@@ -100,7 +100,7 @@
         <span class="abbr">${m.team}</span>
         ${spark(m.path, win.days, cls)}
         <span class="pct ${cls}">${m.pct > 0 ? '▲ +' : m.pct < 0 ? '▼ ' : ''}${m.pct.toFixed(1)}%</span>
-        <span class="sub">${sign}¥${Math.abs(m.abs).toFixed(2)}</span>
+        <span class="sub">${sign}NB¥${Math.abs(m.abs).toFixed(2)}</span>
         ${note ? `<span class="note">${esc(note)}</span>` : ''}
       </div>`;
     }

@@ -273,7 +273,12 @@ Pinned as a test once built:
   per team per season) and `data/franchise-attendance.csv` (one row per game),
   under `derived/`. `python3 -m stats_build.finances --dry-run` prints the
   valuations and spread.
-- **Page**: `finances/index.html`, in the Front Office nav section.
+- **Page**: `finances/index.html` ("Franchise Finances"), in the Front Office
+  nav section. Since 2026-11-06 it opens on the **Market** tab (fair value,
+  below); this ledger is the **Books** tab and arena naming rights the
+  **Arenas** tab. The page keeps one team across tabs: `?team=` opens that
+  team's market row and draws its books. Tabs are the hash (`#books`,
+  `#arenas`).
 - **Box scores**: `GET /api/boxscores` attaches each game's `attendance`
   (count, sellout, arena) from the attendance CSV, cached on its mtime
   (`_with_attendance` in `routers/boxscores.py`); the page shows it under the
@@ -304,12 +309,14 @@ Pinned as a test once built:
 
 ## Fair value (shadow DCF, 2026-10-24)
 
-A share price per franchise built on this ledger, at the hidden
-`/invest/fair/` ("Wall Street 2"). The model is the docstring of
+A share price per franchise built on this ledger. Since 2026-11-06 it is the
+Market tab that `/finances` opens on (`finances/market.js`, with
+`finances/market-summary.js` and `finances/daily-moves.js`); it started as the
+hidden `/invest/fair/`, now a redirect stub. Wall Street (`/invest`) is a
+separate market and is unchanged. The model is the docstring of
 `nbn-api/routers/fair_value.py`, pinned by `tests/test_fair_value.py`. It
 runs hourly after the playoff odds (`snapshot_playoff_odds.py`) and keeps one
-row per team per day in `fair-value-history.jsonl`. It is not in the nav and
-nothing trades on it.
+row per team per day in `fair-value-history.jsonl`. Nothing trades on it.
 
 **Why it exists.** Wall Street's price moves only on game margins. The user
 wanted a price that also moves on trades and signings, so the market can like
@@ -355,7 +362,7 @@ affects days after it.
   teams toward .500 (the far projection regresses and rosters churn): the
   spread fell from 2.27× to 1.74× fully forward, 1.99× blended, and the user
   chose to keep the sale on the three projected seasons.
-- **Stock figures** are page-only (`stockStats` in `invest/fair/index.html`):
+- **Stock figures** are page-only (`stockStats` in `finances/market.js`):
   market cap, P/S on this season's projected revenue, P/E on its projected
   profit (blank for a loss), the season's price range, the **NBN 30** (the
   equal-weighted average price) and each team's beta against it, shown after
