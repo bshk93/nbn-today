@@ -324,7 +324,7 @@
   </div>
 
   <div class="mem-filters">
-    <input class="ui-input" id="f-search" type="search" placeholder="Find a member" aria-label="Find a member">
+    <input class="ui-input" id="f-search" type="search" name="member-search" autocomplete="off" placeholder="Find a member" aria-label="Find a member">
     <select class="ui-select" id="f-role" multiple data-placeholder="All roles" data-noun="roles" aria-label="Roles"></select>
     <select class="ui-select" id="f-team" aria-label="Team"></select>
     <select class="ui-select" id="f-pos" aria-label="Position">
@@ -366,11 +366,16 @@
 <div class="modal-backdrop" id="signin-backdrop">
   <div class="modal">
     <h3>Sign In</h3>
-    <input type="password" id="signin-input" placeholder="Paste your token…">
-    <div class="modal-actions">
-      <button class="btn-cancel" id="signin-cancel">Cancel</button>
-      <button class="btn-save" id="signin-save">Sign in</button>
-    </div>
+    <!-- Its own form, with its own username field, so a password manager
+         doesn't take the member search box for the username and fill it. -->
+    <form id="signin-form" onsubmit="return false">
+      <input type="text" name="username" autocomplete="username" value="nbn-token" hidden>
+      <input type="password" id="signin-input" name="token" autocomplete="current-password" placeholder="Paste your token…">
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="signin-cancel">Cancel</button>
+        <button type="button" class="btn-save" id="signin-save">Sign in</button>
+      </div>
+    </form>
   </div>
 </div>
 
