@@ -423,7 +423,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "best" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-best      { grid-area: best; }
@@ -436,6 +436,7 @@
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
       :root #dash-movers    { grid-area: movers; }
+      :root #dash-market    { grid-area: market; }
       :root #dash-leaders   { grid-area: leaders; }
       :root #dash-race      { grid-area: race; }
       :root #dash-rookies   { grid-area: rookies; }
@@ -578,6 +579,8 @@
     .dash-stand-row:hover .dash-mover-name { color: var(--link); }
     .dash-mover-ovr { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); }
     .dash-mover-ovr .rank-move { margin-left: 0.3rem; }
+    .dash-market-up   { color: var(--market-positive); }
+    .dash-market-down { color: var(--danger); }
 
     /* Milestone watch: the standings' row style, with the milestone on a
        second line — the sidebar is too narrow for both on one. */
@@ -996,6 +999,8 @@
       <div class="dash-card" id="dash-otd" hidden></div>
       <!-- Biggest OVR moves in the latest 2K scrape. Hidden until there is one. -->
       <div class="dash-card" id="dash-movers" hidden></div>
+      <!-- Biggest franchise share-price moves on the last game day (GET /api/fair-value/history). -->
+      <div class="dash-card" id="dash-market" hidden></div>
     </div>
 
   </section>
@@ -2238,6 +2243,50 @@
         + `<span class="dash-best-title-date">${esc(shortDate(date))}</span></a></div></div>`
         + group('Up', up) + group('Down', down);
       $('dash-movers').hidden = false;
+    }).catch(() => {});
+
+    // ── Market movers ─────────────────────────────────────────────────────
+    //
+    // The three biggest franchise share-price gains and drops on the last game
+    // day, the 1D view of /finances's Market Summary. Same rule for the day as
+    // that tab: after midnight ET the hourly run starts a day nobody has played,
+    // so the card ends on the latest night with box scores when the history has
+    // it. Only the last two weeks are fetched; the season's history is large.
+    afterBandOne(() => Promise.all([
+      jget(`/api/fair-value/history?since=${dayBefore(asof || today, 14)}`),
+      latestNight.catch(() => null),
+    ])).then(([h, night]) => {
+      const days = ((h && h.days) || []).filter(d => !asof || d.date <= asof);
+      if (days.length < 2) return;
+      let i = days.length - 1;
+      const played = night && days.findIndex(d => d.date === night.date);
+      if (played > 0) i = played;
+      const end = days[i], prev = days[i - 1];
+      const px = x => (x ? (x.market ?? x.price) : null);
+      const moves = Object.keys(end.teams).map(t => {
+        const a = px(prev.teams[t]), b = px(end.teams[t]);
+        return a > 0 && b > 0 ? { team: t, price: b, pct: (b / a - 1) * 100 } : null;
+      }).filter(m => m && Math.abs(m.pct) >= 0.05).sort((a, b) => b.pct - a.pct);
+      const up = moves.filter(m => m.pct > 0).slice(0, 3);
+      const down = moves.filter(m => m.pct < 0).reverse().slice(0, 3);
+      if (!up.length && !down.length) return;
+
+      const row = m => `<a class="dash-stand-row" href="/finances/">`
+        + `<img src="/logos/sm/logo-${esc(m.team.toLowerCase())}.webp" alt="">`
+        + `<span class="dash-mover-name">${esc(m.team)}</span>`
+        + `<span class="dash-mover-ovr">NB¥${m.price.toFixed(2)}`
+        + (m.pct > 0 ? `<span class="rank-move dash-market-up">▲${m.pct.toFixed(1)}%</span>`
+                     : `<span class="rank-move dash-market-down">▼${(-m.pct).toFixed(1)}%</span>`)
+        + '</span></a>';
+      const group = (label, list) => list.length
+        ? `<div class="dash-movers-group"><div class="dash-conf-name">${label}</div>`
+          + list.map(row).join('') + '</div>' : '';
+
+      $('dash-market').innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/finances/">Market Movers'
+        + `<span class="dash-best-title-date">${esc(shortDate(end.date))}</span></a></div></div>`
+        + group('Up', up) + group('Down', down);
+      $('dash-market').hidden = false;
     }).catch(() => {});
 
     // ── League leaders ────────────────────────────────────────────────────
