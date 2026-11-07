@@ -174,6 +174,10 @@ could believe. Fiction is the voices and the reactions, not the events.
   game, a rivalry, a bad night from a star.
 - `curl -s <API>/api/members/public` — who owns each team that
   played (the tenure with `end: null`).
+- `curl -s '<API>/api/tweets?limit=100'` — the last two weeks of tweets. Every
+  account must sound new: no line, joke, sentence frame or lore callback that
+  one of these already used. A fan account that has posted before keeps the
+  voice it had (look it up by handle); a new one gets its own.
 - `curl -s -G <API>/api/lore/search --data-urlencode 'q=<team or owner>' -H "Authorization: Bearer <TOKEN>"`
   for the teams and owners in those stories. Search, don't read whole documents. A callback
   to a real old grudge is what makes a tweet good.
@@ -187,10 +191,10 @@ could believe. Fiction is the voices and the reactions, not the events.
 |---|---|
 | `@NBNStatMuse` "NBN StatMuse" | Dry stat lines and "first since" notes. No jokes. |
 | `@NBNInsider` "NBN Insider" | Reports only what really happened today in `GET /api/transactions`. Skip if nothing did. |
-| `@GaryOnTheBeat` "Gary Pruitt" | Old, grumpy beat writer. Hates threes, loves defense, has seen it all. |
-| `@TripPenimore` "Trip Penimore" | Loud TV hot-take guy, Stephen A. Smith or Colin Cowherd. Catchphrase: a team was "built the right way", said of any team he likes whether it fits or not. Wing defense wins titles: he credits a win to the wing stopper over the guy who scored 40. Wolves homer: a win proves him right, a loss is a fluke, the refs or the schedule. Jabs at Houston whenever he can, even off topic, but only at their basketball (roster, moves, results). All caps for emphasis, total certainty, bold predictions, often wrong or illogical; contradicts last week's take and never admits it. Never names the Wolves' owner. Bad logic is fine, wrong numbers are not. |
-| `@GMWatchNBN` "GM Watch" | Roasts the owners by name, using the lore. Members are fair game, old scandals included. Punch at decisions and history, never at someone's real life outside the league. |
-| Fan accounts, e.g. `@BucksSzn` | One per team that played, if worth it. Overreacts both ways. Set `team`. |
+| `@GaryOnTheBeat` "Gary Pruitt" | Old, grumpy beat writer. Hates threes, loves defense, has seen it all. Tell it through a specific made-up memory or comparison each time; "in my day", "that's basketball" and "defense still wins" are already worn out. |
+| `@TripPenimore` "Trip Penimore" | Loud TV hot-take guy, Stephen A. Smith or Colin Cowherd. Catchphrase: a team was "built the right way", said of any team he likes whether it fits or not. Wing defense wins titles: he credits a win to the wing stopper over the guy who scored 40. Wolves homer: a win proves him right, a loss is a fluke, the refs or the schedule. Jabs at Houston whenever he can, even off topic, but only at their basketball (roster, moves, results). All caps for emphasis, total certainty, bold predictions, often wrong or illogical; contradicts last week's take and never admits it. Never names the Wolves' owner. Bad logic is fine, wrong numbers are not. "Built the right way" is his only repeated line: build each take a new way, not "Everybody wants to talk about X. Meanwhile Houston…" every night. |
+| `@GMWatchNBN` "GM Watch" | Roasts the owners by name, using the lore. Members are fair game, old scandals included. Punch at decisions and history, never at someone's real life outside the league. A lore callback used in the last two weeks is spent; dig up a different one. |
+| Fan accounts | One per team that played, if worth it. Set `team`. Each fanbase is its own person, not one template with the team swapped: a jaded 20-year season-ticket holder, a stats nerd, a teenager, a doomer who calls every win fake, a petty fan who only talks about the rival, a meme account. Fit the voice to the franchise's real history from the lore. Handles vary too (`@BucksSzn`, `@CreamCityKev`, `@PelicanDebrief`), not all `<Team>Szn`. **No stock fan lines**: book the parade, parade route, fire everyone, blow it up, we are so back, not taking questions, winning the title, I'm logging off. Find what this fan in this game would actually say. |
 | The players | Own accounts, a made-up handle like `@PBanchero_NBN`. Short, like real player tweets. Set `slug`. |
 
 Handles are 1–15 letters, digits or underscores. Invent `likes` and `retweets`
@@ -214,13 +218,16 @@ hundred.
   them. The checker drops `about` before posting.
 
 Then check it. It compares every quoted stat and final score with the box
-score:
+score, and flags any tweet that reuses a phrase from the last 100 posted or
+from another tweet in the batch (a shared run of four words, or a stock line
+from `STOCK_LINES` in the checker):
 
 ```bash
 python3 build/check_tweets.py <scratchpad>/nbn-tweets-<date>.json --out <scratchpad>/nbn-tweets-<date>.post.json --api <API>
 ```
 
-On a failure, fix only the tweets it names, or cut them, and run it again. Do
+On a failure, fix only the tweets it names, or cut them, and run it again. A
+repeat is fixed by saying something different, not by swapping a synonym in. Do
 not rewrite the batch. Once it passes, post:
 
 ```bash

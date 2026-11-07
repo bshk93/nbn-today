@@ -10,7 +10,12 @@ for that, so the writer only writes (the same split as validate_boxscore.py):
     are `slug` (the player's own account) plus `about`, a list of slugs that
     exists only for this check and is stripped before posting;
   * every final score written as "122-104" is that game's score;
-  * a tweet with a stat claim names at least one player, and a game.
+  * a tweet with a stat claim names at least one player, and a game;
+  * no tweet reuses a phrase from the last 100 posted, or from another tweet
+    in the batch: any shared run of four words (numbers aside), or any stock
+    line in STOCK_LINES. One account's own catchphrase (CATCHPHRASES) is
+    exempt for that account only. Fan accounts all saying "book the parade"
+    is what this is for.
 
 Season and career numbers ("31.2 ppg", "10,000 career points") are not
 checked here; the skill says where they must come from.
@@ -43,6 +48,84 @@ STAT_WORDS = {
 STAT_RE = re.compile(r"(?<![\d.,])(\d{1,3})[\s-]+(" + "|".join(sorted(STAT_WORDS, key=len, reverse=True)) + r")\b",
                      re.IGNORECASE)
 SCORE_RE = re.compile(r"(?<![\d.])(\d{2,3})\s*[-–]\s*(\d{2,3})(?![\d.])")
+
+# The one line an account is meant to repeat. Anything else it says twice in
+# two weeks is a rut, catchphrase or not.
+CATCHPHRASES = {"TripPenimore": ["built the right way"]}
+# Reports what happened in the ledger; "converted to a two-way" twice is news.
+NO_REPEAT_CHECK = {"NBNInsider"}
+# Short stock lines a four-word match misses. Each may appear once in the
+# window, then it is spent until it scrolls out.
+STOCK_LINES = [
+    "book the parade", "book it", "parade route", "fire everyone", "blow it up",
+    "so back", "not taking questions", "winning the title", "title odds",
+    "i don't care", "i'm not kidding", "in my day", "that's basketball",
+    "write that down", "defense still wins", "everybody wants to talk",
+    "meanwhile houston", "logging off", "lie down", "we locked in",
+]
+WORD_RE = re.compile(r"[a-z']+|\d+")
+RECENT = 100
+
+
+def words(text: str) -> list[str]:
+    return WORD_RE.findall(text.lower().replace("\u2019", "'"))
+
+
+def grams(text: str, handle: str, n: int = 4) -> set[str]:
+    # The account's catchphrase splits the text, so no run reaches into it.
+    spans = [words(text)]
+    for c in CATCHPHRASES.get(handle, []):
+        cw = words(c)
+        spans = [part for span in spans for part in _split(span, cw)]
+    return {" ".join(w[i:i + n]) for w in spans for i in range(len(w) - n + 1)
+            if not any(x.isdigit() for x in w[i:i + n])}
+
+
+def _split(w: list[str], cw: list[str]) -> list[list[str]]:
+    for i in range(len(w) - len(cw) + 1):
+        if w[i:i + len(cw)] == cw:
+            return [w[:i], *_split(w[i + len(cw):], cw)]
+    return [w]
+
+
+def stock(text: str, handle: str) -> set[str]:
+    padded = " " + " ".join(words(text)) + " "
+    own = {" ".join(words(c)) for c in CATCHPHRASES.get(handle, [])}
+    return {s for s in STOCK_LINES if f" {s} " in padded and s not in own}
+
+
+def load_recent(api: str) -> list[dict]:
+    with urllib.request.urlopen(f"{api}/api/tweets?limit={RECENT}", timeout=30) as r:
+        return json.load(r)
+
+
+def check_repeats(batch: dict, recent: list[dict]) -> list[str]:
+    problems = []
+    texts = {t.get("text") for t in batch["tweets"]}
+    seen_g, seen_s = {}, {}
+    for t in recent:
+        if t.get("text") in texts or t["handle"] in NO_REPEAT_CHECK:
+            continue  # the same batch, already posted once
+        who = f"@{t['handle']} on {t['date']}"
+        for g in grams(t["text"], t["handle"]):
+            seen_g.setdefault(g, who)
+        for s in stock(t["text"], t["handle"]):
+            seen_s.setdefault(s, who)
+    for i, t in enumerate(batch["tweets"], 1):
+        where = f"tweet {i} (@{t.get('handle', '?')})"
+        text, handle = t.get("text", ""), t.get("handle", "")
+        if handle in NO_REPEAT_CHECK:
+            continue
+        hits = sorted({f'"{g}" ({seen_g[g]})' for g in grams(text, handle) if g in seen_g}
+                      | {f'"{s}" ({seen_s[s]})' for s in stock(text, handle) if s in seen_s})
+        if hits:
+            problems.append(f"{where}: reuses {', '.join(hits)}")
+        who = f"tweet {i} in this batch"
+        for g in grams(text, handle):
+            seen_g.setdefault(g, who)
+        for s in stock(text, handle):
+            seen_s.setdefault(s, who)
+    return problems
 
 
 def load_games(api: str, date: str) -> dict:
@@ -99,6 +182,7 @@ def main():
     args = ap.parse_args()
     batch = json.load(open(args.file))
     problems = check(batch, load_games(args.api, batch["date"]))
+    problems += check_repeats(batch, load_recent(args.api))
     if problems:
         print("\n".join(problems))
         sys.exit(1)
