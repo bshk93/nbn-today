@@ -224,6 +224,21 @@
       href: '/committees/trc/',
       gated: 'Needs a TRC or TRC head role, or a team in the trade',
     },
+    {
+      key: 'updates',
+      icon: 'check',
+      name: 'Updates',
+      purpose: 'Keeps the league’s 2K roster file in step with real 2K. Every OVR, position, '
+             + 'attribute and badge change the ratings scrape picks up gets entered into the file, '
+             + 'then ticked off on Ratings Changes.',
+      does: [
+        'Enter each ratings change into the league’s 2K roster file',
+        'Tick the change as updated on Ratings Changes',
+      ],
+      roles: ['updates'],
+      href: '/ratings-changes/',
+      gated: 'Needs the updates role to tick; the page is public',
+    },
   ];
 
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>

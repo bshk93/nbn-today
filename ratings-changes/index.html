@@ -142,6 +142,10 @@
       font-size: var(--text-base);
     }
 
+    td.updated-cell { text-align: center; }
+    td.updated-cell input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); cursor: pointer; }
+    td.updated-cell input:disabled { cursor: default; }
+
     .stub-section {
       margin-top: 2rem;
       padding-top: 1.25rem;
@@ -192,6 +196,11 @@
     <div class="controls">
       <select class="date-select" id="date-select"></select>
       <select class="date-select" id="team-select"></select>
+      <select class="date-select" id="updated-select">
+        <option value="">Updated or not</option>
+        <option value="no">Not updated</option>
+        <option value="yes">Updated</option>
+      </select>
       <input class="search-box" id="search" type="text" placeholder="Filter by player…" autocomplete="off" spellcheck="false">
       <span class="result-count" id="result-count"></span>
     </div>
@@ -221,9 +230,14 @@
     let filterText = '';
     let selectedDate = '';
     let selectedTeam = '';
+    let selectedUpdated = '';
+    // The updates committee ticks a change once it's in the league's 2K roster
+    // file. Everyone sees the ticks; only `updates` (or admin) can change them.
+    let canUpdate = false;
     const NO_TEAM = '__fa__';
 
     const COLS = [
+      { key: 'updated', label: 'Updated', defaultDir: 1, sortValue: e => e.updated ? 1 : 0 },
       { key: 'name',   label: 'Player', defaultDir: 1,  sortValue: e => e.name || '' },
       { key: 'ovr',    label: 'OVR',    defaultDir: -1, sortValue: e => e.ovr ? (e.ovr.new - e.ovr.old) : -Infinity },
       { key: 'team',   label: 'Team',   defaultDir: 1,  sortValue: e => e.team || '' },
@@ -353,6 +367,42 @@
       return details;
     }
 
+    function updatedTitle(entry) {
+      if (!entry.updated) return canUpdate ? 'Tick once this change is in the 2K roster file' : 'Not updated in 2K yet';
+      return `Updated by ${entry.updated.by} on ${(entry.updated.at || '').slice(0, 10)}`;
+    }
+
+    function updatedCell(entry) {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = !!entry.updated;
+      box.disabled = !canUpdate;
+      box.title = updatedTitle(entry);
+      box.setAttribute('aria-label', `${nbnPlayerName(entry.name)} updated in 2K`);
+      box.addEventListener('change', async () => {
+        const want = box.checked;
+        box.disabled = true;
+        try {
+          const r = await fetch('/api/ratings-changes/updated', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('nbn_token')}` },
+            body: JSON.stringify({ slug: entry.slug, date: entry.date, updated: want }),
+          });
+          if (!r.ok) throw new Error();
+          entry.updated = (await r.json()).updated;
+        } catch {
+          box.checked = !want;
+          alert('Could not save that tick. Try again.');
+        }
+        box.disabled = !canUpdate;
+        box.title = updatedTitle(entry);
+        // Only redraw when a filter would now hide the row; otherwise keep it in place.
+        if (selectedUpdated) rebuildAll();
+        else updateCounts();
+      });
+      return box;
+    }
+
     // One sortable table, reused for the real-changes section and the
     // not-yet-rated-stub section below it -- same columns, same row markup,
     // independent sort state and independent row set (split on ovr_stub).
@@ -376,6 +426,8 @@
       function matchesFilter(entry) {
         if (entry.date !== selectedDate) return false;
         if (!includeEntry(entry)) return false;
+        if (selectedUpdated === 'yes' && !entry.updated) return false;
+        if (selectedUpdated === 'no' && entry.updated) return false;
         if (selectedTeam === NO_TEAM) {
           if (entry.team) return false;
         } else if (selectedTeam && entry.team !== selectedTeam) {
@@ -397,8 +449,7 @@
 
       function rebuildBody() {
         const rows = sortRows(allEntries.filter(matchesFilter));
-        const countEl = document.getElementById(countId);
-        if (countEl) countEl.textContent = countLabel(rows.length);
+        updateCount(rows);
         tbody.innerHTML = '';
         if (!rows.length) {
           const tr = tbody.insertRow();
@@ -412,6 +463,10 @@
         }
         rows.forEach(entry => {
           const tr = tbody.insertRow();
+
+          const updTd = tr.insertCell();
+          updTd.className = 'updated-cell';
+          updTd.appendChild(updatedCell(entry));
 
           const nameTd = tr.insertCell();
           nameTd.className = 'player-name';
@@ -461,13 +516,18 @@
         rebuildBody();
       }
 
-      return { build, rebuildBody };
+      function updateCount(rows = allEntries.filter(matchesFilter)) {
+        const countEl = document.getElementById(countId);
+        if (countEl) countEl.textContent = countLabel(rows.length, rows.filter(e => e.updated).length);
+      }
+
+      return { build, rebuildBody, updateCount };
     }
 
     const mainSection = createSection({
       wrapId: 'table-wrap',
       countId: 'result-count',
-      countLabel: n => `${n.toLocaleString()} change${n === 1 ? '' : 's'}`,
+      countLabel: (n, done) => `${n.toLocaleString()} change${n === 1 ? '' : 's'}` + (n ? ` · ${done.toLocaleString()} updated` : ''),
       emptyBoth: 'No changes recorded yet — every player currently has just one ratings snapshot on file. Changes will appear here once a later scrape (--refresh) picks up a real rating move.',
       emptyFiltered: 'No changes match that filter.',
       includeEntry: e => !e.ovr_stub,
@@ -485,6 +545,11 @@
     function updateStubVisibility() {
       const stubCountForDate = allEntries.filter(e => e.date === selectedDate && e.ovr_stub).length;
       document.getElementById('stub-section').hidden = stubCountForDate === 0;
+    }
+
+    function updateCounts() {
+      mainSection.updateCount();
+      stubSection.updateCount();
     }
 
     function rebuildAll() {
@@ -508,7 +573,23 @@
       rebuildAll();
     });
 
-    fetch('/api/ratings-changes')
+    document.getElementById('updated-select').addEventListener('change', e => {
+      selectedUpdated = e.target.value;
+      rebuildAll();
+    });
+
+    const token = localStorage.getItem('nbn_token');
+    const meReady = token
+      ? fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+          .then(r => r.ok ? r.json() : null)
+          .then(me => {
+            const roles = (me && me.roles) || [];
+            canUpdate = roles.includes('updates') || roles.includes('admin');
+          })
+          .catch(() => {})
+      : Promise.resolve();
+
+    Promise.all([fetch('/api/ratings-changes'), meReady]).then(([r]) => r)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(data => {
         allEntries = data.entries || [];

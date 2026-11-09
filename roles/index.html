@@ -65,6 +65,7 @@
     .badge-curator { background: var(--purple-light-bg); color: var(--purple-light); }
     .badge-stats   { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-light); }
     .badge-bookie  { background: var(--bg-card); color: var(--gold); border: 1px solid var(--gold-border); }
+    .badge-updates { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success-light); }
     .badge-streamer { background: var(--purple-light-bg); color: var(--purple-light); }
     .badge-fac        { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--accent-light); }
     .badge-fac-head   { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--accent-light); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent); }
@@ -421,6 +422,18 @@
         <li>Delete bets with no wagers placed</li>
       </ul>
       <p class="inherits">Does not grant roster editing, transaction recording, or any other league admin access.</p>
+    </div>
+
+    <div class="role-card">
+      <div class="role-card-header">
+        <span class="role-badge badge-updates">Updates</span>
+        <h2>Updates</h2>
+      </div>
+      <p>For members who keep the league’s 2K roster file in step with real 2K ratings.</p>
+      <ul>
+        <li>Tick a change on <a href="/ratings-changes/">Ratings Changes</a> as updated once it’s in the 2K roster file, or untick it</li>
+      </ul>
+      <p class="inherits">Everyone can see the ticks and who made them. Grants nothing beyond this.</p>
     </div>
 
     <div class="role-card">
