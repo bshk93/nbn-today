@@ -184,6 +184,13 @@ could believe. Fiction is the voices and the reactions, not the events.
 - Optional: `GET /api/players/<slug>/insights` for a streak, or a career
   milestone from the homepage's Milestone Watch. A season or career number is
   allowed only when it came from one of these, read this run.
+- For `@NBNTicker`: `curl -s '<API>/api/fair-value/history?since=<date - 3 days>'`.
+  A team's move is its `price` on `<date>` against the last earlier day, the
+  same as the homepage's Market Movers. No row for `<date>` yet means the hourly
+  run hasn't caught up: skip the ticker that day.
+- For `@NBNDraftScout`: the player's bio (`GET /api/players`), `draft_year`,
+  `draft_round`, `draft_pick`, `draft_team`. These are the NBN draft only. A
+  veteran from before the league's drafts has none, so leave him alone.
 
 **The cast.** Use 4–8 tweets per day, from at least three accounts:
 
@@ -195,6 +202,9 @@ could believe. Fiction is the voices and the reactions, not the events.
 | `@TripPenimore` "Trip Penimore" | Loud TV hot-take guy, Stephen A. Smith or Colin Cowherd. Catchphrase: a team was "built the right way", said of any team he likes whether it fits or not. Wing defense wins titles: he credits a win to the wing stopper over the guy who scored 40. Wolves homer: a win proves him right, a loss is a fluke, the refs or the schedule. Jabs at Houston whenever he can, even off topic, but only at their basketball (roster, moves, results). All caps for emphasis, total certainty, bold predictions, often wrong or illogical; contradicts last week's take and never admits it. Never names the Wolves' owner. Bad logic is fine, wrong numbers are not. "Built the right way" is his only repeated line: build each take a new way, not "Everybody wants to talk about X. Meanwhile Houston…" every night. |
 | `@GMWatchNBN` "GM Watch" | Roasts the owners by name, using the lore. Members are fair game, old scandals included. Punch at decisions and history, never at someone's real life outside the league. A lore callback used in the last two weeks is spent; dig up a different one. |
 | Fan accounts | One per team that played, if worth it. Set `team`. Each fanbase is its own person, not one template with the team swapped: a jaded 20-year season-ticket holder, a stats nerd, a teenager, a doomer who calls every win fake, a petty fan who only talks about the rival, a meme account. Fit the voice to the franchise's real history from the lore. Handles vary too (`@BucksSzn`, `@CreamCityKev`, `@PelicanDebrief`), not all `<Team>Szn`. **No stock fan lines**: book the parade, parade route, fire everyone, blow it up, we are so back, not taking questions, winning the title, I'm logging off. Find what this fan in this game would actually say. |
+| `@NBNTicker` "NBN Ticker" | Market wire for the franchise share prices. Terse, all business, Bloomberg-terminal energy: the day's biggest movers, and the one result that moved a price. Write a move as `PHX ▼3.1%` and a price as `PHX NB¥222.60` (two decimals) so the check can read them. Never a price, move or number of shares that isn't in the history. 0–1 tweets a day. |
+| `@PickemSharp` "Pick'em Sharp" | Daily-fantasy grinder living in the Pick'em game. Talks in value, chalk, fades and "who wrecked lineups." Quotes fantasy points as `48.25 fantasy points` (or `FP`), scored the Pick'em way (points 1, threes 0.5, rebounds 1.25, assists 1.5, steals and blocks 2, turnovers −0.5, +1.5 double-double, +3 more for a triple-double). Never claims what members picked or what a lineup scored. 0–1 tweets a day. |
+| `@NBNDraftScout` "NBN Draft Scout" | Only cares about players the league drafted, mostly the young ones. Judges tonight against where he went: the #4 pick finally playing like one, a second-rounder outplaying the lottery, the team that passed on him. Write slots as `#4 pick`, `4th overall`, `second-rounder`, `2024 draft`. Set `about`. 0–1 tweets a day. |
 | The players | Own accounts, a made-up handle like `@PBanchero_NBN`. Short, like real player tweets. Set `slug`. |
 
 Handles are 1–15 letters, digits or underscores. Invent `likes` and `retweets`
@@ -218,7 +228,9 @@ hundred.
   them. The checker drops `about` before posting.
 
 Then check it. It compares every quoted stat and final score with the box
-score, and flags any tweet that reuses a phrase from the last 100 posted or
+score, every fantasy-point figure with the Pick'em score of that player's game,
+every draft slot with the player's bio, and every share price and move with
+fair value, and flags any tweet that reuses a phrase from the last 100 posted or
 from another tweet in the batch (a shared run of four words, or a stock line
 from `STOCK_LINES` in the checker):
 
