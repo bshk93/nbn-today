@@ -324,6 +324,10 @@ def clean_positions(raw):
 def convert_attrs(api_attrs):
     out = {}
     for k, v in (api_attrs or {}).items():
+        # Since 2026-11-07 the feed spells an attribute that changed in an
+        # update in PascalCase (MidRangeShot), which converted to
+        # _mid_range_shot and broke every diff against the old key.
+        k = k[:1].lower() + k[1:]
         key = ATTR_RENAMES.get(k) or re.sub(r"([A-Z])", r"_\1", k).lower()
         out[key] = v
     return out
