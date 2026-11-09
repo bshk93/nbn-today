@@ -193,6 +193,13 @@ def resolve(rows, team, bios):
             if norm_words(L) == lastw and (not initial or "".join(norm_words(F)).startswith(initial[0][0])):
                 cands.append(slug)
         mine = [s for s in cands if s in on]
+        if not mine and initial:
+            # 2K sometimes prints a surname-first name in Western order:
+            # bio "YANG, HANSEN" shows as "Y. Hansen". Roster players only.
+            for slug in on:
+                L, _, F = bios.get(slug, {}).get("name", "").partition(",")
+                if norm_words(F) == lastw and "".join(norm_words(L)).startswith(initial[0][0]):
+                    mine.append(slug)
         if len(mine) == 1:
             r["slug"] = mine[0]
         else:
