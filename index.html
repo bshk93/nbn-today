@@ -376,15 +376,25 @@
     .dash-inj-player img { width: 16px; height: 16px; flex: none; }
     .dash-inj-table .dash-inj-out { color: var(--danger); font-weight: 600; }
     .dash-inj-table .dash-inj-hurt { color: var(--gold); font-weight: 600; }
-    .dash-inj-status-sm { display: none; font-size: var(--text-xs); margin-top: 0.1rem; }
+    .dash-inj-sm { display: none; }
     .dash-inj-drop { color: var(--danger); }
-    /* On a phone, OVR drops and Status moves under the player's name, so
-       Injury has room to wrap and the table fits the card rather than
-       scrolling sideways inside it. */
+    /* On a phone each player is one row: OVR and Status drop (Status becomes
+       a red/gold bar on the row's left edge), the headers step down a size,
+       and name, injury and duration switch to short forms ("D. Peterson",
+       "R Knee Tendinitis", "6-8w", "DTD"). Injury
+       takes what width is left and ends in an ellipsis rather than wrapping;
+       its full text is the cell's title. */
     @media (max-width: 560px) {
       .dash-inj-table .dash-inj-ovr, .dash-inj-table .dash-inj-status { display: none; }
-      .dash-inj-status-sm { display: block; }
-      .dash-inj-table th, .dash-inj-table td { padding-left: 0.4rem; padding-right: 0.4rem; }
+      .dash-inj-table th { font-size: var(--text-sm); }
+      .dash-inj-table td { font-variant-numeric: normal; }
+      .dash-inj-table tr.dash-inj-row-out td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+      .dash-inj-table tr.dash-inj-row-hurt td:first-child { box-shadow: inset 3px 0 0 var(--gold); }
+      .dash-inj-player { gap: 0.3rem; }
+      .dash-inj-sm { display: inline; }
+      .dash-inj-lg { display: none; }
+      .dash-inj-table th, .dash-inj-table td { padding-left: 0.4rem; padding-right: 0.4rem; white-space: nowrap; }
+      .dash-inj-table td.dash-inj-injury { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; }
     }
 
     /* Power rankings — a horizontal standing rather than a fourth column in
@@ -2013,6 +2023,14 @@
       card.hidden = false;
       const list = card.querySelector('.dash-inj-list');
 
+      // Short forms for the phone layout, where each player gets one row.
+      const shortName = n => { const w = String(n || '').split(' '); return w.length > 1 ? `${w[0][0]}. ${w.slice(1).join(' ')}` : String(n || ''); };
+      const shortInjury = t => String(t || '').replace(/\bRight\b/g, 'R').replace(/\bLeft\b/g, 'L');
+      const shortDuration = t => /^day-to-day$/i.test(String(t || '').trim()) ? 'DTD'
+        : String(t || '').replace(/\s*-\s*/g, '-')
+          .replace(/\s*\bweeks?\b/i, 'w').replace(/\s*\bdays?\b/i, 'd').replace(/\s*\bmonths?\b/i, 'mo');
+      const both = (lg, sm) => lg === sm ? esc(lg)
+        : `<span class="dash-inj-lg">${esc(lg)}</span><span class="dash-inj-sm">${esc(sm)}</span>`;
       const ovr = p => p.ovr == null ? ''
         : `${p.ovr}${p.ovr_delta ? ` <span class="dash-inj-drop">(${p.ovr_delta > 0 ? '+' : '−'}${Math.abs(p.ovr_delta)})</span>` : ''}`;
       function render() {
@@ -2024,16 +2042,15 @@
           && terms.every(w => r.text.includes(w)));
         if (!shown.length) { list.innerHTML = '<div class="dash-empty">Nothing matches these filters.</div>'; return; }
         list.innerHTML = '<div class="ui-table-wrap dash-inj-scroll"><table class="ui-table ui-table--dense dash-inj-table">'
-          + '<thead><tr><th>Player</th><th class="dash-inj-status">Status</th><th class="num dash-inj-ovr">OVR</th><th>Injury</th><th>Duration</th></tr></thead><tbody>'
-          + shown.map(({ p, out }) => '<tr>'
+          + '<thead><tr><th>Player</th><th class="dash-inj-status">Status</th><th class="num dash-inj-ovr">OVR</th><th>Injury</th><th>' + both('Duration', 'Out') + '</th></tr></thead><tbody>'
+          + shown.map(({ p, out }) => `<tr class="${out ? 'dash-inj-row-out' : 'dash-inj-row-hurt'}" title="${esc(p.status)}">`
             + `<td><a class="dash-inj-player" href="/players/?p=${encodeURIComponent(p.slug)}">`
             + (p.team ? `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">` : '')
-            + `${esc(p.name)}</a>`
-            + `<div class="dash-inj-status-sm ${out ? 'dash-inj-out' : 'dash-inj-hurt'}">${esc(p.status)}</div></td>`
+            + `${both(p.name, shortName(p.name))}</a></td>`
             + `<td class="nowrap dash-inj-status ${out ? 'dash-inj-out' : 'dash-inj-hurt'}">${esc(p.status)}</td>`
             + `<td class="num nowrap dash-inj-ovr">${ovr(p)}</td>`
-            + `<td>${esc(p.injury)}</td>`
-            + `<td class="nowrap">${esc(p.duration)}</td></tr>`).join('')
+            + `<td class="dash-inj-injury" title="${esc(p.injury)}">${both(p.injury, shortInjury(p.injury))}</td>`
+            + `<td class="nowrap">${both(p.duration, shortDuration(p.duration))}</td></tr>`).join('')
           + '</tbody></table></div>';
       }
       function sync() {
