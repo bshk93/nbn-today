@@ -186,8 +186,12 @@ could believe. Fiction is the voices and the reactions, not the events.
   allowed only when it came from one of these, read this run.
 - For `@NBNTicker`: `curl -s '<API>/api/fair-value/history?since=<date - 3 days>'`.
   A team's move is its `price` on `<date>` against the last earlier day, the
-  same as the homepage's Market Movers. No row for `<date>` yet means the hourly
-  run hasn't caught up: skip the ticker that day.
+  same as the homepage's Market Movers. The row for `<date>` usually exists
+  before this run's games do, so it is stale until the hourly price run sees
+  them: if a team that played still shows its old `w`/`l` there, start that run
+  now (`sudo systemctl start nbn-playoff-odds.service`, ~1 min). It rebuilds a
+  day whose box scores came in late (`late_days` in its log). Then read the
+  history again. Never skip the ticker because every move reads 0.0%.
 - For `@NBNDraftScout`: the player's bio (`GET /api/players`), `draft_year`,
   `draft_round`, `draft_pick`, `draft_team`. These are the NBN draft only. A
   veteran from before the league's drafts has none, so leave him alone.
