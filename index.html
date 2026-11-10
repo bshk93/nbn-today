@@ -186,7 +186,7 @@
     }
     .dash-team-alert .dash-chip.caution { border-left-color: var(--gold); }
     .dash-team-alert .dash-chip.violation { border-left-color: var(--danger); }
-    .dash-team-alert .dash-chip::after { content: '→'; margin-left: auto; opacity: 0.7; }
+
 
     .dash-sep { border-top: 1px solid var(--border-subtle); margin: 0.75rem 0; }
 
@@ -253,7 +253,6 @@
       font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
       letter-spacing: 0.06em; text-transform: uppercase; color: var(--link);
     }
-    .dash-s5-edit::after { content: ' →'; }
     .dash-s5-edit:hover { text-decoration: underline; }
     .dash-s5 { width: 100%; border-collapse: collapse; font-size: var(--text-base); font-variant-numeric: tabular-nums; }
     .dash-s5 th {
@@ -295,7 +294,6 @@
       .dash-s5 .wide { display: none; }
       .dash-s5 { font-size: var(--text-sm); }
       .dash-s5 td { padding: 0.5rem 0.35rem; }
-      .dash-av { width: 28px; height: 28px; }
     }
     .dash-sched { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding-top: var(--space-1); }
     .dash-sched-g {
@@ -830,7 +828,11 @@
     #dash-team .dash-five-box.wide .dash-five-head img { width: 24px; height: 24px; vertical-align: -5px; }
     #dash-team .dash-five-cols { font-family: var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; padding-top: var(--space-2); }
     #dash-team .dash-five-box.wide .dash-five-row { padding: 0.5rem 0; }
-    #dash-team .dash-five-box.wide .dash-five-name { font-weight: 600; }
+    #dash-team .dash-five-box.wide .dash-five-name { display: flex; align-items: center; gap: 0.6rem; min-width: 0; font-weight: 600; }
+    #dash-team .dash-five-box.wide .dash-five-name.away { justify-content: flex-end; }
+    #dash-team .dash-five-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Faces are a desktop thing: on a phone the names need the room. */
+    @media (max-width: 600px) { #dash-team .dash-av { display: none; } }
     #dash-team .dash-five-slot { font-family: var(--font-display); letter-spacing: 0.06em; }
     #dash-team .dash-five-ovr.edge { color: var(--success); }
     #dash-team .dash-five-avg .dash-five-ovr { font-family: var(--font-display); font-size: var(--text-md); color: var(--text-primary); }
@@ -1582,6 +1584,19 @@
     // and each starter's PPG this season.
     // `pre`: a team's five and lines already in hand (`{TEAM: {set, five,
     // lines}}`, from the team card's one request), so Matchup asks for nothing.
+    // A player's face for the team card: the cached headshot, swapped for his
+    // initials when there is none (no cached headshot is a 404), as the
+    // NBN Twitter card does. `wireAvatars` hooks the swap up after a render.
+    const avatarHtml = (slug, name) => `<img class="dash-av" src="/api/players/${encodeURIComponent(slug)}/headshot" alt="" loading="lazy" data-init="${esc(
+      String(name || '').split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase())}">`;
+    const wireAvatars = root => root.querySelectorAll('img.dash-av').forEach(img => {
+      img.onerror = () => { img.outerHTML = `<span class="dash-av dash-av--init" aria-hidden="true">${esc(img.dataset.init || '')}</span>`; };
+      if (img.complete && !img.naturalWidth) img.onerror();
+    });
+    // OVR as the shared heat badge: 65 and under reads cold, 95 and up hot.
+    const ovrBadge = ovr => (ovr
+      ? `<span class="ui-ovr ui-heat" style="--heat:${Math.max(0, Math.min(1, (ovr - 65) / 30)).toFixed(2)}">${esc(ovr)}</span>` : '');
+
     async function renderFives(el, away, home, { wide = false, season = '', pre = {} } = {}) {
       el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Loading…</div></div>';
       const fiveOf = t => pre[t] || startersFor(t);
@@ -1596,11 +1611,17 @@
       // Last name only in the slate: the card is too narrow for two full
       // names a row. The wide variant has the room.
       const shown = p => (wide ? nbnPlayerName(p.name) : nbnPlayerName(String(p.name).split(',')[0]));
-      const name = (p, side) => (p
-        ? `<a class="dash-five-name ${side}" href="/players/?p=${encodeURIComponent(p.slug)}" title="${esc(nbnPlayerName(p.name))}">`
-          + (wide ? `<span class="dash-five-full">${esc(shown(p))}</span><span class="dash-five-last">${esc(nbnPlayerName(String(p.name).split(',')[0]))}</span>` : esc(shown(p)))
-          + '</a>'
-        : `<span class="dash-five-name ${side}" style="color:var(--text-muted)">—</span>`);
+      const name = (p, side) => {
+        if (!p) return `<span class="dash-five-name ${side}" style="color:var(--text-muted)">—</span>`;
+        // The wide (team card) variant puts each face beside the stats, so
+        // the two fives mirror each other across the slot column.
+        const face = wide ? avatarHtml(p.slug, nbnPlayerName(p.name)) : '';
+        const label = wide
+          ? `<span class="dash-five-text"><span class="dash-five-full">${esc(shown(p))}</span><span class="dash-five-last">${esc(nbnPlayerName(String(p.name).split(',')[0]))}</span></span>`
+          : esc(shown(p));
+        return `<a class="dash-five-name ${side}" href="/players/?p=${encodeURIComponent(p.slug)}" title="${esc(nbnPlayerName(p.name))}">`
+          + (side === 'away' ? label + face : face + label) + '</a>';
+      };
       const ovrCell = (p, q) => `<span class="dash-five-ovr${p && p.OVR && (!q || p.OVR > q.OVR) ? ' edge' : ''}">${p && p.OVR ? esc(p.OVR) : ''}</span>`;
       const ppg = (p, lines) => {
         if (!wide) return '';
@@ -1633,6 +1654,7 @@
             + `<span class="dash-five-slot">AVG</span><span class="dash-five-ovr">${avg(h)}</span><span></span><span></span></div>`
           : `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}<br>${how}</div>`)
         + '</div>';
+      if (wide) wireAvatars(el);
     }
 
     // ── The merged feed ───────────────────────────────────────────────────
@@ -2860,19 +2882,6 @@
     // alongside the lineup lookup. His injury tag comes from the report.
     const seasonLines = (team, season) => jget(`/api/teams/${encodeURIComponent(team)}/season-lines`
       + (season ? `?season=${encodeURIComponent(season)}` : '')).then(r => (r && r.players) || {}).catch(() => ({}));
-
-    // A player's face for the team card: the cached headshot, swapped for his
-    // initials when there is none (no cached headshot is a 404), as the
-    // NBN Twitter card does. `wireAvatars` hooks the swap up after a render.
-    const avatarHtml = (slug, name) => `<img class="dash-av" src="/api/players/${encodeURIComponent(slug)}/headshot" alt="" loading="lazy" data-init="${esc(
-      String(name || '').split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase())}">`;
-    const wireAvatars = root => root.querySelectorAll('img.dash-av').forEach(img => {
-      img.onerror = () => { img.outerHTML = `<span class="dash-av dash-av--init" aria-hidden="true">${esc(img.dataset.init || '')}</span>`; };
-      if (img.complete && !img.naturalWidth) img.onerror();
-    });
-    // OVR as the shared heat badge: 65 and under reads cold, 95 and up hot.
-    const ovrBadge = ovr => (ovr
-      ? `<span class="ui-ovr ui-heat" style="--heat:${Math.max(0, Math.min(1, (ovr - 65) / 30)).toFixed(2)}">${esc(ovr)}</span>` : '');
 
     async function renderStarting5(prefetched) {
       const box = $('dash-s5');
