@@ -47,63 +47,148 @@
 
     .dash-card { min-width: 0; }
 
-    /* Band 1 — your team */
-    .dash-team-head {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    /* Band 1 — your team, as a team hub: a band in the team's own colours
+       (primary fill, accent stripe under it, so a near-black primary still
+       reads on the dark theme), then the numbers as labelled blocks, then
+       the tabs. `data-team` on the card supplies --team-primary/-accent/-chart
+       from css/team-colors.css. White is the one literal colour, as the
+       design system allows for text on a team band. */
+    :root #dash-team.dash-card { border-top: 0; padding-top: 0; }
+    .dash-team-band {
+      display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-6);
+      padding: var(--space-5) var(--space-5) var(--space-4);
+      background: var(--team-primary, var(--bg-card));
+      border-bottom: 4px solid var(--team-accent, var(--border));
+      color: white;
     }
-
     /* Logo, name and record are one link to the team's own page — the most
        likely next click from this card by a distance. */
     .dash-team-id {
-      display: flex; align-items: center; gap: 0.75rem;
-      text-decoration: none; color: inherit; min-width: 0;
+      display: flex; align-items: center; gap: var(--space-4);
+      text-decoration: none; color: inherit; min-width: 0; flex: 1 1 18rem;
     }
-    .dash-team-id:hover .dash-team-name { color: var(--link); }
-    .dash-team-head img { height: 42px; width: 42px; object-fit: contain; }
-    .dash-team-name { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1.05; letter-spacing: 0.02em; text-transform: uppercase; }
-    .dash-team-sub  { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.1rem; }
-    .dash-team-right { margin-left: auto; text-align: right; }
-    .dash-team-phase { font-size: var(--text-base); font-weight: 600; color: var(--gold-alt); }
-    .dash-team-phase-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.1rem; }
+    /* A white disc behind the logo: a navy logo on a navy band vanishes. */
+    .dash-team-logo {
+      flex: none; display: grid; place-items: center;
+      width: 72px; height: 72px; border-radius: 50%; background: white;
+      outline: 3px solid color-mix(in srgb, white 25%, transparent);
+    }
+    .dash-team-logo img { width: 52px; height: 52px; object-fit: contain; }
+    .dash-team-name {
+      font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700;
+      line-height: 0.95; letter-spacing: 0.02em; text-transform: uppercase; color: white;
+    }
+    .dash-team-id:hover .dash-team-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+    .dash-team-rec { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--space-3); margin-top: var(--space-2); }
+    .dash-team-wl {
+      font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700;
+      font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+    }
+    .dash-team-meta {
+      font-family: var(--font-display); font-size: var(--text-base); font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8;
+    }
+    .dash-team-right { display: flex; flex-wrap: wrap; align-items: stretch; gap: var(--space-2) var(--space-5); margin-left: auto; }
+    /* Last / Next: a small label over the line, divided by a hairline. */
+    .dash-band-game {
+      display: flex; flex-direction: column; gap: 0.15rem; min-width: 0;
+      color: inherit; text-decoration: none; font-variant-numeric: tabular-nums;
+    }
+    .dash-band-game + .dash-band-game { padding-left: var(--space-5); border-left: 1px solid color-mix(in srgb, white 25%, transparent); }
+    .dash-band-k {
+      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7;
+    }
+    .dash-band-v {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
+    }
+    .dash-band-v img { width: 20px; height: 20px; object-fit: contain; border-radius: 50%; background: white; padding: 2px; }
+    .dash-band-s { font-size: var(--text-xs); opacity: 0.8; white-space: nowrap; }
+    a.dash-band-game:hover .dash-band-v { text-decoration: underline; }
+    .dash-band-wl { display: inline-block; min-width: 1.35em; padding: 0 0.3em; border-radius: var(--radius-sm); text-align: center; color: white; }
+    .dash-band-wl.w { background: var(--success); }
+    .dash-band-wl.l { background: var(--danger); }
+    /* Preseason: the countdown to your opener, in the same label-over-value form. */
+    .dash-team-phase { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1; }
+    .dash-team-phase-sub { font-size: var(--text-xs); opacity: 0.8; margin-top: 0.15rem; }
+    /* Over the slate card's :root .dash-team-phase, which shares the class. */
+    #dash-team .dash-team-phase { color: white; }
+    #dash-team .dash-team-phase-sub { font-size: var(--text-xs); margin-bottom: 0; }
+    /* Only shown when something needs the owner: a solid pill on the band. */
+    .dash-glance-status:empty { display: none; }
+    .dash-glance-status {
+      align-self: center; padding: 0.3rem 0.65rem; border-radius: var(--radius);
+      font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.02em; white-space: nowrap;
+      background: white; color: var(--team-primary, var(--text-primary));
+    }
+    .dash-glance-status.violation { background: var(--danger); color: white; }
+    .dash-otd-trophy { color: var(--gold); }
+    .dash-team-toggle {
+      align-self: center; padding: 0.3rem 0.7rem; border-radius: var(--radius-sm); cursor: pointer;
+      border: 1px solid color-mix(in srgb, white 45%, transparent); background: none; color: white;
+      font: inherit; font-size: var(--text-xs); font-weight: 600;
+    }
+    .dash-team-toggle:hover { background: color-mix(in srgb, white 12%, transparent); }
+
+    /* The numbers: one labelled block each, a rank under it, hairlines between. */
+    .dash-statblocks {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .dash-stat {
+      display: flex; flex-direction: column; gap: 0.2rem; min-width: 0;
+      padding: var(--space-3) var(--space-4);
+      color: var(--text-primary); text-decoration: none;
+    }
+    .dash-stat + .dash-stat { border-left: 1px solid var(--border-subtle); }
+    .dash-stat-k {
+      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); white-space: nowrap;
+    }
+    .dash-stat-v {
+      font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1.05;
+      font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+    }
+    .dash-stat-v.tone-ok { color: var(--success); }
+    .dash-stat-v.tone-violation { color: var(--danger); }
+    .dash-stat-v.tone-over  { color: var(--danger); }
+    .dash-stat-v.tone-under { color: var(--success); }
+    .dash-stat-v.tone-unknown { color: var(--text-dim); font-style: italic; }
+    .dash-stat-r { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-height: 1em; }
+    .dash-stat-r.top { color: var(--success); font-weight: 600; }
+    .dash-stat-r.bottom { color: var(--danger); font-weight: 600; }
+    /* The off-season cap lines carry a sentence, not a figure. */
+    .dash-statblocks--cap .dash-stat-v { font-size: var(--text-md); }
+    /* This team's hard cap (§ 1.4): the apron block it is pegged to, outlined
+       in the same gold/red as .hardcap-chip on the team page. */
+    .dash-stat.dash-line-hardcap { box-shadow: inset 0 3px var(--gold); background: var(--gold-bg); }
+    .dash-stat.dash-line-hardcap.apron2 { box-shadow: inset 0 3px var(--danger); background: var(--danger-bg); }
+    a.dash-stat:hover .dash-stat-v { color: var(--link); }
+    @media (max-width: 600px) {
+      .dash-team-band { padding: var(--space-4); }
+      .dash-team-logo { width: 56px; height: 56px; }
+      .dash-team-logo img { width: 40px; height: 40px; }
+      .dash-team-name { font-size: var(--text-lg); }
+      .dash-team-right { margin-left: 0; width: 100%; padding-top: var(--space-3); border-top: 1px solid color-mix(in srgb, white 25%, transparent); }
+      /* One row that scrolls sideways, rather than a wrapped grid. */
+      .dash-statblocks { display: flex; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+      .dash-statblocks::-webkit-scrollbar { display: none; }
+      .dash-stat { flex: 0 0 auto; min-width: 5.5rem; scroll-snap-align: start; padding: var(--space-3); }
+    }
+
+    /* In season, only what needs acting on shows, as a bar under the band. */
+    .dash-team-alert > .dash-sep { display: none; }
+    .dash-team-alert .dash-chips { flex-direction: column; gap: 0; }
+    .dash-team-alert .dash-chip {
+      display: flex; gap: var(--space-2); border: 0; border-left: 4px solid; border-radius: 0;
+      padding: var(--space-2) var(--space-4); font-size: var(--text-sm); font-weight: 600;
+    }
+    .dash-team-alert .dash-chip.caution { border-left-color: var(--gold); }
+    .dash-team-alert .dash-chip.violation { border-left-color: var(--danger); }
+    .dash-team-alert .dash-chip::after { content: '→'; margin-left: auto; opacity: 0.7; }
 
     .dash-sep { border-top: 1px solid var(--border-subtle); margin: 0.75rem 0; }
-    .dash-team-glance { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1.25rem; margin-top: 0.75rem; font-size: var(--text-sm); }
-    .dash-glance { color: var(--text-secondary); text-decoration: none; font-variant-numeric: tabular-nums; }
-    .dash-glance:hover { color: var(--link); }
-    .dash-glance .tone-ok { color: var(--success); font-weight: 700; }
-    .dash-glance .tone-violation { color: var(--danger); font-weight: 700; }
-    .dash-glance-status { font-size: var(--text-xs); font-weight: 600; }
-    .dash-glance-status.ok { color: var(--success); }
-    .dash-otd-trophy { color: var(--gold); }
-    .dash-glance-status.caution { color: var(--gold); }
-    .dash-glance-status.violation { color: var(--danger); }
-    .dash-glance-status.note { color: var(--text-muted); }
-    .dash-team-toggle { margin-left: auto; padding: 0.15rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; color: var(--text-muted); font: inherit; font-size: var(--text-xs); cursor: pointer; }
-    .dash-team-toggle:hover { color: var(--text-primary); border-color: var(--text-muted); }
-
-    .dash-lines { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; font-size: var(--text-sm); }
-    .dash-line-label { color: var(--text-muted); }
-    .dash-line-val   { color: var(--text-secondary); font-weight: 600; }
-    /* Same tone → color mapping as the team page's Cap Health card
-       (.ch-tone-* in teams/team.js) — one vocabulary for "over" vs "under"
-       rather than a second one invented for this card. */
-    .dash-line-val.tone-over      { color: var(--danger); }
-    .dash-line-val.tone-under     { color: var(--success); }
-    .dash-line-val.tone-unknown   { color: var(--text-dim); font-style: italic; }
-    /* Flags whichever of the Apron 1/Apron 2 lines is this team's actual
-       hard cap (§ 1.4) — see the threshLine/hardCapKey comment below. Same
-       gold/red-by-apron-level vocabulary as .hardcap-chip and .hard-cap-banner
-       (teams/team.js) — a color this card hasn't invented on its own. */
-    .dash-line-hardcap {
-      display: inline-flex; align-items: baseline; gap: 0.35rem;
-      padding: 0.1rem 0.55rem; border-radius: var(--radius-sm);
-      border: 1px solid var(--gold-border); background: var(--gold-bg);
-    }
-    .dash-line-hardcap.apron2 { border-color: var(--danger-border-strong); background: var(--danger-bg); }
-    .dash-line-hardcap .dash-line-label,
-    .dash-line-hardcap .dash-line-val { font-weight: 800; }
 
     .dash-games { display: flex; flex-direction: column; gap: 0.3rem; }
     .dash-game {
@@ -161,49 +246,109 @@
 
     /* In season: the team's line, its starting five with stats, and the next
        games as one row. Cap and roster lines fold under the toggle. */
-    .dash-team-snap { display: flex; flex-wrap: wrap; gap: 0.3rem 1.25rem; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
-    .dash-s5-how { font-size: var(--text-xs); color: var(--text-muted); }
-    .dash-s5-edit { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--link); text-decoration: none; white-space: nowrap; }
+    /* The panels under the tabs. */
+    .dash-s5-how { font-size: var(--text-xs); color: var(--text-muted); padding: var(--space-3) 0; }
+    .dash-s5-edit {
+      margin-left: auto; padding: var(--space-2) 0; white-space: nowrap; text-decoration: none;
+      font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--link);
+    }
+    .dash-s5-edit::after { content: ' →'; }
     .dash-s5-edit:hover { text-decoration: underline; }
-    .dash-s5 { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
-    .dash-s5 th { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); text-align: right; padding: 0 0.4rem 0.25rem; white-space: nowrap; }
+    .dash-s5 { width: 100%; border-collapse: collapse; font-size: var(--text-base); font-variant-numeric: tabular-nums; }
+    .dash-s5 th {
+      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+      text-align: right; padding: var(--space-2) 0.5rem; white-space: nowrap;
+      border-bottom: 2px solid var(--text-primary);
+    }
     .dash-s5 th:nth-child(2) { text-align: left; }
-    .dash-s5 td { padding: 0.3rem 0.4rem; text-align: right; border-top: 1px solid var(--border); white-space: nowrap; color: var(--text-secondary); }
-    .dash-s5 td.pos { color: var(--text-muted); font-size: var(--text-xs); text-align: left; width: 2rem; padding-left: 0; }
+    .dash-s5 td { padding: 0.55rem 0.5rem; text-align: right; border-bottom: 1px solid var(--border-subtle); white-space: nowrap; color: var(--text-secondary); }
+    .dash-s5 tbody tr:hover td { background: var(--bg-hover); }
+    .dash-s5 td.pos {
+      font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.04em;
+      color: var(--text-muted); text-align: left; width: 2.2rem; padding-left: var(--space-2);
+    }
     .dash-s5 td.name { text-align: left; white-space: normal; width: 100%; }
-    .dash-s5 td.name a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
+    .dash-s5 td.name a { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--text-primary); font-weight: 600; text-decoration: none; vertical-align: middle; }
     .dash-s5 td.name a:hover { color: var(--link); }
-    .dash-s5 td.ovr { font-weight: 700; color: var(--text-primary); }
-    .dash-s5 td.spark { padding-right: 0; }
-    .dash-s5 .hot  { color: var(--success); }
-    .dash-s5 .cold { color: var(--danger); }
+    .dash-s5 td.ovr { width: 1%; }
+    .dash-s5 td.ovr .ui-ovr { font-size: var(--text-base); }
+    .dash-s5 td.spark { padding-right: var(--space-2); }
+    .dash-s5 .hot  { color: var(--success); font-weight: 600; }
+    .dash-s5 .cold { color: var(--danger); font-weight: 600; }
     .dash-s5-inj { margin-left: 0.35rem; font-size: var(--text-xs); }
+    /* A player's face: the cached headshot, or his initials when there is none. */
+    .dash-av {
+      flex: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top;
+      background: var(--bg-hover); border: 1px solid var(--border-subtle);
+    }
+    .dash-av--init {
+      display: inline-grid; place-items: center; box-sizing: border-box;
+      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.02em;
+      color: var(--text-muted);
+    }
     .dash-s5-spark { display: block; margin-left: auto; }
     .dash-s5-spark rect { fill: var(--text-dim); }
-    .dash-s5-spark rect:last-child { fill: var(--accent); }
-    @media (max-width: 600px) { .dash-s5 .wide { display: none; } }
-    .dash-sched { display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: none; }
+    .dash-s5-spark rect:last-child { fill: var(--team-chart, var(--accent)); }
+    @media (max-width: 600px) {
+      .dash-s5 .wide { display: none; }
+      .dash-s5 { font-size: var(--text-sm); }
+      .dash-s5 td { padding: 0.5rem 0.35rem; }
+      .dash-av { width: 28px; height: 28px; }
+    }
+    .dash-sched { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; padding-top: var(--space-1); }
     .dash-sched-g {
-      flex: 1 0 6.5rem; display: flex; flex-direction: column; gap: 0.15rem;
-      padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: var(--radius);
-      background: var(--bg-subtle); color: var(--text-secondary); text-decoration: none; font-size: var(--text-xs);
+      flex: 1 0 7.5rem; display: flex; flex-direction: column; gap: 0.3rem;
+      padding: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+      background: var(--bg-card); color: var(--text-secondary); text-decoration: none; font-size: var(--text-xs);
+      box-shadow: inset 0 3px var(--border);
     }
     a.dash-sched-g:hover { border-color: var(--muted-border); color: var(--text-primary); }
     .dash-sched-g.b2b { border-style: dashed; }
-    .dash-sched-when { color: var(--text-muted); display: flex; justify-content: space-between; gap: 0.3rem; }
-    .dash-sched-opp { display: flex; align-items: center; gap: 0.3rem; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-    .dash-sched-opp img { height: 16px; width: 16px; object-fit: contain; }
-    .dash-sched-score { font-variant-numeric: tabular-nums; color: var(--text-secondary); min-height: 1rem; }
-    .dash-sched-score .tone-ok { color: var(--success); font-weight: 700; }
-    .dash-sched-score .tone-violation { color: var(--danger); font-weight: 700; }
-    .dash-sched-g.final { background: none; }
-    .dash-team-tabbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.6rem; }
-    .dash-team-foot { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
-    .dash-team-tabs { margin-bottom: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
-    .dash-inj-count { display: inline-block; min-width: 1.1rem; margin-left: 0.25rem; padding: 0 0.3rem; border-radius: var(--radius-sm); background: var(--danger-bg); color: var(--danger); font-size: var(--text-xs); font-weight: 700; text-align: center; }
+    /* A win carries the team's colours along its top edge; a loss stays plain. */
+    .dash-sched-g.win { box-shadow: inset 0 3px var(--team-primary, var(--success)); }
+    .dash-sched-g.loss { box-shadow: inset 0 3px var(--text-dim); }
+    .dash-sched-when {
+      display: flex; justify-content: space-between; gap: 0.3rem; color: var(--text-muted);
+      font-family: var(--font-display); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .dash-sched-opp {
+      display: flex; align-items: center; gap: 0.4rem; color: var(--text-primary);
+      font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.02em;
+    }
+    .dash-sched-opp img { height: 24px; width: 24px; object-fit: contain; }
+    .dash-sched-vs { color: var(--text-muted); font-weight: 500; font-size: var(--text-sm); }
+    .dash-sched-score { font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); min-height: 1rem; }
+    .dash-sched-score .tone-ok { color: var(--success); }
+    .dash-sched-score .tone-violation { color: var(--danger); }
+    .dash-sched-g .dash-game-rec { font-family: var(--font-sans); font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); letter-spacing: 0; }
+    /* Tabs: uppercase labels, the open one underlined in the team's accent. */
+    .dash-team-tabbar {
+      display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0 1rem;
+      margin: var(--space-4) 0 var(--space-3); border-bottom: 1px solid var(--border-subtle);
+    }
+    .dash-team-tabs { display: flex; gap: var(--space-5); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .dash-team-tabs > button {
+      position: relative; padding: var(--space-2) 0 0.6rem; margin: 0; border: 0; background: none; cursor: pointer;
+      font-family: var(--font-display); font-size: var(--text-md); font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; color: var(--text-muted);
+    }
+    .dash-team-tabs > button:hover { color: var(--text-primary); }
+    .dash-team-tabs > button[aria-selected="true"] { color: var(--text-primary); }
+    .dash-team-tabs > button[aria-selected="true"]::after {
+      content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px;
+      background: var(--team-accent, var(--accent));
+    }
+    .dash-team-tabs > button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+    .dash-team-foot { margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    .dash-inj-count { display: inline-block; min-width: 1.2rem; margin-left: 0.3rem; padding: 0 0.3rem; border-radius: var(--radius-sm); background: var(--danger); color: white; font-family: var(--font-sans); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0; text-align: center; vertical-align: 2px; line-height: 1.4; }
     @media (max-width: 600px) {
-      .dash-team-tabs { display: flex; width: 100%; }
-      .dash-team-tabs > button { flex: 1 1 auto; padding-left: 0.35rem; padding-right: 0.35rem; }
+      .dash-team-tabbar { gap: 0; }
+      .dash-team-tabs { width: 100%; justify-content: space-between; gap: var(--space-3); }
+      .dash-team-tabs > button { font-size: var(--text-sm); }
+      .dash-s5-edit { padding: var(--space-2) 0 0; }
+      .dash-team-tabbar .dash-s5-edit { order: 2; margin-left: 0; }
       .dash-sched { flex-direction: column; overflow: visible; }
       .dash-sched-g { flex: none; display: grid; grid-template-columns: 6.5rem 1fr auto; align-items: center; gap: 0.5rem; }
       .dash-sched-when { flex-direction: column; gap: 0; }
@@ -672,7 +817,23 @@
     .dash-five-box.wide .dash-five-row { padding: 0.3rem 0; }
     .dash-five-cols { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-align: center; }
     .dash-five-cols + .dash-five-row { border-top: none !important; }
-    .dash-five-box.wide .dash-five-row.dash-five-avg { border-top: 1px solid var(--border); margin-top: 0.15rem; color: var(--text-muted); }
+    .dash-five-box.wide .dash-five-row.dash-five-avg { border-top: 2px solid var(--text-primary); margin-top: 0.15rem; color: var(--text-muted); }
+    /* The team-card Matchup: flat, under the tabs, each side's name over its
+       two colours (design-system.md § Scores), headers in the scoreboard face. */
+    #dash-team .dash-five-box.wide { border: 0; background: none; padding: 0; font-size: var(--text-base); }
+    #dash-team .dash-five-box.wide .dash-five-head { margin-bottom: var(--space-2); }
+    #dash-team .dash-five-box.wide .dash-five-head > span[data-team] {
+      padding-bottom: var(--space-2); color: var(--text-primary);
+      font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      border-bottom: 3px solid var(--team-primary); box-shadow: inset 0 -3px var(--team-accent);
+    }
+    #dash-team .dash-five-box.wide .dash-five-head img { width: 24px; height: 24px; vertical-align: -5px; }
+    #dash-team .dash-five-cols { font-family: var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; padding-top: var(--space-2); }
+    #dash-team .dash-five-box.wide .dash-five-row { padding: 0.5rem 0; }
+    #dash-team .dash-five-box.wide .dash-five-name { font-weight: 600; }
+    #dash-team .dash-five-slot { font-family: var(--font-display); letter-spacing: 0.06em; }
+    #dash-team .dash-five-ovr.edge { color: var(--success); }
+    #dash-team .dash-five-avg .dash-five-ovr { font-family: var(--font-display); font-size: var(--text-md); color: var(--text-primary); }
     .dash-five-avg .dash-five-ovr { color: var(--text-secondary); font-weight: 600; }
     .dash-five-ppg { text-align: center; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
     .dash-five-last { display: none; }
@@ -743,8 +904,6 @@
 
     /* A header that is itself the link to the card's full page. */
 
-    /* Your team is boxed like every other section now (above). */
-    :root .dash-team-name { font-size: var(--text-xl); }
 
     /* A small text link under a list. */
     .dash-feed-item { font-size: var(--text-sm); color: var(--text-secondary); }
@@ -1459,7 +1618,7 @@
         ? `<span class="dash-five-full">${esc((typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t)}</span><span class="dash-five-last">${esc(t)}</span>`
         : esc(t));
       el.innerHTML = `<div class="dash-five-box${wide ? ' wide' : ''}">`
-        + `<div class="dash-five-head"><span class="away">${teamLabel(away)} ${logo(away)}</span><span></span><span class="home">${logo(home)} ${teamLabel(home)}</span></div>`
+        + `<div class="dash-five-head"><span class="away" data-team="${esc(away)}">${teamLabel(away)} ${logo(away)}</span><span></span><span class="home" data-team="${esc(home)}">${logo(home)} ${teamLabel(home)}</span></div>`
         + (wide ? '<div class="dash-five-row dash-five-cols"><span></span><span>PPG</span><span>OVR</span><span></span><span>OVR</span><span>PPG</span><span></span></div>' : '')
         + DEPTH_SLOTS.map((slot, i) => {
             const p = a.five[i], q = h.five[i];
@@ -2702,11 +2861,24 @@
     const seasonLines = (team, season) => jget(`/api/teams/${encodeURIComponent(team)}/season-lines`
       + (season ? `?season=${encodeURIComponent(season)}` : '')).then(r => (r && r.players) || {}).catch(() => ({}));
 
+    // A player's face for the team card: the cached headshot, swapped for his
+    // initials when there is none (no cached headshot is a 404), as the
+    // NBN Twitter card does. `wireAvatars` hooks the swap up after a render.
+    const avatarHtml = (slug, name) => `<img class="dash-av" src="/api/players/${encodeURIComponent(slug)}/headshot" alt="" loading="lazy" data-init="${esc(
+      String(name || '').split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase())}">`;
+    const wireAvatars = root => root.querySelectorAll('img.dash-av').forEach(img => {
+      img.onerror = () => { img.outerHTML = `<span class="dash-av dash-av--init" aria-hidden="true">${esc(img.dataset.init || '')}</span>`; };
+      if (img.complete && !img.naturalWidth) img.onerror();
+    });
+    // OVR as the shared heat badge: 65 and under reads cold, 95 and up hot.
+    const ovrBadge = ovr => (ovr
+      ? `<span class="ui-ovr ui-heat" style="--heat:${Math.max(0, Math.min(1, (ovr - 65) / 30)).toFixed(2)}">${esc(ovr)}</span>` : '');
+
     async function renderStarting5(prefetched) {
       const box = $('dash-s5');
       const data = await prefetched;
       if (!data) throw new Error('lineup unavailable');
-      const [{ set, five }, lines, inj] = data;
+      const [{ five }, lines, inj] = data;
       const injBy = Object.fromEntries(((inj && inj.players) || []).map(p => [p.slug, p]));
       const spark = pts => {
         pts = (pts || []).slice().reverse();
@@ -2730,19 +2902,18 @@
         const hurt = injBy[p.slug];
         const injTag = hurt ? `<span class="dash-s5-inj ui-chip ui-chip--sm ${/^out$/i.test(hurt.status || '') ? 'ui-chip--danger' : 'ui-chip--warning'}" title="${esc([hurt.injury, hurt.duration].filter(Boolean).join(' · '))}">${esc(hurt.status || 'Hurt')}</span>` : '';
         return `<tr><td class="pos">${slot}</td>`
-          + `<td class="name"><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a>${injTag}</td>`
-          + `<td class="ovr">${p.OVR ? esc(p.OVR) : ''}</td>`
+          + `<td class="name"><a href="/players/?p=${encodeURIComponent(p.slug)}">${avatarHtml(p.slug, nbnPlayerName(p.name))}<span>${esc(nbnPlayerName(p.name))}</span></a>${injTag}</td>`
+          + `<td class="ovr">${ovrBadge(p.OVR)}</td>`
           + `<td class="wide">${s ? f1(s.min) : '—'}</td>`
           + `<td${trend}>${s ? f1(s.pts) : '—'}</td><td>${s ? f1(s.reb) : '—'}</td><td>${s ? f1(s.ast) : '—'}</td>`
           + `<td class="wide">${s && s.fg_pct != null ? s.fg_pct.toFixed(3).replace(/^0/, '') : '—'}</td>`
           + `<td class="spark wide">${s ? spark(s.last5_pts) : ''}</td></tr>`;
       }).join('');
 
-      // Only a projected five says so; the team's own saved one needs no label.
       box.innerHTML = '<table class="dash-s5"><thead><tr><th></th><th></th><th>OVR</th>'
         + '<th class="wide">MIN</th><th>PTS</th><th>REB</th><th>AST</th><th class="wide">FG%</th><th class="wide">Last 5</th></tr></thead>'
-        + `<tbody>${rows}</tbody></table>`
-        + (set ? '' : '<div class="dash-team-foot">Projected by OVR. No rotation saved.</div>');
+        + `<tbody>${rows}</tbody></table>`;
+      wireAvatars(box);
     }
 
     // ── Band 1: your team's injuries, in season ────────────────────────────
@@ -2765,12 +2936,13 @@
           ? '<table class="dash-s5"><thead><tr><th></th><th>Status</th><th>Injury</th><th>Duration</th></tr></thead><tbody>'
             + rows.map(p => {
               const out = /^out$/i.test(p.status || '');
-              return `<tr><td class="name"><a href="/players/?p=${encodeURIComponent(p.slug)}">${esc(nbnPlayerName(p.name))}</a></td>`
+              return `<tr><td class="name"><a href="/players/?p=${encodeURIComponent(p.slug)}">${avatarHtml(p.slug, nbnPlayerName(p.name))}<span>${esc(nbnPlayerName(p.name))}</span></a></td>`
                 + `<td><span class="ui-chip ui-chip--sm ${out ? 'ui-chip--danger' : 'ui-chip--warning'}">${esc(p.status || 'Hurt')}</span></td>`
                 + `<td>${esc(p.injury || '')}</td><td>${esc(p.duration || '')}</td></tr>`;
             }).join('') + '</tbody></table>'
           : '<div class="dash-chip ok"><i class="ui-icon ui-icon--check" aria-hidden="true"></i> Fully healthy</div>')
         + `<div class="dash-team-foot">From the ${esc(when)} report</div>`;
+      wireAvatars(panel);
     }
 
     // ── Band 1: your team ─────────────────────────────────────────────────
@@ -2844,15 +3016,34 @@
       // Record for the current season if one exists; the last completed season
       // otherwise. In the offseason standings-history has no row for the season
       // about to start, which is exactly when the countdown is the useful thing.
-      let recordLine = '';
       const rows = standings.filter(r => r.TEAM === team);
       const cur = rows.find(r => r.SEASON === season);
       const prev = rows.sort((a, b) => b.SEASON.localeCompare(a.SEASON))[0];
       const use = cur || prev;
+
+      // Conference rank, beside the record in the band: the build's seed
+      // (tie-breaks included), so it agrees with the standings card. Win
+      // percentage only if there is no seed yet.
+      let confRank = '';
+      const east = (typeof TEAM_DIVISIONS !== 'undefined' ? TEAM_DIVISIONS : []).slice(0, 3).flatMap(d => d[1]);
+      const seed = cur && /^(East|West)-(\d+)$/.exec(cur.SEED || '');
+      if (seed) {
+        confRank = `${ordinal(+seed[2])} in ${seed[1]}`;
+      } else if (cur && east.length) {
+        const isEast = east.includes(team);
+        const conf = standings.filter(r => r.SEASON === season && east.includes(r.TEAM) === isEast)
+          .sort((a, b) => (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0) || (b.W - a.W));
+        const i = conf.findIndex(r => r.TEAM === team);
+        if (i >= 0) confRank = `${ordinal(i + 1)} in ${isEast ? 'East' : 'West'}`;
+      }
+      // The record is this season's; before it has one, last season's, named
+      // with how it ended.
+      let recordHtml = '';
       if (use) {
-        recordLine = `${use.W}–${use.L}`
-          + (use.PLAYOFF_RESULT && use.PLAYOFF_RESULT !== 'Missed' ? ` · ${use.PLAYOFF_RESULT}` : '')
-          + (cur ? '' : ` (${use.SEASON})`);
+        const meta = cur ? confRank
+          : [use.SEASON, use.PLAYOFF_RESULT && use.PLAYOFF_RESULT !== 'Missed' ? use.PLAYOFF_RESULT : ''].filter(Boolean).join(' · ');
+        recordHtml = `<span class="dash-team-wl">${esc(use.W)}–${esc(use.L)}</span>`
+          + (meta ? `<span class="dash-team-meta">${esc(meta)}</span>` : '');
       }
 
       // Your team's own next games, also used for the header countdown below.
@@ -2871,43 +3062,43 @@
       let phaseHtml = '';
       if (ph.phase === 'preseason' && mine.length) {
         const n = daysUntil(today, mine[0].date);
-        phaseHtml = `<div class="dash-team-phase">${n === 0 ? 'Tonight' : plural(n, 'day')}</div>`
-          + `<div class="dash-team-phase-sub">${n === 0 ? '' : 'to your opener · '}${esc(season)}</div>`;
-      } else if (ph.phase === 'preseason') {
-        phaseHtml = `<div class="dash-team-phase-sub">${esc(season)}</div>`;
-      } else if (ph.phase === 'in-season') {
-        phaseHtml = `<div class="dash-team-phase-sub">${esc(season)} season</div>`;
+        phaseHtml = `<div class="dash-band-game"><span class="dash-band-k">Opener</span>`
+          + `<div class="dash-team-phase">${n === 0 ? 'Tonight' : plural(n, 'day')}</div>`
+          + (n === 0 ? '' : '<div class="dash-team-phase-sub">to go</div>') + '</div>';
       }
 
-      const headHtml = `<div class="dash-team-head">`
-        + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
-        + `<img src="/logos/sm/logo-${esc(abbr)}.webp" alt="">`
-        + `<div><div class="dash-team-name">${esc(teamName)}</div>`
-        + `<div class="dash-team-sub">${esc(recordLine || 'Your team')}</div></div></a>`
-        + `<div class="dash-team-right">${phaseHtml}</div></div>`;
-
-      // ── At a glance: the card is collapsed to this by default. Last result,
-      // next game, and a one-word read of the chips below; everything else
-      // (cap lines, the next five, the chips themselves) opens under it.
+      // ── The band's right side: last result and next game, each a small
+      // label over the line, plus the count of what needs you (paintChips)
+      // and, outside the season, the toggle for the cap lines.
       const glance = [];
       const last = (Array.isArray(results) ? results : []).find(g => g.date <= today);
+      const oppLogo = t => `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="">`;
       if (last) {
-        const home = last.home_team === team;
+        const home = last.home_team === team, opp = home ? last.away_team : last.home_team;
         const [us, them] = home ? [last.home_score, last.away_score] : [last.away_score, last.home_score];
-        glance.push(`<a class="dash-glance" href="/boxscores/?date=${esc(last.date)}&game=${esc(last.away_team)}-${esc(last.home_team)}">`
-          + `<span class="dash-line-label">Last</span> `
-          + `<span class="${us > them ? 'tone-ok' : 'tone-violation'}">${us > them ? 'W' : 'L'}</span> ${esc(us)}–${esc(them)} `
-          + `${home ? 'vs' : '@'} ${esc(home ? last.away_team : last.home_team)}</a>`);
+        const w = Number(us) > Number(them);
+        glance.push(`<a class="dash-band-game" href="/boxscores/?date=${esc(last.date)}&game=${esc(last.away_team)}-${esc(last.home_team)}">`
+          + `<span class="dash-band-k">Last</span>`
+          + `<span class="dash-band-v"><span class="dash-band-wl ${w ? 'w' : 'l'}">${w ? 'W' : 'L'}</span> ${esc(us)}–${esc(them)}</span>`
+          + `<span class="dash-band-s">${home ? 'vs' : '@'} ${esc(opp)} · ${esc(relDate(last.date))}</span></a>`);
       }
       if (mine.length) {
-        const g = mine[0], home = g.home_team === team;
-        glance.push(`<a class="dash-glance" href="${previewHref(g)}">`
-          + `<span class="dash-line-label">Next</span> ${home ? 'vs' : '@'} ${esc(home ? g.away_team : g.home_team)} · `
-          + `${esc(relDate(g.date))}${g.time_et ? ' ' + esc(g.time_et) : ''}</a>`);
+        const g = mine[0], home = g.home_team === team, opp = home ? g.away_team : g.home_team;
+        glance.push(`<a class="dash-band-game" href="${previewHref(g)}">`
+          + `<span class="dash-band-k">Next</span>`
+          + `<span class="dash-band-v">${home ? 'vs' : '@'} ${oppLogo(opp)} ${esc(opp)}</span>`
+          + `<span class="dash-band-s">${esc(relDate(g.date))}${g.time_et ? ' · ' + esc(g.time_et) : ''}</span></a>`);
       }
-      const glanceHtml = `<div class="dash-team-glance">${glance.join('')}`
+      const headHtml = `<div class="dash-team-band">`
+        + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
+        + `<span class="dash-team-logo"><img src="/logos/sm/logo-${esc(abbr)}.webp" alt=""></span>`
+        + `<div><div class="dash-team-name">${esc(teamName)}</div>`
+        + `<div class="dash-team-rec">${recordHtml || '<span class="dash-team-meta">Your team</span>'}</div></div></a>`
+        + `<div class="dash-team-right">${phaseHtml}${glance.join('')}`
         + `<span class="dash-glance-status" id="dash-glance-status"></span>`
-        + `<button type="button" class="dash-team-toggle" id="dash-team-toggle" aria-expanded="false" aria-controls="dash-team-more">More ▾</button></div>`;
+        + `<button type="button" class="dash-team-toggle" id="dash-team-toggle" aria-expanded="false" aria-controls="dash-team-more">More ▾</button>`
+        + `</div></div>`;
+      const glanceHtml = '';
 
       let html = '';
 
@@ -2952,20 +3143,18 @@
           const hardCapKey = entry.hard_cap === 'first_apron' ? 'apron1'
             : entry.hard_cap === 'second_apron' ? 'apron2' : null;
           const threshLine = (label, r, key) => r
-            ? `<span${key === hardCapKey
-                ? ` class="dash-line-hardcap${key === 'apron2' ? ' apron2' : ''}" title="This team is hard-capped here"`
-                : ''}>`
-              + `<span class="dash-line-label">${esc(label)}</span> `
-              + `<span class="dash-line-val tone-${esc(r.tone)}">${esc(r.note)}</span></span>`
+            ? `<span class="dash-stat${key === hardCapKey ? ` dash-line-hardcap${key === 'apron2' ? ' apron2' : ''}" title="This team is hard-capped here` : ''}">`
+              + `<span class="dash-stat-k">${esc(label)}${key === hardCapKey ? ' · Hard cap' : ''}</span>`
+              + `<span class="dash-stat-v tone-${esc(r.tone)}">${esc(r.note)}</span></span>`
             : '';
-          lines += '<div class="dash-sep"></div><div class="dash-lines">'
-            + `<span><span class="dash-line-label">Team Salary</span> `
-            + `<span class="dash-line-val">${esc(fmtM(entry.salary))}</span></span>`
+          lines += '<div class="dash-statblocks dash-statblocks--cap">'
+            + `<span class="dash-stat"><span class="dash-stat-k">Team Salary</span>`
+            + `<span class="dash-stat-v">${esc(fmtM(entry.salary))}</span></span>`
             + threshLine('Soft Cap', capRow, 'cap')
             + threshLine('Apron 1', apron1Row, 'apron1')
             + threshLine('Apron 2', apron2Row, 'apron2')
-            + (rosterRow ? `<span><span class="dash-line-label">Roster</span> `
-              + `<span class="dash-line-val">${esc(rosterRow.value)}</span></span>` : '')
+            + (rosterRow ? `<span class="dash-stat"><span class="dash-stat-k">Roster</span>`
+              + `<span class="dash-stat-v">${esc(rosterRow.value)}</span></span>` : '')
             + '</div>';
           // Only the rules that are actually binding. "Over the Salary Cap" is
           // the normal condition for most of the league and the line above
@@ -2994,43 +3183,45 @@
         const done = (Array.isArray(results) ? results : []).filter(g => g.date <= today)
           .sort((a, b) => b.date.localeCompare(a.date));
         const won = g => (g.home_team === team) === (Number(g.home_score) > Number(g.away_score));
+        // The numbers, one block each. Each per-game figure carries its
+        // league rank among this season's rows: Opp PPG ranks low-is-best,
+        // the rest high-is-best, and ties share a rank.
+        const num = v => (v === undefined || v === '' || isNaN(parseFloat(v)) ? null : parseFloat(v));
+        const league = standings.filter(r => r.SEASON === season);
+        const rankOf = (key, asc) => {
+          const v = cur && num(cur[key]);
+          const all = league.map(r => num(r[key])).filter(x => x != null);
+          if (v == null || all.length < 2) return null;
+          return 1 + all.filter(x => (asc ? x < v : x > v)).length;
+        };
+        const signed = v => `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
+        const tone = v => (v > 0 ? 'tone-ok' : v < 0 ? 'tone-violation' : '');
+        const stat = (k, v, { cls = '', rank = null, href = '' } = {}) => {
+          const n = league.length;
+          const rk = rank == null ? '' : `<span class="dash-stat-r${rank <= 5 ? ' top' : n && rank > n - 5 ? ' bottom' : ''}">${ordinal(rank)}</span>`;
+          const tag = href ? `a href="${href}"` : 'span';
+          return `<${tag} class="dash-stat"><span class="dash-stat-k">${k}</span>`
+            + `<span class="dash-stat-v ${cls}">${v}</span>${rk || '<span class="dash-stat-r"></span>'}</${href ? 'a' : 'span'}>`;
+        };
         const snap = [];
-        // Conference rank: the build's seed (tie-breaks included), so it agrees
-        // with the standings card. Win percentage only if there is no seed yet.
-        const east = (typeof TEAM_DIVISIONS !== 'undefined' ? TEAM_DIVISIONS : []).slice(0, 3).flatMap(d => d[1]);
-        const seed = cur && /^(East|West)-(\d+)$/.exec(cur.SEED || '');
-        if (seed) {
-          snap.push(`<a class="dash-glance" href="/standings/"><span class="dash-line-label">${seed[1]}</span> ${ordinal(+seed[2])}</a>`);
-        } else if (cur && east.length) {
-          const isEast = east.includes(team);
-          const conf = standings.filter(r => r.SEASON === season && east.includes(r.TEAM) === isEast)
-            .sort((a, b) => (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0) || (b.W - a.W));
-          const i = conf.findIndex(r => r.TEAM === team);
-          if (i >= 0) snap.push(`<a class="dash-glance" href="/standings/"><span class="dash-line-label">${isEast ? 'East' : 'West'}</span> ${ordinal(i + 1)}</a>`);
-        }
         if (done.length) {
           const w0 = won(done[0]);
           let n = 0;
           while (n < done.length && won(done[n]) === w0) n++;
-          snap.push(`<span><span class="dash-line-label">Streak</span> <span class="${w0 ? 'tone-ok' : 'tone-violation'}">${w0 ? 'W' : 'L'}${n}</span></span>`);
+          snap.push(stat('Streak', `${w0 ? 'W' : 'L'}${n}`, { cls: w0 ? 'tone-ok' : 'tone-violation' }));
           const l10 = done.slice(0, 10), lw = l10.filter(won).length;
-          if (done.length > 5) snap.push(`<span><span class="dash-line-label">L${l10.length}</span> ${lw}–${l10.length - lw}</span>`);
+          if (done.length > 5) snap.push(stat(`Last ${l10.length}`, `${lw}–${l10.length - lw}`));
         }
-        const num = v => (v === undefined || v === '' || isNaN(parseFloat(v)) ? null : parseFloat(v));
-        if (cur && num(cur.PPG) != null) snap.push(`<span><span class="dash-line-label">PPG</span> ${num(cur.PPG).toFixed(1)}</span>`);
-        if (cur && num(cur.OPPG) != null) snap.push(`<span><span class="dash-line-label">Opp</span> ${num(cur.OPPG).toFixed(1)}</span>`);
-        if (cur && num(cur.DIFF) != null) {
-          const d = num(cur.DIFF);
-          snap.push(`<span><span class="dash-line-label">Diff</span> <span class="${d > 0 ? 'tone-ok' : d < 0 ? 'tone-violation' : ''}">${d > 0 ? '+' : ''}${d.toFixed(1)}</span></span>`);
-        }
+        if (cur && num(cur.PPG) != null) snap.push(stat('PPG', num(cur.PPG).toFixed(1), { rank: rankOf('PPG') }));
+        if (cur && num(cur.OPPG) != null) snap.push(stat('Opp PPG', num(cur.OPPG).toFixed(1), { rank: rankOf('OPPG', true) }));
+        if (cur && num(cur.DIFF) != null) snap.push(stat('Diff', signed(num(cur.DIFF)), { cls: tone(num(cur.DIFF)), rank: rankOf('DIFF') }));
         if (cur && num(cur.OFF_RTG) != null && num(cur.DEF_RTG) != null) {
           // Opponent-adjusted, signed like the team page's Season History:
           // above zero is better than the opponents' norm, on either end.
-          const rtg = (label, v) => `<span><span class="dash-line-label">${label}</span> `
-            + `<span class="${v > 0 ? 'tone-ok' : v < 0 ? 'tone-violation' : ''}">${v > 0 ? '+' : ''}${v.toFixed(1)}</span></span>`;
-          snap.push(rtg('Off', num(cur.OFF_RTG)), rtg('Def', num(cur.DEF_RTG)));
+          snap.push(stat('Off +/−', signed(num(cur.OFF_RTG)), { cls: tone(num(cur.OFF_RTG)), rank: rankOf('OFF_RTG') }));
+          snap.push(stat('Def +/−', signed(num(cur.DEF_RTG)), { cls: tone(num(cur.DEF_RTG)), rank: rankOf('DEF_RTG') }));
         }
-        if (snap.length) leadHtml += `<div class="dash-sep"></div><div class="dash-team-snap dash-team-glance" style="margin-top:0">${snap.join('')}</div>`;
+        if (snap.length) leadHtml += `<div class="dash-statblocks">${snap.join('')}</div>`;
 
         // Schedule tab: the last two results and the next three games, as one
         // row of tiles. A dashed edge marks the second night of a back-to-back.
@@ -3038,9 +3229,9 @@
         done.slice(0, 2).reverse().forEach(g => {
           const home = g.home_team === team, opp = home ? g.away_team : g.home_team;
           const [us, them] = home ? [g.home_score, g.away_score] : [g.away_score, g.home_score];
-          schedTiles.push(`<a class="dash-sched-g final" href="/boxscores/?date=${esc(g.date)}&game=${esc(g.away_team)}-${esc(g.home_team)}">`
+          schedTiles.push(`<a class="dash-sched-g final ${won(g) ? 'win' : 'loss'}" href="/boxscores/?date=${esc(g.date)}&game=${esc(g.away_team)}-${esc(g.home_team)}">`
             + `<span class="dash-sched-when"><span>${esc(relDate(g.date))}</span><span>Final</span></span>`
-            + `<span class="dash-sched-opp"><span style="color:var(--text-muted);font-weight:400">${home ? 'vs' : '@'}</span>`
+            + `<span class="dash-sched-opp"><span class="dash-sched-vs">${home ? 'vs' : '@'}</span>`
             + `<img src="/logos/sm/logo-${esc(opp.toLowerCase())}.webp" alt="">${esc(opp)}</span>`
             + `<span class="dash-sched-score"><span class="${won(g) ? 'tone-ok' : 'tone-violation'}">${won(g) ? 'W' : 'L'}</span> ${esc(us)}–${esc(them)}</span></a>`);
         });
@@ -3055,7 +3246,7 @@
             + (g.stream ? `<span class="ui-chip ui-chip--sm ui-chip--warning" title="${esc('Stream game' + (g.streamer ? `, streamed by ${g.streamer}` : ''))}">Stream</span>` : '');
           schedTiles.push(`<a class="dash-sched-g${b2b ? ' b2b' : ''}" href="${previewHref(g)}">`
             + `<span class="dash-sched-when"><span>${esc(relDate(g.date))}</span><span>${esc(g.time_et || '')}</span></span>`
-            + `<span class="dash-sched-opp"><span style="color:var(--text-muted);font-weight:400">${home ? 'vs' : '@'}</span>`
+            + `<span class="dash-sched-opp"><span class="dash-sched-vs">${home ? 'vs' : '@'}</span>`
             + `<img src="/logos/sm/logo-${esc(opp.toLowerCase())}.webp" alt="">${esc(opp)} ${rec}</span>`
             + `<span class="dash-sched-tags">${tags}</span></a>`);
         });
@@ -3074,8 +3265,8 @@
             [`/injuries/?team=${team}`, 'Full report']],
         ];
         tabLinks = Object.fromEntries(tabs.map(([k, , , l]) => [k, l]));
-        leadHtml += '<div id="dash-alert-slot"></div><div class="dash-sep"></div>'
-          + '<div class="dash-team-tabbar"><div class="ui-segmented dash-team-tabs" role="tablist" aria-label="Your team">'
+        leadHtml += '<div id="dash-alert-slot"></div>'
+          + '<div class="dash-team-tabbar"><div class="dash-team-tabs" role="tablist" aria-label="Your team">'
           + tabs.map(([k, label]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="false" aria-pressed="false">${label}</button>`).join('')
           + '</div><a class="dash-s5-edit" id="dash-team-tablink" hidden></a></div>'
           + tabs.map(([k, , body]) => `<div class="dash-team-panel" id="dash-${k}" role="tabpanel" hidden>${body}</div>`).join('');
@@ -3096,6 +3287,7 @@
       }
 
       html += '<div class="dash-sep"></div><div class="dash-chips" id="dash-chips"></div>';
+      card.dataset.team = team;
       card.innerHTML = headHtml + glanceHtml + leadHtml + `<div class="dash-team-more" id="dash-team-more" hidden>${html}</div>`;
       card.hidden = false;
       const moreEl = $('dash-team-more'), toggle = $('dash-team-toggle');
@@ -3106,6 +3298,7 @@
         // above the tabs that shows only when something is there (paintChips).
         // The open tab is remembered per browser; Starting 5 by default.
         $('dash-alert-slot').replaceWith(moreEl);
+        moreEl.classList.add('dash-team-alert');
         toggle.hidden = true;
         let s5Loaded = false;
         const loaded = {};
@@ -3174,12 +3367,13 @@
         const bad = chips.filter(c => c.tone === 'violation').length;
         const act = chips.filter(c => c.tone === 'violation' || c.tone === 'caution').length;
         const notes = inSeason ? 0 : chips.length - act;
-        status.className = 'dash-glance-status ' + (bad ? 'violation' : act ? 'caution' : notes ? 'note' : 'ok');
-        status.textContent = act ? `${act} ${act === 1 ? 'thing needs' : 'things need'} you`
-          : notes ? `${notes} ${notes === 1 ? 'update' : 'updates'}`
-          : settled >= EXPECTED ? 'All clear' : '';
-        if (!act && !notes && settled >= EXPECTED) status.dataset.icon = 'check';
-        else delete status.dataset.icon;
+        // Nothing to say is said by saying nothing: no "All clear". In season
+        // the alert bar under the band names each problem, so the pill is
+        // only for the off-season card, whose chips sit behind More.
+        status.className = 'dash-glance-status ' + (bad ? 'violation' : act ? 'caution' : 'note');
+        status.textContent = inSeason ? ''
+          : act ? `${act} ${act === 1 ? 'thing needs' : 'things need'} you`
+          : notes ? `${notes} ${notes === 1 ? 'update' : 'updates'}` : '';
         // In season only what needs acting on shows, above the tabs. A note
         // (extension-eligible, an offer pending, an FFA window) is news the
         // team page and its own pages already carry, so the card leaves it out.
@@ -3298,11 +3492,11 @@
       else setTimeout(soon, 800);
 
       // The cap row: binding cap rules as chips, and off season the cap lines
-      // at the top of the More panel.
+      // as the card's numbers, right under the band.
       capPromise.then(capRows => {
         if (gen !== cardGen) return;
         const lines = capLinesFor(capRows);
-        if (lines && !inSeason) moreEl.insertAdjacentHTML('afterbegin', lines);
+        if (lines && !inSeason) card.querySelector('.dash-team-band').insertAdjacentHTML('afterend', lines);
       }).catch(() => {}).then(done);
     }
   })();
