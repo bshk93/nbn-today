@@ -183,10 +183,10 @@
         <div class="sign-field">
           <!-- § 3.12 prices each year of a minimum deal on the scale row for the
                player's experience that season, so the tier is part of the
-               contract. Left blank the API falls back to the draft_year proxy,
-               which is null for most veterans. -->
-          <label for="sign-exp">NBA experience (Yr 1)</label>
-          <input type="number" id="sign-exp" min="0" max="25" step="1" placeholder="from draft year">
+               contract. Left blank the API uses its years-of-service count
+               (§ 3.1), which is null for undrafted players. -->
+          <label for="sign-exp">Years of experience (Yr 1)</label>
+          <input type="number" id="sign-exp" min="0" max="25" step="1" placeholder="from years of service">
         </div>
         <div class="sign-field">
           <label for="sign-bird">Bird rights tier</label>

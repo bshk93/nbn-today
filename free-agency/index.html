@@ -529,7 +529,8 @@
     let MY_VOIDED = {};                      // "TEAM|slug" -> offer the committee voided (§ 4.3b)
     let POOL = {};
     let LEAGUE_YEAR = null;
-    let BIOS = {};         // slug -> bio, for draft_year (minimum-salary tier lookups)
+    let BIOS = {};         // slug -> bio
+    let YOS = {};          // slug -> years of experience entering this league year (§ 3.1)
     let CAP_LEVELS = {};   // season -> { min_salary_scale, ... }, from GET /api/cap-levels
     let TEAM_MAP = {};     // slug -> team abbr, from GET /api/team-map
 
@@ -665,15 +666,12 @@
       return yearsExp >= 10 ? '10+' : String(Math.max(0, yearsExp));
     }
 
-    // Years of NBA experience as of the current league year, from the bio's
-    // draft year — or null when there is nothing to go on. That is the common
-    // case, not the edge case: `draft_year` is the NBN draft and is null for
-    // every player who entered before it, and permanently null for UDFAs. The
-    // contract declares its own figure (F.exp) when this can't answer.
+    // Years of experience entering the current league year (§ 3.1: NBA years
+    // before 2020-21 plus NBN seasons on a roster), from /api/years-of-service,
+    // or null for a player with no draft year to count from. The contract
+    // declares its own figure (F.exp) when this can't answer.
     function derivedExp(slug) {
-      const draftYear = (BIOS[slug] || {}).draft_year;
-      if (!draftYear) return null;
-      return Math.max(0, (parseInt(curYr(), 10) || 0) + 2000 - draftYear);
+      return slug in YOS ? YOS[slug] : null;
     }
 
     // The minimum for one season at an explicit experience count, or the
@@ -912,7 +910,7 @@
         // (below), same as the office's own contract-entry form. Explicit
         // opt-in only, so typed off-menu figures are a deliberate choice.
         customMode: false,
-        // § 3.12 years of NBA experience as of Year 1, declared on the contract
+        // § 3.12 years of experience as of Year 1, declared on the contract
         // because the bio usually can't supply it. Prefilled from the draft
         // year when there is one; null means "not established yet".
         exp: derivedExp(row.slug),
@@ -1366,14 +1364,14 @@
             F.salaries = minimumSalaries(F.years, F.exp);
             drawForm();
           });
-          expIn.title = 'Years of NBA experience in Year 1 of this deal. Sets which row of the '
+          expIn.title = 'Years of experience (§ 3.1) in Year 1 of this deal. Sets which row of the '
             + 'Minimum Salary Scale each year is priced on (§ 3.12); the tier steps up one row '
             + 'per contract year.';
-          const expField = field('NBA experience (Yr 1)', expIn);
+          const expField = field('Years of experience (Yr 1)', expIn);
           const note = el('div', 'sub', derivedExp(slug) === null
             ? 'No draft year on file for this player, so this can\'t be derived — set it or every '
               + 'year prices at the rookie minimum.'
-            : 'Prefilled from their draft year. Override if it\'s wrong.');
+            : 'Prefilled from NBA years before 2020-21 plus NBN seasons on a roster. Override if a season is missing.');
           expField.appendChild(note);
           fr.appendChild(expField);
         }
@@ -2021,7 +2019,7 @@
       const statusEl = document.getElementById('status');
       try {
         const signedIn = maybeSignedIn();
-        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson, seasonsCsv] = await Promise.all([
+        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson, seasonsCsv, yosJson] = await Promise.all([
           fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
@@ -2032,10 +2030,12 @@
           signedIn ? api('/fa/offers').catch(() => []) : Promise.resolve([]),
           fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
           fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+          fetch('/api/years-of-service').then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
 
         POOL = pool;
         BIOS = biosJson;
+        YOS = (yosJson && yosJson.years) || {};
         TEAM_MAP = teamMapJson || {};
         CAP_LEVELS = capLevelsJson || {};
         ME = me || ME;

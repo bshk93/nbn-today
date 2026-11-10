@@ -893,10 +893,10 @@
            to be stated. It rides on the contract rather than the bio because
            `draft_year` is the NBN draft — null for everyone who predates it and
            permanently null for UDFAs, which priced multi-year minimums flat at
-           the rookie row. Blank falls back to the draft_year proxy. -->
+           the rookie row. Blank falls back to the API's years-of-service count. -->
       <div class="form-field" id="f-exp-field" style="display:none">
-        <label>NBA experience <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(years, as of Year 1)</span></label>
-        <input type="number" id="f-years-exp" min="0" max="25" step="1" placeholder="derive from draft year">
+        <label>Years of experience <span style="font-weight:normal;text-transform:none;letter-spacing:0;color:var(--text-muted)">(years, as of Year 1)</span></label>
+        <input type="number" id="f-years-exp" min="0" max="25" step="1" placeholder="from years of service">
         <span id="exp-hint" style="font-size:var(--text-xs);margin-top:0.25rem;color:var(--text-muted)"></span>
       </div>
 
@@ -1068,10 +1068,10 @@
         </div>
 
         <!-- Minimum-only generator: § 3.12 makes a minimum contract a pure
-             function of (start season, years of NBA experience, that
+             function of (start season, years of experience, that
              season's scale) — no dollar figure to type in, since the scale
              already has it. Reads years of experience off f-years-exp
-             (above, prefilled from draft_year), applied flat to every year
+             (above, prefilled from /api/years-of-service), applied flat to every year
              the same way _contract_years_exp prices it server-side. A
              genuine 1-year deal also gets the § 3.12 veteran-minimum
              hardship cap (2-year-veteran figure), mirroring
@@ -1110,7 +1110,7 @@
               </label>
             </div>
             <button type="button" class="ch-generate-btn" id="mch-generate-btn">Generate rows from scale</button>
-            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale starting at the "NBA experience" tier above and climbing one tier per contract year. A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Signed after opening night, Year 1 is prorated to the regular-season days left from the transaction date. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
+            <div class="ch-hint">Each year's salary comes straight off that season's § 3.12 Minimum Salary Scale starting at the "Years of experience" tier above and climbing one tier per contract year. A 1-year deal is further capped at the 2-year veteran minimum, per § 3.12's hardship exception. Signed after opening night, Year 1 is prorated to the regular-season days left from the transaction date. Not a placeholder — it's the same figures <code>_check_minimum_salary</code>/<code>_check_minimum_contract_cap_hit</code> check against. Replaces the rows below; the trailing hold row is left unpriced for the § 3.10 auto-fill, same as the regular contract helper.</div>
           </div>
         </div>
 
@@ -1317,6 +1317,7 @@ let signRubricTimer = null;
 let signRubricSeq = 0;
 let allTransactions = [];
 let bios = {};
+let yearsOfService = {};   // slug -> years of experience entering this league year (§ 3.1)
 let allPicks = [];
 let teamMap = {};    // slug → "TEAM"
 let teamStates = {};   // abbr → { hard_cap, mle_used, bae_used, bae_available, ... }
@@ -1400,7 +1401,7 @@ async function fetchAllTransactions() {
     renderAuthBar();
   }
 
-  const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes, lyrRes] = await Promise.allSettled([
+  const [txnRes, biosRes, picksRes, mapRes, statesRes, capRes, lyrRes, yosRes] = await Promise.allSettled([
     fetchAllTransactions(),
     fetch('/api/players').then(r => r.json()),
     fetch('/api/picks').then(r => r.json()),
@@ -1408,6 +1409,7 @@ async function fetchAllTransactions() {
     fetch('/api/team-state').then(r => r.ok ? r.json() : {}),
     fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
+    fetch('/api/years-of-service').then(r => r.ok ? r.json() : null),
   ]);
 
   // Set the league year before adding the first salary row so its default year
@@ -1418,6 +1420,7 @@ async function fetchAllTransactions() {
   addSalaryRow();
 
   if (biosRes.status === 'fulfilled') bios = biosRes.value;
+  if (yosRes.status === 'fulfilled' && yosRes.value) yearsOfService = yosRes.value.years || {};
   if (txnRes.status === 'fulfilled') allTransactions = txnRes.value.transactions || [];
   if (picksRes.status === 'fulfilled') allPicks = picksRes.value || [];
   if (mapRes.status === 'fulfilled') teamMap = mapRes.value;
@@ -1771,14 +1774,13 @@ function updateMleHint() {
     expField.style.display = onMin ? '' : 'none';
     if (onMin) {
       const slug = document.getElementById('f-player-slug').value;
-      const dy = (bios[slug] || {}).draft_year;
       const expIn = document.getElementById('f-years-exp');
-      const derived = dy ? Math.max(0, parseInt(currentSeasonStr(), 10) + 2000 - dy) : null;
+      const derived = slug in yearsOfService ? yearsOfService[slug] : null;
       if (expIn && expIn.value === '' && derived !== null) expIn.value = String(derived);
       const hint = document.getElementById('exp-hint');
       if (hint) {
         hint.textContent = derived !== null
-          ? `Prefilled from a ${dy} draft year. Override if it's wrong.`
+          ? 'Prefilled from NBA years before 2020-21 plus NBN seasons on a roster (§ 3.1). Override if a season is missing.'
           : 'No draft year on file — set this, or every year prices at the rookie minimum.';
         hint.style.color = derived !== null ? 'var(--text-muted)' : 'var(--danger)';
       }
@@ -2517,7 +2519,7 @@ function setupContractHelper() {
 // § 3.9/§ 3.13 raise ladder, which only ever recognizes those step sizes for
 // a Bird vs. non-Bird deal — or the § 3.12 scale generator for a minimum
 // deal, since a minimum contract's salary is a pure function of (start
-// season, years of NBA experience, that season's scale) and never fits a
+// season, years of experience, that season's scale) and never fits a
 // flat step either. Rookie-scale sign_picks and two-way contracts have their
 // own prefill/shorthand paths and show neither. Everywhere a generator does
 // show, custom year-by-year entry stays available, but only behind the
@@ -2643,8 +2645,8 @@ function minimumProration(dateStr) {
 }
 
 // § 3.12: a minimum contract is a pure function of (start season, years of
-// NBA experience, that season's scale) — no dollar figure to type in. Reads
-// years of experience off f-years-exp (prefilled from draft_year elsewhere)
+// experience, that season's scale) — no dollar figure to type in. Reads
+// years of experience off f-years-exp (prefilled from /api/years-of-service elsewhere)
 // as the player's experience in the first season, then climbs one tier per
 // contract year on each season's own scale — § 3.12, and the league office's
 // own table. Matches _contract_years_exp server-side (flat from 2026-08-13 to
@@ -2665,7 +2667,7 @@ async function generateMinimumContractRows() {
 
   if (!/^\d{2}-\d{2}$/.test(startSeason)) { setStatus('err', 'Minimum contract: start season must be like 25-26.'); return; }
   if (gtdYears < 1) { setStatus('err', 'Minimum contract: at least 1 guaranteed year is required.'); return; }
-  if (baseExpRaw === '') { setStatus('err', 'Minimum contract: set NBA experience above (no draft year on file to derive it from).'); return; }
+  if (baseExpRaw === '') { setStatus('err', 'Minimum contract: set years of experience above (no draft year on file to derive it from).'); return; }
   const baseExp = Math.max(0, Math.min(25, parseInt(baseExpRaw, 10) || 0));
 
   const totalYears = gtdYears + optYears;
@@ -2747,7 +2749,7 @@ function collectSalaries() {
 }
 
 // § 3.12 years of experience, as a contract fragment to spread in. Empty when
-// the field is blank or hidden, which leaves the API on its draft_year proxy —
+// the field is blank or hidden, which leaves the API on its years-of-service count —
 // the field is only shown for minimum deals, so an ordinary signing never
 // carries one.
 function collectYearsExp() {

@@ -2339,7 +2339,7 @@
     // detail. Shown only when stated, since it changes nothing otherwise.
     const yx = (o.offer.contract || {}).years_experience;
     if (yx !== null && yx !== undefined) {
-      put('NBA experience', `${yx} yr${yx === 1 ? '' : 's'} as of Year 1 (§ 3.12 scale tier)`);
+      put('Years of experience', `${yx} yr${yx === 1 ? '' : 's'} as of Year 1 (§ 3.12 scale tier)`);
     }
     // § 2.1: who the team cuts to make roster room, released only if this wins.
     if ((o.offer.releases || []).length) put('Releases if it wins', o.offer.releases.map(nameOf).join(', '));
@@ -2633,7 +2633,7 @@
     // row, so it is a change to the money even when the salaries are untouched.
     const pe = prev.contract.years_experience, ne = next.contract.years_experience;
     if ((pe ?? null) !== (ne ?? null)) {
-      out.push(`NBA experience ${pe ?? '—'}→${ne ?? '—'}`);
+      out.push(`Years of experience ${pe ?? '—'}→${ne ?? '—'}`);
     }
     return out;
   }
