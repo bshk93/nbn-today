@@ -74,7 +74,11 @@ home, logo, abbreviation and record, with the projected line down the right.
 - **No tip times.** NBN games are played on the night, not at a tip.
 - **The line is the API's**: each game's `line` on `GET /api/tonight`
   (`playoff_odds.game_line` on the stream planner's `ratings_now()`), shown as
-  `−6.5` on the favourite's side or `PK`. The page does no math; it reads the
+  `−6.5` on the favourite's side or `PK`, **only while the game is hovered,
+  focused or opened** (a tap opens it on a phone), with the favourite's row
+  tinted then so the number reads as that team's. Quoting both sides
+  (−6.5 / +6.5) was tried and dropped: too much on every row. The chevron is
+  hover-only too. The page does no math; it reads the
   same request the Tonight graphic made (`tonightFor`, one fetch per date).
   No line in preseason, when the card spans several days.
 - **Stream games are pinned on top**, tinted with a red edge and an "On
