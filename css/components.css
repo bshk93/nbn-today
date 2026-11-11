@@ -786,31 +786,64 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
 
 /* ── Mine callout (your team and your players) ─────────────────────────── */
 /* my-team.js adds .is-mine (+ .is-mine--team / .is-mine--player) to the row,
-   card or link that names the signed-in member's team or a player on its roster, and
-   puts .mine-on and data-my-team on <html>; css/team-colors.css maps that to
-   --mine-c, the team's chart colour. A tint of it plus a bar on the left edge:
-   never --bg-hover, which only ever means hover (docs/design-system.md).
-   Turning it off in the account menu drops .mine-on and nothing else.
+   card or link that names the signed-in member's team or a player on its
+   roster, and puts .mine-on, data-my-team and data-mine-style on <html>.
+   Never --bg-hover, which only ever means hover (docs/design-system.md).
+   The member picks the look in the account menu:
+   - tint (data-mine-style="tint"): a tint of --mine-c plus a bar on the left
+     edge. --mine-c is the team's colour, picked per theme so the bar clears
+     3:1 on the page (css/team-colors.css, build/make_team_colors_css.py), or
+     the swatch they chose, which my-team.js sets inline on <html>.
+   - star: no tint; a gold star in the row's left edge (.is-mine-star, which
+     my-team.js places in every marked row and only this style shows).
+   - off: no .mine-on, so nothing here applies.
    Not plain .mine: Pick'em, the PDC ballots, the streamer chips and the draft
    grades already use that for their own "yours" marks. */
-:root.mine-on .is-mine:not(tr) {
+:root.mine-on:not([data-mine-style="star"]) .is-mine:not(tr) {
   background-color: color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
   box-shadow: inset 3px 0 0 var(--mine-c, var(--accent));
 }
-:root.mine-on .is-mine:not(tr):hover { background-color: color-mix(in srgb, var(--mine-c, var(--accent)) 22%, transparent); }
+:root.mine-on:not([data-mine-style="star"]) .is-mine:not(tr):hover { background-color: color-mix(in srgb, var(--mine-c, var(--accent)) 22%, transparent); }
 /* Table rows paint their cells, with the tint as an inset shadow over the
    cell's own background, so a sticky cell stays opaque underneath it. */
-:root.mine-on tr.is-mine > td, :root.mine-on tr.is-mine > th {
+:root.mine-on:not([data-mine-style="star"]) tr.is-mine > td, :root.mine-on:not([data-mine-style="star"]) tr.is-mine > th {
   box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
 }
-:root.mine-on tr.is-mine > :first-child {
+:root.mine-on:not([data-mine-style="star"]) tr.is-mine > :first-child {
   box-shadow: inset 3px 0 0 var(--mine-c, var(--accent)),
               inset 0 0 0 100vmax color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
 }
+/* The tint costs muted text its margin: --text-muted clears 4.5:1 on the
+   plain page by very little, and under a bright team's tint it fell to 3.3:1
+   (GSW on the dark theme). Inside a tinted row it reads as --text-secondary,
+   which stays over 4.7:1 on every tint in every theme. */
+:root.mine-on:not([data-mine-style="star"]) .is-mine { --text-muted: var(--text-secondary); }
 /* A link in running text, with no row around it: a small pill. */
-:root.mine-on .is-mine.is-mine--inline {
+:root.mine-on:not([data-mine-style="star"]) .is-mine.is-mine--inline {
   padding: 0 0.25em; border-radius: var(--radius-sm);
   box-shadow: inset 2px 0 0 var(--mine-c, var(--accent));
+}
+/* The star: hidden unless chosen. Absolutely placed, so it never moves
+   anything: no grid or flex slot, and no padding added to the row. In a
+   table it sits in the first cell's own padding; any other row has it in the
+   gutter just left of the row, or in its top-left corner when the row clips
+   its overflow (a card; my-team.js adds .is-mine--clip); a link in running
+   text has it as a small superscript on its corner. */
+.is-mine-star { display: none; }
+:root.mine-on[data-mine-style="star"] .is-mine-star {
+  display: block; position: absolute; top: 50%;
+  width: 0.75em; height: 0.75em; margin-top: -0.375em;
+  color: var(--gold); pointer-events: none;
+}
+:root.mine-on[data-mine-style="star"] tr.is-mine > :first-child { position: relative; }
+:root.mine-on[data-mine-style="star"] tr.is-mine > :first-child > .is-mine-star { left: 0.15em; }
+:root.mine-on[data-mine-style="star"] .is-mine:not(tr) { position: relative; }
+:root.mine-on[data-mine-style="star"] .is-mine:not(tr) > .is-mine-star { left: -0.95em; }
+:root.mine-on[data-mine-style="star"] .is-mine.is-mine--clip > .is-mine-star {
+  left: 0.35em; top: 0.35em; margin-top: 0; z-index: 1;
+}
+:root.mine-on[data-mine-style="star"] .is-mine.is-mine--inline > .is-mine-star {
+  left: auto; right: -0.45em; top: -0.2em; margin-top: 0; width: 0.55em; height: 0.55em;
 }
 
 /* ── Motion ───────────────────────────────────────────────────────────────── */
