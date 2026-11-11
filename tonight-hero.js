@@ -27,7 +27,8 @@
   function dateLine(iso) {
     const [y, m, d] = iso.split('-').map(Number);
     const dt = new Date(Date.UTC(y, m - 1, d));
-    return `${DAYS[dt.getUTCDay()]} · ${MONTHS[m - 1]} ${d}`;
+    // "WED 11/11/26" (the element is upper-cased by CSS).
+    return `${DAYS[dt.getUTCDay()]} ${m}/${d}/${String(y).slice(2)}`;
   }
   function lastName(name) {
     const parts = String(name || '').split(' ');
