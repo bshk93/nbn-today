@@ -779,6 +779,7 @@
     .slate-body .dash-game-team { min-width: 0; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
     .slate-body .dash-game-logo { width: 20px; height: 20px; }
     .slate-body .dash-game-rec { margin-left: 0.1rem; }
+    .slate-city { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
     .slate-val {
       justify-self: end; font-size: var(--text-sm); font-variant-numeric: tabular-nums;
       color: var(--text-muted); white-space: nowrap; text-decoration: none;
@@ -1523,14 +1524,26 @@
       // eyebrow; who streams it is in the tooltip.
       const streamTitle = g => 'Stream game' + (g.streamer ? `, streamed by ${g.streamer}` : '')
         + (g.stream_buyer ? `, bought by ${g.stream_buyer}` : '');
+      // The tile has the room for a city ("Boston", "Oklahoma City"), not
+      // just the abbreviation: nav.js's name less its nickname. The two LA
+      // teams keep theirs, or both would read "LA".
+      const cityOf = t => {
+        const full = (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || '';
+        if (!full) return t;
+        if (t === 'LAC' || t === 'LAL') return `LA ${full.split(' ').pop()}`;
+        if (t === 'POR') return 'Portland';
+        return full.split(' ').slice(0, -1).join(' ') || t;
+      };
+      const cityChip = (abbr, recs) => teamChip(abbr, recs)
+        .replace(`<span>${esc(abbr)}</span>`, `<span class="slate-city" title="${esc(abbr)}">${esc(cityOf(abbr))}</span>`);
       const tile = g => `<div class="slate-game${g.stream ? ' is-stream' : ''}" role="button" tabindex="0" aria-expanded="false"`
         + ` data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}" data-date="${esc(g.date)}"`
         + '>'
         + (g.stream ? `<div class="slate-eyebrow" title="${esc(streamTitle(g))}"><span class="slate-dot"></span>On stream</div>` : '')
         + '<div class="slate-body">'
-        + `${teamChip(g.away_team, recs)}<span class="slate-val" data-side="away"></span>`
+        + `${cityChip(g.away_team, recs)}<span class="slate-val" data-side="away"></span>`
         + `<span class="slate-chev" aria-hidden="true">›</span>`
-        + `${teamChip(g.home_team, recs)}<span class="slate-val" data-side="home"></span>`
+        + `${cityChip(g.home_team, recs)}<span class="slate-val" data-side="home"></span>`
         + '</div></div><div class="dash-five"><div class="dash-five-inner"></div></div>';
 
       // Only the title text is the link: a night's box-score video link is added
