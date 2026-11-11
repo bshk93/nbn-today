@@ -32,6 +32,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   Depth mode has stopped keeping players at their own positions on a tie.
 - Run tests/clinch.test.js; abort if the clinched / eliminated marks on
   /standings could mark a team that isn't mathematically safe.
+- Run tests/power-rank.test.js; abort if the homepage Power Rankings card
+  could show a stale edition, or rank or form teams wrongly.
 - Run tests/advanced-stats.test.js; abort if the USG% / AST% / REB% / STL% /
   BLK% formulas on /stats/seasons and player pages have drifted.
 - Run tests/award-race.test.js; abort if the /awards/race formulas have
@@ -117,6 +119,15 @@ if lineup_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the starting-five rules no longer hold (see FAIL lines above).')
         print('Fix computeStartingFive in teams/lineup.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+power_rank_test = Path('tests/power-rank.test.js')
+if power_rank_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(power_rank_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the homepage Power Rankings rules no longer hold (see FAIL lines above).')
+        print('Fix power-rank.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 clinch_test = Path('tests/clinch.test.js')
