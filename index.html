@@ -746,13 +746,14 @@
     a.dash-game-time:hover { color: var(--link); }
     .dash-game-time.final .win { color: var(--text-primary); font-weight: 700; }
 
-    /* The slate: one stacked scoreboard tile per game, away over home, each
-       side's projected line (then its final score) down the right. Stream
-       games are pinned on top and tinted. The tile opens to show both
-       starting fives, matched slot by slot. */
+    /* The slate: one line per game, away @ home with logos and records.
+       Stream games are pinned on top, tinted, with a red dot. The projected
+       line shows on the right only while a game is hovered, focused or open
+       ("CLE −14"), with the favourite tinted; a played game shows its final
+       there. The row opens to show both starting fives, slot by slot. */
     .slate-games { display: flex; flex-direction: column; }
     .slate-game {
-      position: relative; padding: 0.5rem 0.4rem 0.5rem 0.55rem; cursor: pointer;
+      padding: 0.4rem 0.35rem 0.4rem 0.45rem; cursor: pointer;
       border-top: 1px solid var(--border-subtle);
       border-left: 3px solid transparent;
     }
@@ -766,58 +767,32 @@
     .slate-game.is-stream:hover, .slate-game.is-stream.open { background: color-mix(in srgb, var(--danger) 13%, transparent); }
     /* A gap, not a rule, between the pinned stream game(s) and the rest. */
     .slate-games > .slate-game.is-stream + .dash-five + .slate-game:not(.is-stream) { margin-top: var(--space-2); border-top: 0; }
-    .slate-eyebrow {
-      display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;
-      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 700;
-      letter-spacing: 0.06em; text-transform: uppercase; color: var(--danger);
-    }
+    .slate-body { display: flex; align-items: center; gap: 0.4rem; min-width: 0; font-size: var(--text-sm); }
     .slate-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); flex: none; }
-    .slate-body {
-      display: grid; grid-template-columns: minmax(0, 1fr) auto 0.8rem;
-      align-items: center; column-gap: 0.5rem; row-gap: 0.2rem;
+    .slate-at { color: var(--text-muted); font-weight: 600; }
+    .slate-body .dash-game-team {
+      font-weight: 600; color: var(--text-primary); white-space: nowrap;
+      padding: 0.1rem 0.25rem; margin: -0.1rem -0.25rem; border-radius: var(--radius-sm);
     }
-    .slate-body .dash-game-team { min-width: 0; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
-    .slate-body .dash-game-logo { width: 20px; height: 20px; }
-    .slate-body .dash-game-rec { margin-left: 0.1rem; }
-    .slate-city { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .slate-game:is(:hover, :focus-visible, .open) .dash-game-team.is-fav { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .slate-val {
-      justify-self: end; font-size: var(--text-sm); font-variant-numeric: tabular-nums;
+      margin-left: auto; flex: none; font-variant-numeric: tabular-nums;
       color: var(--text-muted); white-space: nowrap; text-decoration: none;
     }
-    /* Every item placed explicitly, so the favourite's row band (a grid
-       pseudo-element) doesn't push the auto-placed teams around. */
-    .slate-body { isolation: isolate; }
-    .slate-body > [data-side="away"] { grid-row: 1; }
-    .slate-body > [data-side="home"] { grid-row: 2; }
-    .slate-body > .dash-game-team { grid-column: 1; }
-    .slate-body > .slate-val { grid-column: 2; }
-    /* The line: hidden until the game is hovered, focused or opened, then on
-       the favourite's row with that row tinted. */
-    .slate-val.fav, .slate-val.pk { visibility: hidden; }
-    .slate-game:is(:hover, :focus-visible, .open) .slate-val:is(.fav, .pk) { visibility: visible; }
-    .slate-val.fav { color: var(--accent); font-weight: 700; }
-    .slate-val.pk { color: var(--text-muted); }
-    .slate-body[data-fav]::before {
-      content: ''; grid-column: 1 / 3; z-index: -1; align-self: stretch;
-      margin: -0.15rem -0.35rem; border-radius: var(--radius-sm);
-      background: color-mix(in srgb, var(--accent) 14%, transparent);
-      visibility: hidden;
-    }
-    .slate-body[data-fav="away"]::before { grid-row: 1; }
-    .slate-body[data-fav="home"]::before { grid-row: 2; }
-    .slate-game:is(:hover, :focus-visible, .open) .slate-body[data-fav]::before { visibility: visible; }
-    a.slate-val.final { color: var(--text-muted); }
-    a.slate-val.final.win { color: var(--text-primary); font-weight: 700; }
+    .slate-val.line { visibility: hidden; color: var(--accent); font-weight: 700; }
+    .slate-game:is(:hover, :focus-visible, .open) .slate-val.line { visibility: visible; }
+    .slate-val.line.pk { color: var(--text-muted); font-weight: 600; }
     a.slate-val.final:hover { color: var(--link); }
+    .slate-val .win { color: var(--text-primary); font-weight: 700; }
+    .slate-val .kick { font-size: var(--text-xs); font-weight: 700; margin-left: 0.2rem; }
     .slate-chev {
-      grid-column: 3; grid-row: 1 / 3; justify-self: center;
+      flex: none; width: 0.7rem; text-align: center;
       color: var(--text-muted); font-size: var(--text-md); line-height: 1;
       opacity: 0; transition: transform 0.2s ease, opacity 0.2s;
     }
     .slate-game:hover .slate-chev, .slate-game:focus-visible .slate-chev { opacity: 1; }
     .slate-game.open .slate-chev { opacity: 1; transform: rotate(90deg); color: var(--accent); }
-    .slate-kicker { grid-column: 3; grid-row: 1 / 3; justify-self: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); }
-    .slate-vod { margin-top: 0.4rem; }
+    .slate-vod { margin: 0.35rem 0 0 1.1rem; }
     .slate-head { font-size: var(--text-xs); color: var(--text-muted); margin: -0.25rem 0 var(--space-2); }
     .slate-games .dash-five-box { margin: 0.1rem 0 0.5rem; }
     .dash-five-preview { display: block; margin-top: 0.3rem; color: var(--link); text-decoration: none; }
@@ -1536,34 +1511,17 @@
       // several days stay in date order.)
       if (!showDates) list = [...list.filter(g => g.stream), ...list.filter(g => !g.stream)];
 
-      // One stacked tile per game, away over home, scoreboard style: logo,
-      // abbreviation and record, with each side's projected line (then its
-      // final) down the right. No tip times: NBN games are played on the
-      // night, not at a tip. The stream game is tinted with an "On stream"
-      // eyebrow; who streams it is in the tooltip.
+      // One line per game: logo, abbreviation and record each side. No tip
+      // times: NBN games are played on the night, not at a tip. A stream game
+      // gets a red dot (who streams it is in its tooltip) and is tinted.
       const streamTitle = g => 'Stream game' + (g.streamer ? `, streamed by ${g.streamer}` : '')
         + (g.stream_buyer ? `, bought by ${g.stream_buyer}` : '');
-      // The tile has the room for a city ("Boston", "Oklahoma City"), not
-      // just the abbreviation: nav.js's name less its nickname. The two LA
-      // teams keep theirs, or both would read "LA".
-      const cityOf = t => {
-        const full = (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || '';
-        if (!full) return t;
-        if (t === 'LAC' || t === 'LAL') return `LA ${full.split(' ').pop()}`;
-        if (t === 'POR') return 'Portland';
-        return full.split(' ').slice(0, -1).join(' ') || t;
-      };
-      const cityChip = (abbr, recs, side) => teamChip(abbr, recs)
-        .replace('class="dash-game-team"', `class="dash-game-team" data-side="${side}"`)
-        .replace(`<span>${esc(abbr)}</span>`, `<span class="slate-city" title="${esc(abbr)}">${esc(cityOf(abbr))}</span>`);
       const tile = g => `<div class="slate-game${g.stream ? ' is-stream' : ''}" role="button" tabindex="0" aria-expanded="false"`
-        + ` data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}" data-date="${esc(g.date)}"`
-        + '>'
-        + (g.stream ? `<div class="slate-eyebrow" title="${esc(streamTitle(g))}"><span class="slate-dot"></span>On stream</div>` : '')
+        + ` data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}" data-date="${esc(g.date)}">`
         + '<div class="slate-body">'
-        + `${cityChip(g.away_team, recs, 'away')}<span class="slate-val" data-side="away"></span>`
-        + `<span class="slate-chev" aria-hidden="true">›</span>`
-        + `${cityChip(g.home_team, recs, 'home')}<span class="slate-val" data-side="home"></span>`
+        + (g.stream ? `<span class="slate-dot" title="${esc(streamTitle(g))}" role="img" aria-label="${esc(streamTitle(g))}"></span>` : '')
+        + `${teamChip(g.away_team, recs)}<span class="slate-at">@</span>${teamChip(g.home_team, recs)}`
+        + '<span class="slate-val"></span><span class="slate-chev" aria-hidden="true">›</span>'
         + '</div></div><div class="dash-five"><div class="dash-five-inner"></div></div>';
 
       // Only the title text is the link: a night's box-score video link is added
@@ -1579,27 +1537,26 @@
             + tile(g)).join('') + '</div>' : '');
       const rowFor = (a, h, d) => [...card.querySelectorAll(`.slate-game[data-date="${d}"]`)]
         .find(r => r.dataset.away === a && r.dataset.home === h);
+      const chipOf = (row, t) => [...row.querySelectorAll('.dash-game-team')]
+        .find(a => a.getAttribute('href') === `/teams/${t}/`);
       const minus = '\u2212';
 
       // Each game's projected line, from GET /api/tonight (nbn-api
       // playoff_odds.game_line: the stream planner's ratings, Out players
-      // off). Shown on the favourite's side; nothing here does the math.
+      // off); nothing here does the math. Shown only while the game is
+      // hovered, focused or open, naming the favourite, who is tinted then.
       if (!showDates && list.length) {
         tonightFor(list[0].date).then(t => {
           if (!t || t.date !== list[0].date) return;
           t.games.forEach(g => {
             const row = rowFor(g.away, g.home, g.date), ln = g.line;
             if (!row || !ln || row.querySelector('.slate-val.final')) return;
-            const tip = `${ln.fav ? `${ln.fav} by ${Math.abs(ln.margin).toFixed(1)}` : 'Even'} projected`
+            const el = row.querySelector('.slate-val');
+            el.className = `slate-val line${ln.fav ? '' : ' pk'}`;
+            el.textContent = ln.fav ? `${ln.fav} ${minus}${ln.spread}` : 'PK';
+            el.title = `${ln.fav ? `${ln.fav} by ${Math.abs(ln.margin).toFixed(1)}` : 'Even'} projected`
               + ` · ${g.home} ${Math.round(ln.p_home * 100)}% to win`;
-            // Shown only on hover (or open/focus), on the favourite's row,
-            // which is tinted then so the number can't read as the game's.
-            const side = !ln.fav ? 'home' : ln.fav === g.home ? 'home' : 'away';
-            const el = row.querySelector(`.slate-val[data-side="${side}"]`);
-            el.className = `slate-val ${ln.fav ? 'fav' : 'pk'}`;
-            el.textContent = ln.fav ? minus + ln.spread : 'PK';
-            el.title = tip;
-            if (ln.fav) row.querySelector('.slate-body').dataset.fav = side;
+            if (ln.fav) chipOf(row, ln.fav)?.classList.add('is-fav');
           });
         }).catch(() => {});
       }
@@ -1617,23 +1574,15 @@
           const [a, h] = String(g.away_team).toUpperCase() === row.dataset.away.toUpperCase()
             ? [g.away_score, g.home_score] : [g.home_score, g.away_score];
           const href = `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
-          const score = (side, v, o) => {
-            const el = row.querySelector(`.slate-val[data-side="${side}"]`);
-            el.outerHTML = `<a class="slate-val final${v > o ? ' win' : ''}" data-side="${side}" href="${esc(href)}"`
-              + ` title="Box score">${esc(String(v))}</a>`;
-          };
-          score('away', a, h); score('home', h, a);
-          delete row.querySelector('.slate-body').dataset.fav;
-          row.querySelector('.slate-chev').insertAdjacentHTML('afterend', '<span class="slate-kicker">F</span>');
-          row.querySelector('.slate-chev').remove();
-          // Played, so the stream eyebrow gives way to the game's video, or ⏳ until it's up.
+          row.querySelector('.slate-val').outerHTML = `<a class="slate-val final" href="${esc(href)}" title="Box score">`
+            + `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
+            + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span><span class="kick">F</span></a>`;
+          row.querySelectorAll('.is-fav').forEach(c => c.classList.remove('is-fav'));
+          // Played, so the game's video (or ⏳ until it's up) goes under it.
           const sg = list.find(x => x.date === night.date
             && x.away_team === row.dataset.away && x.home_team === row.dataset.home);
           const vod = sg ? NbnVod.gameHtml(sg) : '';
-          if (vod) {
-            row.querySelector('.slate-eyebrow')?.remove();
-            row.insertAdjacentHTML('beforeend', `<div class="slate-vod">${vod}</div>`);
-          }
+          if (vod) row.insertAdjacentHTML('beforeend', `<div class="slate-vod">${vod}</div>`);
         });
         // The night's unstreamed games share one video, beside the card's title.
         if (!list.some(g => g.date === night.date)) return;

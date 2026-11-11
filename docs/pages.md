@@ -68,27 +68,26 @@ stays if the API fails.
 
 ## Tonight slate (homepage sidebar)
 
-The `#dash-slate` card in `index.html`: one stacked tile per game, away over
-home, logo, abbreviation and record, with the projected line down the right.
+The `#dash-slate` card in `index.html`: one line per game, `logo ABBR record
+@ logo ABBR record`. (Stacked away-over-home tiles with city names were tried
+2026-11-11 and dropped: one line per game reads faster.)
 
 - **No tip times.** NBN games are played on the night, not at a tip.
 - **The line is the API's**: each game's `line` on `GET /api/tonight`
-  (`playoff_odds.game_line` on the stream planner's `ratings_now()`), shown as
-  `−6.5` on the favourite's side or `PK`, **only while the game is hovered,
-  focused or opened** (a tap opens it on a phone), with the favourite's row
-  tinted then so the number reads as that team's. Quoting both sides
-  (−6.5 / +6.5) was tried and dropped: too much on every row. The chevron is
-  hover-only too. The page does no math; it reads the
-  same request the Tonight graphic made (`tonightFor`, one fetch per date).
-  No line in preseason, when the card spans several days.
-- **Stream games are pinned on top**, tinted with a red edge and an "On
-  stream" eyebrow; the streamer is in the eyebrow's tooltip. Once played the
-  eyebrow gives way to the game's video (`NbnVod.gameHtml`).
-- **Played games** show each side's final (winner bold, linking to the box
-  score) and an `F` where the chevron was.
-- **Click a tile** (or Enter/Space) for both starting fives (`renderFives`),
-  with the game preview linked at their foot — the time link that used to
-  reach it is gone.
+  (`playoff_odds.game_line` on the stream planner's `ratings_now()`), shown
+  on the right as `CLE −14` (or `PK`) **only while the game is hovered,
+  focused or opened** (a tap opens it on a phone), with the favourite's team
+  tinted then. The page does no math; it reads the same request the Tonight
+  graphic made (`tonightFor`, one fetch per date). No line in preseason, when
+  the card spans several days. Quoting both sides on every row was tried and
+  dropped as too busy.
+- **Stream games are pinned on top**, tinted with a red edge and a red dot;
+  the streamer is in the dot's tooltip. Once played the game's video
+  (`NbnVod.gameHtml`) goes under the row.
+- **Played games** show the final on the right (`101–82 F`, winner bold),
+  linking to the box score.
+- **Click a row** (or Enter/Space) for both starting fives (`renderFives`),
+  with the game preview linked at their foot. The chevron shows on hover only.
 
 ## Calendar
 
