@@ -936,7 +936,16 @@
       font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .dash-rank-line .rank-move { margin-left: auto; flex: none; }
+    /* Movement as a pill: tinted green up, red down, gold new, plain level. */
+    .dash-rank-move {
+      margin-left: auto; flex: none;
+      padding: 0.05rem 0.45rem; border-radius: 999px;
+      font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.5;
+      color: var(--text-muted); background: var(--bg-hover);
+    }
+    .dash-rank-move.up   { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+    .dash-rank-move.down { color: var(--danger);  background: color-mix(in srgb, var(--danger) 14%, transparent); }
+    .dash-rank-move.new  { color: var(--gold);    background: color-mix(in srgb, var(--gold) 14%, transparent); }
     .dash-rank-stats {
       font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -2024,9 +2033,8 @@
     // Either way each row carries the same live line: record, streak, last 10
     // and title odds, each left out when there is nothing to show.
     //
-    // Movement uses the published table's vocabulary (`moveCell` in
-    // news/view/index.html): ▲ up, ▼ down, – level, "new" with no previous.
-    // In computed mode it is against the ranks a week earlier
+    // Movement is a pill (↑ up, ↓ down, – level, New with no previous),
+    // the same reading as the published table's `moveCell`. In computed mode it is against the ranks a week earlier
     // (`rating_prev` on /api/playoff-odds); with no week of history yet,
     // there is no movement column at all rather than a column of "new".
     let rankMine = null;
@@ -2063,11 +2071,13 @@
           const top = rows.filter(r => r.rank <= 5).sort((a, b) => a.rank - b.rank);
           if (!top.length) return;
 
+          const pill = (cls, text, label) =>
+            `<span class="dash-rank-move ${cls}" title="${label}">${text}</span>`;
           const move = r => r.prev === undefined ? ''
-            : r.prev == null ? '<span class="rank-move new">new</span>'
-            : r.move > 0 ? `<span class="rank-move up">▲${r.move}</span>`
-            : r.move < 0 ? `<span class="rank-move down">▼${Math.abs(r.move)}</span>`
-            : '<span class="rank-move flat">–</span>';
+            : r.prev == null ? pill('new', 'New', 'Not ranked last time')
+            : r.move > 0 ? pill('up', `↑${r.move}`, `Up ${r.move}`)
+            : r.move < 0 ? pill('down', `↓${-r.move}`, `Down ${-r.move}`)
+            : pill('flat', '–', 'No change');
           // Form only for the season being played, so the offseason never
           // shows last spring's streaks as current.
           const stats = team => {
