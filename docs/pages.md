@@ -85,7 +85,7 @@ The `#dash-slate` card in `index.html`: one line per game, `logo ABBR record
   the streamer is in the dot's tooltip. Once played the game's video
   (`NbnVod.gameHtml`) goes under the row.
 - **Played games** show the final on the right (`101–82 F`, winner bold),
-  linking to the box score.
+  linking to the box score; the winning team is bold and the loser dimmed.
 - **Click a row** (or Enter/Space) for both starting fives (`renderFives`),
   with the game preview linked at their foot. The chevron shows on hover only.
 

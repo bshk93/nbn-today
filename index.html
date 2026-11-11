@@ -774,6 +774,8 @@
       font-weight: 600; color: var(--text-primary); white-space: nowrap;
       padding: 0.1rem 0.25rem; margin: -0.1rem -0.25rem; border-radius: var(--radius-sm);
     }
+    .slate-body .dash-game-team.won { font-weight: 800; }
+    .slate-body .dash-game-team.lost { font-weight: 400; color: var(--text-muted); }
     .slate-game:is(:hover, :focus-visible, .open) .dash-game-team.is-fav { background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .slate-val {
       margin-left: auto; flex: none; font-variant-numeric: tabular-nums;
@@ -1578,6 +1580,12 @@
             + `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
             + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span><span class="kick">F</span></a>`;
           row.querySelectorAll('.is-fav').forEach(c => c.classList.remove('is-fav'));
+          // The winner bold, the loser dimmed, so the result reads at a glance.
+          if (a !== h) {
+            const [w, l] = a > h ? [row.dataset.away, row.dataset.home] : [row.dataset.home, row.dataset.away];
+            chipOf(row, w)?.classList.add('won');
+            chipOf(row, l)?.classList.add('lost');
+          }
           // Played, so the game's video (or ⏳ until it's up) goes under it.
           const sg = list.find(x => x.date === night.date
             && x.away_team === row.dataset.away && x.home_team === row.dataset.home);
