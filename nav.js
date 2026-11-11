@@ -1303,23 +1303,63 @@ function _acctItem(tag, label, icon, href) {
   return el;
 }
 
-// "Highlight my team": the on/off switch for my-team.js's callouts. Only
-// shown to a member with a team. Keeps the menu open, like the theme row.
-function _mineToggle() {
-  const item = _acctItem('button', 'Highlight my team', 'star');
-  item.classList.add('sb-acct-mine');
-  item.setAttribute('role', 'menuitemcheckbox');
-  item.insertAdjacentHTML('beforeend', '<span class="sb-acct-switch" aria-hidden="true"></span>');
-  const on = () => !window.NbnMine || window.NbnMine.enabled();
-  const show = () => item.setAttribute('aria-checked', on() ? 'true' : 'false');
-  show();
-  item.addEventListener('click', e => {
-    e.stopPropagation();
-    window.NbnMine?.setEnabled(!on());
-    show();
+// "Highlight my team": how my-team.js calls out your team and players. A row
+// naming the current choice that unfolds the list in place, like Theme: the
+// team's colour, a colour of your own, a star, or off. Only shown to a member
+// with a team. Choosing keeps the menu open, so the change can be seen.
+function _mineToggle(team) {
+  const row = _acctItem('button', 'Highlight my team', 'star');
+  row.classList.add('sb-acct-mine');
+  row.setAttribute('aria-haspopup', 'true');
+  row.insertAdjacentHTML('beforeend', '<span class="sb-acct-item-meta sb-mine-current"></span>');
+  const list = document.createElement('div');
+  list.className = 'sb-mine-menu';
+  list.setAttribute('role', 'group');
+  list.setAttribute('aria-label', 'Highlight my team');
+  const M = () => window.NbnMine;
+  const swatch = css => `<span class="sb-mine-swatch" style="background:${css}"></span>`;
+  const choices = [
+    { value: 'team', label: 'Team colour',
+      icon: `<img class="sb-mine-logo" src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">` },
+    ...(M()?.SWATCHES || []).map(w => ({ value: `c:${w.id}`, label: w.label, icon: swatch(`var(${w.token})`) })),
+    { value: 'star', label: 'Star', icon: '<span class="ui-icon ui-icon--star sb-mine-star"></span>' },
+    { value: 'off', label: 'Off', icon: '<span class="sb-mine-off">–</span>' },
+  ];
+  const current = () => {
+    const st = M()?.style() || { mode: 'team' };
+    return st.mode === 'color' ? `c:${st.swatch.id}` : st.mode;
+  };
+  choices.forEach(c => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'theme-menu-item';
+    item.setAttribute('role', 'menuitemradio');
+    item.dataset.mineChoice = c.value;
+    item.innerHTML = `<span class="theme-menu-icon">${c.icon}</span><span class="theme-menu-label"></span>`
+      + '<span class="theme-menu-check ui-icon ui-icon--check" aria-hidden="true"></span>';
+    item.querySelector('.theme-menu-label').textContent = c.label;
+    item.addEventListener('click', e => { e.stopPropagation(); M()?.setStyle(c.value); });
+    list.appendChild(item);
   });
+  const show = () => {
+    const v = current();
+    list.querySelectorAll('[data-mine-choice]').forEach(i => {
+      const on = i.dataset.mineChoice === v;
+      i.classList.toggle('active', on);
+      i.setAttribute('aria-checked', String(on));
+    });
+    row.querySelector('.sb-mine-current').textContent = choices.find(c => c.value === v)?.label || '';
+  };
+  row.addEventListener('click', e => {
+    e.stopPropagation();
+    list.classList.toggle('open');
+    row.setAttribute('aria-expanded', String(list.classList.contains('open')));
+  });
+  show();
   document.addEventListener('nbn:mine', show);
-  return item;
+  const frag = document.createDocumentFragment();
+  frag.append(row, list);
+  return frag;
 }
 
 function _buildAccount() {
@@ -1430,7 +1470,7 @@ function _buildAccount() {
       const link = _acctItem('a', name, 'basketball', `/teams/${team.toLowerCase()}/`);
       link.querySelector('.sb-acct-item-icon').innerHTML = `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">`;
       teamSlot.replaceWith(link);
-      link.after(_mineToggle());
+      link.after(_mineToggle(team));
       _teamRecord(team).then(rec => {
         if (!rec) return;
         subEl.textContent = `${name} · ${rec}`;

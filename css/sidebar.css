@@ -261,17 +261,15 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
 .sb-acct-item-meta, .sb-theme-current { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
 .sb-acct-item .sb-badge { margin-left: 0; }
 .sb-acct-signout:hover { color: var(--danger); }
-/* "Highlight my team" (nav.js _mineToggle): a small switch in the row. */
-.sb-acct-switch {
-  position: relative; flex: none; width: 1.9rem; height: 1.05rem; border-radius: var(--radius-sm);
-  background: var(--border); transition: background 0.15s;
-}
-.sb-acct-switch::after {
-  content: ""; position: absolute; top: 0.15rem; left: 0.15rem; width: 0.75rem; height: 0.75rem;
-  border-radius: var(--radius-sm); background: var(--text-primary); transition: transform 0.15s;
-}
-.sb-acct-mine[aria-checked="true"] .sb-acct-switch { background: var(--mine-c, var(--accent)); }
-.sb-acct-mine[aria-checked="true"] .sb-acct-switch::after { transform: translateX(0.85rem); background: white; }
+/* "Highlight my team" (nav.js _mineToggle): a row that unfolds its choices
+   in place, like Theme. The items borrow the theme list's look. */
+.sb-mine-menu { display: none; padding: 0 0 0 0.6rem; }
+.sb-mine-menu.open { display: block; }
+.sb-mine-menu .theme-menu-item { width: 100%; border: none; background: none; font: inherit; text-align: left; cursor: pointer; }
+.sb-mine-swatch { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: var(--radius-sm); vertical-align: -0.1em; }
+.sb-mine-logo { width: 1rem; height: 1rem; object-fit: contain; vertical-align: -0.2em; }
+.sb-mine-star { color: var(--gold); }
+.sb-mine-off { color: var(--text-muted); }
 .sb-acct-divider { height: 1px; background: var(--border); margin: 0.3rem 0.2rem; }
 /* The theme list unfolds in place under its row (it keeps the .theme-menu
    class the theme code looks for, so its floating styles are undone here). */
