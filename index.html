@@ -1933,7 +1933,9 @@
         date,
         type: 'score',
         html: plural(nightGames.length, 'game')
-          + `<span class="dash-feed-scores">${games.join(' ')}</span>`,
+          // data-mine-off: a night's finals aren't called out for your team
+          // (my-team.js); one game lit up the whole night's row.
+          + `<span class="dash-feed-scores" data-mine-off>${games.join(' ')}</span>`,
         href: `/boxscores/?date=${encodeURIComponent(date)}`,
       };
     };
