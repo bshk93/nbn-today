@@ -334,6 +334,7 @@
     .pos-dna { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
       margin: 0.15rem 0 0.35rem 0.9rem; font-size: var(--text-xs); color: var(--text-muted); }
     .pos-dna select { font-size: var(--text-xs); }
+    .pos-dna .pos-dna-save { margin-left: 0.3rem; }
     .pos-illegal {
       display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: var(--radius-sm);
       font-size: var(--text-xs); font-weight: 700; color: var(--danger-light);
@@ -896,9 +897,49 @@
       };
       const prim = pick(st.primary, POSITIONS.map(p => [p, p]), v => { st.primary = v; });
       const sec = pick(st.secondary, [['', 'no secondary'], ...POSITIONS.map(p => [p, p])], v => { st.secondary = v; });
-      cb.onchange = () => { st.on = cb.checked; prim.disabled = sec.disabled = !st.on; };
-      box.append(prim, ' / ', sec, span('pos-why', '(set it back, then Mark entered)'));
+      // Saves this one check on its own, so a player whose positions were
+      // fine (or were set back) is done without Mark entered.
+      const save = document.createElement('button');
+      save.className = 'ui-btn ui-btn--sm pos-dna-save';
+      save.dataset.icon = 'check';
+      const hint = span('pos-why', '');
+      const sync = () => {
+        prim.disabled = sec.disabled = !st.on;
+        save.textContent = st.on ? 'Set back in 2K: save' : 'Good: 2K matches';
+        hint.textContent = st.on ? `(set ${i.primary || ''}${i.secondary ? ' / ' + i.secondary : ''} back in 2K first)` : '';
+      };
+      cb.onchange = () => { st.on = cb.checked; sync(); };
+      save.onclick = () => saveDnaCheck(team, i, save);
+      sync();
+      box.append(prim, ' / ', sec, save, hint);
       return box;
+    }
+
+    async function saveDnaCheck(team, i, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      const dna = dnaReports(team, [i]);
+      try {
+        const r = await fetch(`/api/position-checks/${team}/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ seen: {}, dna }),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Not saved: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        positionChecks[team] = await r.json();
+        delete dnaHad[`${team}|${i.slug}`];
+        toast(`${nbnPlayerName(i.name)}: saved`);
+        renderCoachingDashboard();
+        renderMine();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
     }
 
     // The DNA checks Mark entered sends: the update each was shown for, and
