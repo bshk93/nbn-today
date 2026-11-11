@@ -825,6 +825,11 @@
     .dash-five-ovr { text-align: center; font-variant-numeric: tabular-nums; color: var(--text-muted); }
     .dash-five-ovr.edge { color: var(--accent); font-weight: 700; }
     .dash-five-foot { margin-top: 0.3rem; color: var(--text-muted); text-align: center; }
+    .dash-five-title {
+      margin-bottom: 0.45rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border-subtle);
+      text-align: center; font-size: var(--text-sm); font-weight: 700; color: var(--text-primary);
+    }
+    .dash-five-title span { font-weight: 400; color: var(--text-muted); }
     /* The team card's Matchup tab: full width, full names and PPG. */
     .dash-five-box.wide { margin: 0; padding: 0.75rem 1rem 0.6rem; font-size: var(--text-sm); }
     .dash-five-box.wide .dash-five-head, .dash-five-box.wide .dash-five-row {
@@ -1612,6 +1617,8 @@
           panel.dataset.filled = '1';
           renderFives(panel.firstElementChild, row.dataset.away, row.dataset.home, {
             preview: previewHref({ away_team: row.dataset.away, home_team: row.dataset.home, date: row.dataset.date }),
+            // The line only has room for abbreviations; the full names go here.
+            names: true,
           });
         }
         // Next frame, so the height animates from zero on the first open too.
@@ -1673,14 +1680,19 @@
     const ovrBadge = ovr => (ovr
       ? `<span class="ui-ovr ui-heat" style="--heat:${Math.max(0, Math.min(1, (ovr - 65) / 30)).toFixed(2)}">${esc(ovr)}</span>` : '');
 
-    async function renderFives(el, away, home, { wide = false, season = '', pre = {}, preview = '' } = {}) {
-      el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Loading…</div></div>';
+    async function renderFives(el, away, home, { wide = false, season = '', pre = {}, preview = '', names = false } = {}) {
+      // `names`: the matchup in full above the fives ("Boston Celtics at
+      // Toronto Raptors"), for the slate, whose line shows abbreviations only.
+      const fullName = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
+      const title = names
+        ? `<div class="dash-five-title">${esc(fullName(away))} <span>at</span> ${esc(fullName(home))}</div>` : '';
+      el.innerHTML = `<div class="dash-five-box">${title}<div class="dash-five-foot">Loading…</div></div>`;
       const fiveOf = t => pre[t] || startersFor(t);
       const linesOf = t => (!wide ? {} : pre[t] ? pre[t].lines || {} : seasonLines(t, season));
       const [a, h, la, lh] = await Promise.all([fiveOf(away), fiveOf(home), linesOf(away), linesOf(home)])
         .catch(() => [null, null]);
       if (!a || !h || (!a.five.some(Boolean) && !h.five.some(Boolean))) {
-        el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Lineups unavailable.'
+        el.innerHTML = `<div class="dash-five-box">${title}<div class="dash-five-foot">Lineups unavailable.`
           + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview ›</a>` : '') + '</div></div>';
         return;
       }
@@ -1715,7 +1727,7 @@
       const teamLabel = t => (wide
         ? `<span class="dash-five-full">${esc((typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t)}</span><span class="dash-five-last">${esc(t)}</span>`
         : esc(t));
-      el.innerHTML = `<div class="dash-five-box${wide ? ' wide' : ''}">`
+      el.innerHTML = `<div class="dash-five-box${wide ? ' wide' : ''}">${title}`
         + `<div class="dash-five-head"><span class="away" data-team="${esc(away)}">${teamLabel(away)} ${logo(away)}</span><span></span><span class="home" data-team="${esc(home)}">${logo(home)} ${teamLabel(home)}</span></div>`
         + (wide ? '<div class="dash-five-row dash-five-cols"><span></span><span>PPG</span><span>OVR</span><span></span><span>OVR</span><span>PPG</span><span></span></div>' : '')
         + DEPTH_SLOTS.map((slot, i) => {

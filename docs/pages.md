@@ -87,7 +87,9 @@ The `#dash-slate` card in `index.html`: one line per game, `logo ABBR record
 - **Played games** show the final on the right (`101–82 F`, winner bold),
   linking to the box score; the winning team is bold and the loser dimmed.
 - **Click a row** (or Enter/Space) for both starting fives (`renderFives`),
-  with the game preview linked at their foot. The chevron shows on hover only.
+  headed by the matchup in full ("Boston Celtics at Toronto Raptors": the
+  line has room for abbreviations only), with the game preview linked at
+  their foot. The chevron shows on hover only.
 
 ## Calendar
 
