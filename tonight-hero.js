@@ -30,10 +30,6 @@
     return `${DAYS[dt.getUTCDay()]} · ${MONTHS[m - 1]} ${d}`;
   }
   const seasonYears = s => (/^\d\d-\d\d$/.test(s || '') ? `20${s.slice(0, 2)}–${s.slice(3)}` : (s || ''));
-  const tip = t => {
-    const m = /^(\d{1,2}:\d\d)([ap])$/.exec(t || '');
-    return m ? `${m[1]} ${m[2] === 'p' ? 'PM' : 'AM'}` : (t || 'TBD');
-  };
   function lastName(name) {
     const parts = String(name || '').split(' ');
     while (parts.length > 2 && /^(Jr\.|Sr\.|II|III|IV)$/.test(parts[parts.length - 1])) parts.pop();
@@ -108,7 +104,9 @@
       + `<span>${esc(h ? lastName(h.name) : g.home)}<img src="${logo(g.home)}" alt=""></span></span>`
       + `<span class="th-card-row th-card-rec"><span>${esc(g.away)} ${esc(g.records.away)}</span><span>${esc(g.home)} ${esc(g.records.home)}</span></span>`
       + `<span class="th-card-story">${esc(story)}</span>`
-      + `<span class="th-card-foot"><span class="th-card-tip">${esc(tip(g.time_et))} ET</span>${chip}</span>`
+      // Tip times mean nothing in NBN (games are played when they're streamed
+      // or simmed), so the foot says Preview until the final is in.
+      + `<span class="th-card-foot"><span class="th-card-tip">Preview</span>${chip}</span>`
       + '</span></a>';
   }
 
@@ -215,7 +213,7 @@
       + '<div class="th-feat">'
       + '<div class="th-label">'
       + (feat.stream ? `<span class="th-live" title="${esc(feat.streamer ? `Streamed by ${feat.streamer}` : 'Stream game')}">Stream</span>` : '')
-      + `<span>Game of the night · <a href="${esc(previewHref(feat))}">${esc(tip(feat.time_et))} ET</a></span></div>`
+      + `<a href="${esc(previewHref(feat))}">Game of the night</a></div>`
       + posterSide(feat, 'away')
       + `<div class="th-vs"><span>VS</span><small>${esc(feat.away)} @ ${esc(feat.home)}</small></div>`
       + posterSide(feat, 'home')
