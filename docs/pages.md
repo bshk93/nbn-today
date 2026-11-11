@@ -66,6 +66,34 @@ stays if the API fails.
   card, so the last few cards share the final dot. Next at the end goes back
   to the start, Prev at the start to the end.
 
+## Tonight slate (homepage sidebar)
+
+The `#dash-slate` card in `index.html`: one line per game, `logo ABBR record
+@ logo ABBR record`, every row on the same fixed column grid (`.slate-body`,
+`.slate-team`) so logos, abbreviations, records and the `@` line up down the
+card. The abbreviations stay: full names don't fit one line (measured ~354px
+for a typical pair against a ~270px line), so the opened panel carries them.
+(Stacked tiles with city names, and a spread quoted on every row, were tried
+2026-11-11 and dropped.)
+
+- **No tip times.** NBN games are played on the night, not at a tip.
+- **One cell per side does three jobs**: the record at rest; the spread on
+  hover, focus or open (a tap opens it on a phone), in the favourite's cell
+  only, with that team tinted (`PK` on the home side for a pick'em); the
+  score once played. Nothing needs a column of its own.
+- **The line is the API's**: each game's `line` on `GET /api/tonight`
+  (`playoff_odds.game_line` on the stream planner's `ratings_now()`). The
+  page does no math; it reads the request the Tonight graphic already made
+  (`tonightFor`). No line in preseason, when the card spans several days.
+- **Stream games are pinned on top**, tinted with a red edge; the streamer
+  is in the row's tooltip. Once played the game's video (`NbnVod.gameHtml`)
+  goes under the row.
+- **Played games**: scores replace records, the winner bold and the loser
+  dimmed, and `Final` on the right links the box score.
+- **Click a row** (or Enter/Space) for both starting fives (`renderFives`),
+  headed by the matchup in full ("Boston Celtics at Toronto Raptors"), with
+  the game preview linked at their foot. The chevron shows on hover only.
+
 ## Calendar
 
 *Task:* Change the calendar page (public, read-only game list + fixture/vesting events)
