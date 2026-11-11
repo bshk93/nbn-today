@@ -8,6 +8,14 @@ if (!document.querySelector('script[src="/ui-select.js"]')) {
   document.head.appendChild(s);
 }
 
+// Your team and players, called out site-wide (my-team.js). Also rides along
+// with nav.js; it reads _fetchMyTeam below once the page is up.
+if (!document.querySelector('script[src="/my-team.js"]')) {
+  const s = document.createElement('script');
+  s.src = '/my-team.js';
+  document.head.appendChild(s);
+}
+
 // ── Icons ────────────────────────────────────────────────────────────────────
 // Inline SVGs for the nav-action buttons, so search/inbox/profile render as
 // crisp stroked line icons instead of emoji glyphs (which vary in weight and
@@ -371,7 +379,7 @@ function nbnSetInboxUnread(n) {
 // which is how this ended up living nowhere shared.
 function nbnSignOut() {
   const done = () => {
-    try { localStorage.removeItem('nbn_token'); localStorage.removeItem('nbn_token_name'); } catch { /* private browsing */ }
+    try { localStorage.removeItem('nbn_token'); localStorage.removeItem('nbn_token_name'); localStorage.removeItem('nbn_mine_cache'); } catch { /* private browsing */ }
     location.reload();
   };
   fetch('/api/auth/session/logout', { method: 'POST', credentials: 'same-origin' })
@@ -1295,6 +1303,25 @@ function _acctItem(tag, label, icon, href) {
   return el;
 }
 
+// "Highlight my team": the on/off switch for my-team.js's callouts. Only
+// shown to a member with a team. Keeps the menu open, like the theme row.
+function _mineToggle() {
+  const item = _acctItem('button', 'Highlight my team', 'star');
+  item.classList.add('sb-acct-mine');
+  item.setAttribute('role', 'menuitemcheckbox');
+  item.insertAdjacentHTML('beforeend', '<span class="sb-acct-switch" aria-hidden="true"></span>');
+  const on = () => !window.NbnMine || window.NbnMine.enabled();
+  const show = () => item.setAttribute('aria-checked', on() ? 'true' : 'false');
+  show();
+  item.addEventListener('click', e => {
+    e.stopPropagation();
+    window.NbnMine?.setEnabled(!on());
+    show();
+  });
+  document.addEventListener('nbn:mine', show);
+  return item;
+}
+
 function _buildAccount() {
   const wrap = document.createElement('div');
   wrap.className = 'sb-account';
@@ -1403,6 +1430,7 @@ function _buildAccount() {
       const link = _acctItem('a', name, 'basketball', `/teams/${team.toLowerCase()}/`);
       link.querySelector('.sb-acct-item-icon').innerHTML = `<img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">`;
       teamSlot.replaceWith(link);
+      link.after(_mineToggle());
       _teamRecord(team).then(rec => {
         if (!rec) return;
         subEl.textContent = `${name} · ${rec}`;

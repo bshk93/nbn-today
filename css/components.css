@@ -784,6 +784,33 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn) { color: rgba(255, 255, 255, 0.9); border-color: rgba(255, 255, 255, 0.45); }
 .ui-header[data-team] :is(.player-actions a, .player-actions button, .player-nav-btn, .ui-header-actions .ui-btn):hover { color: white; border-color: white; }
 
+/* ── Mine callout (your team and your players) ─────────────────────────── */
+/* my-team.js adds .mine (+ .mine--team / .mine--player) to the row, card or
+   link that names the signed-in member's team or a player on its roster, and
+   puts .mine-on and data-my-team on <html>; css/team-colors.css maps that to
+   --mine-c, the team's chart colour. A tint of it plus a bar on the left edge:
+   never --bg-hover, which only ever means hover (docs/design-system.md).
+   Turning it off in the account menu drops .mine-on and nothing else. */
+:root.mine-on .mine:not(tr) {
+  background-color: color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--mine-c, var(--accent));
+}
+:root.mine-on .mine:not(tr):hover { background-color: color-mix(in srgb, var(--mine-c, var(--accent)) 22%, transparent); }
+/* Table rows paint their cells, with the tint as an inset shadow over the
+   cell's own background, so a sticky cell stays opaque underneath it. */
+:root.mine-on tr.mine > td, :root.mine-on tr.mine > th {
+  box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
+}
+:root.mine-on tr.mine > :first-child {
+  box-shadow: inset 3px 0 0 var(--mine-c, var(--accent)),
+              inset 0 0 0 100vmax color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
+}
+/* A link in running text, with no row around it: a small pill. */
+:root.mine-on .mine.mine--inline {
+  padding: 0 0.25em; border-radius: var(--radius-sm);
+  box-shadow: inset 2px 0 0 var(--mine-c, var(--accent));
+}
+
 /* ── Motion ───────────────────────────────────────────────────────────────── */
 /* Almost none, on purpose. The page fades in once, quickly; nothing rises,
    staggers, lifts on hover or counts up — that is the stock "app" motion the

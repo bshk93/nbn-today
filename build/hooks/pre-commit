@@ -32,6 +32,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   Depth mode has stopped keeping players at their own positions on a tie.
 - Run tests/clinch.test.js; abort if the clinched / eliminated marks on
   /standings could mark a team that isn't mathematically safe.
+- Run tests/my-team.test.js; abort if the your-team callouts (my-team.js)
+  could mark another team, an off-roster player, or the sidebar.
 - Run tests/power-rank.test.js; abort if the homepage Power Rankings card
   could show a stale edition, or rank or form teams wrongly.
 - Run tests/advanced-stats.test.js; abort if the USG% / AST% / REB% / STL% /
@@ -128,6 +130,15 @@ if power_rank_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the homepage Power Rankings rules no longer hold (see FAIL lines above).')
         print('Fix power-rank.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+mine_test = Path('tests/my-team.test.js')
+if mine_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(mine_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the your-team callouts no longer hold (see FAIL lines above).')
+        print('Fix my-team.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 clinch_test = Path('tests/clinch.test.js')

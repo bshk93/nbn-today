@@ -261,6 +261,17 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
 .sb-acct-item-meta, .sb-theme-current { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
 .sb-acct-item .sb-badge { margin-left: 0; }
 .sb-acct-signout:hover { color: var(--danger); }
+/* "Highlight my team" (nav.js _mineToggle): a small switch in the row. */
+.sb-acct-switch {
+  position: relative; flex: none; width: 1.9rem; height: 1.05rem; border-radius: var(--radius-sm);
+  background: var(--border); transition: background 0.15s;
+}
+.sb-acct-switch::after {
+  content: ""; position: absolute; top: 0.15rem; left: 0.15rem; width: 0.75rem; height: 0.75rem;
+  border-radius: var(--radius-sm); background: var(--text-primary); transition: transform 0.15s;
+}
+.sb-acct-mine[aria-checked="true"] .sb-acct-switch { background: var(--mine-c, var(--accent)); }
+.sb-acct-mine[aria-checked="true"] .sb-acct-switch::after { transform: translateX(0.85rem); background: white; }
 .sb-acct-divider { height: 1px; background: var(--border); margin: 0.3rem 0.2rem; }
 /* The theme list unfolds in place under its row (it keeps the .theme-menu
    class the theme code looks for, so its floating styles are undone here). */

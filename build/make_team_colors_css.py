@@ -29,6 +29,12 @@ def render():
     for abbr in sorted(colors):
         c = colors[abbr]
         lines.append(f'[data-team="{abbr}"] {{ --team-primary: {c["primary"]}; --team-accent: {c["accent"]}; --team-chart: {c["chart"]}; }}')
+    # The signed-in member's team (my-team.js sets <html data-my-team>): the
+    # colour of the Mine callout in css/components.css. Chart, since it is the
+    # one that reads on every surface (BKN's primary is near-black).
+    lines.append("")
+    for abbr in sorted(colors):
+        lines.append(f':root[data-my-team="{abbr}"] {{ --mine-c: {colors[abbr]["chart"]}; }}')
     return "\n".join(lines) + "\n"
 
 def render_js():
