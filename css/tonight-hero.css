@@ -50,15 +50,27 @@
   gap: var(--space-2) var(--space-3); text-align: center;
 }
 .th-label {
-  grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2) var(--space-3);
+  grid-column: 1 / -1; display: flex; justify-content: center;
   font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.16em; text-transform: uppercase;
 }
-.th-live {
-  position: relative; display: inline-flex; align-items: center; gap: 0.45em;
-  padding: 0.15em 0.65em; border-radius: var(--radius-sm);
-  background: var(--danger); color: white; font-weight: 800; letter-spacing: 0.12em;
+/* The label sits on one dark chip: the poster's diagonal seam runs right
+   under it, and bare text (or a pill on one colour and its words on the
+   other) was cut in two by it. */
+.th-label-chip {
+  display: inline-flex; align-items: stretch; overflow: hidden;
+  border-radius: var(--radius-sm); background: color-mix(in srgb, black 86%, transparent);
 }
-.th-live::before { content: ''; width: 0.55em; height: 0.55em; border-radius: 50%; background: white; }
+.th-label-chip > a { display: flex; align-items: center; padding: 0.25em 0.8em; }
+/* A strong red under white text: --danger-border-strong on the dark themes
+   (their --danger is a pale pink meant for text), --danger on the two light
+   themes (where it's the strong one). Both clear 4.5:1 against white. */
+.th-live {
+  display: inline-flex; align-items: center; gap: 0.5em; padding: 0.25em 0.8em;
+  background: var(--danger-border-strong); color: white; font-weight: 800; letter-spacing: 0.12em;
+}
+:root:is([data-theme="nbn-today-light"], [data-theme="lavender-rose"]) .th-live { background: var(--danger); }
+.th-live small { font-size: 0.8em; font-weight: 600; letter-spacing: 0.06em; text-transform: none; opacity: 0.85; }
+.th-live-dot { position: relative; width: 0.6em; height: 0.6em; border-radius: 50%; background: white; flex: none; }
 .th-side { display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .th-face, .th-mini {
   position: relative; display: grid; place-items: center; flex: none; overflow: hidden;
@@ -159,7 +171,7 @@
 
 .th-controls { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-top: var(--space-1); }
 .th-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
-.th-dot { width: 0.55rem; height: 0.55rem; padding: 0; border: 0; border-radius: 50%; background: var(--border); cursor: pointer; }
+.th-dot { font: inherit; width: 0.55rem; height: 0.55rem; padding: 0; border: 0; border-radius: 50%; background: var(--border); cursor: pointer; }
 .th-dot[aria-current="true"] { background: var(--accent); }
 
 /* ── Motion ─────────────────────────────────────────────────────────── */
@@ -170,7 +182,10 @@
   .th-vs span { animation: th-slam 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.55s both; }
   .th-count { animation: th-rise 0.6s ease-out both; }
   .th-hatch { animation: th-pan 14s linear infinite; }
-  .th-live { animation: th-pulse 1.4s ease-in-out infinite; }
+  .th-live-dot::after {
+    content: ''; position: absolute; inset: 0; border-radius: 50%; background: white;
+    animation: th-ping 1.4s ease-out infinite;
+  }
   .th-ticker-strip { animation: th-scroll var(--th-dur, 40s) linear infinite; }
   .th-poster:hover .th-ticker-strip { animation-play-state: paused; }
   .th-card { animation: th-rise 0.55s ease-out both; animation-delay: calc(var(--i, 0) * 70ms); transition: transform 0.2s; }
@@ -186,7 +201,7 @@
 @keyframes th-rise { from { transform: translateY(1.2rem); opacity: 0; } }
 @keyframes th-slam { from { transform: scale(2.4); opacity: 0; } }
 @keyframes th-pan { to { background-position: 240px 0; } }
-@keyframes th-pulse { 50% { transform: scale(1.07); filter: brightness(1.2); } }
+@keyframes th-ping { from { transform: scale(1); opacity: 0.8; } to { transform: scale(2.6); opacity: 0; } }
 @keyframes th-scroll { to { transform: translateX(-50%); } }
 @keyframes th-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
 

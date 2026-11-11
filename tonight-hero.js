@@ -211,9 +211,11 @@
       + `<span class="th-num">${n}</span><span class="th-unit">${unit}${when ? `<br>${when}` : ''}</span>`
       + `<span class="th-date">${esc(dateLine(data.date))}</span></div>`
       + '<div class="th-feat">'
-      + '<div class="th-label">'
-      + (feat.stream ? `<span class="th-live" title="${esc(feat.streamer ? `Streamed by ${feat.streamer}` : 'Stream game')}">Stream</span>` : '')
-      + `<a href="${esc(previewHref(feat))}">Game of the night</a></div>`
+      // One dark chip, so the diagonal seam behind it never cuts the words.
+      + '<div class="th-label"><span class="th-label-chip">'
+      + (feat.stream ? `<span class="th-live" title="${esc(feat.streamer ? `Streamed by ${feat.streamer}` : 'Stream game')}">`
+        + `<span class="th-live-dot"></span>Stream${feat.streamer ? `<small>${esc(feat.streamer)}</small>` : ''}</span>` : '')
+      + `<a href="${esc(previewHref(feat))}">Game of the night</a></span></div>`
       + posterSide(feat, 'away')
       + `<div class="th-vs"><span>VS</span><small>${esc(feat.away)} @ ${esc(feat.home)}</small></div>`
       + posterSide(feat, 'home')
