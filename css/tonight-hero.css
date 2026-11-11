@@ -212,3 +212,10 @@
   .th-half--h { clip-path: polygon(62% 0, 100% 0, 100% 100%, 38% 100%); }
   .th-poster > .th-half--a::after, .th-poster > .th-half--h::after { display: none; }
 }
+
+/* Utah's small logo is white (logos/logo-uta-dark.png), and css/theme.css
+   inverts it to black on the light themes. The poster and the game cards are
+   always the teams' own dark colours, whatever the theme, so it stays white
+   on them. The last-night card is on the page's surface and keeps the rule. */
+:root:root .th-poster img[src*="/logos/sm/logo-uta.webp"],
+:root:root .th-card:not(.th-card--last) img[src*="/logos/sm/logo-uta.webp"] { filter: none; }
