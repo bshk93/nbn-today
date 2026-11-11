@@ -745,6 +745,16 @@
     a.dash-game-time { color: var(--text-muted); text-decoration: none; }
     a.dash-game-time:hover { color: var(--link); }
     .dash-game-time.final .win { color: var(--text-primary); font-weight: 700; }
+    /* The latest night's finals, above a later slate (no fives toggle, so the
+       rows line up under the head instead of under a ▶). */
+    .dash-last { padding-bottom: 0.75rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle); }
+    .dash-last-head {
+      display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem;
+      font-size: var(--text-xs); font-weight: 600; color: var(--text-muted);
+    }
+    .dash-last-night { color: inherit; text-decoration: none; white-space: nowrap; }
+    .dash-last-night:hover { color: var(--link); }
+    .dash-game--final .dash-game-time { color: var(--text-secondary); }
 
     /* A slate game opens to show both starting fives, matched slot by slot. */
     .dash-game[data-away] { cursor: pointer; }
@@ -1484,8 +1494,43 @@
       // A game whose box score is already in shows its final in place of the
       // tip time. Matched on date + the two teams, either way round, the same
       // rule /committees/stats uses.
+      // The final's markup, the winner bright: the inline finals and the
+      // Last night block both use it.
+      const finalHtml = (a, h) => `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
+        + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span> F ›`;
+      const boxHref = (date, g) => `/boxscores/?date=${encodeURIComponent(date)}`
+        + `&game=${encodeURIComponent(g.away_team)}-${encodeURIComponent(g.home_team)}`;
       latestNight.then(night => {
         if (!night) return;
+        // Once the card has moved on to a later slate, the latest night's
+        // finals sit above it, open, so last night's scores aren't only in
+        // the ticker. No toggle and no data-away/data-date: a past game never
+        // shows today's fives, and the inline finals below mustn't match it.
+        const slateDate = list.length ? list[0].date : null;
+        if (ph.phase !== 'preseason' && ph.phase !== 'offseason'
+            && (!slateDate || night.date < slateDate)) {
+          const label = night.date === dayBefore(today) ? 'Last night' : 'Latest';
+          const rows = night.games.map(g => {
+            const a = Number(g.away_score), h = Number(g.home_score);
+            const sg = sched.games.find(x => x.date === night.date
+              && x.away_team === g.away_team && x.home_team === g.home_team);
+            return `<div class="dash-game dash-game--final">`
+              + `<span class="dash-game-opp">${teamChip(g.away_team, recs)}<span>@</span>${teamChip(g.home_team, recs)}</span>`
+              + (sg ? NbnVod.gameHtml(sg) : '')
+              + `<a class="dash-game-time final" title="Box score" href="${boxHref(night.date, g)}">${finalHtml(a, h)}</a>`
+              + '</div>';
+          }).join('');
+          card.querySelector('.dash-card-title').insertAdjacentHTML('afterend',
+            `<div class="dash-last"><div class="dash-last-head"><a class="dash-last-night" title="All of this night's box scores"`
+            + ` href="/boxscores/?date=${encodeURIComponent(night.date)}">${label} · ${esc(shortDate(night.date))} ›</a></div>`
+            + `<div class="dash-games">${rows}</div></div>`);
+          streamingDaysPromise.then(days => {
+            const box = NbnVod.boxScoresHtml(days && days[night.date] && days[night.date].youtube_url);
+            const head = card.querySelector('.dash-last-night');
+            if (box && head) head.insertAdjacentHTML('afterend', box);
+          });
+          return;
+        }
         const key = (a, b) => [a, b].map(t => String(t).toUpperCase()).sort().join('|');
         const finals = new Map(night.games.map(g => [key(g.away_team, g.home_team), g]));
         card.querySelectorAll(`.dash-game[data-date="${night.date}"]`).forEach(row => {
@@ -1494,11 +1539,10 @@
           const [a, h] = String(g.away_team).toUpperCase() === row.dataset.away.toUpperCase()
             ? [g.away_score, g.home_score] : [g.home_score, g.away_score];
           const el = row.querySelector('.dash-game-time');
-          el.href = `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
+          el.href = boxHref(night.date, g);
           el.title = 'Box score';
           el.classList.add('final');
-          el.innerHTML = `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
-            + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span> F ›`;
+          el.innerHTML = finalHtml(a, h);
           // Played, so the Stream chip gives way to the game's video, or ⏳ until it's up.
           const sg = list.find(x => x.date === night.date
             && x.away_team === row.dataset.away && x.home_team === row.dataset.home);
