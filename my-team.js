@@ -123,8 +123,8 @@
     if (!kind) return;
     const scope = scopeFor(el);
     if (!scope) return;
-    scope.classList.add('mine', kind === 'team' ? 'mine--team' : 'mine--player');
-    if (scope === el && getComputedStyle(el).display === 'inline') scope.classList.add('mine--inline');
+    scope.classList.add('is-mine', kind === 'team' ? 'is-mine--team' : 'is-mine--player');
+    if (scope === el && getComputedStyle(el).display === 'inline') scope.classList.add('is-mine--inline');
   }
 
   function mark(node) {
@@ -134,8 +134,8 @@
   }
 
   function clearMarks() {
-    document.querySelectorAll('.mine--team, .mine--player').forEach(el =>
-      el.classList.remove('mine', 'mine--team', 'mine--player', 'mine--inline'));
+    document.querySelectorAll('.is-mine--team, .is-mine--player').forEach(el =>
+      el.classList.remove('is-mine', 'is-mine--team', 'is-mine--player', 'is-mine--inline'));
   }
 
   function sync() {
