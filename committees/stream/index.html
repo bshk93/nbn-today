@@ -329,6 +329,11 @@
     .pos-list .pos-row b { color: var(--text-primary); font-weight: 600; }
     .pos-list .pos-row.done { color: var(--text-muted); }
     .pos-list .pos-why { color: var(--text-muted); }
+    /* A ratings update (the DNA) loaded into 2K since the last check: it can
+       overwrite what the team set. The streamer says if it did. */
+    .pos-dna { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+      margin: 0.15rem 0 0.35rem 0.9rem; font-size: var(--text-xs); color: var(--text-muted); }
+    .pos-dna select { font-size: var(--text-xs); }
     .pos-illegal {
       display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: var(--radius-sm);
       font-size: var(--text-xs); font-weight: 700; color: var(--danger-light);
@@ -866,9 +871,49 @@
     // ratings update). The API works out what's due; this only draws it.
 
     const positionItems = team => (positionChecks[team] || {}).items || [];
+    // team|slug -> {on, primary, secondary}: what 2K had in place of the
+    // team's positions, when the streamer found a DNA load had overwritten
+    // them. Kept across re-renders until Mark entered sends it.
+    const dnaHad = {};
+    const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+    function dnaControl(team, i) {
+      const key = `${team}|${i.slug}`;
+      const st = dnaHad[key] || (dnaHad[key] = { on: false, primary: i.primary || 'PG', secondary: '' });
+      const box = div('pos-dna');
+      const label = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = st.on;
+      label.append(cb, ' 2K had something else:');
+      box.appendChild(label);
+      const pick = (val, opts, set) => {
+        const sel = document.createElement('select');
+        opts.forEach(([v, t]) => sel.add(new Option(t, v, false, v === val)));
+        sel.disabled = !st.on;
+        sel.onchange = () => set(sel.value);
+        return sel;
+      };
+      const prim = pick(st.primary, POSITIONS.map(p => [p, p]), v => { st.primary = v; });
+      const sec = pick(st.secondary, [['', 'no secondary'], ...POSITIONS.map(p => [p, p])], v => { st.secondary = v; });
+      cb.onchange = () => { st.on = cb.checked; prim.disabled = sec.disabled = !st.on; };
+      box.append(prim, ' / ', sec, span('pos-why', '(set it back, then Mark entered)'));
+      return box;
+    }
+
+    // The DNA checks Mark entered sends: the update each was shown for, and
+    // what 2K had if the streamer said it was overwritten.
+    function dnaReports(team, due) {
+      const out = {};
+      due.filter(i => i.dna).forEach(i => {
+        const st = dnaHad[`${team}|${i.slug}`];
+        out[i.slug] = { date: i.dna.date, had: st && st.on ? { primary: st.primary, secondary: st.secondary || null } : null };
+      });
+      return out;
+    }
     const positionsDue = team => positionItems(team).filter(i => i.due);
 
-    function positionLine(i) {
+    function positionLine(i, team) {
       const row = div('pos-row' + (i.due ? '' : ' done'));
       const b = document.createElement('b');
       b.textContent = nbnPlayerName(i.name);
@@ -878,6 +923,7 @@
       const whys = [];
       if (i.primary_changed) whys.push(`primary: 2K has ${i.primary_was}`);
       if (i.changed) whys.push(i.secondary ? (i.was ? `was ${i.was}` : 'new') : `remove ${i.was}`);
+      if (i.dna) whys.push(`ratings updated ${fmtShort(i.dna.date)}: check 2K wasn't overwritten`);
       let why = whys.join('; ');
       if (!why && i.locked) why = i.due ? 'pinned: check every game' : 'pinned: checked today';
       if (why) row.appendChild(span('pos-why', `(${why})`));
@@ -894,6 +940,7 @@
         row.appendChild(document.createTextNode(i.jersey ? ` · #${i.jersey} ` : ' · no number '));
         row.appendChild(span('pos-why', i.jersey_was ? `(was #${i.jersey_was})` : '(new)'));
       }
+      if (i.dna && team) row.appendChild(dnaControl(team, i));
       return row;
     }
 
@@ -904,7 +951,7 @@
       if (!items.length) return null;
       const box = div('pos-list');
       box.appendChild(div('pos-head', 'Player Positions & Numbers'));
-      items.forEach(i => box.appendChild(positionLine(i)));
+      items.forEach(i => box.appendChild(positionLine(i, team)));
       return box;
     }
 
@@ -1100,14 +1147,16 @@
             if (i.primary) primaries[i.slug] = i.primary;
             if (i.jersey_changed) jerseys[i.slug] = i.jersey;
           });
+          const dna = dnaReports(team, due);
           const r = await fetch(`/api/position-checks/${team}/confirm`, {
-            method: 'POST', headers, body: JSON.stringify({ seen, jerseys, primaries }),
+            method: 'POST', headers, body: JSON.stringify({ seen, jerseys, primaries, dna }),
           });
           if (!r.ok) {
             const err = await r.json().catch(() => ({}));
             alert(`Positions not marked: ${err.detail || r.status}`);
           } else {
             positionChecks[team] = await r.json();
+            Object.keys(dna).forEach(slug => { delete dnaHad[`${team}|${slug}`]; });
           }
         }
         renderCoachingDashboard();
