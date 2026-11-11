@@ -1078,7 +1078,7 @@ document.body.innerHTML = `
     <div class="team-header-nav">
       ${prevAbbr ? `<a class="team-nav-btn" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
       <div class="team-header">
-        <img src="/logos/logo-${slug}.png" alt="${name} logo">
+        <img src="/logos/md/logo-${slug}.webp" alt="${name} logo" onerror="this.onerror=null;this.src='/logos/logo-${slug}.png'">
         <div class="team-header-text">
           <h1>${name}</h1>
           <div class="team-header-facts" id="team-header-facts"></div>

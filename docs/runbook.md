@@ -185,3 +185,39 @@ in a code checkout.
 | How do draft picks convey? | `nbn-api/docs/picks-conveyance.md` |
 | How was the stats build ported off R? | `docs/stats-pipeline-port-spec.md` |
 | What's outstanding? | `BACKLOG.md` |
+
+## Load time
+
+Measured 2026-11-11 from a cold cache at about 120ms round trip: the homepage
+made 138 requests and painted at 1.06s; a team page finished at 4.5s. Server
+time was 125–200ms for nearly every endpoint, so the cost is round trips, not
+work. What decides it:
+
+- **HTTP/2.** Over HTTP/1.1 a browser opens six connections per host and
+  everything else waits its turn; a 6KB script requested at 1.05s arrived at
+  3.2s. Check with `curl -sI --http2 https://nbn.today/ | head -1`. If that
+  says `HTTP/1.1`, add `http2 on;` to each `server` block listening on 443 in
+  `/etc/nginx/sites-enabled/nbn.today` (and `pdc.nbn.today`, `dev.nbn.today`),
+  then `sudo nginx -t && sudo systemctl reload nginx`.
+- **Caching.** Every static file is `Cache-Control: no-cache`, so a return
+  visit revalidates each one. Fonts and logos never change in step with code
+  and can be cached outright:
+
+  ```nginx
+  location ^~ /fonts/ { add_header Cache-Control "public, max-age=2592000"; }
+  location ^~ /logos/ { add_header Cache-Control "public, max-age=2592000"; }
+  location ^~ /icons/ { add_header Cache-Control "public, max-age=86400"; }
+  ```
+
+  `icons/` is a day because `nav-icons.svg` is regenerated when a page is
+  added to the nav. **HTML, JS, CSS and CSV stay `no-cache`**: saving a file
+  is the deploy, pages and their scripts change together, and a day-old
+  `team.js` against today's API is a worse failure than a 304.
+- **The stylesheets.** They reach a page through `@import`, four levels deep.
+  `theme-boot.js` preloads all of them and the three fonts so they download
+  together rather than level by level.
+- **The API is one process.** An endpoint that does a second of Python holds
+  up every other request. The player gamelog did (it parsed every raw box
+  score file per request) until it was indexed; time a new endpoint that
+  reads the raw files before shipping it.
+
