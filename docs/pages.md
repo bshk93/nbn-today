@@ -66,6 +66,26 @@ stays if the API fails.
   card, so the last few cards share the final dot. Next at the end goes back
   to the start, Prev at the start to the end.
 
+## Tonight slate (homepage sidebar)
+
+The `#dash-slate` card in `index.html`: one stacked tile per game, away over
+home, logo, abbreviation and record, with the projected line down the right.
+
+- **No tip times.** NBN games are played on the night, not at a tip.
+- **The line is the API's**: each game's `line` on `GET /api/tonight`
+  (`playoff_odds.game_line` on the stream planner's `ratings_now()`), shown as
+  `−6.5` on the favourite's side or `PK`. The page does no math; it reads the
+  same request the Tonight graphic made (`tonightFor`, one fetch per date).
+  No line in preseason, when the card spans several days.
+- **Stream games are pinned on top**, tinted with a red edge and an "On
+  stream" eyebrow; the streamer is in the eyebrow's tooltip. Once played the
+  eyebrow gives way to the game's video (`NbnVod.gameHtml`).
+- **Played games** show each side's final (winner bold, linking to the box
+  score) and an `F` where the chevron was.
+- **Click a tile** (or Enter/Space) for both starting fives (`renderFives`),
+  with the game preview linked at their foot — the time link that used to
+  reach it is gone.
+
 ## Calendar
 
 *Task:* Change the calendar page (public, read-only game list + fixture/vesting events)

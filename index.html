@@ -746,16 +746,62 @@
     a.dash-game-time:hover { color: var(--link); }
     .dash-game-time.final .win { color: var(--text-primary); font-weight: 700; }
 
-    /* A slate game opens to show both starting fives, matched slot by slot. */
-    .dash-game[data-away] { cursor: pointer; }
-    .dash-game-toggle {
-      flex: none; padding: 0 0.1rem; margin-right: -0.3rem;
-      background: none; border: none; cursor: pointer;
-      color: var(--text-muted); font-size: var(--text-xs); line-height: 1;
-      transition: transform 0.2s ease, color 0.2s;
+    /* The slate: one stacked scoreboard tile per game, away over home, each
+       side's projected line (then its final score) down the right. Stream
+       games are pinned on top and tinted. The tile opens to show both
+       starting fives, matched slot by slot. */
+    .slate-games { display: flex; flex-direction: column; }
+    .slate-game {
+      position: relative; padding: 0.5rem 0.4rem 0.5rem 0.55rem; cursor: pointer;
+      border-top: 1px solid var(--border-subtle);
+      border-left: 3px solid transparent;
     }
-    .dash-game:hover .dash-game-toggle { color: var(--link); }
-    .dash-game.open .dash-game-toggle { transform: rotate(90deg); color: var(--accent); }
+    .slate-games > .slate-game:first-child { border-top: 0; }
+    .slate-game:hover, .slate-game.open { background: var(--bg-hover); }
+    .slate-game:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+    .slate-game.is-stream {
+      background: color-mix(in srgb, var(--danger) 8%, transparent);
+      border-left-color: var(--danger);
+    }
+    .slate-game.is-stream:hover, .slate-game.is-stream.open { background: color-mix(in srgb, var(--danger) 13%, transparent); }
+    /* A gap, not a rule, between the pinned stream game(s) and the rest. */
+    .slate-games > .slate-game.is-stream + .dash-five + .slate-game:not(.is-stream) { margin-top: var(--space-2); border-top: 0; }
+    .slate-eyebrow {
+      display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem;
+      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--danger);
+    }
+    .slate-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); flex: none; }
+    .slate-body {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto 0.8rem;
+      align-items: center; column-gap: 0.5rem; row-gap: 0.2rem;
+    }
+    .slate-body .dash-game-team { min-width: 0; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .slate-body .dash-game-logo { width: 20px; height: 20px; }
+    .slate-body .dash-game-rec { margin-left: 0.1rem; }
+    .slate-val {
+      justify-self: end; font-size: var(--text-sm); font-variant-numeric: tabular-nums;
+      color: var(--text-muted); white-space: nowrap; text-decoration: none;
+    }
+    .slate-val.fav { color: var(--text-primary); font-weight: 600; }
+    .slate-val.pk { color: var(--text-muted); font-size: var(--text-xs); letter-spacing: 0.04em; }
+    a.slate-val.final { color: var(--text-muted); }
+    a.slate-val.final.win { color: var(--text-primary); font-weight: 700; }
+    a.slate-val.final:hover { color: var(--link); }
+    .slate-chev {
+      grid-column: 3; grid-row: 1 / 3; justify-self: center;
+      color: var(--text-muted); font-size: var(--text-md); line-height: 1;
+      opacity: 0; transition: transform 0.2s ease, opacity 0.2s;
+    }
+    .slate-game:hover .slate-chev, .slate-game:focus-visible .slate-chev { opacity: 1; }
+    .slate-game.open .slate-chev { opacity: 1; transform: rotate(90deg); color: var(--accent); }
+    @media (hover: none) { .slate-chev { opacity: 0.6; } }
+    .slate-kicker { grid-column: 3; grid-row: 1 / 3; justify-self: center; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); }
+    .slate-vod { margin-top: 0.4rem; }
+    .slate-head { font-size: var(--text-xs); color: var(--text-muted); margin: -0.25rem 0 var(--space-2); }
+    .slate-games .dash-five-box { margin: 0.1rem 0 0.5rem; }
+    .dash-five-preview { display: block; margin-top: 0.3rem; color: var(--link); text-decoration: none; }
+    .dash-five-preview:hover { text-decoration: underline; }
     .dash-five { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
     .dash-five.open { grid-template-rows: 1fr; }
     .dash-five-inner { overflow: hidden; min-height: 0; }
@@ -833,7 +879,7 @@
     .dash-five.open .dash-five-row { animation: dash-five-in 0.3s ease both; animation-delay: calc(var(--i) * 45ms + 60ms); }
     @keyframes dash-five-in { from { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) {
-      .dash-five, .dash-game-toggle { transition: none; }
+      .dash-five, .slate-chev { transition: none; }
       .dash-five.open .dash-five-row { animation: none; }
     }
 
@@ -1373,7 +1419,7 @@
       return null;
     }).catch(() => null);
 
-    // Only a stream game is tagged. A streamer claims every game of a night
+    // The team card's schedule rows. Only a stream game is tagged. A streamer claims every game of a night
     // they run, stream or not, so tagging each claim put the same name on the
     // whole slate and the actual stream games couldn't be told apart. The
     // claim (`streamer`) and the flag (`stream`) are independent; the name is
@@ -1465,46 +1511,93 @@
         if (ph.phase === 'preseason') title = 'Opening week';
       }
 
+      // Stream games first: the one people will watch is the night's marquee.
+      // Stable otherwise, so the rest keep the schedule's order. (Preseason's
+      // several days stay in date order.)
+      if (!showDates) list = [...list.filter(g => g.stream), ...list.filter(g => !g.stream)];
+
+      // One stacked tile per game, away over home, scoreboard style: logo,
+      // abbreviation and record, with each side's projected line (then its
+      // final) down the right. No tip times: NBN games are played on the
+      // night, not at a tip. The stream game is tinted with an "On stream"
+      // eyebrow; who streams it is in the tooltip.
+      const streamTitle = g => 'Stream game' + (g.streamer ? `, streamed by ${g.streamer}` : '')
+        + (g.stream_buyer ? `, bought by ${g.stream_buyer}` : '');
+      const tile = g => `<div class="slate-game${g.stream ? ' is-stream' : ''}" role="button" tabindex="0" aria-expanded="false"`
+        + ` data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}" data-date="${esc(g.date)}"`
+        + '>'
+        + (g.stream ? `<div class="slate-eyebrow" title="${esc(streamTitle(g))}"><span class="slate-dot"></span>On stream</div>` : '')
+        + '<div class="slate-body">'
+        + `${teamChip(g.away_team, recs)}<span class="slate-val" data-side="away"></span>`
+        + `<span class="slate-chev" aria-hidden="true">›</span>`
+        + `${teamChip(g.home_team, recs)}<span class="slate-val" data-side="home"></span>`
+        + '</div></div><div class="dash-five"><div class="dash-five-inner"></div></div>';
+
       // Only the title text is the link: a night's box-score video link is added
       // beside it later, and a link can't sit inside another.
       card.innerHTML = `<div class="dash-card-title"><a class="ui-title-link" href="/calendar">${esc(title)}</a></div>${head}`
-        // Grouped under a date heading rather than a date column: the card is
-        // too narrow for date + two team chips + time on one line, and the
-        // times were spilling out past its edge.
-        + (list.length ? '<div class="dash-games">' + list.map((g, i) =>
+        + (list.length && !showDates && list[0].date !== today
+          ? `<div class="slate-head">${esc(shortDate(list[0].date))}</div>` : '')
+        // Grouped under a date heading rather than a date column (preseason
+        // only, the one view spanning several days).
+        + (list.length ? '<div class="slate-games">' + list.map((g, i) =>
             (showDates && (i === 0 || list[i - 1].date !== g.date)
               ? `<div class="dash-game-day">${esc(shortDate(g.date))}</div>` : '')
-            + `<div class="dash-game" data-away="${esc(g.away_team)}" data-home="${esc(g.home_team)}" data-date="${esc(g.date)}">`
-            + `<button class="dash-game-toggle" type="button" aria-expanded="false" title="Starting fives">▶</button>`
-            + `<span class="dash-game-opp">${teamChip(g.away_team, recs)}<span>@</span>${teamChip(g.home_team, recs)}</span>`
-            + streamTag(g)
-            + `<a class="dash-game-time" title="Game preview" href="${previewHref(g)}">${esc(g.time_et || 'Preview')} ›</a>`
-            + `</div><div class="dash-five"><div class="dash-five-inner"></div></div>`).join('') + '</div>' : '');
+            + tile(g)).join('') + '</div>' : '');
+      const rowFor = (a, h, d) => [...card.querySelectorAll(`.slate-game[data-date="${d}"]`)]
+        .find(r => r.dataset.away === a && r.dataset.home === h);
+      const minus = '\u2212';
+
+      // Each game's projected line, from GET /api/tonight (nbn-api
+      // playoff_odds.game_line: the stream planner's ratings, Out players
+      // off). Shown on the favourite's side; nothing here does the math.
+      if (!showDates && list.length) {
+        tonightFor(list[0].date).then(t => {
+          if (!t || t.date !== list[0].date) return;
+          t.games.forEach(g => {
+            const row = rowFor(g.away, g.home, g.date), ln = g.line;
+            if (!row || !ln || row.querySelector('.slate-val.final')) return;
+            const tip = `${ln.fav ? `${ln.fav} by ${Math.abs(ln.margin).toFixed(1)}` : 'Even'} projected`
+              + ` · ${g.home} ${Math.round(ln.p_home * 100)}% to win`;
+            if (!ln.fav) {
+              const el = row.querySelector('.slate-val[data-side="home"]');
+              el.className = 'slate-val pk'; el.textContent = 'PK'; el.title = tip;
+              return;
+            }
+            const el = row.querySelector(`.slate-val[data-side="${ln.fav === g.home ? 'home' : 'away'}"]`);
+            el.className = 'slate-val fav'; el.textContent = minus + ln.spread; el.title = tip;
+          });
+        }).catch(() => {});
+      }
 
       // A game whose box score is already in shows its final in place of the
-      // tip time. Matched on date + the two teams, either way round, the same
+      // line. Matched on date + the two teams, either way round, the same
       // rule /committees/stats uses.
       latestNight.then(night => {
         if (!night) return;
         const key = (a, b) => [a, b].map(t => String(t).toUpperCase()).sort().join('|');
         const finals = new Map(night.games.map(g => [key(g.away_team, g.home_team), g]));
-        card.querySelectorAll(`.dash-game[data-date="${night.date}"]`).forEach(row => {
+        card.querySelectorAll(`.slate-game[data-date="${night.date}"]`).forEach(row => {
           const g = finals.get(key(row.dataset.away, row.dataset.home));
           if (!g) return;
           const [a, h] = String(g.away_team).toUpperCase() === row.dataset.away.toUpperCase()
             ? [g.away_score, g.home_score] : [g.home_score, g.away_score];
-          const el = row.querySelector('.dash-game-time');
-          el.href = `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
-          el.title = 'Box score';
-          el.classList.add('final');
-          el.innerHTML = `<span class="${a > h ? 'win' : ''}">${esc(String(a))}</span>–`
-            + `<span class="${h > a ? 'win' : ''}">${esc(String(h))}</span> F ›`;
-          // Played, so the Stream chip gives way to the game's video, or ⏳ until it's up.
+          const href = `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`;
+          const score = (side, v, o) => {
+            const el = row.querySelector(`.slate-val[data-side="${side}"]`);
+            el.outerHTML = `<a class="slate-val final${v > o ? ' win' : ''}" data-side="${side}" href="${esc(href)}"`
+              + ` title="Box score">${esc(String(v))}</a>`;
+          };
+          score('away', a, h); score('home', h, a);
+          row.querySelector('.slate-chev').insertAdjacentHTML('afterend', '<span class="slate-kicker">F</span>');
+          row.querySelector('.slate-chev').remove();
+          // Played, so the stream eyebrow gives way to the game's video, or ⏳ until it's up.
           const sg = list.find(x => x.date === night.date
             && x.away_team === row.dataset.away && x.home_team === row.dataset.home);
-          if (sg) {
-            row.querySelector('.dash-game-stream')?.remove();
-            el.insertAdjacentHTML('beforebegin', NbnVod.gameHtml(sg));
+          const vod = sg ? NbnVod.gameHtml(sg) : '';
+          if (vod) {
+            row.querySelector('.slate-eyebrow')?.remove();
+            row.insertAdjacentHTML('beforeend', `<div class="slate-vod">${vod}</div>`);
           }
         });
         // The night's unstreamed games share one video, beside the card's title.
@@ -1516,20 +1609,30 @@
       });
 
       // Clicking a game (anywhere but its links) slides its starting fives
-      // out underneath. Filled on first open; later opens just toggle.
-      card.addEventListener('click', e => {
-        const row = e.target.closest('.dash-game[data-away]');
-        if (!row || e.target.closest('a')) return;
+      // out underneath, with the game's preview link at their foot. Filled
+      // on first open; later opens just toggle.
+      const toggle = row => {
         const panel = row.nextElementSibling;
         const open = !row.classList.contains('open');
         row.classList.toggle('open', open);
-        row.querySelector('.dash-game-toggle').setAttribute('aria-expanded', String(open));
+        row.setAttribute('aria-expanded', String(open));
         if (open && !panel.dataset.filled) {
           panel.dataset.filled = '1';
-          renderFives(panel.firstElementChild, row.dataset.away, row.dataset.home);
+          renderFives(panel.firstElementChild, row.dataset.away, row.dataset.home, {
+            preview: previewHref({ away_team: row.dataset.away, home_team: row.dataset.home, date: row.dataset.date }),
+          });
         }
         // Next frame, so the height animates from zero on the first open too.
         requestAnimationFrame(() => panel.classList.toggle('open', open));
+      };
+      card.addEventListener('click', e => {
+        const row = e.target.closest('.slate-game');
+        if (row && !e.target.closest('a')) toggle(row);
+      });
+      card.addEventListener('keydown', e => {
+        const row = e.target.closest('.slate-game');
+        if (!row || e.target !== row || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault(); toggle(row);
       });
     });
 
@@ -1578,14 +1681,15 @@
     const ovrBadge = ovr => (ovr
       ? `<span class="ui-ovr ui-heat" style="--heat:${Math.max(0, Math.min(1, (ovr - 65) / 30)).toFixed(2)}">${esc(ovr)}</span>` : '');
 
-    async function renderFives(el, away, home, { wide = false, season = '', pre = {} } = {}) {
+    async function renderFives(el, away, home, { wide = false, season = '', pre = {}, preview = '' } = {}) {
       el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Loading…</div></div>';
       const fiveOf = t => pre[t] || startersFor(t);
       const linesOf = t => (!wide ? {} : pre[t] ? pre[t].lines || {} : seasonLines(t, season));
       const [a, h, la, lh] = await Promise.all([fiveOf(away), fiveOf(home), linesOf(away), linesOf(home)])
         .catch(() => [null, null]);
       if (!a || !h || (!a.five.some(Boolean) && !h.five.some(Boolean))) {
-        el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Lineups unavailable.</div></div>';
+        el.innerHTML = '<div class="dash-five-box"><div class="dash-five-foot">Lineups unavailable.'
+          + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview ›</a>` : '') + '</div></div>';
         return;
       }
       // Last name only: the card is too narrow for two full names a row.
@@ -1633,7 +1737,8 @@
           // A row of the grid, so each average sits under its own OVR column.
           ? `<div class="dash-five-row dash-five-avg"><span></span><span></span><span class="dash-five-ovr">${avg(a)}</span>`
             + `<span class="dash-five-slot">AVG</span><span class="dash-five-ovr">${avg(h)}</span><span></span><span></span></div>`
-          : `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}<br>${how}</div>`)
+          : `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}<br>${how}`
+            + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview ›</a>` : '') + '</div>')
         + '</div>';
       if (wide) wireAvatars(el);
     }
@@ -2114,16 +2219,21 @@
     // the 11am Discord card is drawn from. A date with no games shows the next
     // slate, with this date's last night. Any failure leaves the plain
     // headline that's already there.
+    // One request per date, shared by the graphic and the slate's lines.
+    const tonightMemo = {};
+    const tonightJson = d => tonightMemo[d || ''] || (tonightMemo[d || ''] = jget('/api/tonight' + (d ? `?date=${encodeURIComponent(d)}` : '')));
+    // The answer for one date: the default request when it is that date (it
+    // usually is, and the graphic has already asked for it), else that date's.
+    const tonightFor = d => tonightJson(asof).then(t => (t.date === d ? t : tonightJson(d)));
     function loadTonight() {
       const hero = $('dash-hero');
       const href = g => previewHref({ away_team: g.away, home_team: g.home, date: g.date });
-      const q = d => (d ? `?date=${encodeURIComponent(d)}` : '');
-      jget('/api/tonight' + q(asof)).then(async t => {
+      tonightJson(asof).then(async t => {
         if (t.games && t.games.length) {
           return TonightHero.mount(hero, t, { previewHref: href }) ? t : null;
         }
         if (!t.next) return null;
-        const nx = await jget('/api/tonight' + q(t.next.date));
+        const nx = await tonightJson(t.next.date);
         return nx.games && nx.games.length
           && TonightHero.mount(hero, nx, { previewHref: href, lastNight: t.last_night, label: 'Next up' }) ? nx : null;
       }).then(t => {
