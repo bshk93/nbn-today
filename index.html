@@ -914,6 +914,8 @@
     .dash-ranks-head { display: flex; flex-direction: column; gap: 0.1rem; margin-bottom: var(--space-3); }
     :root .dash-ranks-head .dash-card-title { margin: 0 !important; }
     .dash-ranks-edition { font-size: var(--text-xs); color: var(--text-muted); }
+    .dash-ranks-views { display: flex; width: 100%; margin: 0 0 0.35rem; }
+    .dash-ranks-views > button { flex: 1; padding: var(--space-1) 0; font-size: var(--text-xs); }
     .dash-rank-team {
       display: flex; align-items: center; gap: 0.55rem;
       padding: 0.5rem 0.5rem 0.5rem 0.15rem;
@@ -2029,10 +2031,11 @@
 
     // ── Power Rankings ────────────────────────────────────────────────────
     //
-    // The newest voted edition while it is fresh (PowerRank.pick: published
-    // within 30 days), otherwise the playoff-odds model's team ratings
-    // ranked. Editions are written by hand and can go months without a new
-    // one; the model reruns hourly, so the card never shows a stale standing.
+    // Two views, Model | Voted: the playoff-odds model's team ratings ranked,
+    // and the newest voted edition, however old (its date is on its tab).
+    // The card opens on the voted one while it is fresh (PowerRank.isFresh:
+    // published within 30 days) and on the model's after: editions are written
+    // by hand and can go months between, while the model reruns hourly.
     // Either way each row carries the same live line: record, streak, last 10
     // and title odds, each left out when there is nothing to show.
     //
@@ -2053,26 +2056,31 @@
     ]).then(([series, odds, records, liveSeason, games]) => {
       const day = asof || today;
       const oddsBy = new Map(((odds && odds.teams) || []).map(t => [t.team, t]));
-      const edition = PowerRank.pick(Object.values(series || {}).flat(), day);
+      const edition = PowerRank.latest(Object.values(series || {}).flat(), day);
       return (edition ? jget(`/api/news/${encodeURIComponent(edition.id)}`) : Promise.resolve(null))
         .catch(() => null).then(article => {
-          let rows, titleHref, sub;
+          // Each view: its rows, where the title links, and the line under it.
+          const views = {};
           if (article && (article.final || []).length) {
-            rows = article.final;
-            titleHref = `/news/view/?id=${encodeURIComponent(edition.id)}`;
-            sub = `${edition.title || 'Latest edition'} · ${shortDate(String(edition.published_at).slice(0, 10))}`;
-          } else if (oddsBy.size) {
-            rows = PowerRank.computed(odds.teams, odds.rating_prev);
-            titleHref = '/standings/#odds';
-            sub = `${odds.games_played ? 'By the numbers' : 'Preseason, by roster'}`
-              + (odds.date ? ` · updated ${shortDate(odds.date)}` : '');
-          } else return;
-
-          // Rank <= 5 rather than the first five rows: teams level share a
-          // rank (T-4, T-4, 6), so a tie at the cut legitimately returns six
-          // and truncating would drop one of two equals.
-          const top = rows.filter(r => r.rank <= 5).sort((a, b) => a.rank - b.rank);
-          if (!top.length) return;
+            const when = String(edition.published_at).slice(0, 10);
+            views.voted = {
+              rows: article.final, label: `Voted · ${shortDate(when)}`,
+              href: `/news/view/?id=${encodeURIComponent(edition.id)}`,
+              sub: `${edition.title || 'Latest edition'} · ${shortDate(when)}`,
+            };
+          }
+          if (oddsBy.size) {
+            views.model = {
+              rows: PowerRank.computed(odds.teams, odds.rating_prev), label: 'Model',
+              href: '/standings/#odds',
+              sub: `${odds.games_played ? 'By the numbers' : 'Preseason, by roster'}`
+                + (odds.date ? ` · updated ${shortDate(odds.date)}` : ''),
+            };
+          }
+          const order = ['model', 'voted'].filter(k => views[k]);
+          if (!order.length) return;
+          // Open on the voters' ranking while it is fresh, the model's after.
+          let current = views.voted && (PowerRank.isFresh(edition, day) || !views.model) ? 'voted' : 'model';
 
           const pill = (cls, text, label) =>
             `<span class="dash-rank-move ${cls}" title="${label}">${text}</span>`;
@@ -2095,25 +2103,51 @@
             ].filter(Boolean).map(esc).join(' · ');
           };
           const name = t => (typeof TEAM_LIST !== 'undefined' && TEAM_LIST[t]) || t;
+          // Rank <= 5 rather than the first five rows: teams level share a
+          // rank (T-4, T-4, 6), so a tie at the cut legitimately returns six
+          // and truncating would drop one of two equals.
+          const list = rows => rows.filter(r => r.rank <= 5).sort((a, b) => a.rank - b.rank).map(r => {
+            const t = String(r.team).toUpperCase();
+            const line = stats(t);
+            return `<a class="dash-rank-team" data-team="${esc(t)}" href="/teams/${esc(t.toLowerCase())}/">`
+              + `<span class="dash-rank-pos">${r.tied ? '<span class="dash-rank-tie">T</span>' : ''}${r.rank}</span>`
+              + `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="">`
+              + `<span class="dash-rank-main"><span class="dash-rank-line">`
+              + `<span class="dash-rank-name">${esc(name(t))}</span></span>`
+              + (line ? `<span class="dash-rank-stats">${line}</span>` : '')
+              + `</span>${move(r)}</a>`;
+          }).join('');
 
-          $('dash-ranks').innerHTML =
+          const card = $('dash-ranks');
+          card.innerHTML =
             `<div class="dash-ranks-head">`
-            + `<div class="dash-card-title"><a class="ui-title-link" href="${titleHref}">Power Rankings</a></div>`
-            + `<span class="dash-ranks-edition">${esc(sub)}</span></div>`
-            + '<div class="dash-ranks-list">' + top.map(r => {
-                const t = String(r.team).toUpperCase();
-                const line = stats(t);
-                return `<a class="dash-rank-team" data-team="${esc(t)}" href="/teams/${esc(t.toLowerCase())}/">`
-                  + `<span class="dash-rank-pos">${r.tied ? '<span class="dash-rank-tie">T</span>' : ''}${r.rank}</span>`
-                  + `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="">`
-                  + `<span class="dash-rank-main"><span class="dash-rank-line">`
-                  + `<span class="dash-rank-name">${esc(name(t))}</span></span>`
-                  + (line ? `<span class="dash-rank-stats">${line}</span>` : '')
-                  + `</span>${move(r)}</a>`;
-              }).join('')
-            + '</div>';
-          $('dash-ranks').hidden = false;
-          paintRankMine();
+            + `<div class="dash-card-title"><a class="ui-title-link" href=""></a></div>`
+            + `<span class="dash-ranks-edition"></span></div>`
+            + (order.length > 1
+              ? '<div class="ui-segmented dash-ranks-views" role="group" aria-label="Ranking">'
+                + order.map(k => `<button type="button" data-view="${k}">${esc(views[k].label)}</button>`).join('')
+                + '</div>'
+              : '')
+            + '<div class="dash-ranks-list"></div>';
+          const show = k => {
+            current = k;
+            const v = views[k];
+            const title = card.querySelector('.dash-card-title a');
+            title.href = v.href;
+            title.textContent = 'Power Rankings';
+            card.querySelector('.dash-ranks-edition').textContent = v.sub;
+            card.querySelector('.dash-ranks-list').innerHTML = list(v.rows);
+            card.querySelectorAll('.dash-ranks-views button').forEach(b =>
+              b.setAttribute('aria-pressed', String(b.dataset.view === k)));
+            paintRankMine();
+          };
+          const seg = card.querySelector('.dash-ranks-views');
+          if (seg) seg.addEventListener('click', e => {
+            const btn = e.target.closest('button');
+            if (btn) show(btn.dataset.view);
+          });
+          show(current);
+          card.hidden = false;
         });
     }).catch(() => {});
 

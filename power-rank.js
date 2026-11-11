@@ -1,8 +1,9 @@
 // The homepage Power Rankings card's rules: which ranking to show, and each
 // team's form.
 //
-// The card shows the newest voted edition while it is fresh, and a ranking by
-// the playoff-odds model's team rating once it isn't. The voted rankings are
+// The card has two views: the newest voted edition, and a ranking by the
+// playoff-odds model's team rating. It opens on the voted one while it is
+// fresh and on the model's once it isn't; the reader can switch either way. The voted rankings are
 // written by hand and can go a long time without a new edition. The model is
 // rerun every hour, so the computed ranking is never stale.
 //
@@ -12,14 +13,23 @@
 
   const dayNum = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5;
 
-  // The newest published edition, if it was published within `maxDays` of
-  // `today` (YYYY-MM-DD); otherwise null.
-  function pick(editions, today, maxDays = FRESH_DAYS) {
+  // The newest edition published on or before `today` (YYYY-MM-DD), or null.
+  function latest(editions, today) {
     const pub = (editions || []).filter(e => e && e.published_at && String(e.published_at).slice(0, 10) <= today)
       .sort((a, b) => String(a.published_at).localeCompare(String(b.published_at)));
-    const latest = pub[pub.length - 1];
-    if (!latest) return null;
-    return dayNum(today) - dayNum(String(latest.published_at).slice(0, 10)) <= maxDays ? latest : null;
+    return pub[pub.length - 1] || null;
+  }
+
+  // Whether an edition is fresh: published within `maxDays` of `today`. The
+  // card opens on the voted ranking while it is, and on the model's after.
+  function isFresh(edition, today, maxDays = FRESH_DAYS) {
+    return !!edition && dayNum(today) - dayNum(String(edition.published_at).slice(0, 10)) <= maxDays;
+  }
+
+  // The newest edition if it is fresh, otherwise null.
+  function pick(editions, today, maxDays = FRESH_DAYS) {
+    const e = latest(editions, today);
+    return isFresh(e, today, maxDays) ? e : null;
   }
 
   // Standard competition ranks (1, 2, 2, 4) by rating, highest first.
@@ -71,5 +81,5 @@
     return { streak: (won[0] ? 'W' : 'L') + n, last10: `${w}–${ten.length - w}`, games: won.length };
   }
 
-  global.PowerRank = { pick, computed, form, ranks, FRESH_DAYS };
+  global.PowerRank = { pick, latest, isFresh, computed, form, ranks, FRESH_DAYS };
 })(typeof window !== 'undefined' ? window : globalThis);

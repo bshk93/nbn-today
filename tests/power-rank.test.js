@@ -18,7 +18,8 @@ const vm = require('vm');
 const g = { console };
 vm.createContext(g);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'power-rank.js'), 'utf8'), g);
-const { pick, computed, form } = g.PowerRank;
+const { pick, computed, form, isFresh } = g.PowerRank;
+const PowerRank_latest = g.PowerRank.latest;
 
 let failed = 0;
 function eq(name, got, want) {
@@ -39,6 +40,8 @@ eq('30 days on, still fresh', pick(eds, '2026-11-19').id, 'c');
 eq('31 days on, stale', pick(eds, '2026-11-20'), null);
 eq('an edition published after today is not the newest', pick(eds, '2026-10-01').id, 'a');
 eq('nothing published', pick([{ id: 'x' }], '2026-11-11'), null);
+eq('a stale edition is still the latest', PowerRank_latest(eds, '2026-12-25').id, 'c');
+eq('but not fresh', isFresh(PowerRank_latest(eds, '2026-12-25'), '2026-12-25'), false);
 
 // ── computed ──
 const teams = [
