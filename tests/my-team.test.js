@@ -132,5 +132,16 @@ eq('slug in another column', M.rosterSlugs('PLAYER,SLUG\nTatum,tatum-jayson\n'),
 eq('no slug column', M.rosterSlugs('PLAYER\nTatum\n'), []);
 eq('empty', M.rosterSlugs(''), []);
 
+// ── Style choice ─────────────────────────────────────────────────────────────
+eq('default is team colour', M.parseStyle(null).mode, 'team');
+eq('old "on" is team colour', M.parseStyle('on').mode, 'team');
+eq('off', M.parseStyle('off').mode, 'off');
+eq('star', M.parseStyle('star').mode, 'star');
+eq('a swatch', [M.parseStyle('c:teal').mode, M.parseStyle('c:teal').swatch.token], ['color', '--cat-teal']);
+eq('an unknown swatch falls back to team', M.parseStyle('c:mauve').mode, 'team');
+eq('junk falls back to team', M.parseStyle('c:<script>').mode, 'team');
+eq('swatches are theme tokens, never a literal', M.SWATCHES.every(w => /^--[a-z-]+$/.test(w.token)), true);
+eq('no red or green swatch (danger / success)', M.SWATCHES.some(w => /danger|success/.test(w.token)), false);
+
 console.log(`${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

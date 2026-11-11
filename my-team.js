@@ -19,7 +19,20 @@
 // The pure half (classify, scopeFor) is pinned by tests/my-team.test.js.
 (function (global) {
   const CACHE_KEY = 'nbn_mine_cache';      // {team, slugs, at}
-  const TOGGLE_KEY = 'nbn_highlight_mine'; // 'off' turns it off; anything else is on
+  // How it looks, per browser: 'team' (the default: the team's colour),
+  // 'c:<swatch>' (a colour of the member's choosing), 'star', or 'off'.
+  // 'on', from before there was a choice, reads as 'team'.
+  const TOGGLE_KEY = 'nbn_highlight_mine';
+  // The colours on offer instead of the team's. Theme tokens, so each is set
+  // for every theme; none of them red or green, which mean danger and success.
+  const SWATCHES = [
+    { id: 'blue', label: 'Blue', token: '--accent' },
+    { id: 'sky', label: 'Sky', token: '--cat-sky' },
+    { id: 'teal', label: 'Teal', token: '--cat-teal' },
+    { id: 'violet', label: 'Violet', token: '--purple' },
+    { id: 'gold', label: 'Gold', token: '--gold' },
+    { id: 'orange', label: 'Orange', token: '--cat-orange' },
+  ];
   const ROSTER_TTL_MS = 15 * 60 * 1000;
   const MATCH_SELECTOR = 'a[href*="/teams/"], a[href*="/players/"], [data-team], [data-slug], [data-mine-team], [data-mine-slug]';
   // Never marked: the sidebar and nav (the Teams panel would light up on
@@ -96,7 +109,16 @@
       .filter(Boolean);
   }
 
-  const pure = { parseHref, classify, scopeFor, isOwnTeamPage, rosterSlugs, CACHE_KEY, TOGGLE_KEY };
+  // The stored choice, normalised: {mode: 'team'|'color'|'star'|'off', swatch}.
+  // Anything unknown, including an old 'on' or a swatch since removed, is 'team'.
+  function parseStyle(raw) {
+    if (raw === 'off' || raw === 'star') return { mode: raw, swatch: null };
+    const m = /^c:([a-z]+)$/.exec(raw || '');
+    const swatch = m && SWATCHES.find(w => w.id === m[1]);
+    return swatch ? { mode: 'color', swatch } : { mode: 'team', swatch: null };
+  }
+
+  const pure = { parseHref, classify, scopeFor, isOwnTeamPage, rosterSlugs, parseStyle, SWATCHES, CACHE_KEY, TOGGLE_KEY };
   if (typeof module !== 'undefined' && module.exports) module.exports = pure;
   if (typeof document === 'undefined') return;
 
@@ -115,7 +137,8 @@
   let resolveReady;
   const ready = new Promise(r => { resolveReady = r; });
 
-  const enabled = () => store.get(TOGGLE_KEY) !== 'off';
+  const style = () => parseStyle(store.get(TOGGLE_KEY));
+  const enabled = () => style().mode !== 'off';
   const active = () => !!team && enabled() && !isOwnTeamPage(location.pathname, team);
 
   function paint(el) {
@@ -125,6 +148,19 @@
     if (!scope) return;
     scope.classList.add('is-mine', kind === 'team' ? 'is-mine--team' : 'is-mine--player');
     if (scope === el && getComputedStyle(el).display === 'inline') scope.classList.add('is-mine--inline');
+    // A row that clips its own overflow (a card) would cut off a star in the
+    // gutter, so its star goes inside, in the corner.
+    if (scope.tagName !== 'TR' && getComputedStyle(scope).overflow !== 'visible') scope.classList.add('is-mine--clip');
+    // The star style's star, placed whatever the style so switching is
+    // instant: absolutely positioned, so it never takes a grid or flex slot.
+    // In a table it goes in the first cell, since a row can't hold it.
+    const host = scope.tagName === 'TR' ? scope.cells[0] : scope;
+    if (host && !host.querySelector(':scope > .is-mine-star')) {
+      const star = document.createElement('span');
+      star.className = 'ui-icon ui-icon--star is-mine-star';
+      star.setAttribute('aria-hidden', 'true');
+      host.prepend(star);
+    }
   }
 
   function mark(node) {
@@ -135,12 +171,18 @@
 
   function clearMarks() {
     document.querySelectorAll('.is-mine--team, .is-mine--player').forEach(el =>
-      el.classList.remove('is-mine', 'is-mine--team', 'is-mine--player', 'is-mine--inline'));
+      el.classList.remove('is-mine', 'is-mine--team', 'is-mine--player', 'is-mine--inline', 'is-mine--clip'));
+    document.querySelectorAll('.is-mine-star').forEach(el => el.remove());
   }
 
   function sync() {
     if (team) root.dataset.myTeam = team; else delete root.dataset.myTeam;
     root.classList.toggle('mine-on', active());
+    const st = style();
+    root.dataset.mineStyle = st.mode === 'star' ? 'star' : 'tint';
+    // A chosen colour overrides the team's --mine-c (css/team-colors.css).
+    if (st.mode === 'color') root.style.setProperty('--mine-c', `var(${st.swatch.token})`);
+    else root.style.removeProperty('--mine-c');
   }
 
   function apply(nextTeam, nextSlugs) {
@@ -189,11 +231,13 @@
     apply(nextTeam, roster);
   }
 
-  function setEnabled(on) {
-    store.set(TOGGLE_KEY, on ? 'on' : 'off');
+  // 'team' | 'c:<swatch>' | 'star' | 'off'.
+  function setStyle(value) {
+    store.set(TOGGLE_KEY, value);
     sync();
     document.dispatchEvent(new CustomEvent('nbn:mine', { detail: { team, slugs: [...slugs] } }));
   }
+  const setEnabled = on => setStyle(on ? 'team' : 'off');
 
   function isMine(x) {
     if (!team || !x) return false;
@@ -204,6 +248,7 @@
     get team() { return team; },
     get slugs() { return [...slugs]; },
     isMine, enabled, setEnabled, refresh, ready,
+    style, setStyle, SWATCHES,
     forget() { store.del(CACHE_KEY); },
   };
 
