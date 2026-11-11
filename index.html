@@ -785,7 +785,7 @@
       color: var(--text-muted); white-space: nowrap; text-decoration: none;
     }
     .slate-val.fav { color: var(--text-primary); font-weight: 600; }
-    .slate-val.pk { color: var(--text-muted); font-size: var(--text-xs); letter-spacing: 0.04em; }
+    .slate-val.pk { color: var(--text-muted); }
     a.slate-val.final { color: var(--text-muted); }
     a.slate-val.final.win { color: var(--text-primary); font-weight: 700; }
     a.slate-val.final:hover { color: var(--link); }
@@ -1572,13 +1572,16 @@
             if (!row || !ln || row.querySelector('.slate-val.final')) return;
             const tip = `${ln.fav ? `${ln.fav} by ${Math.abs(ln.margin).toFixed(1)}` : 'Even'} projected`
               + ` · ${g.home} ${Math.round(ln.p_home * 100)}% to win`;
-            if (!ln.fav) {
-              const el = row.querySelector('.slate-val[data-side="home"]');
-              el.className = 'slate-val pk'; el.textContent = 'PK'; el.title = tip;
-              return;
-            }
-            const el = row.querySelector(`.slate-val[data-side="${ln.fav === g.home ? 'home' : 'away'}"]`);
-            el.className = 'slate-val fav'; el.textContent = minus + ln.spread; el.title = tip;
+            // Both sides quoted, as a book does (−6.5 / +6.5): a number on one
+            // row only read as belonging to the whole game.
+            row.querySelectorAll('.slate-val').forEach(el => {
+              const team = el.dataset.side === 'home' ? g.home : g.away;
+              el.title = tip;
+              if (!ln.fav) { el.className = 'slate-val pk'; el.textContent = 'PK'; return; }
+              const fav = team === ln.fav;
+              el.className = `slate-val ${fav ? 'fav' : 'dog'}`;
+              el.textContent = (fav ? minus : '+') + ln.spread;
+            });
           });
         }).catch(() => {});
       }
