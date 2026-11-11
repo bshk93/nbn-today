@@ -262,6 +262,23 @@
     .cd-actions { text-align: right; white-space: nowrap; }
     .cd-actions .cd-btn + .cd-btn { margin-left: 0.4rem; }
     .cd-detail-row td { padding-top: 0; padding-bottom: 0.8rem; background: var(--bg-subtle); }
+    /* A phone has no room for five columns: each team becomes two lines
+       (team, dots and buttons; then the next game) and its card runs the
+       full width under it. */
+    @media (max-width: 560px) {
+      .cd-table thead { display: none; }
+      .cd-table, .cd-table tbody, .cd-table tr.cd-detail-row, .cd-table tr.cd-detail-row td { display: block; width: 100%; }
+      .cd-table tr.cd-detail-row[hidden] { display: none; }
+      .cd-table tr.cd-trow {
+        display: grid; grid-template-columns: max-content max-content max-content minmax(0, 1fr);
+        align-items: center; column-gap: 0.5rem; padding: 0.35rem 0;
+      }
+      .cd-table tr.cd-trow > td { padding: 0.15rem 0.3rem; }
+      .cd-table tr.cd-trow > td:nth-child(4) { grid-column: 1 / 4; grid-row: 2; padding-top: 0; }
+      .cd-table tr.cd-trow > td.cd-actions { grid-column: 4; grid-row: 1 / span 2; justify-self: end; }
+      .cd-table tr.cd-detail-row td { padding: 0 0 0.8rem; }
+      .cd-detail .pos-list { padding: 0.75rem; }
+    }
 
     /* Indicator cells: a colored dot for entry status, a bare glyph for the
        incomplete warning — text lives in the title tooltip, not the cell. */
@@ -346,16 +363,27 @@
       color: var(--text-primary); letter-spacing: 0.02em; }
     .dna-acts { display: flex; gap: 0.4rem; }
     .dna-fix {
-      grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
-      padding: 0.55rem 0.7rem; border-left: 3px solid var(--gold);
+      grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.5rem;
+      padding: 0.65rem 0.75rem; border-left: 3px solid var(--gold);
       background: color-mix(in srgb, var(--gold) 8%, transparent); color: var(--text-secondary);
     }
-    .dna-fix .dna-fix-acts { display: flex; gap: 0.4rem; margin-left: auto; }
+    .dna-pick { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .dna-pick-label { width: 5.5rem; color: var(--text-muted); font-size: var(--text-sm); }
+    .dna-pick .ui-segmented > button { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.04em; min-width: 2.6rem; }
+    .dna-pick .ui-segmented > button:disabled { opacity: 0.35; cursor: default; }
+    .dna-fix-foot { display: flex; align-items: center; gap: 0.5rem 0.75rem; flex-wrap: wrap; margin-top: 0.15rem; }
+    .dna-fix-acts { display: flex; gap: 0.4rem; margin-left: auto; }
     @media (max-width: 560px) {
       .dna-row { grid-template-columns: minmax(0, 1fr) auto; }
       .dna-acts { grid-column: 1 / -1; }
+      .dna-acts:empty { display: none; }
       .dna-acts > button { flex: 1; }
-      .dna-fix .dna-fix-acts { margin-left: 0; width: 100%; }
+      .dna-pick { gap: 0.3rem; }
+      .dna-pick-label { width: auto; flex-basis: 100%; }
+      .dna-pick .ui-segmented { display: flex; width: 100%; }
+      .dna-pick .ui-segmented > button { flex: 1; min-width: 0; padding-left: 0; padding-right: 0; }
+      .dna-fix-acts { margin-left: 0; width: 100%; }
+      .dna-fix-acts > button { flex: 1; }
     }
     .pos-illegal {
       display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: var(--radius-sm);
@@ -940,19 +968,34 @@
 
       row.appendChild(div('dna-acts'));
       const fix = div('dna-fix');
-      const pick = (val, opts, set) => {
-        const sel = document.createElement('select');
-        opts.forEach(([v, t]) => sel.add(new Option(t, v, false, v === val)));
-        sel.onchange = () => set(sel.value);
-        return sel;
+      fix.appendChild(span('dna-label', 'What did 2K show?'));
+      // One button per position, like the depth chart reads, instead of two
+      // dropdowns. A secondary can't be the primary, so that one is off.
+      const seg = (label, opts, get, set) => {
+        const line = div('dna-pick');
+        line.appendChild(span('dna-pick-label', label));
+        const group = div('ui-segmented');
+        group.setAttribute('role', 'group');
+        group.setAttribute('aria-label', label);
+        opts.forEach(([v, t]) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = t;
+          btn.setAttribute('aria-pressed', String(get() === v));
+          btn.disabled = label === 'Secondary' && v !== '' && v === st.primary;
+          btn.onclick = () => { set(v); redraw(); };
+          group.appendChild(btn);
+        });
+        line.appendChild(group);
+        return line;
       };
       fix.append(
-        '2K showed',
-        pick(st.primary, POSITIONS.map(p => [p, p]), v => { st.primary = v; }),
-        '/',
-        pick(st.secondary, [['', 'no secondary'], ...POSITIONS.map(p => [p, p])], v => { st.secondary = v; }),
-        span('', `Set him back to ${posText(i.primary, i.secondary)} in 2K, then save.`),
+        seg('Primary', POSITIONS.map(p => [p, p]), () => st.primary,
+            v => { st.primary = v; if (st.secondary === v) st.secondary = ''; }),
+        seg('Secondary', [['', 'None'], ...POSITIONS.map(p => [p, p])], () => st.secondary, v => { st.secondary = v; }),
       );
+      const foot = div('dna-fix-foot');
+      foot.appendChild(span('dna-fix-note', `Set him back to ${posText(i.primary, i.secondary)} in 2K, then save.`));
       const acts = div('dna-fix-acts');
       const save = document.createElement('button');
       save.className = 'ui-btn ui-btn--sm ui-btn--primary';
@@ -964,7 +1007,8 @@
       cancel.textContent = 'Cancel';
       cancel.onclick = () => { st.over = false; redraw(); };
       acts.append(save, cancel);
-      fix.appendChild(acts);
+      foot.appendChild(acts);
+      fix.appendChild(foot);
       row.appendChild(fix);
       return row;
     }
