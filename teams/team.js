@@ -5280,6 +5280,7 @@ async function renderTradeRequestBanner(biosData) {
   const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const asset = a => {
     if (a.type === 'pick') return `${a.year} ${a.round === 1 ? '1st' : '2nd'}${a.orig && a.orig !== abbr ? ` (${a.orig})` : ''}`;
+    if (a.type === 'swap') return `${a.year} ${a.round === 1 ? '1st' : '2nd'} swap rights`;
     const bio = biosData[a.slug];
     return esc(bio ? displayNameFromBio(bio.name) : a.slug);
   };

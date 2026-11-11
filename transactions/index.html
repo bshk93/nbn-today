@@ -3238,10 +3238,23 @@ function addTradeLeg(fromTeam, toTeam) {
   addPickBtn.textContent = '+ Add Pick';
   addPickBtn.addEventListener('click', () => addPickRow(leg));
 
-  leg.append(header, playerLabel, playerRows, addPlayerBtn, pickLabel, pickRows, addPickBtn);
+  // ── Pick swaps: the leg's sender gives its receiver the right to swap ──
+  const swapLabel = sectionLabel('Pick swaps');
+  const swapRows = document.createElement('div');
+  swapRows.dataset.section = 'swaps';
+  const addSwapBtn = document.createElement('button');
+  addSwapBtn.type = 'button';
+  addSwapBtn.className = 'trade-add-asset-btn';
+  addSwapBtn.textContent = '+ Add Pick Swap';
+  addSwapBtn.title = 'The receiving team gets the better of the two picks, the sending team the worse. Neither pick moves now.';
+  addSwapBtn.addEventListener('click', () => addSwapRow(leg));
+
+  leg.append(header, playerLabel, playerRows, addPlayerBtn, pickLabel, pickRows, addPickBtn,
+             swapLabel, swapRows, addSwapBtn);
   legs.appendChild(leg);
 
   fromSel.addEventListener('change', () => refreshLegAssets(leg));
+  toSel.addEventListener('change', () => refreshLegAssets(leg));
   return leg;
 }
 
@@ -3311,18 +3324,39 @@ function addPickRow(leg) {
   protInp.min = 1;
   protInp.max = 30;
 
-  const swapLabel = document.createElement('span');
-  swapLabel.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap;';
-  swapLabel.textContent = 'Swap:';
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'remove-asset-btn';
+  removeBtn.textContent = '×';
+  removeBtn.addEventListener('click', () => { row.remove(); scheduleRubric(); });
 
-  const swapSel = document.createElement('select');
-  swapSel.className = 'trade-swap-sel';
-  swapSel.innerHTML = '<option value="">—</option>';
-  TEAM_ABBRS.forEach(abbr => {
-    const o = document.createElement('option');
-    o.value = abbr; o.textContent = abbr;
-    swapSel.appendChild(o);
-  });
+  row.append(sel, protLabel, protInp, removeBtn);
+  section.appendChild(row);
+}
+
+// A pick swap names one pick from each side of the leg, same year and round.
+// Only a pick a team holds outright can be swapped; the API refuses the rest
+// (_pick_swap_problems), so the menus offer only those.
+function swapOutright(p, team) {
+  if (p.player || p.group_id || (p.leaves && p.leaves.length) || p.ladder || p.ladder_fallback_of) return false;
+  return (p.owner || '').toUpperCase() === team.toUpperCase();
+}
+
+function addSwapRow(leg) {
+  const row = document.createElement('div');
+  row.className = 'trade-asset-row';
+  row.dataset.assetType = 'swap';
+
+  const mine = document.createElement('select');
+  mine.className = 'trade-asset-sel';
+  mine.dataset.role = 'swap-mine';
+  const theirs = document.createElement('select');
+  theirs.className = 'trade-swap-sel';
+  theirs.dataset.role = 'swap-theirs';
+
+  const forLabel = document.createElement('span');
+  forLabel.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap;';
+  forLabel.textContent = 'for';
 
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
@@ -3330,8 +3364,35 @@ function addPickRow(leg) {
   removeBtn.textContent = '×';
   removeBtn.addEventListener('click', () => { row.remove(); scheduleRubric(); });
 
-  row.append(sel, protLabel, protInp, swapLabel, swapSel, removeBtn);
-  section.appendChild(row);
+  mine.addEventListener('change', () => { buildSwapOptions(leg, row); scheduleRubric(); });
+  theirs.addEventListener('change', scheduleRubric);
+  row.append(mine, forLabel, theirs, removeBtn);
+  leg.querySelector('[data-section="swaps"]').appendChild(row);
+  buildSwapOptions(leg, row);
+}
+
+function buildSwapOptions(leg, row) {
+  const from = leg.querySelector('[data-role="from"]').value;
+  const to = leg.querySelector('[data-role="to"]').value;
+  const mine = row.querySelector('[data-role="swap-mine"]');
+  const theirs = row.querySelector('[data-role="swap-theirs"]');
+  const curMine = mine.value, curTheirs = theirs.value;
+  const fill = (sel, picks, blank, cur) => {
+    sel.innerHTML = `<option value="">${blank}</option>`;
+    picks.sort((a, b) => a.year - b.year || a.round - b.round).forEach(p => {
+      const o = document.createElement('option');
+      o.value = tradePickId(p); o.textContent = tradePickLabel(p);
+      o.dataset.year = p.year; o.dataset.round = p.round; o.dataset.orig = p.orig;
+      sel.appendChild(o);
+    });
+    if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+  };
+  fill(mine, from ? allPicks.filter(p => swapOutright(p, from)) : [],
+       from ? `— ${from}'s pick —` : '— pick the sending team —', curMine);
+  const m = mine.value ? mine.options[mine.selectedIndex].dataset : null;
+  fill(theirs, to && m ? allPicks.filter(p => swapOutright(p, to)
+         && String(p.year) === m.year && String(p.round) === m.round) : [],
+       to ? `— ${to}'s pick —` : '— pick the receiving team —', curTheirs);
 }
 
 function buildPickOptions(sel, fromTeam, currentValue) {
@@ -3381,6 +3442,7 @@ function refreshLegAssets(leg) {
     buildPickOptions(sel, fromTeam, cur);
     if (cur) sel.value = cur;
   });
+  leg.querySelectorAll('.trade-asset-row[data-asset-type="swap"]').forEach(row => buildSwapOptions(leg, row));
 }
 
 function collectTrade() {
@@ -3407,10 +3469,18 @@ function collectTrade() {
         orig: opt.dataset.orig,
       };
       const prot = row.querySelector('.trade-prot-inp').value;
-      const swap = row.querySelector('.trade-swap-sel').value;
       if (prot) asset.protection = parseInt(prot);
-      if (swap) asset.swap_with = swap;
       assets.push(asset);
+    });
+    leg.querySelectorAll('.trade-asset-row[data-asset-type="swap"]').forEach(row => {
+      const mine = row.querySelector('[data-role="swap-mine"]');
+      const theirs = row.querySelector('[data-role="swap-theirs"]');
+      if (!mine.value || !theirs.value) return;
+      const m = mine.options[mine.selectedIndex].dataset;
+      assets.push({
+        type: 'swap', year: parseInt(m.year), round: parseInt(m.round),
+        orig: m.orig, swap_orig: theirs.options[theirs.selectedIndex].dataset.orig,
+      });
     });
     if (assets.length) transfers.push({ from_team, to_team, assets });
   });
@@ -3502,6 +3572,7 @@ function txnSearchText(t) {
       (assets || []).forEach(a => {
         if (a.type === 'player') addPlayer(a.slug);
         if (a.type === 'pick') addPick(a);
+        if (a.type === 'swap') { addPick(a); addPick({ ...a, orig: a.swap_orig }); }
       });
     });
   }
@@ -4443,6 +4514,9 @@ function renderDetailsCell(t) {
         }
         if (mods.length) s += ` (${mods.join(', ')})`;
         return escHtml(s);
+      }
+      if (a.type === 'swap') {
+        return escHtml(`${a.year} R${a.round} swap rights (${a.swap_orig} for ${a.orig}, better pick to ${toTeam})`);
       }
       return '';
     };

@@ -112,6 +112,7 @@
       const prot = a.protection ? ` (top-${a.protection} prot.)` : '';
       return ctx.esc(`${a.year} ${a.orig} ${ROUND(a.round)}${a.swap_with ? ' swap' : ''}${prot}`);
     }
+    if (a.type === 'swap') return ctx.esc(`the right to swap ${a.year} ${ROUND(a.round)}s`);
     return ctx.esc(a.type);
   }
 

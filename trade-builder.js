@@ -54,6 +54,13 @@
       .tb-add-team-btn { background: var(--bg-card); border: 1px dashed var(--text-dim); border-radius: var(--radius-sm); color: var(--text-muted); font-size: var(--text-sm); padding: 0.5rem 1rem; cursor: pointer; font-family: inherit; }
       .tb-add-team-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
       .tb-add-team-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .tb-swap { display: flex; flex-direction: column; gap: 0.25rem; margin: 0.15rem 1rem 0.4rem; padding: 0.4rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+      .tb-swap-head { display: flex; align-items: center; justify-content: space-between; font-size: var(--text-xs); color: var(--text-secondary); font-weight: 600; }
+      .tb-swap-note { font-size: var(--text-xs); color: var(--text-muted); }
+      .tb-swap .tb-dest-sel { margin-top: 0; }
+      .tb-swap-add { margin: 0.15rem 1rem 0.4rem; font-size: var(--text-xs); padding: 0.3rem 0.6rem; }
+      .tb-protect { display: flex; align-items: center; gap: 0.4rem; padding: 0.1rem 1rem 0.3rem 2.4rem; font-size: var(--text-xs); color: var(--text-muted); }
+      .tb-protect input { width: 3.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-xs); padding: 0.15rem 0.3rem; font-family: inherit; }
       .tb-type-badge { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); margin-right: 0.4rem; flex-shrink: 0; }
       .tb-type-player      { background: var(--bg-card); color: var(--accent-light); }
       .tb-type-two-way     { background: var(--bg-card); color: var(--purple-light); }
@@ -133,7 +140,8 @@
     let teamSlots = [];      // ordered array of slot ids, e.g. ['t1', 't2', 't3']
     let slotTeam = {};       // slotId -> abbr ('' if unset)
     let nextSlotId = 1;
-    let selections = {};     // slotId -> { players: Map<slug, destAbbr|null>, picks: Map<pickKey, destAbbr|null>, releases: Set<slug> }
+    let selections = {};     // slotId -> { players: Map<slug, destAbbr|null>, picks: Map<pickKey, destAbbr|null>, releases: Set<slug>,
+                             //             protections: Map<pickKey, topN>, swaps: [{ mine: pickKey, dest: abbr|null, theirs: pickKey }] }
     let releaseOpen = {};    // slotId -> whether its "Release after the trade" list is expanded
     let signTerms = {};      // slug -> { years, salaries: [y1,y2,...], birdType, method }
     let LEAGUE_YEAR = null;
@@ -226,6 +234,10 @@
 
     // ── Team slot management ─────────────────────────────────────────────────
 
+    function emptySelection() {
+      return { players: new Map(), picks: new Map(), releases: new Set(), protections: new Map(), swaps: [] };
+    }
+
     function otherAssignedTeams(excludeSlotId) {
       return teamSlots
         .filter(id => id !== excludeSlotId && slotTeam[id])
@@ -258,7 +270,7 @@
       const slotId = `t${nextSlotId++}`;
       teamSlots.push(slotId);
       slotTeam[slotId] = '';
-      selections[slotId] = { players: new Map(), picks: new Map(), releases: new Set() };
+      selections[slotId] = emptySelection();
 
       const card = document.createElement('div');
       card.className = 'tb-team-panel';
@@ -319,7 +331,7 @@
       const exc = document.getElementById(`tb-exc-${slotId}`);
       exc.value = '';
       slotTeam[slotId] = abbr || '';
-      selections[slotId] = { players: new Map(), picks: new Map(), releases: new Set() };
+      selections[slotId] = emptySelection();
 
       if (!abbr) {
         body.innerHTML = '<div class="tb-panel-empty">Select a team to see their roster.</div>';
@@ -391,6 +403,18 @@
       });
       return out;
     }
+
+    // A pick the team holds outright: one owner, no swap, protection or ladder
+    // on it. Only these can be swapped or newly protected; the API refuses
+    // anything else (_pick_swap_problems), this just keeps the menus honest.
+    function isOutright(p, abbr) {
+      if (p.group_id || (p.leaves && p.leaves.length) || p.ladder || p.ladder_fallback_of) return false;
+      return p.owner === abbr || (p.owner === '?' && p.orig === abbr);
+    }
+
+    function roundLabel(r) { return r === 1 ? '1st' : '2nd'; }
+
+    function slotOf(abbr) { return teamSlots.find(id => slotTeam[id] === abbr); }
 
     function pickLeafId(p, teamAbbr) {
       const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
@@ -575,9 +599,9 @@
           const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel.picks.has(key);
           cb.addEventListener('change', () => {
             if (cb.checked) sel.picks.set(key, sel.picks.get(key) || null);
-            else sel.picks.delete(key);
+            else { sel.picks.delete(key); sel.protections.delete(key); }
             row.classList.toggle('checked', cb.checked);
-            renderPanel(slotId, abbr, yr);
+            renderAllPanels();
             updateCheckBtn();
           });
           const nameSpan = document.createElement('span'); nameSpan.className = 'tb-trade-row-name'; nameSpan.textContent = pickLabel(p, abbr);
@@ -587,9 +611,145 @@
           if (sel.picks.has(key)) {
             const dest = buildDestSelect(slotId, others, sel.picks, key);
             if (dest) body.appendChild(dest);
+            if (p.round === 1 && isOutright(p, abbr)) body.appendChild(buildProtectInput(sel, key));
           }
         });
       }
+
+      renderSwaps(body, slotId, abbr, others);
+    }
+
+    function buildProtectInput(sel, key) {
+      const wrap = document.createElement('label');
+      wrap.className = 'tb-protect';
+      const input = document.createElement('input');
+      input.type = 'number'; input.min = 1; input.max = 29; input.placeholder = 'none';
+      input.value = sel.protections.get(key) || '';
+      input.addEventListener('click', e => e.stopPropagation());
+      input.addEventListener('input', () => {
+        const n = parseInt(input.value, 10);
+        if (n >= 1 && n <= 29) sel.protections.set(key, n); else sel.protections.delete(key);
+        updateCheckBtn();
+      });
+      wrap.append('Protected top', input);
+      return wrap;
+    }
+
+    // ── Pick swaps ───────────────────────────────────────────────────────────
+    // This team gives another the right to swap picks: its pick against theirs,
+    // same year and round. The other team ends with the better of the two.
+    // Neither pick moves now, so a swap is its own asset, not a checked pick.
+
+    function swapPickOptions(abbr, exclude, match) {
+      return (picksData[abbr] || []).filter(p =>
+        isOutright(p, abbr) && !exclude.has(pickKey(p))
+        && (!match || (p.year === match.year && p.round === match.round)));
+    }
+
+    function takenBySlot(slotId, skipSwap) {
+      const sel = selections[slotId];
+      const taken = new Set(sel ? sel.picks.keys() : []);
+      if (sel) sel.swaps.forEach(sw => { if (sw !== skipSwap && sw.mine) taken.add(sw.mine); });
+      teamSlots.forEach(id => {
+        (selections[id] ? selections[id].swaps : []).forEach(sw => {
+          if (sw !== skipSwap && sw.theirs && sw.dest === slotTeam[slotId]) taken.add(sw.theirs);
+        });
+      });
+      return taken;
+    }
+
+    function pickSelect(options, value, placeholder, onChange, labelFor) {
+      const el = document.createElement('select');
+      el.className = 'tb-dest-sel' + (value ? '' : ' unset');
+      const ph = document.createElement('option'); ph.value = ''; ph.textContent = placeholder;
+      el.appendChild(ph);
+      options.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = pickKey(p); opt.textContent = labelFor(p);
+        el.appendChild(opt);
+      });
+      el.value = options.some(p => pickKey(p) === value) ? value : '';
+      el.addEventListener('change', () => onChange(el.value || ''));
+      return el;
+    }
+
+    function renderSwaps(body, slotId, abbr, others) {
+      const sel = selections[slotId];
+      if (!others.length) { sel.swaps = []; return; }
+      sel.swaps.forEach(sw => {
+        if (sw.dest && !others.includes(sw.dest)) { sw.dest = null; sw.theirs = ''; }
+        if (!sw.dest && others.length === 1) sw.dest = others[0];
+      });
+      if (!sel.swaps.length && !swapPickOptions(abbr, new Set()).length) return;
+
+      const lbl = document.createElement('div'); lbl.className = 'tb-panel-section-label'; lbl.textContent = 'Pick swaps';
+      body.appendChild(lbl);
+      const rerender = () => { renderAllPanels(); updateCheckBtn(); };
+
+      sel.swaps.forEach(sw => {
+        const box = document.createElement('div'); box.className = 'tb-swap';
+        const head = document.createElement('div'); head.className = 'tb-swap-head';
+        head.textContent = sw.dest ? `${sw.dest} gets the right to swap` : 'Swap rights';
+        const rm = document.createElement('button');
+        rm.type = 'button'; rm.className = 'tb-remove-team-btn'; rm.title = 'Remove swap'; rm.setAttribute('aria-label', 'Remove swap');
+        rm.innerHTML = '<i class="ui-icon ui-icon--x" aria-hidden="true"></i>';
+        rm.addEventListener('click', () => { sel.swaps = sel.swaps.filter(x => x !== sw); rerender(); });
+        head.appendChild(rm);
+        box.appendChild(head);
+
+        const mineOpts = swapPickOptions(abbr, takenBySlot(slotId, sw));
+        box.appendChild(pickSelect(mineOpts, sw.mine, `${abbr}'s pick…`, v => {
+          sw.mine = v;
+          const m = mineOpts.find(p => pickKey(p) === v);
+          const t = sw.dest && (picksData[sw.dest] || []).find(p => pickKey(p) === sw.theirs);
+          if (!m || !t || t.year !== m.year || t.round !== m.round) sw.theirs = '';
+          rerender();
+        }, p => pickLabel(p, abbr)));
+
+        if (others.length > 1) {
+          const dest = document.createElement('select');
+          dest.className = 'tb-dest-sel' + (sw.dest ? '' : ' unset');
+          dest.innerHTML = '<option value="">→ swap with which team…</option>'
+            + others.map(ab => `<option value="${ab}">→ ${TEAMS[ab] || ab}</option>`).join('');
+          dest.value = sw.dest || '';
+          dest.addEventListener('change', () => { sw.dest = dest.value || null; sw.theirs = ''; rerender(); });
+          box.appendChild(dest);
+        }
+
+        const mine = mineOpts.find(p => pickKey(p) === sw.mine);
+        if (sw.dest && mine) {
+          const destSlot = slotOf(sw.dest);
+          const theirOpts = swapPickOptions(sw.dest, destSlot ? takenBySlot(destSlot, sw) : new Set(), mine);
+          if (theirOpts.length) {
+            box.appendChild(pickSelect(theirOpts, sw.theirs, `for ${sw.dest}'s ${mine.year} ${roundLabel(mine.round)}…`,
+              v => { sw.theirs = v; rerender(); }, p => pickLabel(p, sw.dest)));
+          } else {
+            sw.theirs = '';
+          }
+          const note = document.createElement('div'); note.className = 'tb-swap-note';
+          note.textContent = theirOpts.length
+            ? `${sw.dest} ends with the better of the two picks, ${abbr} with the worse.`
+            : `${sw.dest} holds no ${mine.year} ${roundLabel(mine.round)} outright, so there's nothing to swap against.`;
+          box.appendChild(note);
+        }
+        body.appendChild(box);
+      });
+
+      const add = document.createElement('button');
+      add.type = 'button'; add.className = 'tb-add-team-btn tb-swap-add';
+      add.textContent = '+ Give a pick swap';
+      add.addEventListener('click', () => {
+        sel.swaps.push({ mine: '', dest: others.length === 1 ? others[0] : null, theirs: '' });
+        rerender();
+      });
+      body.appendChild(add);
+    }
+
+    function swapPicks(slotId, sw) {
+      const abbr = slotTeam[slotId];
+      const mine = (picksData[abbr] || []).find(p => pickKey(p) === sw.mine);
+      const theirs = sw.dest && (picksData[sw.dest] || []).find(p => pickKey(p) === sw.theirs);
+      return mine && theirs ? { mine, theirs } : null;
     }
 
     // ── Live trade check ─────────────────────────────────────────────────────
@@ -694,9 +854,19 @@
           const asset = { type: 'pick', year: p.year, round: p.round, orig: p.orig };
           const leafId = pickLeafId(p, from);
           if (leafId) asset.leaf_id = leafId;
+          const top = sel.protections.get(pkey);
+          if (top && p.round === 1 && isOutright(p, from)) asset.protection = top;
           const key = `${from}→${destAbbr}`;
           if (!grouped.has(key)) grouped.set(key, []);
           grouped.get(key).push(asset);
+        });
+        sel.swaps.forEach(sw => {
+          const pair = swapPicks(slotId, sw);
+          if (!pair) return;
+          const key = `${from}→${sw.dest}`;
+          if (!grouped.has(key)) grouped.set(key, []);
+          grouped.get(key).push({ type: 'swap', year: pair.mine.year, round: pair.mine.round,
+                                  orig: pair.mine.orig, swap_orig: pair.theirs.orig });
         });
       });
       return Array.from(grouped.entries()).map(([key, assets]) => {
@@ -712,6 +882,7 @@
         const sel = selections[slotId];
         sel.players.forEach(dest => { if (!dest) n++; });
         sel.picks.forEach(dest => { if (!dest) n++; });
+        sel.swaps.forEach(sw => { if (!swapPicks(slotId, sw)) n++; });
       });
       return n;
     }
@@ -729,7 +900,7 @@
       const missing = unassignedCount();
       if (missing > 0) {
         el.style.display = 'none';
-        setStatus(`Assign a destination for ${missing} selected asset${missing > 1 ? 's' : ''} (look for the "→" dropdown).`);
+        setStatus(`Finish ${missing} selected asset${missing > 1 ? 's' : ''}: pick a destination (the "→" dropdown), or both picks of a swap.`);
         return;
       }
 
@@ -947,9 +1118,19 @@
               label: `${p.year} ${p.round === 1 ? '1st' : '2nd'}` + (p.orig !== abbr ? ` (${p.orig})` : ''),
               to: sel.picks.get(pickKey(p)) || '?',
               protections: mine.map(l => l.description).join(' / ')
+                           || (sel.protections.get(pickKey(p)) ? `Top ${sel.protections.get(pickKey(p))} protected` : '')
                            || (p.protected ? `Top ${p.protected} protected` : ''),
             };
           });
+        sel.swaps.forEach(sw => {
+          const pair = swapPicks(slotId, sw);
+          if (!pair) return;
+          picks.push({
+            label: `${pair.mine.year} ${roundLabel(pair.mine.round)} swap rights`,
+            to: sw.dest,
+            protections: `${sw.dest} gets the better of ${abbr}'s pick (${pair.mine.orig}) and ${sw.dest}'s (${pair.theirs.orig})`,
+          });
+        });
 
         const excVal = document.getElementById(`tb-exc-${slotId}`)?.value || '';
         const exceptions = [];

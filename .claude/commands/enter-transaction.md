@@ -103,10 +103,13 @@ void_player:     { player, reason? }
 set_hard_cap_level: { team, level: "first_apron"|"second_apron"|"default", reason? }
 trade:           { transfers: [ { from_team, to_team, assets: [
                      { type: "player", slug },
-                     { type: "pick", year, round, orig, protection?, swap_with?, leaf_id? }
+                     { type: "pick", year, round, orig, protection?, swap_with?, leaf_id? },
+                     { type: "swap", year, round, orig, swap_orig }
                    ] } ], legality: "tbd", exceptions?: { TEAM: "ntmle"|"tmle"|"room_exception" },
                    is_sign_and_trade?: bool, sign_and_trade_txn_id?: string }
 ```
+
+**Pick swaps**: "A gives B the right to swap 2029 1sts" is a `swap` asset on the A → B leg, `orig` = A's pick, `swap_orig` = B's pick. B gets the better pick, A the worse; neither pick moves. Each team must hold its pick outright (no protection, swap or ladder on it already). Don't use `swap_with` for this: it finds the second pick by who owns what mid-write, and a plain two-team swap comes out as B holding both picks or as a flat transfer.
 
 **Sign-and-trade** is not its own transaction type — submit it as two separate calls: a `sign` (set `signing_method: "sign_and_trade"`) for the re-signing team, immediately followed by a `trade` moving the player to the acquiring team. Nothing links these automatically; if `TEXT` describes a sign-and-trade, set `is_sign_and_trade: true` on the trade step yourself (this hard-caps every team receiving a player in that trade at First Apron — rulebook §1.4 row C) and pass the `sign` transaction's returned `id` as `sign_and_trade_txn_id` so the log stays traceable. Submit the `sign` first and wait for its response before building the `trade` payload — you need its `id`.
 

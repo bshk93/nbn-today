@@ -55,6 +55,12 @@ const trade = H({ type: 'trade', description: 'Trade 52', details: {
 check('trade: headline', text(trade), '[LAL] and [UTA] make a trade');
 check('trade: who got what', trade.sub, 'LAL get 2027 ATL 2nd · UTA get Jaxson Hayes and Walter Clayton');
 
+const swapTrade = H({ type: 'trade', details: { teams: ['ATL', 'BKN'], transfers: [
+  { from_team: 'ATL', to_team: 'BKN', assets: [{ type: 'swap', year: 2031, round: 1, orig: 'ATL', swap_orig: 'BKN' }] },
+  { from_team: 'BKN', to_team: 'ATL', assets: [{ type: 'pick', year: 2030, round: 2, orig: 'BKN' }] },
+] } });
+check('trade: a pick swap reads as swap rights', swapTrade.sub, 'ATL get 2030 BKN 2nd · BKN get the right to swap 2031 1sts');
+
 const waive = H({ type: 'waiver_clear', description: '', details: { player: 'walker-lonnie', released_by: 'SAC', outcome: 'unclaimed' } });
 check('waivers: an empty description still reads', text(waive), 'Lonnie Walker clears waivers');
 

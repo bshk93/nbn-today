@@ -400,6 +400,14 @@
             ${issues}
           </div>`;
       }
+      if (a.type === 'swap') {
+        const meta = [`gets the better of ${esc(pickLabel({ ...a, orig: a.swap_orig }))} and ${esc(pickLabel(a))}`, routeTag].filter(Boolean);
+        return `
+        <div class="asset">
+          <div class="asset-top"><span class="pick">${esc(a.year)} ${esc(ROUND_NAMES[a.round] || 'R' + a.round)} swap rights</span></div>
+          <div class="asset-meta">${meta.join(' · ')}</div>
+        </div>`;
+      }
       const terms = [];
       if (a.protection) terms.push(`top-${a.protection} protected`);
       if (a.swap_with) terms.push(`swap with ${esc(a.swap_with)}`);
