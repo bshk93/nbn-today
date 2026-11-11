@@ -51,3 +51,25 @@
   } catch (e) { /* private browsing */ }
   root.setAttribute('data-sidebar', mode);
 })();
+
+// Start every shared stylesheet and font downloading now. The sheets reach the
+// page through @import, four levels deep (shared → theme, nav-chrome → fonts,
+// dialogs, components, sidebar → team-colors, ui-icons), and the browser only
+// finds each level after downloading the one above it: four render-blocking
+// round trips before first paint, then the fonts after those. Preloading here
+// makes it two. The @imports stay as they are, so the cascade is unchanged;
+// a new shared sheet works without being listed, it just isn't hurried.
+(function () {
+  var head = document.head;
+  if (!head) return;
+  function preload(href, as, type) {
+    var l = document.createElement('link');
+    l.rel = 'preload'; l.as = as; l.href = href;
+    if (type) { l.type = type; l.crossOrigin = 'anonymous'; }
+    head.appendChild(l);
+  }
+  ['theme', 'nav-chrome', 'fonts', 'dialogs', 'components', 'sidebar', 'team-colors', 'ui-icons']
+    .forEach(function (n) { preload('/css/' + n + '.css', 'style'); });
+  ['InterVariable.subset', 'BarlowCondensed-700-latin', 'BarlowCondensed-600-latin']
+    .forEach(function (n) { preload('/fonts/' + n + '.woff2', 'font', 'font/woff2'); });
+})();

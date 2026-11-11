@@ -93,20 +93,33 @@ const Milestones = (() => {
     }
     return _rows;
   }
+  /** Every roster, { ATL: [slug, ...] }, in one request. The 30 roster CSVs
+   *  are the fallback while the API doesn't have the endpoint, or fails. */
+  let _rosters = null;
+  function allRosters() {
+    if (_rosters) return _rosters;
+    const fromCsvs = () => Promise.all(TEAMS.map(t => fetch(`/data/${t}-roster.csv`)
+      .then(r => (r.ok ? r.text() : '')).catch(() => '')))
+      .then(texts => {
+        const out = {};
+        texts.forEach((txt, i) => {
+          out[TEAMS[i].toUpperCase()] = txt.trim().split('\n').slice(1)
+            .map(line => line.split(',')[0].trim()).filter(Boolean);
+        });
+        return out;
+      });
+    _rosters = fetch('/api/rosters/slugs')
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(d => (d && typeof d === 'object' && Array.isArray(d.ATL) ? d : Promise.reject(new Error('shape'))))
+      .catch(fromCsvs);
+    return _rosters;
+  }
   /** { careers, rosterTeam: slug -> 'ATL' }. Fetched once per page. */
   function load() {
     if (_loaded) return _loaded;
-    _loaded = Promise.all([
-      seasonRows(),
-      ...TEAMS.map(t => fetch(`/data/${t}-roster.csv`).then(r => (r.ok ? r.text() : '')).catch(() => '')),
-    ]).then(([seasons, ...rosters]) => {
+    _loaded = Promise.all([seasonRows(), allRosters()]).then(([seasons, rosters]) => {
       const rosterTeam = {};
-      rosters.forEach((txt, i) => {
-        txt.trim().split('\n').slice(1).forEach(line => {
-          const slug = line.split(',')[0].trim();
-          if (slug) rosterTeam[slug] = TEAMS[i].toUpperCase();
-        });
-      });
+      Object.keys(rosters).forEach(team => rosters[team].forEach(slug => { rosterTeam[slug] = team; }));
       return { careers: careers(seasons), rosterTeam };
     });
     return _loaded;
