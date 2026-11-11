@@ -252,7 +252,7 @@
         card.setAttribute('aria-pressed', cat.key === state.stat);
         card.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${esc(cat.name)}</span>`
           + `<span class="ui-leader-note">${esc(label(cat))}</span></div>`
-          + (list.length ? list.map(e => `<div class="ui-leader-row">`
+          + (list.length ? list.map(e => `<div class="ui-leader-row" data-mine-slug="${esc(e.c.slug || '')}">`
               + `<span class="ui-rank">${e.rank}</span>`
               + `<span>${esc(nbnPlayerName(e.c.name))}</span>`
               + `<span>${esc(fmt(cat, e.v))}</span>`
