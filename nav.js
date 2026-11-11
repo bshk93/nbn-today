@@ -1319,7 +1319,7 @@ function _mineToggle(team) {
   const M = () => window.NbnMine;
   const swatch = css => `<span class="sb-mine-swatch" style="background:${css}"></span>`;
   const choices = [
-    { value: 'team', label: 'Team colour',
+    { value: 'team', label: 'Team color',
       icon: `<img class="sb-mine-logo" src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="">` },
     ...(M()?.SWATCHES || []).map(w => ({ value: `c:${w.id}`, label: w.label, icon: swatch(`var(${w.token})`) })),
     { value: 'star', label: 'Star', icon: '<span class="ui-icon ui-icon--star sb-mine-star"></span>' },

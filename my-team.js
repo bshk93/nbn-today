@@ -148,6 +148,9 @@
     if (!scope) return;
     scope.classList.add('is-mine', kind === 'team' ? 'is-mine--team' : 'is-mine--player');
     if (scope === el && getComputedStyle(el).display === 'inline') scope.classList.add('is-mine--inline');
+    // A row that clips its own overflow (a card) would cut off a star in the
+    // gutter, so its star goes inside, in the corner.
+    if (scope.tagName !== 'TR' && getComputedStyle(scope).overflow !== 'visible') scope.classList.add('is-mine--clip');
     // The star style's star, placed whatever the style so switching is
     // instant: absolutely positioned, so it never takes a grid or flex slot.
     // In a table it goes in the first cell, since a row can't hold it.
@@ -168,7 +171,7 @@
 
   function clearMarks() {
     document.querySelectorAll('.is-mine--team, .is-mine--player').forEach(el =>
-      el.classList.remove('is-mine', 'is-mine--team', 'is-mine--player', 'is-mine--inline'));
+      el.classList.remove('is-mine', 'is-mine--team', 'is-mine--player', 'is-mine--inline', 'is-mine--clip'));
     document.querySelectorAll('.is-mine-star').forEach(el => el.remove());
   }
 
