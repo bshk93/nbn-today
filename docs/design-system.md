@@ -31,7 +31,7 @@ The homepage headline (`tonight-hero.js`, `css/tonight-hero.css`) is the one
 place the site breaks "almost no motion" and "flat": it was asked for as a
 broadcast graphic, with max hype. Faces slide in, the count runs up, the stream
 pill pulses, a ticker and a hatch drift, cards rise in, the featured card
-shimmers and the rail advances itself. Everything else about the system still
+shimmers. The card rail under it doesn't move by itself. Everything else about the system still
 holds there: team colours come from `data-team`, never a literal; the diagonal
 split is two clipped halves, not a gradient; the hatch and shimmer are
 `repeating-` patterns; shadows are insets or tokens (the glow is a

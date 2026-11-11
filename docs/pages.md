@@ -61,8 +61,10 @@ stays if the API fails.
   game whose box score is in shows its final (`setFinal`, off `latestNight`).
 - **No games on the date:** it asks `/api/tonight?date=` for the `next`
   slate and shows that under "Next up", with this date's last night.
-- **The rail** advances every 5s, pauses on hover or focus, stops for good on
-  a touch, and never moves under reduced motion.
+- **The rail** moves only when someone moves it (swipe, Prev/Next, a dot);
+  it doesn't advance by itself. A dot is a place the rail can stop, not a
+  card, so the last few cards share the final dot. Next at the end goes back
+  to the start, Prev at the start to the end.
 
 ## Calendar
 

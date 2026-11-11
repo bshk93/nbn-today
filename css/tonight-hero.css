@@ -2,8 +2,8 @@
 
    The site's one broadcast graphic, and the one place it moves: faces slide
    in, the count runs up, the stream pill pulses, a ticker and the hatch
-   drift, cards rise in and the featured one shimmers, and the rail advances
-   itself. docs/design-system.md § The Tonight graphic says why this page is
+   drift, cards rise in and the featured one shimmers. The rail moves only
+   when someone moves it. docs/design-system.md § The Tonight graphic says why this page is
    the exception. All of it sits under prefers-reduced-motion: no-preference.
 
    Team colours come from data-team (css/team-colors.css), never a literal.
@@ -169,6 +169,7 @@
 .th-last-game { display: inline-flex; align-items: center; gap: 0.3em; color: var(--text-muted); }
 .th-last-game img { width: 1.1em; height: 1.1em; object-fit: contain; }
 
+.th-controls[hidden] { display: none; }
 .th-controls { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-top: var(--space-1); }
 .th-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
 .th-dot { font: inherit; width: 0.55rem; height: 0.55rem; padding: 0; border: 0; border-radius: 50%; background: var(--border); cursor: pointer; }

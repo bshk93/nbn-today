@@ -20,7 +20,6 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const reduced = () => !!(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const AUTO_MS = 5000;
 
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -139,48 +138,51 @@
     requestAnimationFrame(step);
   }
 
+  // The rail moves only when someone moves it: swipe, Prev/Next or a dot.
+  //
+  // A dot is a place the rail can actually stop, not a card. Near the end
+  // several cards are on screen at once and the rail can't scroll far enough
+  // to bring each to the left edge, so one dot per card left dots at the end
+  // that went nowhere. Next at the last stop wraps to the first, and Prev at
+  // the first to the last.
   function setupRail(root) {
     const rail = root.querySelector('.th-rail');
     const dots = root.querySelector('.th-dots');
     const cards = [...rail.querySelectorAll('.th-card')];
     if (!cards.length) return;
-    dots.innerHTML = cards.map((_, i) => `<button type="button" class="th-dot" aria-label="Card ${i + 1}"></button>`).join('');
-    const dotEls = [...dots.children];
+    let stops = [], dotEls = [];
+
+    function measure() {
+      const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+      const lefts = cards.map(c => Math.min(c.offsetLeft - cards[0].offsetLeft, max));
+      // A card that can't reach the left edge stops where the rail ends, so
+      // the last few share one stop; keep each distinct stop once.
+      stops = lefts.filter((x, i) => i === 0 || x - lefts[i - 1] > 2);
+      if (max - stops[stops.length - 1] > 2) stops.push(max);
+      dots.innerHTML = stops.length > 1
+        ? stops.map((_, i) => `<button type="button" class="th-dot" aria-label="Go to ${i + 1} of ${stops.length}"></button>`).join('')
+        : '';
+      dotEls = [...dots.children];
+      root.querySelector('.th-controls').hidden = stops.length < 2;
+      mark();
+    }
     const current = () => {
       const x = rail.scrollLeft;
       let best = 0;
-      cards.forEach((c, i) => { if (Math.abs(c.offsetLeft - rail.offsetLeft - x) < Math.abs(cards[best].offsetLeft - rail.offsetLeft - x)) best = i; });
+      stops.forEach((s, i) => { if (Math.abs(s - x) < Math.abs(stops[best] - x)) best = i; });
       return best;
     };
-    const go = i => {
-      const c = cards[(i + cards.length) % cards.length];
-      rail.scrollTo({ left: c.offsetLeft - rail.offsetLeft, behavior: reduced() ? 'auto' : 'smooth' });
-    };
-    const mark = () => { const i = current(); dotEls.forEach((d, j) => d.setAttribute('aria-current', String(i === j))); };
+    const go = i => rail.scrollTo({ left: stops[(i + stops.length) % stops.length], behavior: reduced() ? 'auto' : 'smooth' });
+    function mark() { const i = current(); dotEls.forEach((d, j) => d.setAttribute('aria-current', String(i === j))); }
+
     rail.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
-    mark();
     dots.addEventListener('click', e => { const i = dotEls.indexOf(e.target.closest('.th-dot')); if (i >= 0) go(i); });
     root.querySelector('.th-prev').addEventListener('click', () => go(current() - 1));
     root.querySelector('.th-next').addEventListener('click', () => go(current() + 1));
-
-    // Auto-advance: paused while the pointer, focus or a finger is on the
-    // rail, while the tab is hidden, and for good once someone swipes it.
-    if (reduced()) return;
-    let held = false, stopped = false;
-    const wrap = root.querySelector('.th-rail-wrap');
-    wrap.addEventListener('mouseenter', () => { held = true; });
-    wrap.addEventListener('mouseleave', () => { held = false; });
-    wrap.addEventListener('focusin', () => { held = true; });
-    wrap.addEventListener('focusout', () => { held = false; });
-    rail.addEventListener('touchstart', () => { stopped = true; }, { passive: true });
-    const timer = setInterval(() => {
-      if (!root.isConnected) { clearInterval(timer); return; }
-      if (held || stopped || document.hidden) return;
-      // Only once the rail actually overflows; at the end, back to the start.
-      if (rail.scrollWidth <= rail.clientWidth + 4) return;
-      const atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
-      go(atEnd ? 0 : current() + 1);
-    }, AUTO_MS);
+    measure();
+    // Card widths follow the viewport, and the faces load late.
+    if (global.ResizeObserver) new ResizeObserver(() => measure()).observe(rail);
+    else global.addEventListener('resize', measure);
   }
 
   /**
