@@ -1,0 +1,214 @@
+/* The homepage's "Tonight" graphic (tonight-hero.js).
+
+   The site's one broadcast graphic, and the one place it moves: faces slide
+   in, the count runs up, the stream pill pulses, a ticker and the hatch
+   drift, cards rise in and the featured one shimmers, and the rail advances
+   itself. docs/design-system.md § The Tonight graphic says why this page is
+   the exception. All of it sits under prefers-reduced-motion: no-preference.
+
+   Team colours come from data-team (css/team-colors.css), never a literal.
+   The diagonal split is two clipped halves, not a gradient. White is the
+   text colour on a team band, as everywhere else on the site. */
+
+:root #dash-hero.th { padding: 0; border: 0; background: none; margin-bottom: var(--space-6); }
+
+/* ── Poster ─────────────────────────────────────────────────────────── */
+.th-poster {
+  position: relative; isolation: isolate; overflow: hidden;
+  min-height: 22rem; padding: var(--space-6) var(--space-6) 0;
+  color: white; background: var(--bg-card);
+  border-radius: var(--radius);
+}
+.th-half { position: absolute; inset: 0; z-index: -3; background: var(--team-primary); }
+.th-half--a { clip-path: polygon(0 0, 58% 0, 44% 100%, 0 100%); }
+.th-half--h { clip-path: polygon(58% 0, 100% 0, 100% 100%, 44% 100%); }
+/* The seam, in each side's accent. */
+.th-poster > .th-half--a::after, .th-poster > .th-half--h::after {
+  content: ''; position: absolute; inset: 0; background: var(--team-accent);
+}
+.th-poster > .th-half--a::after { clip-path: polygon(57.4% 0, 58% 0, 44% 100%, 43.4% 100%); }
+.th-poster > .th-half--h::after { clip-path: polygon(58% 0, 58.6% 0, 44.6% 100%, 44% 100%); }
+.th-hatch {
+  position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background: repeating-linear-gradient(115deg, color-mix(in srgb, white 7%, transparent) 0 2px, transparent 2px 24px);
+  background-size: 240px 100%;
+}
+.th-poster a { color: inherit; text-decoration: none; }
+.th-poster a:hover { text-decoration: underline; }
+
+.th-top { display: flex; align-items: flex-start; gap: var(--space-6); flex-wrap: wrap; }
+.th-count { font-family: var(--font-display); text-transform: uppercase; line-height: 0.82; flex: none; }
+.th-kicker { display: block; font-size: var(--text-lg); letter-spacing: 0.14em; margin-bottom: var(--space-2); }
+.th-num { display: block; font-size: 9em; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.th-unit { display: block; font-size: 2.6em; font-weight: 800; }
+.th-date { display: block; margin-top: var(--space-3); font-size: var(--text-md); letter-spacing: 0.12em; }
+.th-num, .th-unit, .th-name, .th-vs span { text-shadow: 0 0.06em 0.4em color-mix(in srgb, black 45%, transparent); }
+
+.th-feat {
+  flex: 1 1 26rem; min-width: 0;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start;
+  gap: var(--space-2) var(--space-3); text-align: center;
+}
+.th-label {
+  grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2) var(--space-3);
+  font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.16em; text-transform: uppercase;
+}
+.th-live {
+  position: relative; display: inline-flex; align-items: center; gap: 0.45em;
+  padding: 0.15em 0.65em; border-radius: var(--radius-sm);
+  background: var(--danger); color: white; font-weight: 800; letter-spacing: 0.12em;
+}
+.th-live::before { content: ''; width: 0.55em; height: 0.55em; border-radius: 50%; background: white; }
+.th-side { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.th-face, .th-mini {
+  position: relative; display: grid; place-items: center; flex: none; overflow: hidden;
+  border-radius: 50%; border: 5px solid var(--team-accent); background: var(--bg-page);
+  filter: drop-shadow(0 0 1.1rem var(--team-accent));
+}
+.th-face { width: 9.5rem; height: 9.5rem; }
+.th-face img, .th-mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.th-face--logo img, .th-mini.th-face--logo img { inset: 18%; width: 64%; height: 64%; object-fit: contain; }
+.th-init { font-family: var(--font-display); font-weight: 800; font-size: 2.6em; color: var(--text-primary); }
+.th-name {
+  display: block; max-width: 100%; margin-top: var(--space-3);
+  font-family: var(--font-display); font-size: var(--text-xl); font-weight: 800; line-height: 1;
+  text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.th-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 0.6em; margin-top: var(--space-1); font-size: var(--text-sm); }
+.th-line > span { white-space: nowrap; }
+.th-line b { font-family: var(--font-display); font-size: var(--text-lg); }
+.th-line-sub { font-family: var(--font-display); font-size: var(--text-xs); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
+.th-team { display: inline-flex; align-items: center; gap: 0.4em; margin-top: var(--space-2); font-weight: 700; }
+.th-team img { width: 1.6em; height: 1.6em; object-fit: contain; }
+.th-team span { opacity: 0.85; font-variant-numeric: tabular-nums; }
+.th-vs { align-self: center; padding-top: var(--space-6); font-family: var(--font-display); }
+.th-vs span { display: block; font-size: 4em; font-weight: 800; font-style: italic; line-height: 1; }
+.th-vs small { display: block; font-size: var(--text-sm); letter-spacing: 0.1em; opacity: 0.9; }
+
+.th-ticker {
+  margin: var(--space-5) calc(-1 * var(--space-6)) 0; overflow: hidden;
+  background: color-mix(in srgb, black 62%, transparent);
+  border-top: 2px solid color-mix(in srgb, white 25%, transparent);
+  font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.06em; text-transform: uppercase;
+}
+.th-ticker-strip { display: flex; width: max-content; }
+.th-ticker-run { display: flex; }
+.th-tick { padding: var(--space-2) var(--space-5); white-space: nowrap; }
+.th-tick::before {
+  content: ''; display: inline-block; width: 0.5em; height: 0.5em; margin-right: var(--space-3);
+  border-radius: 50%; background: var(--gold); vertical-align: 0.12em;
+}
+
+/* ── Rail ───────────────────────────────────────────────────────────── */
+.th-rail-wrap { margin-top: var(--space-3); }
+.th-rail {
+  display: flex; gap: var(--space-3); overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scrollbar-width: none; padding: var(--space-1) 0 var(--space-2);
+}
+.th-rail::-webkit-scrollbar { display: none; }
+.th-rail:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.th-card {
+  position: relative; isolation: isolate; overflow: hidden; flex: 0 0 16rem; scroll-snap-align: start;
+  display: flex; color: white; text-decoration: none; border-radius: var(--radius);
+  background: var(--bg-card);
+}
+.th-card:hover { text-decoration: none; }
+.th-card > .th-half { z-index: -2; }
+.th-card > .th-half--a { clip-path: polygon(0 0, 56% 0, 44% 100%, 0 100%); }
+.th-card > .th-half--h { clip-path: polygon(56% 0, 100% 0, 100% 100%, 44% 100%); }
+/* Text sits on a dark scrim at the foot, so a pale primary still reads. */
+.th-card::after {
+  content: ''; position: absolute; inset: 42% 0 0; z-index: -1;
+  background: color-mix(in srgb, black 55%, transparent);
+}
+.th-card-body { display: flex; flex-direction: column; gap: var(--space-1); width: 100%; padding: var(--space-3); }
+.th-card-faces { display: flex; align-items: center; justify-content: space-between; }
+.th-mini { width: 4.5rem; height: 4.5rem; border-width: 3px; filter: drop-shadow(0 0 0.6rem var(--team-accent)); }
+.th-mini .th-init { font-size: 1.4em; }
+.th-mini--sm { width: 2.9rem; height: 2.9rem; filter: none; }
+.th-mini--sm .th-init { font-size: 1em; }
+.th-at { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 800; }
+.th-card-row { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: var(--space-1); font-weight: 700; font-size: var(--text-sm); }
+.th-card-row > span { display: inline-flex; align-items: center; gap: 0.3em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.th-card-row img { width: 1.3em; height: 1.3em; object-fit: contain; flex: none; }
+.th-card-rec { margin-top: 0; font-weight: 500; font-size: var(--text-xs); opacity: 0.85; font-variant-numeric: tabular-nums; }
+.th-card-story { min-height: 2.6em; margin-top: var(--space-1); font-size: var(--text-xs); line-height: 1.3; }
+.th-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: auto; padding-top: var(--space-1); }
+.th-card-tip { font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.06em; font-variant-numeric: tabular-nums; }
+.th-card-tip b { font-weight: 600; opacity: 0.8; }
+.th-card-tip b.th-win { font-weight: 800; opacity: 1; }
+.th-chip {
+  padding: 0.1em 0.5em; border-radius: var(--radius-sm); background: var(--gold); color: black;
+  font-family: var(--font-display); font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.th-chip--live { background: var(--danger); color: white; }
+.th-card--feat { box-shadow: inset 0 0 0 3px var(--gold); }
+
+.th-card--last { flex-basis: 19rem; flex-direction: column; gap: var(--space-2); padding: var(--space-3); color: var(--text-primary); background: var(--bg-subtle); border: 1px solid var(--border); }
+.th-card--last::after { display: none; }
+.th-last-head { font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.th-last-row { display: flex; align-items: center; gap: var(--space-3); min-width: 0; color: inherit; text-decoration: none; }
+.th-last-row:hover b { color: var(--link); }
+.th-last-row .th-mini { border-color: var(--team-primary); }
+.th-last-row .th-init { color: var(--text-primary); }
+.th-last-text { display: flex; flex-direction: column; min-width: 0; }
+.th-last-text b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.th-last-text small { font-size: var(--text-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.th-last-game { display: inline-flex; align-items: center; gap: 0.3em; color: var(--text-muted); }
+.th-last-game img { width: 1.1em; height: 1.1em; object-fit: contain; }
+
+.th-controls { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-top: var(--space-1); }
+.th-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; }
+.th-dot { width: 0.55rem; height: 0.55rem; padding: 0; border: 0; border-radius: 50%; background: var(--border); cursor: pointer; }
+.th-dot[aria-current="true"] { background: var(--accent); }
+
+/* ── Motion ─────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .th-side--away .th-face { animation: th-in-left 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.25) both; }
+  .th-side--home .th-face { animation: th-in-right 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.25) 0.12s both; }
+  .th-name, .th-line, .th-team { animation: th-rise 0.6s ease-out 0.35s both; }
+  .th-vs span { animation: th-slam 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.55s both; }
+  .th-count { animation: th-rise 0.6s ease-out both; }
+  .th-hatch { animation: th-pan 14s linear infinite; }
+  .th-live { animation: th-pulse 1.4s ease-in-out infinite; }
+  .th-ticker-strip { animation: th-scroll var(--th-dur, 40s) linear infinite; }
+  .th-poster:hover .th-ticker-strip { animation-play-state: paused; }
+  .th-card { animation: th-rise 0.55s ease-out both; animation-delay: calc(var(--i, 0) * 70ms); transition: transform 0.2s; }
+  .th-card:hover { transform: translateY(-3px); }
+  .th-card--feat::before {
+    content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: repeating-linear-gradient(100deg, transparent 0 40%, color-mix(in srgb, white 30%, transparent) 50%, transparent 60% 100%);
+    background-size: 300% 100%; animation: th-shine 3s ease-in-out infinite;
+  }
+}
+@keyframes th-in-left { from { transform: translateX(-9rem) rotate(-24deg) scale(0.7); opacity: 0; } }
+@keyframes th-in-right { from { transform: translateX(9rem) rotate(24deg) scale(0.7); opacity: 0; } }
+@keyframes th-rise { from { transform: translateY(1.2rem); opacity: 0; } }
+@keyframes th-slam { from { transform: scale(2.4); opacity: 0; } }
+@keyframes th-pan { to { background-position: 240px 0; } }
+@keyframes th-pulse { 50% { transform: scale(1.07); filter: brightness(1.2); } }
+@keyframes th-scroll { to { transform: translateX(-50%); } }
+@keyframes th-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* ── Phones ─────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .th-poster { padding: var(--space-4) var(--space-4) 0; min-height: 0; }
+  .th-count { display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: var(--space-3); }
+  .th-kicker, .th-date { grid-column: 1 / -1; }
+  .th-num { font-size: 5.5em; }
+  .th-unit { font-size: 1.7em; }
+  .th-feat { flex-basis: 100%; }
+  .th-label { font-size: var(--text-sm); letter-spacing: 0.1em; }
+  .th-face { width: 6rem; height: 6rem; border-width: 4px; }
+  .th-name { font-size: var(--text-lg); }
+  .th-line { font-size: var(--text-xs); }
+  .th-line b { font-size: var(--text-md); }
+  .th-vs { padding-top: var(--space-5); }
+  .th-vs span { font-size: 2.4em; }
+  .th-ticker { margin: var(--space-4) calc(-1 * var(--space-4)) 0; font-size: var(--text-sm); }
+  .th-card { flex-basis: 78%; }
+  .th-card--last { flex-basis: 85%; }
+  .th-half--a { clip-path: polygon(0 0, 62% 0, 38% 100%, 0 100%); }
+  .th-half--h { clip-path: polygon(62% 0, 100% 0, 100% 100%, 38% 100%); }
+  .th-poster > .th-half--a::after, .th-poster > .th-half--h::after { display: none; }
+}

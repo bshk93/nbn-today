@@ -25,6 +25,19 @@ Since 2026-10-23 the site aims to read like a sports broadcast rather than a Saa
 - **Every colour is a token.** Pages don't write hex, `rgb()` or `hsl()` either (only white text on a team band, and black for a dialog's scrim). The semantic tones (`--success`, `--danger`, `--warning`, `--gold`, `--accent`) carry meaning; a tinted background is `color-mix(in srgb, var(--tone) 16%, transparent)` so it follows the theme, never a dark hex that turns into a black block on the light theme. A set of things that only needs telling apart (award kinds, data-quality categories, contract parts, badge tiers) uses the categorical palette in `css/theme.css`: `--cat-sky`, `--cat-violet`, `--cat-teal`, `--cat-orange`, `--cat-lime`, `--cat-pink`, `--cat-amber`, `--cat-slate`, `--cat-bronze`, `--cat-silver`, darkened on light themes. A team's colours come from `build/team-colors.json`: `--team-primary`, `--team-accent` and `--team-chart` (the one colour a chart uses for the team) on `[data-team]`, or `window.NBN_TEAM_COLORS` from the generated `team-colors.js` for chart code. The exceptions are the games' own palettes and the futures chart's validated series colours. A value on a good-to-bad scale (a rating, an attribute) is never a hue computed in JS: set `--heat` (0–1) and use `ui-heat`, `ui-heat-ink` or `ui-heat-fill`, which works on an SVG mark too.
 - **Almost no motion.** A 150ms page fade. Nothing rises, staggers, lifts or counts up.
 
+## The Tonight graphic (the exception)
+
+The homepage headline (`tonight-hero.js`, `css/tonight-hero.css`) is the one
+place the site breaks "almost no motion" and "flat": it was asked for as a
+broadcast graphic, with max hype. Faces slide in, the count runs up, the stream
+pill pulses, a ticker and a hatch drift, cards rise in, the featured card
+shimmers and the rail advances itself. Everything else about the system still
+holds there: team colours come from `data-team`, never a literal; the diagonal
+split is two clipped halves, not a gradient; the hatch and shimmer are
+`repeating-` patterns; shadows are insets or tokens (the glow is a
+`drop-shadow` filter); and every animation sits under
+`prefers-reduced-motion: no-preference`. Don't copy it onto other pages.
+
 ## Components (`css/components.css`)
 
 - **Container:** `ui-page` (960px) or `ui-page ui-page--wide` (1240px). A few pages keep their own width on purpose: the 30×30 grid (h2h), the games, the article views, the live draft show. **Every container starts at the same left edge** (where a centred 1240px column would), whatever its width, so a title never moves sideways between pages; a narrow page's spare room is on the right.
