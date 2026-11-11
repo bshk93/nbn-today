@@ -791,8 +791,9 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
    Never --bg-hover, which only ever means hover (docs/design-system.md).
    The member picks the look in the account menu:
    - tint (data-mine-style="tint"): a tint of --mine-c plus a bar on the left
-     edge. --mine-c is the team's chart colour (css/team-colors.css), or the
-     swatch they chose, which my-team.js sets inline on <html>.
+     edge. --mine-c is the team's colour, picked per theme so the bar clears
+     3:1 on the page (css/team-colors.css, build/make_team_colors_css.py), or
+     the swatch they chose, which my-team.js sets inline on <html>.
    - star: no tint; a gold star in the row's left edge (.is-mine-star, which
      my-team.js places in every marked row and only this style shows).
    - off: no .mine-on, so nothing here applies.
@@ -812,6 +813,11 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
   box-shadow: inset 3px 0 0 var(--mine-c, var(--accent)),
               inset 0 0 0 100vmax color-mix(in srgb, var(--mine-c, var(--accent)) 16%, transparent);
 }
+/* The tint costs muted text its margin: --text-muted clears 4.5:1 on the
+   plain page by very little, and under a bright team's tint it fell to 3.3:1
+   (GSW on the dark theme). Inside a tinted row it reads as --text-secondary,
+   which stays over 4.7:1 on every tint in every theme. */
+:root.mine-on:not([data-mine-style="star"]) .is-mine { --text-muted: var(--text-secondary); }
 /* A link in running text, with no row around it: a small pill. */
 :root.mine-on:not([data-mine-style="star"]) .is-mine.is-mine--inline {
   padding: 0 0.25em; border-radius: var(--radius-sm);
