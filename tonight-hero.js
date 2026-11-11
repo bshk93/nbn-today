@@ -29,7 +29,6 @@
     const dt = new Date(Date.UTC(y, m - 1, d));
     return `${DAYS[dt.getUTCDay()]} · ${MONTHS[m - 1]} ${d}`;
   }
-  const seasonYears = s => (/^\d\d-\d\d$/.test(s || '') ? `20${s.slice(0, 2)}–${s.slice(3)}` : (s || ''));
   function lastName(name) {
     const parts = String(name || '').split(' ');
     while (parts.length > 2 && /^(Jr\.|Sr\.|II|III|IV)$/.test(parts[parts.length - 1])) parts.pop();
@@ -209,7 +208,7 @@
       + '<div class="th-count">'
       + (opts.label ? `<span class="th-kicker">${esc(opts.label)}</span>` : '')
       + `<span class="th-num">${n}</span><span class="th-unit">${unit}${when ? `<br>${when}` : ''}</span>`
-      + `<span class="th-date">${esc(dateLine(data.date))} · ${esc(seasonYears(data.season))}</span></div>`
+      + `<span class="th-date">${esc(dateLine(data.date))}</span></div>`
       + '<div class="th-feat">'
       + '<div class="th-label">'
       + (feat.stream ? `<span class="th-live" title="${esc(feat.streamer ? `Streamed by ${feat.streamer}` : 'Stream game')}">Stream</span>` : '')
