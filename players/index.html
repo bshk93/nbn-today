@@ -2970,6 +2970,7 @@
     function buildRow(p) {
       const tr = document.createElement('tr');
       tr.className = 'clickable-row';
+      if (p.SLUG) tr.dataset.mineSlug = p.SLUG;   // my-team.js
       rowPlayer.set(tr, p);
       tr.addEventListener('click', () => { location.href = `/players/?p=${p.SLUG}`; });
 

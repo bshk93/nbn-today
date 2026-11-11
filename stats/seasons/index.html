@@ -617,7 +617,7 @@
         el.setAttribute('aria-pressed', card.key === state.sort);
         el.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${esc(card.name)}</span>`
           + `<span class="ui-leader-note">${esc(card.abbr)}</span></div>`
-          + (list.length ? list.map((r, i) => `<div class="ui-leader-row">`
+          + (list.length ? list.map((r, i) => `<div class="ui-leader-row" data-mine-slug="${esc(r.SLUG || '')}">`
               + `<span class="ui-rank">${i + 1}</span>`
               + `<span>${esc(rowLabel(r))}</span>`
               + `<span>${esc(cellText(card.key, r))}</span>`

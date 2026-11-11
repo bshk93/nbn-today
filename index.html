@@ -1125,9 +1125,10 @@
     /* A night's finals sit on --bg-hover tiles; a step darker keeps them
        apart from the shaded row they're in. */
     :root a.dash-feed-row:hover .dash-feed-score { background: color-mix(in srgb, var(--bg-hover) 88%, var(--text-primary)); }
-    /* Your own team: tinted in its colour, so grey only ever means hover. */
-    .dash-rank-team.mine { background: color-mix(in srgb, var(--team-chart, var(--accent)) 12%, transparent); }
-    .dash-rank-team.mine:hover { background: color-mix(in srgb, var(--team-chart, var(--accent)) 18%, transparent); }
+    /* Your own team is tinted by the shared Mine callout (my-team.js,
+       css/components.css), so grey only ever means hover. A rank row already
+       carries its team-colour edge, so it takes the tint without a second bar. */
+    :root.mine-on .dash-rank-team.is-mine { box-shadow: none; }
   </style>
 </head>
 <body>
@@ -1155,7 +1156,7 @@
 
     <!-- Band 1 — your team. Signed-in members with an active tenure only;
          stays hidden for everyone else rather than rendering an empty shell. -->
-    <div class="dash-card" id="dash-team" hidden></div>
+    <div class="dash-card" id="dash-team" data-mine-off hidden></div>
 
     <!-- Band 2 — around the league. Public, so it renders for visitors too.
          Main column: the night's best performances, then the feed. -->
@@ -2238,12 +2239,6 @@
     // the same reading as the published table's `moveCell`. In computed mode it is against the ranks a week earlier
     // (`rating_prev` on /api/playoff-odds); with no week of history yet,
     // there is no movement column at all rather than a column of "new".
-    let rankMine = null;
-    const paintRankMine = () => {
-      if (!rankMine) return;
-      document.querySelectorAll(`#dash-ranks .dash-rank-team[data-team="${rankMine}"]`)
-        .forEach(el => el.classList.add('mine'));
-    };
     const pct = p => (p >= 0.995 ? '>99%' : p > 0 && p < 0.005 ? '<1%' : `${Math.round(p * 100)}%`);
     Promise.all([
       jget('/api/news/rankings/series').catch(() => null),
@@ -2334,7 +2329,6 @@
             card.querySelector('.dash-ranks-list').innerHTML = list(v.rows);
             card.querySelectorAll('.dash-ranks-views button').forEach(b =>
               b.setAttribute('aria-pressed', String(b.dataset.view === k)));
-            paintRankMine();
           };
           const seg = card.querySelector('.dash-ranks-views');
           if (seg) seg.addEventListener('click', e => {
@@ -2731,7 +2725,7 @@
       const card = $('dash-leaders');
       const show = st => {
         card.querySelector('.dash-leaders-list').innerHTML = top3(st).map(({ p, num }, i) =>
-          `<a class="dash-race-row" href="/stats/seasons?sort=${st[2]}">`
+          `<a class="dash-race-row" href="/stats/seasons?sort=${st[2]}" data-mine-slug="${esc(p.slug || '')}">`
           + `<span class="dash-leaders-rank">${i + 1}</span>`
           + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
           + `<span class="dash-race-name">${esc(nbnPlayerName(p.name))}</span>`
@@ -2765,7 +2759,7 @@
       const lad = key => AwardRace.ladder(key, rows, season, pct, { starts });
       const mvp = lad('MVP').slice(0, 3);
       if (!mvp.length) return;
-      const row = (award, p, num) => `<a class="dash-race-row" href="/awards/race/">`
+      const row = (award, p, num) => `<a class="dash-race-row" href="/awards/race/" data-mine-slug="${esc(p.slug || '')}">`
         + `<span class="dash-race-award">${esc(award)}</span>`
         + `<img src="/logos/sm/logo-${esc(p.team.toLowerCase())}.webp" alt="" title="${esc(p.team)}">`
         + `<span class="dash-race-name">${esc(nbnPlayerName(p.name))}</span>`
@@ -3190,8 +3184,6 @@
     let cardGen = 0;
     const showTeam = team => renderTeamCard(team, ++cardGen).catch(() => {}).then(() => markBandOne());
     if (cachedTeam) showTeam(cachedTeam);
-    // Tint my team's row on the Power Rankings card, whichever lands first.
-    myTeamPromise.then(team => { rankMine = team ? String(team).toUpperCase() : null; paintRankMine(); });
     myTeamPromise.then(team => {
       try { if (team) localStorage.setItem('nbn_dash_team', team); else localStorage.removeItem('nbn_dash_team'); } catch {}
       if (team === cachedTeam) return;

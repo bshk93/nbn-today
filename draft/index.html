@@ -231,6 +231,7 @@
       picks.forEach(({ pick, player }) => {
         const tr = document.createElement('tr');
         tr.dataset.clickable = '1';
+        if (player.SLUG) tr.dataset.mineSlug = player.SLUG;   // my-team.js
         tr.addEventListener('click', () => { location.href = `/players/?p=${player.SLUG}`; });
 
         // Photo

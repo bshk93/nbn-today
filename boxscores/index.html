@@ -305,6 +305,7 @@
 
       const hdr = document.createElement("div");
       hdr.className = "game-header";
+      hdr.dataset.mineScope = "";   // your team's game: the whole header is called out (my-team.js)
       hdr.innerHTML = `
         <div class="sb">${sbRow(g.away_team, g.away_score, !homeWin)}${sbRow(g.home_team, g.home_score, homeWin)}</div>
         <div class="gm-meta">
