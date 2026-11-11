@@ -43,6 +43,27 @@ The **Compliance tab** of `committees/rosters/index.html` — the first of four 
 
 **Two-way players are in the table on purpose.** § 2.2 has no call-up or send-down step — a two-way can be given a slot and minutes like anyone else — and its only limit is 50 games a season. So the table tags each two-way with games played (`twoWayGamesBadge`, `2W · 12/50 G`, gold from 40, red at 50), and in edit mode a note above the table names any two-way given minutes. It never blocks a save. The count is `TWO_WAY_GAMES`, summed from this season's `players/player_seasons.csv` rows across every team; the roster table's Overview tab shows the same badge
 
+## Tonight graphic (homepage headline)
+
+`tonight-hero.js` draws `GET /api/tonight` into `#dash-hero` once the season
+has started (`loadTonight` in `index.html`); preseason keeps the countdown and
+the offseason its line. The plain "N games tonight" line is drawn first and
+stays if the API fails.
+
+- **Nothing is decided on the page.** The featured game (a stream game first,
+  else the best win% plus playoff stakes), each side's star (best mean Game
+  Score over his last 5 games for this team, 3 minimum, else top OVR in the
+  starting five), the storylines and the last night's three are all
+  `nbn-api/routers/tonight.py`, the same answer the 11am Discord card
+  (`routers/tonight_card.py`, `post_tonight.py`) is drawn from.
+- **Two additions on the page:** a star within 2 games of a career milestone
+  gets it as his card's storyline (`Milestones.upcoming`, `addStory`), and a
+  game whose box score is in shows its final (`setFinal`, off `latestNight`).
+- **No games on the date:** it asks `/api/tonight?date=` for the `next`
+  slate and shows that under "Next up", with this date's last night.
+- **The rail** advances every 5s, pauses on hover or focus, stops for good on
+  a touch, and never moves under reduced motion.
+
 ## Calendar
 
 *Task:* Change the calendar page (public, read-only game list + fixture/vesting events)

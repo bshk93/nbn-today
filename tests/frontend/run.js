@@ -128,6 +128,7 @@ const PAGES = [
   // series and then fetches it — two chained calls, so it fails in ways the
   // single-fetch cards cannot. Five, not 30: this is the top of the standing.
   { path: '/',                        selector: '.dash-rank-team', min: 5,  what: 'the power-rankings top five' },
+  { path: '/',                        selector: '#dash-hero .hero-line, #dash-hero .th-poster', min: 1, what: 'the headline: the Tonight graphic, or its plain fallback' },
 
   // ── The rest of the public site ────────────────────────────────────────────
   //
