@@ -965,6 +965,7 @@
         scheduled.forEach(g => {
           const row = document.createElement('div');
           row.className = 'sched-schd-game';
+          row.dataset.mineScope = '';   // your team's games are called out (my-team.js)
 
           // The matchup links to its preview; the row itself stays unclickable
           // because it also carries the stream and delete buttons.
@@ -980,7 +981,10 @@
             logo.className = 'sched-schd-logo';
             logo.src = `/logos/sm/logo-${String(abbr).toLowerCase()}.webp`;
             logo.alt = '';
-            teams.append(logo, abbr);
+            const name = document.createElement('span');
+            name.dataset.mineTeam = abbr;
+            name.textContent = abbr;
+            teams.append(logo, name);
           }
           main.appendChild(teams);
           if (g.note) {

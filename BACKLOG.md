@@ -687,6 +687,14 @@ job.
 
 ## 4. Nice to have
 
+- **Your-team callout on charts** — `my-team.js` (0.22.0) marks your team
+  and players in every table, list and card, but charts drawn to canvas or
+  SVG have no rows for it to find: the Frivolities quadrants, the finance
+  and fair-value charts, the futures price chart. Each would read
+  `window.NbnMine.isMine()` and draw its own emphasis (a ring, a heavier
+  line). Deliberately left out of the first pass, and so were single-game
+  highs *against* your team (`/stats/highs`' "vs DET" sub-lines), which name
+  you only as the opponent.
 - **Extension window UI** — teams submit on `/extensions` (2026-10-04) and the
   validator checks the § 6.3 window. What's missing is a calendar surface
   showing when each window opens and closes, the way FA has one.

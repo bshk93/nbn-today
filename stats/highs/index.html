@@ -148,7 +148,7 @@
       el.setAttribute('aria-pressed', def.key === state.stat);
       el.innerHTML = `<div class="ui-leader-head"><span class="ui-leader-name">${esc(def.name)}</span>`
         + `<span class="ui-leader-note">${esc(def.abbr || '')}${def.floor ? ' · ' + esc(def.floor) : ''}</span></div>`
-        + (rows.length ? rows.map(r => `<div class="ui-leader-row" title="${esc(titleOf(r))}">`
+        + (rows.length ? rows.map(r => `<div class="ui-leader-row" title="${esc(titleOf(r))}" data-mine-slug="${esc(r.slug || '')}">`
             + `<span class="ui-rank">${r.rank}</span>`
             + `<span>${esc(nbnPlayerName(r.player))}</span>`
             + `<span>${esc(fmt(def.key, valueOf(r)))}</span>`
