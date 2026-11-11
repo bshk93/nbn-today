@@ -160,6 +160,10 @@
 .th-card--last::after { display: none; }
 .th-last-head { font-family: var(--font-display); font-size: var(--text-md); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
 .th-last-row { display: flex; align-items: center; gap: var(--space-3); min-width: 0; color: inherit; text-decoration: none; }
+/* Shades on hover like every homepage row (index.html § Hover); rounded,
+   since it sits alone in a rounded card rather than between rules. */
+.th-last-row { padding: 0.2rem 0.4rem; margin: -0.2rem -0.4rem; border-radius: var(--radius-sm); }
+.th-last-row:hover { background: var(--bg-hover); text-decoration: none; }
 .th-last-row:hover b { color: var(--link); }
 .th-last-row .th-mini { border-color: var(--team-primary); }
 .th-last-row .th-init { color: var(--text-primary); }
