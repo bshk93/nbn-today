@@ -1342,6 +1342,15 @@
     const asof = (q => (/^\d{4}-\d\d-\d\d$/.test(q) ? q : null))(
       new URLSearchParams(location.search).get('asof') || '');
 
+    // GET /api/tonight, one request per date, shared by the Tonight graphic
+    // and the slate's lines. The default request starts here, at the top of
+    // the script, rather than when the graphic is drawn: that waits on the
+    // schedule and the standings CSV, and asking only then put two round
+    // trips in front of the graphic. Out of season the answer goes unused.
+    const tonightMemo = {};
+    const tonightJson = d => tonightMemo[d || ''] || (tonightMemo[d || ''] = jget('/api/tonight' + (d ? `?date=${encodeURIComponent(d)}` : '')));
+    tonightJson(asof).catch(() => {});
+
     // standings-history.csv, fetched once for the whole page. No field in it
     // is quoted, so splitting on commas is a full parse.
     const standingsPromise = fetch('/standings/standings-history.csv')
@@ -1522,11 +1531,13 @@
             : `Next up: <em>${esc(shortDate(list[0].date))}</em>`;
           sub = `${esc(yrs)} season`;
         }
-        $('dash-hero').innerHTML = heroHtml || (line
+        const plain = heroHtml || (line
           ? `<div class="hero-line">${line}</div><div class="hero-sub">${sub}</div>` : '');
-        // In season, the plain line above is only the fallback: the Tonight
-        // graphic draws over it once /api/tonight answers.
-        if (ph.phase !== 'preseason' && ph.phase !== 'offseason') loadTonight();
+        // In season the plain line is only the fallback, drawn if the Tonight
+        // graphic can't be. Drawing it first and the graphic over it showed
+        // the old headline for a moment on every load.
+        if (ph.phase !== 'preseason' && ph.phase !== 'offseason') loadTonight(plain);
+        else $('dash-hero').innerHTML = plain;
         head = '';
         if (ph.phase === 'preseason') title = 'Opening week';
       }
@@ -2354,25 +2365,27 @@
     // the 11am Discord card is drawn from. A date with no games shows the next
     // slate, with this date's last night. Any failure leaves the plain
     // headline that's already there.
-    // One request per date, shared by the graphic and the slate's lines.
-    const tonightMemo = {};
-    const tonightJson = d => tonightMemo[d || ''] || (tonightMemo[d || ''] = jget('/api/tonight' + (d ? `?date=${encodeURIComponent(d)}` : '')));
     // The answer for one date: the default request when it is that date (it
     // usually is, and the graphic has already asked for it), else that date's.
     const tonightFor = d => tonightJson(asof).then(t => (t.date === d ? t : tonightJson(d)));
-    function loadTonight() {
+    function loadTonight(fallback) {
       const hero = $('dash-hero');
       const href = g => previewHref({ away_team: g.away, home_team: g.home, date: g.date });
-      tonightJson(asof).then(async t => {
+      // Hold the poster's space while it loads, so the cards below don't jump.
+      hero.classList.add('th-pending');
+      const plain = () => { hero.classList.remove('th-pending'); hero.innerHTML = fallback || ''; return null; };
+      tonightJson(asof).catch(() => null).then(async t => {
+        if (!t) return null;
         if (t.games && t.games.length) {
           return TonightHero.mount(hero, t, { previewHref: href }) ? t : null;
         }
         if (!t.next) return null;
-        const nx = await tonightJson(t.next.date);
-        return nx.games && nx.games.length
+        const nx = await tonightJson(t.next.date).catch(() => null);
+        return nx && nx.games && nx.games.length
           && TonightHero.mount(hero, nx, { previewHref: href, lastNight: t.last_night, label: 'Next up' }) ? nx : null;
-      }).then(t => {
-        if (!t) return;
+      }).catch(() => null).then(t => {
+        hero.classList.remove('th-pending');
+        if (!t) return plain();
         // A game whose box score is in shows its final.
         latestNight.then(night => {
           if (!night || night.date !== t.date) return;
