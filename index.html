@@ -1901,6 +1901,9 @@
               ts: t.created_at || (t.date ? t.date + 'T00:00:00Z' : ''),
               date: t.date,
               type: t.type,
+              // A waiver row names the releasing team only in its sub-line,
+              // which carries no team hook, so the row is tagged for it.
+              mineTeam: (t.details || {}).released_by || '',
               html: h.html,
               sub: h.sub ? (h.subHtml ? h.sub : esc(h.sub)) : '',
               href: '/transactions',
@@ -2018,7 +2021,8 @@
       const rowHtml = it => {
         const tone = FeedTypes.tone(it.type);
         const sub = it.sub || (it.byline ? 'By ' + esc(it.byline) : '');
-        return `<a class="dash-feed-row" href="${esc(it.href)}">`
+        return `<a class="dash-feed-row" href="${esc(it.href)}"`
+          + (it.mineTeam ? ` data-mine-team="${esc(it.mineTeam)}"` : '') + '>'
           + `<span class="ui-chip${tone ? ' ui-chip--' + tone : ''} dash-feed-tag">`
           + `${esc(FeedTypes.label(it.type))}</span>`
           + `<span class="dash-feed-text">${it.html || esc(it.text)}`
