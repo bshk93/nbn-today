@@ -262,6 +262,23 @@
     .cd-actions { text-align: right; white-space: nowrap; }
     .cd-actions .cd-btn + .cd-btn { margin-left: 0.4rem; }
     .cd-detail-row td { padding-top: 0; padding-bottom: 0.8rem; background: var(--bg-subtle); }
+    /* A phone has no room for five columns: each team becomes two lines
+       (team, dots and buttons; then the next game) and its card runs the
+       full width under it. */
+    @media (max-width: 560px) {
+      .cd-table thead { display: none; }
+      .cd-table, .cd-table tbody, .cd-table tr.cd-detail-row, .cd-table tr.cd-detail-row td { display: block; width: 100%; }
+      .cd-table tr.cd-detail-row[hidden] { display: none; }
+      .cd-table tr.cd-trow {
+        display: grid; grid-template-columns: max-content max-content max-content minmax(0, 1fr);
+        align-items: center; column-gap: 0.5rem; padding: 0.35rem 0;
+      }
+      .cd-table tr.cd-trow > td { padding: 0.15rem 0.3rem; }
+      .cd-table tr.cd-trow > td:nth-child(4) { grid-column: 1 / 4; grid-row: 2; padding-top: 0; }
+      .cd-table tr.cd-trow > td.cd-actions { grid-column: 4; grid-row: 1 / span 2; justify-self: end; }
+      .cd-table tr.cd-detail-row td { padding: 0 0 0.8rem; }
+      .cd-detail .pos-list { padding: 0.75rem; }
+    }
 
     /* Indicator cells: a colored dot for entry status, a bare glyph for the
        incomplete warning — text lives in the title tooltip, not the cell. */
@@ -329,6 +346,45 @@
     .pos-list .pos-row b { color: var(--text-primary); font-weight: 600; }
     .pos-list .pos-row.done { color: var(--text-muted); }
     .pos-list .pos-why { color: var(--text-muted); }
+    /* Ratings updated in 2K (the DNA): its own section of the card, one
+       ruled row per player, answered Matches or Overwritten. */
+    .dna-list { display: flex; flex-direction: column; margin-bottom: 0.6rem; }
+    .dna-list + .pos-head { margin-top: 0.4rem; }
+    .dna-sub { color: var(--text-muted); margin-bottom: 0.35rem; }
+    .dna-row {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.4rem 1.25rem; align-items: center;
+      padding: 0.6rem 0; border-top: 1px solid var(--border);
+    }
+    .dna-who b { display: block; color: var(--text-primary); font-weight: 600; font-size: var(--text-base); }
+    .dna-label { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.04em;
+      font-size: var(--text-xs); color: var(--text-muted); }
+    .dna-should { display: flex; flex-direction: column; align-items: flex-end; }
+    .dna-pos { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 600; line-height: 1;
+      color: var(--text-primary); letter-spacing: 0.02em; }
+    .dna-acts { display: flex; gap: 0.4rem; }
+    .dna-fix {
+      grid-column: 1 / -1; display: flex; flex-direction: column; gap: 0.5rem;
+      padding: 0.65rem 0.75rem; border-left: 3px solid var(--gold);
+      background: color-mix(in srgb, var(--gold) 8%, transparent); color: var(--text-secondary);
+    }
+    .dna-pick { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .dna-pick-label { width: 5.5rem; color: var(--text-muted); font-size: var(--text-sm); }
+    .dna-pick .ui-segmented > button { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.04em; min-width: 2.6rem; }
+    .dna-pick .ui-segmented > button:disabled { opacity: 0.35; cursor: default; }
+    .dna-fix-foot { display: flex; align-items: center; gap: 0.5rem 0.75rem; flex-wrap: wrap; margin-top: 0.15rem; }
+    .dna-fix-acts { display: flex; gap: 0.4rem; margin-left: auto; }
+    @media (max-width: 560px) {
+      .dna-row { grid-template-columns: minmax(0, 1fr) auto; }
+      .dna-acts { grid-column: 1 / -1; }
+      .dna-acts:empty { display: none; }
+      .dna-acts > button { flex: 1; }
+      .dna-pick { gap: 0.3rem; }
+      .dna-pick-label { width: auto; flex-basis: 100%; }
+      .dna-pick .ui-segmented { display: flex; width: 100%; }
+      .dna-pick .ui-segmented > button { flex: 1; min-width: 0; padding-left: 0; padding-right: 0; }
+      .dna-fix-acts { margin-left: 0; width: 100%; }
+      .dna-fix-acts > button { flex: 1; }
+    }
     .pos-illegal {
       display: inline-block; margin-left: 0.4rem; padding: 0 0.4rem; border-radius: var(--radius-sm);
       font-size: var(--text-xs); font-weight: 700; color: var(--danger-light);
@@ -866,9 +922,137 @@
     // ratings update). The API works out what's due; this only draws it.
 
     const positionItems = team => (positionChecks[team] || {}).items || [];
+    // team|slug -> {over, primary, secondary}: the streamer said the DNA
+    // overwrote this player in 2K, and what 2K showed instead. Kept across
+    // re-renders until it is saved.
+    const dnaHad = {};
+    const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
+    const posText = (p, s) => (p || 'No position') + (s ? ` / ${s}` : '');
+
+    function dnaState(team, i) {
+      const key = `${team}|${i.slug}`;
+      return dnaHad[key] || (dnaHad[key] = { over: false, primary: i.primary || 'PG', secondary: '' });
+    }
+
+    // One player whose ratings were loaded into 2K: what 2K should show, and
+    // the streamer's answer. Matches saves at once; Overwritten opens a row
+    // to say what 2K had, then Save once it is set back.
+    function dnaRow(team, i) {
+      const st = dnaState(team, i);
+      const row = div('dna-row');
+      const redraw = () => row.replaceWith(dnaRow(team, i));
+
+      const who = div('dna-who');
+      const b = document.createElement('b');
+      b.textContent = nbnPlayerName(i.name);
+      who.append(b, span('dna-label', `Ratings updated ${fmtShort(i.dna.date)}`));
+      const should = div('dna-should');
+      should.append(span('dna-label', '2K should show'), span('dna-pos', posText(i.primary, i.secondary)));
+      row.append(who, should);
+
+      if (!st.over) {
+        const acts = div('dna-acts');
+        const ok = document.createElement('button');
+        ok.className = 'ui-btn ui-btn--sm ui-btn--primary';
+        ok.dataset.icon = 'check';
+        ok.textContent = 'Matches';
+        ok.onclick = () => saveDnaCheck(team, i, ok);
+        const bad = document.createElement('button');
+        bad.className = 'ui-btn ui-btn--sm';
+        bad.textContent = 'Overwritten';
+        bad.onclick = () => { st.over = true; redraw(); };
+        acts.append(ok, bad);
+        row.appendChild(acts);
+        return row;
+      }
+
+      row.appendChild(div('dna-acts'));
+      const fix = div('dna-fix');
+      fix.appendChild(span('dna-label', 'What did 2K show?'));
+      // One button per position, like the depth chart reads, instead of two
+      // dropdowns. A secondary can't be the primary, so that one is off.
+      const seg = (label, opts, get, set) => {
+        const line = div('dna-pick');
+        line.appendChild(span('dna-pick-label', label));
+        const group = div('ui-segmented');
+        group.setAttribute('role', 'group');
+        group.setAttribute('aria-label', label);
+        opts.forEach(([v, t]) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = t;
+          btn.setAttribute('aria-pressed', String(get() === v));
+          btn.disabled = label === 'Secondary' && v !== '' && v === st.primary;
+          btn.onclick = () => { set(v); redraw(); };
+          group.appendChild(btn);
+        });
+        line.appendChild(group);
+        return line;
+      };
+      fix.append(
+        seg('Primary', POSITIONS.map(p => [p, p]), () => st.primary,
+            v => { st.primary = v; if (st.secondary === v) st.secondary = ''; }),
+        seg('Secondary', [['', 'None'], ...POSITIONS.map(p => [p, p])], () => st.secondary, v => { st.secondary = v; }),
+      );
+      const foot = div('dna-fix-foot');
+      foot.appendChild(span('dna-fix-note', `Set him back to ${posText(i.primary, i.secondary)} in 2K, then save.`));
+      const acts = div('dna-fix-acts');
+      const save = document.createElement('button');
+      save.className = 'ui-btn ui-btn--sm ui-btn--primary';
+      save.dataset.icon = 'check';
+      save.textContent = 'Set back, save';
+      save.onclick = () => saveDnaCheck(team, i, save);
+      const cancel = document.createElement('button');
+      cancel.className = 'ui-btn ui-btn--sm ui-btn--ghost';
+      cancel.textContent = 'Cancel';
+      cancel.onclick = () => { st.over = false; redraw(); };
+      acts.append(save, cancel);
+      foot.appendChild(acts);
+      fix.appendChild(foot);
+      row.appendChild(fix);
+      return row;
+    }
+
+    async function saveDnaCheck(team, i, btn) {
+      btn.disabled = true;
+      const token = storedToken();
+      const dna = dnaReports(team, [i]);
+      try {
+        const r = await fetch(`/api/position-checks/${team}/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ seen: {}, dna }),
+        });
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          alert(`Not saved: ${err.detail || r.status}`);
+          btn.disabled = false;
+          return;
+        }
+        positionChecks[team] = await r.json();
+        delete dnaHad[`${team}|${i.slug}`];
+        toast(`${nbnPlayerName(i.name)}: saved`);
+        renderCoachingDashboard();
+        renderMine();
+      } catch (e) {
+        alert('Network error');
+        btn.disabled = false;
+      }
+    }
+
+    // The DNA checks a save sends: the update each was shown for, and what
+    // 2K had if the streamer said it was overwritten.
+    function dnaReports(team, due) {
+      const out = {};
+      due.filter(i => i.dna).forEach(i => {
+        const st = dnaHad[`${team}|${i.slug}`];
+        out[i.slug] = { date: i.dna.date, had: st && st.over ? { primary: st.primary, secondary: st.secondary || null } : null };
+      });
+      return out;
+    }
     const positionsDue = team => positionItems(team).filter(i => i.due);
 
-    function positionLine(i) {
+    function positionLine(i, team) {
       const row = div('pos-row' + (i.due ? '' : ' done'));
       const b = document.createElement('b');
       b.textContent = nbnPlayerName(i.name);
@@ -903,8 +1087,21 @@
       const items = positionItems(team);
       if (!items.length) return null;
       const box = div('pos-list');
-      box.appendChild(div('pos-head', 'Player Positions & Numbers'));
-      items.forEach(i => box.appendChild(positionLine(i)));
+      // Players whose new ratings went into 2K get their own section; one
+      // with nothing else waiting isn't repeated in the list below.
+      const dna = items.filter(i => i.dna);
+      const rest = items.filter(i => !i.dna || i.changed || i.primary_changed || i.jersey_changed || i.locked);
+      if (dna.length) {
+        box.appendChild(div('pos-head', 'Ratings Updated in 2K'));
+        box.appendChild(div('dna-sub', "Loading new ratings can overwrite a player's positions. Check each one in 2K."));
+        const list = div('dna-list');
+        dna.forEach(i => list.appendChild(dnaRow(team, i)));
+        box.appendChild(list);
+      }
+      if (rest.length) {
+        box.appendChild(div('pos-head', 'Player Positions & Numbers'));
+        rest.forEach(i => box.appendChild(positionLine(i, team)));
+      }
       return box;
     }
 
@@ -1100,14 +1297,16 @@
             if (i.primary) primaries[i.slug] = i.primary;
             if (i.jersey_changed) jerseys[i.slug] = i.jersey;
           });
+          const dna = dnaReports(team, due);
           const r = await fetch(`/api/position-checks/${team}/confirm`, {
-            method: 'POST', headers, body: JSON.stringify({ seen, jerseys, primaries }),
+            method: 'POST', headers, body: JSON.stringify({ seen, jerseys, primaries, dna }),
           });
           if (!r.ok) {
             const err = await r.json().catch(() => ({}));
             alert(`Positions not marked: ${err.detail || r.status}`);
           } else {
             positionChecks[team] = await r.json();
+            Object.keys(dna).forEach(slug => { delete dnaHad[`${team}|${slug}`]; });
           }
         }
         renderCoachingDashboard();
