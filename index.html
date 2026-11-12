@@ -683,6 +683,10 @@
     .dash-tw-new textarea { width: 100%; resize: vertical; min-height: 3.6rem; }
     .dash-tw-new-row { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
     .dash-tw-new-row .ui-select, .dash-tw-new-row .ui-input { flex: 1 1 8rem; min-width: 0; }
+    .dash-tw-new-row[hidden] { display: none; }
+    /* Collapsed until the box is used: one line to type into, nothing else. */
+    .dash-tw-new:not(.is-open) .dash-tw-new-row { display: none; }
+    .dash-tw-new:not(.is-open) textarea { min-height: 0; height: 2.4rem; resize: none; }
     .dash-tw-new-row label { font-size: var(--text-xs); color: var(--text-muted); display: flex; gap: 0.3rem; align-items: center; }
     .dash-tw-count { margin-left: auto; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
     .dash-tw-err { font-size: var(--text-xs); color: var(--danger); }
@@ -3040,6 +3044,19 @@
       text.addEventListener('input', sync);
       as.addEventListener('change', sync);
       $('tw-save').addEventListener('change', sync);
+      // The box opens when you start a tweet and folds back once you leave it
+      // with nothing typed — the identity row is only noise until then.
+      const form = $('dash-tw-new');
+      const open = on => form.classList.toggle('is-open', on);
+      const blank = () => !text.value.trim() && !(as.value === 'anon'
+        && ($('tw-name').value.trim() || $('tw-handle').value.trim())) && !pendingPic;
+      text.addEventListener('focus', () => open(true));
+      form.addEventListener('focusout', e => {
+        if (!form.contains(e.relatedTarget) && blank()) open(false);
+      });
+      form.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && blank()) { open(false); document.activeElement.blur(); }
+      });
       const putPic = (p, file) => {
         const fd = new FormData();
         fd.append('file', file);
