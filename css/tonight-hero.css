@@ -96,10 +96,21 @@
 .th-line-sub { font-family: var(--font-display); font-size: var(--text-xs); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
 .th-team { display: inline-flex; align-items: center; gap: 0.4em; margin-top: var(--space-2); font-weight: 700; }
 .th-team img { width: 1.6em; height: 1.6em; object-fit: contain; }
-.th-team span { opacity: 0.85; font-variant-numeric: tabular-nums; }
+.th-team span { opacity: 0.85; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .th-vs { align-self: center; padding-top: var(--space-6); font-family: var(--font-display); }
 .th-vs span { display: block; font-size: 4em; font-weight: 800; font-style: italic; line-height: 1; }
 .th-vs small { display: block; font-size: var(--text-sm); letter-spacing: 0.1em; opacity: 0.9; }
+/* Once the featured game's box score is in (TonightHero.setFinal), VS
+   becomes the final: winner bright, loser dimmed, linked to the box score. */
+.th-vs--final { color: inherit; text-decoration: none; text-align: center; }
+.th-vs--final span { animation: none; }
+.th-vs--final .th-score { display: flex; align-items: baseline; justify-content: center; gap: 0.15em; font-variant-numeric: tabular-nums; }
+.th-vs--final .th-score b { font-weight: 800; opacity: 0.55; }
+.th-vs--final .th-score b.th-win { opacity: 1; }
+.th-vs--final .th-score i { font-size: 0.6em; opacity: 0.6; }
+.th-vs--final .th-final { margin-top: 0.35em; font-size: var(--text-md); font-style: normal; letter-spacing: 0.18em; text-transform: uppercase; }
+.th-vs--final .th-box { display: inline; font-size: inherit; font-style: normal; font-weight: inherit; }
+.th-vs--final:hover .th-box { text-decoration: underline; }
 
 .th-ticker {
   margin: var(--space-5) calc(-1 * var(--space-6)) 0; overflow: hidden;
@@ -229,6 +240,9 @@
   .th-line b { font-size: var(--text-md); }
   .th-vs { padding-top: var(--space-5); }
   .th-vs span { font-size: 2.4em; }
+  .th-vs--final .th-score { font-size: 1.9em; gap: 0.08em; }
+  .th-vs--final .th-final { font-size: var(--text-sm); }
+  .th-vs--final .th-box { display: none; }
   .th-ticker { margin: var(--space-4) calc(-1 * var(--space-4)) 0; font-size: var(--text-sm); }
   .th-card { flex-basis: 78%; }
   .th-card--last { flex-basis: 85%; }
