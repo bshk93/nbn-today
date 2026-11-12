@@ -11,6 +11,10 @@
    text colour on a team band, as everywhere else on the site. */
 
 :root #dash-hero.th { padding: 0; border: 0; background: none; margin-bottom: var(--space-6); }
+/* Waiting on /api/tonight: the poster's height, empty, so the page below
+   doesn't jump when it lands. :not(:empty) is what shows the hero at all. */
+:root #dash-hero.th-pending { display: block; min-height: 22rem; padding: 0; border: 0; background: none; margin-bottom: var(--space-6); }
+@media (max-width: 700px) { :root #dash-hero.th-pending { min-height: 0; } }
 
 /* ── Poster ─────────────────────────────────────────────────────────── */
 .th-poster {
