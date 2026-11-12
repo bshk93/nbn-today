@@ -83,8 +83,12 @@
   /* The rows sit in the vertical middle of the sidebar. Auto margins, not
      justify-content: once the rows overflow (groups unfolded) they resolve to
      0, so the list scrolls from its top instead of being clipped above it. */
-  display: flex; flex-direction: column; }
+  display: flex; flex-direction: column; gap: 0.45rem; }
 .sb-sections > * { flex-shrink: 0; }
+.sb-sections > .sb-personal:empty { display: none; } /* no pins: no second gap */
+/* The gap does the spacing; the rows' own small margins would make it uneven. */
+.sb-sections > a.sb-top-link:not(:last-child), .sb-sections > .sb-teams { margin-bottom: 0; }
+.sb-sections > .sb-group:not(:first-child) { margin-top: 0; }
 .sb-sections > :first-child { margin-top: auto; }
 .sb-sections > :last-child { margin-bottom: auto; }
 
