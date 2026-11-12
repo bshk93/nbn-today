@@ -433,13 +433,9 @@
       align-items: stretch;
       max-width: var(--page-width-wide);
       margin: 0 auto;
-      padding-top: 2rem;
-    }
-    /* Beside the docked sidebar the body's own top padding is enough: the
-       ticker then lines up with the sidebar's logo instead of sitting a
-       band below it. */
-    @media (min-width: 900px) {
-      html[data-sidebar] .page-wrap { padding-top: 0; }
+      /* The body's own top padding is enough, at every width: the first row
+         then sits where every other page's header does, not a band lower. */
+      padding-top: 0;
     }
 
     /* Ticker: the latest night's finals, its top performers, then the
@@ -580,14 +576,38 @@
     .dash-vod-yt { font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; text-decoration: none; }
     .dash-vod-yt:hover { color: var(--link); }
 
-    /* Standings: East and West side by side in the sidebar. */
+    /* Card heading row, shared by most homepage cards. */
     .dash-standings-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
     :root .dash-standings-head .dash-card-title { margin: 0; }
-    .dash-stand-gb { margin-left: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 1.8rem; text-align: right; }
-    .dash-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4) var(--space-6); }
-    .dash-stand-line { margin: 0.25rem 0; padding-top: 0.2rem; border-top: 1px dashed var(--border); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+    /* Standings: East and West side by side, set the way a ui-table is on
+       /standings: each conference's top line is its header row (display
+       face, capitals, a hairline under it), seeds are ui-rank numerals, and
+       the figures are tabular at the table's size. Rows stay links, so it's
+       divs rather than a <table>. */
+    .dash-standings-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4) var(--space-6); }
+    .dash-stand-head {
+      display: flex; align-items: baseline; gap: 0.35rem; padding-bottom: var(--space-1);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-display); font-size: var(--text-base); font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
+    }
+    .dash-stand-head .dash-stand-conf-name { font-weight: 700; color: var(--text-primary); }
+    .dash-stand-head .dash-stand-rec, .dash-stand-head .dash-stand-gb { font-size: inherit; color: inherit; }
+    .dash-stand-head + .dash-stand-row { border-top: none; }
+    /* The top six (straight into the playoffs) read brightest; every other
+       row keeps the default. */
+    .dash-stand-row.is-po .dash-stand-seed { color: var(--text-primary); }
+    .dash-stand-row.is-po .dash-stand-rec { color: var(--text-primary); font-weight: 600; }
+    .dash-stand-row.is-po .dash-stand-abbr { font-weight: 700; }
+    /* The play-in and lottery cut lines: the same display-face label on a
+       solid hairline, not the old dashed rule and tiny spaced Inter caps. */
+    .dash-stand-line {
+      margin-top: var(--space-2); padding: var(--space-1) 0 0.1rem; border-top: 1px solid var(--border);
+      font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
+    }
     .dash-stand-line + .dash-stand-row { border-top: none; }
-    .dash-stand-mark { margin-left: 0.3rem; font-size: var(--text-xs); font-weight: 600; color: var(--success); }
+    .dash-stand-mark { margin-left: 0.15rem; font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; color: var(--success); }
     .dash-leaders-stats { display: flex; width: 100%; margin: 0.15rem 0 0.35rem; }
     .dash-leaders-stats > button { flex: 1; padding: var(--space-1) 0; font-size: var(--text-xs); }
     .dash-leaders-rank { width: 1rem; flex-shrink: 0; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
@@ -598,17 +618,13 @@
     .dash-race-name { font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .dash-race-num { margin-left: auto; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .dash-conf-name { display: flex; align-items: baseline; gap: 0.35rem; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 0.3rem; }
-    /* Column labels on the conference line, over the record and GB. */
-    .dash-conf-name .dash-conf-col { font-size: var(--text-xs); font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
-    .dash-conf-name .dash-conf-col:first-of-type { margin-left: auto; }
-    .dash-conf-name .dash-conf-col.dash-stand-gb { font-size: var(--text-xs); }
     .dash-stand-row {
       display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0;
       font-size: var(--text-sm); color: var(--text-secondary); text-decoration: none;
     }
     .dash-stand-row + .dash-stand-row { border-top: 1px solid var(--border-subtle); }
     .dash-stand-row:hover .dash-stand-abbr { color: var(--link); }
-    .dash-stand-seed { width: 1rem; color: var(--text-muted); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+    .dash-stand-seed { width: 1.1rem; margin-right: 0.15rem; text-align: right; font-size: var(--text-sm); }
     .dash-stand-row img { width: 18px; height: 18px; object-fit: contain; }
     .dash-stand-abbr { font-weight: 600; color: var(--text-primary); }
     /* Full team names while a conference column has room for the longest
@@ -622,7 +638,8 @@
     /* Records vary in width ("0–0", "12–14"), so they sit centred in a fixed
        column with the W–L label (same class) over them. Phones have no width
        to spare: there both right-align instead. */
-    .dash-stand-rec { margin-left: auto; min-width: 2.6rem; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
+    .dash-stand-rec { margin-left: auto; min-width: 2.8rem; text-align: center; font-variant-numeric: tabular-nums; font-size: var(--text-sm); color: var(--text-secondary); white-space: nowrap; }
+    .dash-stand-gb { margin-left: 0.4rem; min-width: 1.9rem; text-align: right; font-variant-numeric: tabular-nums; font-size: var(--text-sm); color: var(--text-muted); }
     /* A record or GB figure never breaks across lines ("1–\n0"); on a phone
        the two conferences share ~170px each, so tighten the row instead. */
     .dash-stand-abbr, .dash-stand-gb { white-space: nowrap; }
@@ -630,12 +647,13 @@
     @media (max-width: 520px) {
       .dash-standings-grid { column-gap: var(--space-4); }
       .dash-stand-row { gap: 0.25rem; }
-      .dash-conf-name { gap: 0.25rem; }
+      .dash-stand-head { gap: 0.25rem; }
+      .dash-stand-seed { width: 1rem; margin-right: 0; }
       .dash-stand-rec { min-width: 0; text-align: right; }
       .dash-stand-gb { margin-left: 0.25rem; min-width: 1.5rem; }
     }
     @media (max-width: 360px) {
-      .dash-standings-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-3); }
+      .dash-standings-grid { column-gap: var(--space-3); }
       .dash-stand-row img { width: 14px; height: 14px; }
       .dash-stand-gb { margin-left: 0.15rem; min-width: 1.4rem; }
     }
@@ -1057,7 +1075,7 @@
 
     /* Phones */
     @media (max-width: 600px) {
-      :root .page-wrap { padding: 1.25rem 1rem 3rem; }
+      :root .page-wrap { padding: 0 1rem 3rem; }
       /* Not on phones: too narrow to read a scrolling line. */
       :root .ticker { display: none; }
       /* Tag on its own line above the headline, so the headline gets the
@@ -2598,12 +2616,12 @@
           const teams = list.map(r => ({ team: r.TEAM, w: +r.W, l: +r.L, games: +(live.get(r.TEAM)?.games) || 0 }));
           if (teams.length && teams.every(t => t.games)) marks = Clinch.marks(teams);
         }
-        return `<div class="dash-stand-conf"><div class="dash-conf-name">${label}<span class="dash-conf-col dash-stand-rec">W–L</span><span class="dash-conf-col dash-stand-gb">GB</span></div>`
+        return `<div class="dash-stand-conf"><div class="dash-stand-head"><span class="dash-stand-conf-name">${label}</span><span class="dash-stand-rec">W–L</span><span class="dash-stand-gb">GB</span></div>`
           + list.map((r, i) =>
           (i === Clinch.PLAYOFF ? '<div class="dash-stand-line" title="Seeds 7–10 play in">Play-in</div>' : '')
           + (i === Clinch.PLAY_IN ? '<div class="dash-stand-line" title="Seeds 11–15 miss the postseason">Lottery</div>' : '')
-          + `<a class="dash-stand-row" href="/teams/${esc(r.TEAM)}/">`
-          + `<span class="dash-stand-seed">${i + 1}</span>`
+          + `<a class="dash-stand-row${i < Clinch.PLAYOFF ? ' is-po' : ''}" href="/teams/${esc(r.TEAM)}/">`
+          + `<span class="dash-stand-seed ui-rank">${i + 1}</span>`
           + `<img src="/logos/sm/logo-${esc(r.TEAM.toLowerCase())}.webp" alt="">`
           + `<span class="dash-stand-abbr"><span class="short">${esc(r.TEAM)}</span><span class="full">${esc((typeof TEAM_LIST !== 'undefined' && TEAM_LIST[r.TEAM]) || r.TEAM)}</span></span>`
           + (marks[r.TEAM] ? `<span class="dash-stand-mark" title="${esc(Clinch.LABELS[marks[r.TEAM]])}">${esc(marks[r.TEAM])}</span>` : '')
