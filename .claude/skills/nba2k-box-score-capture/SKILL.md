@@ -30,12 +30,22 @@ LT/RT icons above the table is the side being shown.
 
 ## 0. Which night is it?
 
-Read the video's title. NBN's streams are titled `NBN 11/11: Box Scores`: the
-date is the night, and its year is whichever is nearest the video's upload
-date. If the title names no date, **ask the user**. Never guess it from the
-upload date: box scores are often streamed the day after the games, and a
-wrong date is refused at upload at best, and filed under the wrong night at
-worst. Season and game type come from the queue in step 6, not from the video.
+**The night is the in-game date, not the video title.** A box score stream
+can cover an earlier night: the video titled `NBN 11/9: Box Scores` held the
+**11-04** games (the 11-09 test, 2026-11-12). The title is the day it was
+streamed.
+
+- Read the in-game date off the video: the MyNBA calendar or Daily View
+  between games shows it (`November 4th, 2026`), and so do the New Injury
+  popups during the sim. Take it from two frames.
+- Then check it in step 6: on `/committees/stats`, **every** game you
+  captured must be listed under that date with the same two teams. If even
+  one isn't, stop and ask the user. Never move a game to another date to make
+  it fit.
+- Title and in-game date disagree: use the in-game date, and say so in the
+  report. No in-game date anywhere: ask the user.
+
+Season and game type come from the queue in step 6, not from the video.
 
 ## 1. Open and prep (one JS call)
 Navigate the user's current tab to the URL. Wait about 2s, then run:
@@ -94,26 +104,35 @@ screenshots are deleted 14 days after commit, the VOD isn't.
 
 ## 4b. Capture the injury report
 
-The streamer shows MyNBA's **Injury History → Entire League** screen once a
-night, usually just after the last box score. `/parse-injuries` needs it, and
-it reads anyone missing from the list as **healed**, so a partial list does
-real damage: capture all of it or none.
+The streamer shows MyNBA's **Injury History → Entire League** screen **at the
+end of the video, after the last box score**, and scrolls through it. It is a
+long list: 24 players over three screens on 11-11, sorted by duration, longest
+first. `/parse-injuries` needs it, and it reads anyone missing from the list
+as **healed**, so a partial list does real damage: capture all of it or none.
 
-- Run `_seg` over the rest of the video after the box score section (and the
-  first 60s before it), then take a `scale: 0.3` screenshot of each stable
-  segment. The injury screen has "Injury History" and "Entire League" at the
-  top, and NAME, STATUS, OVR, INJURY, DURATION columns.
-- Capture the top of the list, then each scrolled screen, until the bottom is
-  on screen: the scrollbar at the right reaches the end, or the list is
-  shorter than one screen. Consecutive screens should overlap by a row or
-  two, so no player falls between them. At most 6 screenshots.
+- **Look at the end.** Run `_seg` from the last box score's end to the end of
+  the video, and take a `scale: 0.3` screenshot of each segment, short ones
+  included: the operator scrolls the list in small steps, so its screens are
+  often 1–3s long, not 4s. Then step through the last minute at 0.5s with
+  `scale: 0.3` shots if the list hasn't turned up.
+- The list screen has "Injury History" and "Entire League" at the top, a
+  player card under that, and NAME, STATUS, OVR, INJURY, DURATION columns.
+- **New Injury popups are not the list.** They appear during the sim, often
+  in the first minute ("INJURY NOTICE - The Chicago Bulls have injury
+  issues…", with rotation buttons). Never stop at them: the 11-09 test
+  captured two popups from 0:36 and 0:53 and missed the list.
+- Capture the top of the list (the first row: the longest duration), then
+  each scrolled screen until the bottom is on screen: the scrollbar thumb at
+  the right reaches the end (the last rows are usually Day-to-Day). Consecutive
+  screens must overlap by at least one row, so no player falls between them;
+  pick screens with the least overlap that still keeps one. At most 6
+  screenshots (the upload limit for one night's report). If 6 can't cover the
+  list with overlap, capture none and report it.
 - **The bottom never appears** (the streamer stopped scrolling): capture what
   there is, don't upload it, and report it as cut off.
-- Only a **New Injury** popup (one team's notice with rotation buttons), no
-  list: capture the popups, upload them, and say so; `/parse-injuries` has a
-  path for popups and knows they aren't the whole list.
-- No injury screen anywhere in the video: say so in the report. Don't look
-  for one in another video.
+- Popups only, after looking at the end and finding no list: capture the
+  popups, upload them, and say so plainly. `/parse-injuries` has a path for
+  popups and knows they aren't the whole list.
 
 Save them as `injuries_XmYYs_pN.jpg` and add them to `manifest.json` under
 `"injuries": [{"file", "t", "part", "bottom": true|false}]`.
@@ -139,6 +158,10 @@ box re-render before the next.
 
 - A game **not listed** on that date means the date is wrong or the game isn't
   on the schedule: stop and ask, don't upload it somewhere else.
+- **Count the night's games.** If that date lists games you didn't capture,
+  name them in the report: the stream may have covered only part of the
+  night (the 11-04 video had 7 of its 14), or the capture missed some. Go back
+  over the video once for each missing matchup before reporting it.
 - **"already committed"** or **"already pending"**: that game was uploaded by
   hand. Skip it and say so; don't add a second copy.
 - A side allows at most 4 images.
@@ -157,7 +180,7 @@ expected.
 Run `document.getElementById('ovl')?.remove()` on the YouTube tab. Zip the
 outputs folder and send it to the user.
 
-Report a table: # | AWAY @ HOME | final (winner first, note OT) | timestamp → team (p1/p2) | uploaded. Then one line for the injury report: how many screens, whether the bottom of the list was reached, and uploaded or not. Then list exceptions: missing p2 screens, sides with no Total row on any frame, frames where a mid-list row is highlighted, games skipped as already uploaded, and the quality if it wasn't `hd1080`.
+Report a table: # | AWAY @ HOME | final (winner first, note OT) | timestamp → team (p1/p2) | uploaded. Then one line for the night: in-game date (and the title's, if different), and how many of that date's scheduled games were captured. Then one line for the injury report: list or popups, how many screens, its timestamps, whether the bottom of the list was reached, and uploaded or not. Then list exceptions: missing p2 screens, sides with no Total row on any frame, frames where a mid-list row is highlighted, games skipped as already uploaded, and the quality if it wasn't `hd1080`.
 
 End with: run `/parse-boxscores` to commit the night; it does the injury
 report as its step 7. Its validator is what checks the numbers, not this
