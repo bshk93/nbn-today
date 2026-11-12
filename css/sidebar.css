@@ -79,7 +79,14 @@
 .sb-search kbd { font: inherit; font-size: var(--text-xs); color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 0.3rem; }
 .sb-search .sb-icon { display: flex; }
 
-.sb-sections { flex: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 0 1rem; }
+.sb-sections { flex: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 0.25rem 0 1rem;
+  /* The rows sit in the vertical middle of the sidebar. Auto margins, not
+     justify-content: once the rows overflow (groups unfolded) they resolve to
+     0, so the list scrolls from its top instead of being clipped above it. */
+  display: flex; flex-direction: column; }
+.sb-sections > * { flex-shrink: 0; }
+.sb-sections > :first-child { margin-top: auto; }
+.sb-sections > :last-child { margin-bottom: auto; }
 
 /* A section header is the parent item: its icon, its name, a fold chevron.
    The rows under it are plain text, indented to line up with the name. */
