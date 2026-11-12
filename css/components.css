@@ -298,7 +298,9 @@
    <div class="ui-hub"></div> from NAV_SECTIONS). Stat Lab's look. */
 .ui-hub { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
 .ui-hub-card {
-  display: flex; flex-direction: column; gap: 0.6rem;
+  /* Icon in its own column, centered against the title and description. */
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+  column-gap: 1.25rem; row-gap: 0.35rem; align-content: center;
   background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 1.75rem; color: inherit; text-decoration: none;
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
@@ -307,7 +309,8 @@
 .ui-hub-card[hidden] { display: none; }
 .ui-hub-group { grid-column: 1 / -1; margin: var(--space-4) 0 0; }
 .ui-hub-group:first-child { margin-top: 0; }
-.ui-hub-icon .ni { width: 1.6rem; height: 1.6rem; }
+.ui-hub-icon { grid-row: 1 / span 2; align-self: center; display: flex; }
+.ui-hub-icon .ni { width: 2rem; height: 2rem; }
 .ui-hub-title { font-size: var(--text-md); font-weight: 600; }
 .ui-hub-desc { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; }
 @media (max-width: 480px) { .ui-hub { grid-template-columns: 1fr; } }
