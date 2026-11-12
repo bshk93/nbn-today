@@ -1851,8 +1851,9 @@
     const FEED_LIMIT = 12, FEED_MAX = 60;
 
     // What FeedTypes.headline needs to name players and teams. Shared by the
-    // feed and On This Day's trades.
-    const headlineCtx = bios => ({
+    // feed and On This Day's trades. `mine` tags each team for my-team.js, so
+    // a move naming your team is called out; only the feed asks for it.
+    const headlineCtx = (bios, { mine = false } = {}) => ({
       esc,
       name: slug => {
         const n = (bios[slug] || {}).name;
@@ -1863,7 +1864,7 @@
           ? [parts[parts.length - 1], ...parts.slice(0, -1)].map(w => w[0].toUpperCase() + w.slice(1)).join(' ')
           : String(slug || '');
       },
-      team: abbr => `<span class="dash-feed-team"><img src="/logos/sm/logo-${esc(abbr.toLowerCase())}.webp" alt="">${esc(abbr)}</span>`,
+      team: abbr => `<span class="dash-feed-team"${mine ? ` data-mine-team="${esc(abbr)}"` : ''}><img src="/logos/sm/logo-${esc(abbr.toLowerCase())}.webp" alt="">${esc(abbr)}</span>`,
     });
     // The players a ledger entry names, for one bios fetch.
     const txnSlugs = txns => {
@@ -1892,7 +1893,7 @@
           ? jget('/api/players?slugs=' + encodeURIComponent([...slugs].join(','))).catch(() => ({}))
           : Promise.resolve({});
         return bios.then(bios => {
-          const ctx = headlineCtx(bios);
+          const ctx = headlineCtx(bios, { mine: true });
           return txns.map(t => {
             const h = FeedTypes.headline(t, ctx);
             if (!h) return null;
@@ -1933,11 +1934,13 @@
     const FEED_SCORE_NIGHTS = 14;
     const scoreRow = (date, nightGames) => {
       // A ticker cell: away over home, the winner bright.
+      // Each tile is its own data-mine-scope, so my-team.js tints only your
+      // team's game, not the whole night's row.
       const side = (team, score, won) =>
         `<span class="dash-feed-side${won ? ' win' : ''}" data-team="${esc(team)}">${esc(team)} <b>${esc(String(score))}</b></span>`;
       const games = nightGames.map(g => {
         const awayWon = g.away_score > g.home_score;
-        return '<span class="dash-feed-score">'
+        return '<span class="dash-feed-score" data-mine-scope>'
           + side(g.away_team, g.away_score, awayWon) + ' '
           + side(g.home_team, g.home_score, !awayWon) + '</span>';
       });
@@ -1946,9 +1949,7 @@
         date,
         type: 'score',
         html: plural(nightGames.length, 'game')
-          // data-mine-off: a night's finals aren't called out for your team
-          // (my-team.js); one game lit up the whole night's row.
-          + `<span class="dash-feed-scores" data-mine-off>${games.join(' ')}</span>`,
+          + `<span class="dash-feed-scores">${games.join(' ')}</span>`,
         href: `/boxscores/?date=${encodeURIComponent(date)}`,
       };
     };
