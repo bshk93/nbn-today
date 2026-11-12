@@ -457,28 +457,86 @@ const coachingConfigReady = new Promise(resolve => {
   body.ts-dragging .ts-view-lineup tbody tr.ts-row:hover:not(.ts-illegal) td { background: none; }
   .ts-view-lineup tbody tr.ts-row :is(input, button:not(.drag-handle), label) { cursor: auto; }
   .ts-table.editing .ts-name a { pointer-events: none; color: inherit; }
-  #team-settings-wrap tr.dragging td { opacity: 0.25; }
-  #team-settings-wrap tr.ts-swap-target td { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-  #team-settings-wrap tr.ts-swap-target td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
-  .ts-drop-line { position: fixed; z-index: 1001; height: 2px; margin-top: -1px; background: var(--accent); pointer-events: none; }
-  .ts-drop-line::before, .ts-drop-line::after { content: ''; position: absolute; top: -3px; width: 2px; height: 8px; background: var(--accent); }
-  .ts-drop-line::before { left: 0; }
-  .ts-drop-line::after { right: 0; }
-  /* The label that follows the pointer: lifted over the page, so it takes
-     the overlay shadow. Name in the display face, where he'd land under it. */
-  .ts-ghost {
-    position: fixed; z-index: 1002; pointer-events: none; max-width: calc(100vw - 16px);
-    display: flex; flex-direction: column; gap: 0.15rem; padding: 0.45rem 0.75rem;
-    background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
-    border-radius: var(--radius-sm); box-shadow: var(--shadow-overlay); white-space: nowrap;
+  /* Where the lifted player came from: a hatched hole the size of his row. */
+  #team-settings-wrap tr.dragging td {
+    background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, transparent) 0 6px, transparent 6px 12px);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 50%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--accent) 50%, transparent);
   }
-  .ts-ghost b { font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-primary); line-height: 1.1; overflow: hidden; text-overflow: ellipsis; }
-  .ts-ghost span { font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; }
-  .ts-ghost span strong { color: var(--accent-light); font-weight: 700; }
-  @media (max-width: 360px) {
-    .ts-min-edit .ts-stepper button { width: 1.25rem; }
-    .ts-min-edit .ts-stepper input { width: 1.75rem; }
+  #team-settings-wrap tr.dragging td > * { visibility: hidden; }
+  /* A swap: the row he'd trade places with, lit and outlined. */
+  #team-settings-wrap tr.ts-swap-target td {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent);
   }
+  #team-settings-wrap tr.ts-swap-target td:first-child { box-shadow: inset 4px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  #team-settings-wrap tr.ts-swap-target td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  /* A move: a thick bar on the boundary, tinted either side, with its flag. */
+  .ts-drop-bar {
+    position: fixed; z-index: 1001; height: 18px; margin-top: -9px; pointer-events: none;
+    display: flex; align-items: center; justify-content: flex-end;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .ts-drop-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; background: var(--accent); }
+  .ts-drop-tag {
+    position: relative; margin-right: 0.5rem; padding: 0.2rem 0.5rem;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.1;
+    color: var(--text-on-accent); background: var(--accent-fill); border-radius: var(--radius-sm); white-space: nowrap;
+  }
+  .ts-drop-flag { position: fixed; z-index: 1001; margin: 0; transform: translate(-100%, -50%); pointer-events: none; }
+  :is(.ts-drop-bar, .ts-drop-flag)[hidden] { display: none; }
+  /* The lifted row: off the table, scaled toward you, with the overlay
+     shadow, and a strip under it saying where he'd land. */
+  .ts-lift {
+    position: fixed; z-index: 1002; pointer-events: none;
+    background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius); overflow: hidden;
+    transform-origin: 50% 100%;
+  }
+  .ts-lift.up { transform: scale(1.04); box-shadow: var(--shadow-overlay); }
+  .ts-lift table { width: 100%; border-collapse: collapse; }
+  .ts-lift td { border-bottom: none !important; background: var(--bg-card); }
+  .ts-lift tr.ts-inactive td:not(.ts-handle) { opacity: 1; }
+  .ts-lift .drag-handle { color: var(--accent-light); }
+  .ts-lift-tag {
+    padding: 0.35rem 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-on-accent); background: var(--accent-fill);
+  }
+  .ts-lift-tag b { font-size: var(--text-md); letter-spacing: 0.02em; }
+  .ts-lift-tag.idle { color: var(--text-muted); background: var(--bg-subtle); }
+  .ts-lift.landing .ts-lift-tag { opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .ts-lift { transition: transform 0.16s ease-out, box-shadow 0.16s ease-out, top 0.15s ease-out; }
+    .ts-lift.tracking { transition: transform 0.16s ease-out, box-shadow 0.16s ease-out; }
+    .ts-lift.landing { transition: transform 0.18s ease-in, box-shadow 0.18s ease-in, top 0.18s ease-in, left 0.18s ease-in; }
+    .ts-lift.landing .ts-lift-tag { transition: opacity 0.1s; }
+    #team-settings-wrap tr.ts-landed td { animation: ts-landed 0.9s ease-out; }
+    @keyframes ts-landed {
+      from { background-color: color-mix(in srgb, var(--accent) 34%, transparent); }
+      to { background-color: transparent; }
+    }
+  }
+
+  /* Swipe to set minutes: the stepper takes horizontal swipes (the page
+     keeps vertical ones), and a readout floats above it while one is on. */
+  .ts-stepper { touch-action: pan-y; }
+  .ts-stepper input:not(:disabled) { cursor: ew-resize; }
+  .ts-stepper.scrubbing { border-color: var(--accent); box-shadow: var(--focus-ring); }
+  .ts-stepper.scrubbing input { color: var(--accent-light); }
+  body.ts-scrubbing, body.ts-scrubbing * { cursor: ew-resize !important; -webkit-user-select: none; user-select: none; }
+  .ts-scrub {
+    position: fixed; z-index: 1003; pointer-events: none; transform: translate(-50%, -100%);
+    min-width: 10rem; padding: 0.55rem 0.85rem 0.6rem; text-align: center;
+    background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--accent);
+    border-radius: var(--radius); box-shadow: var(--shadow-overlay);
+  }
+  .ts-scrub-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
+  .ts-scrub-val { display: flex; align-items: baseline; justify-content: center; gap: 0.3rem; margin-top: 0.15rem; }
+  .ts-scrub-val b { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .ts-scrub-val small { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .ts-scrub-val .ui-chip { align-self: center; }
+  .ts-scrub-track { height: 4px; margin-top: 0.45rem; background: var(--bg-subtle); }
+  .ts-scrub-track > span { display: block; height: 100%; background: var(--accent); }
+  .ts-scrub-hint { margin-top: 0.35rem; font-size: var(--text-xs); color: var(--text-dim); }
   body.ts-dragging, body.ts-dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
 
   .ts-pos-sub { display: none; }
@@ -6835,17 +6893,112 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     // ⠿ handle, whose touch-action stops the scroll. `touchmove` is
     // `{ passive: false }` so preventDefault() actually holds the page still.
     //
-    // The rows don't move until the drop. The drop is shown in place: a
-    // player row lit up means the two swap, a line between rows means he
-    // goes in there and the rest shift. A label above the pointer says where
-    // he'd end up ("→ C, swaps with …"), above it so a finger doesn't cover
-    // it, and small so it doesn't cover the row it's naming. The page scrolls
-    // on its own near the top and bottom edges.
+    // Picking a player up lifts his row off the table: a copy scales up with
+    // a shadow and floats just above the pointer, so neither it nor the drop
+    // spot is under the finger. Where he came from is left as a hatched hole.
+    // The rows don't move until the drop; the drop is shown in place, loud:
+    // a lit row with a SWAP flag means the two swap, a thick bar with a MOVE
+    // HERE flag means he goes in there and the rest shift. The strip under
+    // the lifted row says where he'd end up. On the drop the copy settles
+    // into his new row, which flashes; a cancel floats it back. All motion
+    // is off under prefers-reduced-motion. The page scrolls on its own near
+    // the top and bottom edges.
     const HOLD_MS = 280;
     const EDGE_PX = 70;
     let drag = null;
 
-    const isControl = el => !!el.closest('input, select, textarea, label, a, button:not(.drag-handle)');
+    const isControl = el => !!el.closest('input, select, textarea, label, a, .ts-stepper, button:not(.drag-handle)');
+
+    // Swipe to set minutes: a finger on a player's minutes, slid left or
+    // right, takes a minute off or adds one every SCRUB_PX, with a big
+    // readout above it (and a tick on phones that can buzz). A mouse can
+    // drag the number the same way. Up or down first is a scroll, which
+    // touch-action: pan-y leaves to the page; a tap is still a tap (the
+    // keyboard, or the − and + buttons). Nothing is saved until Save.
+    const SCRUB_PX = 9;
+    function attachScrub(stepper, input, label, set) {
+      let st = null;
+      let readout = null;
+      function draw() {
+        if (!readout) {
+          readout = document.createElement('div');
+          readout.className = 'ts-scrub';
+          readout.setAttribute('aria-hidden', 'true');
+          readout.innerHTML = '<div class="ts-scrub-name"></div>'
+            + '<div class="ts-scrub-val"><b></b><small>min</small><span class="ui-chip ui-chip--sm ui-chip--accent"></span></div>'
+            + '<div class="ts-scrub-track"><span></span></div>'
+            + '<div class="ts-scrub-hint">Slide left or right</div>';
+          readout.querySelector('.ts-scrub-name').textContent = label;
+          document.body.appendChild(readout);
+        }
+        const v = +input.value || 0;
+        const d = v - st.v0;
+        readout.querySelector('b').textContent = v;
+        const chip = readout.querySelector('.ui-chip');
+        chip.textContent = d > 0 ? `+${d}` : d < 0 ? `\u2212${-d}` : '0';
+        chip.hidden = d === 0;
+        readout.querySelector('.ts-scrub-track > span').style.width = `${v / 48 * 100}%`;
+        const r = stepper.getBoundingClientRect();
+        const half = readout.offsetWidth / 2;
+        readout.style.left = `${Math.max(half + 8, Math.min(window.innerWidth - half - 8, r.left + r.width / 2))}px`;
+        readout.style.top = `${r.top - 10}px`;
+      }
+      function start(x, y, kind) {
+        if (input.disabled || drag) return false;
+        st = { x, y, v0: +input.value || 0, on: false, kind };
+        return true;
+      }
+      function move(x, y, ev) {
+        if (!st) return;
+        const dx = x - st.x, dy = y - st.y;
+        if (!st.on) {
+          if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { end(); return; } // a scroll
+          if (Math.abs(dx) < 6) return;
+          st.on = true;
+          st.x = x; // count from here, so the first minute isn't a jump
+          stepper.classList.add('scrubbing');
+          document.body.classList.add('ts-scrubbing');
+          input.blur();
+        }
+        if (ev && ev.cancelable) ev.preventDefault();
+        const v = Math.max(0, Math.min(48, st.v0 + Math.round((x - st.x) / SCRUB_PX)));
+        if (v !== (+input.value || 0)) {
+          set(v);
+          if (st.kind === 'touch' && navigator.vibrate) navigator.vibrate(4);
+        }
+        draw();
+      }
+      function end(ev) {
+        if (!st) return;
+        const was = st.on;
+        st = null;
+        stepper.classList.remove('scrubbing');
+        document.body.classList.remove('ts-scrubbing');
+        if (readout) { readout.remove(); readout = null; }
+        // After a swipe, no click on the button the finger let go over.
+        if (was && ev && ev.cancelable) ev.preventDefault();
+      }
+      stepper.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY, 'touch');
+      }, { passive: true });
+      stepper.addEventListener('touchmove', e => {
+        if (e.touches[0]) move(e.touches[0].clientX, e.touches[0].clientY, e);
+      }, { passive: false });
+      stepper.addEventListener('touchend', e => end(e));
+      stepper.addEventListener('touchcancel', () => end());
+      // The mouse scrubs from the number only; − and + stay buttons.
+      input.addEventListener('mousedown', e => {
+        if (e.button !== 0 || !start(e.clientX, e.clientY, 'mouse')) return;
+        const mm = ev => move(ev.clientX, ev.clientY, ev);
+        const mu = ev => {
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+          end(ev);
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+    }
     const lineupView = () => table.classList.contains('ts-view-lineup');
 
     function scrollerFor(el) {
@@ -6856,18 +7009,54 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       return null; // the window
     }
 
+    const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    // A copy of the row in a table of its own, its cells pinned to the
+    // widths they have on the page, so the lifted row reads as the row.
+    function liftedCopy(tr) {
+      const t = document.createElement('table');
+      t.className = table.className;
+      const row = tr.cloneNode(true);
+      row.classList.remove('dragging', 'ts-swap-target');
+      Array.from(tr.cells).forEach((td, i) => {
+        row.cells[i].style.width = `${td.getBoundingClientRect().width}px`;
+      });
+      t.createTBody().appendChild(row);
+      return t;
+    }
+
+    function overlay(cls) {
+      const el = document.createElement('div');
+      el.className = cls;
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+      return el;
+    }
+
     function beginDrag(tr, x, y) {
+      const rect = tr.getBoundingClientRect();
       const ghost = document.createElement('div');
-      ghost.className = 'ts-ghost';
+      ghost.className = 'ts-lift';
       ghost.setAttribute('aria-hidden', 'true');
+      const tag = document.createElement('div');
+      tag.className = 'ts-lift-tag';
+      ghost.append(liftedCopy(tr), tag);
+      ghost.style.left = `${rect.left}px`;
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.top = `${rect.top}px`;
       document.body.appendChild(ghost);
-      const line = document.createElement('div');
-      line.className = 'ts-drop-line';
-      line.hidden = true;
-      document.body.appendChild(line);
+      const bar = overlay('ts-drop-bar');
+      bar.innerHTML = '<span class="ts-drop-tag"></span>';
+      const flag = overlay('ts-drop-tag ts-drop-flag');
       tr.classList.add('dragging');
       document.body.classList.add('ts-dragging');
-      drag = { tr, ghost, line, x, y, target: null, lit: null, raf: 0, scroller: scrollerFor(table) };
+      drag = { tr, ghost, tag, bar, flag, x, y, target: null, lit: null, raf: 0, scroller: scrollerFor(table) };
+      // Next frame, so the scale and the rise animate from the row itself.
+      requestAnimationFrame(() => {
+        ghost.classList.add('up');
+        setTimeout(() => ghost.classList.add('tracking'), 170);
+      });
       dragMove(x, y);
       drag.raf = requestAnimationFrame(autoScroll);
     }
@@ -6876,6 +7065,13 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       if (!drag) return;
       drag.x = x; drag.y = y;
       findTarget();
+      placeGhost();
+    }
+
+    // The lifted row sits with its bottom edge just above the pointer.
+    function placeGhost() {
+      const { ghost, y } = drag;
+      ghost.style.top = `${Math.max(4, y - ghost.offsetHeight - 24)}px`;
     }
 
     // What a drop at the pointer would do: {swap: row} or {before: node}
@@ -6932,39 +7128,45 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     }
 
     function showTarget() {
-      const { target, line, ghost, tr } = drag;
-      // Name in the display face; under it, where a drop would put him.
-      const nameEl = document.createElement('b');
-      nameEl.textContent = nameOf(tr);
-      const where = document.createElement('span');
+      const { target, tag, bar, flag, tr } = drag;
+      // The strip under the lifted row: where a drop would put him.
       if (!target) {
-        where.textContent = 'Drop on a player to swap, between rows to move';
+        tag.textContent = 'Drop on a player to swap, between rows to move';
+        tag.classList.add('idle');
       } else {
         const to = landing(target);
-        const strong = document.createElement('strong');
-        strong.textContent = to === 'Inactive' ? 'Inactive' : to;
-        where.append(to === 'Inactive' ? 'Out of the game: ' : 'To ', strong);
-        if (target.swap) where.append(` · swaps with ${nameOf(target.swap)}`);
+        const strong = document.createElement('b');
+        strong.textContent = to;
+        tag.classList.remove('idle');
+        tag.replaceChildren(to === 'Inactive' ? 'Out of the game: ' : 'To ', strong);
+        if (target.swap) tag.append(` · swaps with ${nameOf(target.swap)}`);
       }
-      ghost.replaceChildren(nameEl, where);
-      const gw = ghost.offsetWidth;
-      ghost.style.left = `${Math.max(8, Math.min(window.innerWidth - gw - 8, drag.x - gw / 2))}px`;
-      ghost.style.top = `${Math.max(8, drag.y - ghost.offsetHeight - 18)}px`;
       const lit = target && target.swap ? target.swap : null;
       if (drag.lit !== lit) {
         if (drag.lit) drag.lit.classList.remove('ts-swap-target');
         if (lit) lit.classList.add('ts-swap-target');
         drag.lit = lit;
       }
-      if (!target || target.swap) { line.hidden = true; return; }
       const tb = table.getBoundingClientRect();
+      if (lit) {
+        const r = lit.getBoundingClientRect();
+        flag.hidden = false;
+        flag.textContent = 'Swap';
+        flag.style.left = `${tb.right - 8}px`;
+        flag.style.top = `${r.top + r.height / 2}px`;
+      } else {
+        flag.hidden = true;
+      }
+      if (!target || target.swap) { bar.hidden = true; return; }
       let y;
       if (target.before) y = target.before.getBoundingClientRect().top;
       else y = tbody.rows[tbody.rows.length - 1].getBoundingClientRect().bottom;
-      line.hidden = false;
-      line.style.left = `${tb.left}px`;
-      line.style.width = `${tb.width}px`;
-      line.style.top = `${y}px`;
+      bar.hidden = false;
+      bar.style.left = `${tb.left}px`;
+      bar.style.width = `${tb.width}px`;
+      bar.style.top = `${y}px`;
+      const to = landing(target);
+      bar.firstChild.textContent = to === 'Inactive' ? 'Out of the game' : `Move here · ${to}`;
     }
 
     function autoScroll() {
@@ -6990,18 +7192,41 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
 
     function endDrag(apply) {
       if (!drag) return;
-      const { tr, ghost, line, target, lit, raf } = drag;
+      const { tr, ghost, bar, flag, target, lit, raf } = drag;
       cancelAnimationFrame(raf);
-      ghost.remove();
-      line.remove();
+      bar.remove();
+      flag.remove();
       if (lit) lit.classList.remove('ts-swap-target');
-      tr.classList.remove('dragging');
       document.body.classList.remove('ts-dragging');
       drag = null;
-      if (!apply || !target) return;
-      if (target.swap) swapRows(tr, target.swap);
-      else tbody.insertBefore(tr, target.before);
-      afterReorder();
+      const moved = apply && target;
+      if (moved) {
+        if (target.swap) swapRows(tr, target.swap);
+        else tbody.insertBefore(tr, target.before);
+        afterReorder();
+      }
+      // Settle: the lifted copy drops into the row's place (its new one, or
+      // back where it was), then the row comes back and, if it moved,
+      // flashes, along with the player it swapped with.
+      const finish = () => {
+        ghost.remove();
+        if (!drag || drag.tr !== tr) tr.classList.remove('dragging');
+        if (!moved || reducedMotion()) return;
+        const rows = target.swap ? [tr, target.swap] : [tr];
+        rows.forEach(r => {
+          r.classList.remove('ts-landed');
+          void r.offsetWidth; // restart the animation
+          r.classList.add('ts-landed');
+          setTimeout(() => r.classList.remove('ts-landed'), 900);
+        });
+      };
+      if (reducedMotion()) { finish(); return; }
+      const r = tr.getBoundingClientRect();
+      ghost.classList.add('landing');
+      ghost.classList.remove('up');
+      ghost.style.top = `${r.top}px`;
+      ghost.style.left = `${r.left}px`;
+      setTimeout(finish, 190);
     }
 
     document.addEventListener('keydown', e => {
@@ -7253,6 +7478,12 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         plusBtn.disabled = !slot;
         plusBtn.addEventListener('click', () => stepMinutes(1));
         stepper.append(minusBtn, minInput, plusBtn);
+        attachScrub(stepper, minInput, displayNameFromBio(bio.name || '') || row.SLUG, v => {
+          if (v === +minInput.value) return;
+          minInput.value = String(v);
+          minutesDirty = true;
+          refreshMinutesTotal();
+        });
 
         const resLabel = document.createElement('label');
         resLabel.className = 'ts-res';
@@ -7287,7 +7518,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     // One line of help per view, in place of the paragraph that used to sit
     // over the whole table.
     const HELP = {
-      lineup: '<b>Drag</b> a player to reorder him (on a phone, press and hold first). Drop him <b>on a player</b> to swap the two, or <b>between rows</b> to slot him in. Players under Inactive are not in the game.',
+      lineup: '<b>Drag</b> a player to reorder him (on a phone, press and hold first). Drop him <b>on a player</b> to swap the two, or <b>between rows</b> to slot him in. Players under Inactive are not in the game. <b>Swipe</b> a player\'s minutes left or right to change them.',
       details: 'Primary positions come from 2K. <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> has the streamer check a player\'s positions before every game, since 2K resets them when ratings update. A secondary more than one step from the primary (§ 2.3) counts once the streamer OKs it.',
     };
     const help = document.createElement('p');

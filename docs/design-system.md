@@ -38,6 +38,18 @@ split is two clipped halves, not a gradient; the hatch and shimmer are
 `drop-shadow` filter); and every animation sits under
 `prefers-reduced-motion: no-preference`. Don't copy it onto other pages.
 
+## The rotation editor's drag (a second, small exception)
+
+Dragging a player in the Rotation editor (`setupTeamSettingsTab` in
+`teams/team.js`) was asked to feel physical, so it moves: the row lifts
+(scales up with `var(--shadow-overlay)`, the token for something over the
+page) and floats above the pointer, the hole it left is a hatch, and on the
+drop the copy settles into place and the row flashes once. The drop target
+itself snaps rather than slides, so it never lags the pointer. The same goes
+for the swipe-to-set-minutes readout. All of it sits under
+`prefers-reduced-motion: no-preference`, and nothing else on the page moves.
+Don't copy it onto other pages.
+
 ## Components (`css/components.css`)
 
 - **Container:** `ui-page` (960px) or `ui-page ui-page--wide` (1240px). A few pages keep their own width on purpose: the 30×30 grid (h2h), the games, the article views, the live draft show. **Every container starts at the same left edge** (where a centred 1240px column would), whatever its width, so a title never moves sideways between pages; a narrow page's spare room is on the right.
