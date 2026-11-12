@@ -5,6 +5,11 @@ description: Capture every NBA 2K box score screen from an NBN YouTube VOD as sh
 
 # NBA 2K box score capture (YouTube VOD)
 
+> **Where this file runs.** This copy in the repo is the source of truth, but
+> Claude in Chrome doesn't read skills from the repo. Add it to your Claude
+> account (Settings → Capabilities → Skills, upload this folder zipped), and
+> re-upload it after changing this file.
+
 **Runs in Claude in Chrome**, in the user's own browser: YouTube blocks
 downloads from cloud servers, so this can't run in a cloud session. The output
 goes into the same pending queue as hand-uploaded screenshots, and the night is
@@ -117,8 +122,8 @@ outputs folder and send it to the user.
 
 Report a table: # | AWAY @ HOME | final (winner first, note OT) | timestamp → team (p1/p2) | uploaded. Then list exceptions: missing p2 screens, sides with no Total row on any frame, frames where a mid-list row is highlighted, games skipped as already uploaded, and the quality if it wasn't `hd1080`.
 
-End with: run `/parse-boxscores` to commit the night. Its double read and the
-validator are what check the numbers, not this skill.
+End with: run `/parse-boxscores` to commit the night. Its validator is what
+checks the numbers, not this skill.
 
 ## Speed notes
 - Never scan visually second by second. The `_isBox` and `_seg` passes replace about 100 screenshots.
