@@ -305,6 +305,8 @@
 }
 .ui-hub-card:hover { background: var(--bg-hover); border-color: var(--muted-border); transform: translateY(-2px); text-decoration: none; }
 .ui-hub-card[hidden] { display: none; }
+.ui-hub-group { grid-column: 1 / -1; margin: var(--space-4) 0 0; }
+.ui-hub-group:first-child { margin-top: 0; }
 .ui-hub-icon .ni { width: 1.6rem; height: 1.6rem; }
 .ui-hub-title { font-size: var(--text-md); font-weight: 600; }
 .ui-hub-desc { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.5; }

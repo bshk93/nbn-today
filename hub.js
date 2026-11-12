@@ -10,9 +10,19 @@
   const sec = NAV_SECTIONS.find(s => s.hub && _normPath(s.hub) === here);
   if (!sec) return;
 
+  // Items sharing a `group` get that heading before the first of them; a
+  // section with no groups is drawn as plain cards, as before.
   const gated = [];
+  let group = null;
   for (const p of sec.items) {
     if (p.searchOnly) continue;
+    if (p.group && p.group !== group) {
+      group = p.group;
+      const h = document.createElement('h2');
+      h.className = 'ui-section-title ui-hub-group';
+      h.textContent = group;
+      el.appendChild(h);
+    }
     const a = document.createElement('a');
     a.className = 'ui-hub-card';
     a.href = p.href;

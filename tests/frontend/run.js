@@ -108,9 +108,11 @@ const PAGES = [
   { path: '/committees/',             selector: '.cmte',           min: 4,  what: 'a card per committee' },
   // Hub pages draw their cards from NAV_SECTIONS (hub.js); gated cards don't count.
   { path: '/office/',                 selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per League Office page' },
-  { path: '/about/',                  selector: '.ui-hub-card:not([hidden])', min: 5, what: 'a card per About page' },
-  { path: '/media/',                  selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per Media page' },
-  { path: '/games/',                  selector: '.ui-hub-card:not([hidden])', min: 4, what: 'a card per game' },
+  { path: '/office/',                 selector: '.ui-hub-card:not([hidden])', min: 9, what: 'a card per League Office page' },
+  { path: '/off-the-court/',          selector: '.ui-hub-card:not([hidden])', min: 8, what: 'a card per Off the Court page' },
+  { path: '/front-office/',           selector: '.ui-hub-card:not([hidden])', min: 7, what: 'a card per Front Office page' },
+  { path: '/nbyen-corner/',           selector: '.ui-hub-card:not([hidden])', min: 5, what: 'a card per NB¥ Corner page' },
+  { path: '/history/',                selector: '.ui-hub-card:not([hidden])', min: 6, what: 'a card per History page' },
   { path: '/committees/rosters/',      selector: '#comp-body tr',   min: 30, what: 'a row per team on the Compliance tab' },
   // A published power-rankings edition, by id — the only stable way to reach
   // one, since /news/ lists whatever is newest. Editions are never deleted.

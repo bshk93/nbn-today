@@ -735,6 +735,15 @@ function _activeSection() {
   return (href && NAV_SECTIONS.find(sec => sec.items.some(p => p.href === href))) || null;
 }
 
+// The sidebar row this page lights: _activeNavHref, except that a page in a
+// section drawn inside another (`under`, i.e. History) lights that section's
+// own row there.
+function _sidebarActive() {
+  const href = _activeNavHref();
+  const sec = href && NAV_SECTIONS.find(s => s.under && s.items.some(p => p.href === href));
+  return sec ? sec.hub : href;
+}
+
 function _openGroups() { return new Set(_readJson(SIDEBAR_GROUPS_KEY, [])); }
 
 // Pinned pages: per browser, stored as hrefs and resolved against NAV_SECTIONS
@@ -865,7 +874,7 @@ function _sidebarGroup(label, key, rows, active, open, icon) {
 function _drawPersonalGroups() {
   const slot = document.querySelector('.sb-personal');
   if (!slot) return;
-  const active = _activeNavHref();
+  const active = _sidebarActive();
   const open = _openGroups();
   const pins = _sidebarPins();
   slot.replaceChildren();
@@ -1488,7 +1497,7 @@ function _buildSidebar() {
     document.documentElement.setAttribute('data-sidebar', _sidebarMode());
   }
 
-  const active = _activeNavHref();
+  const active = _sidebarActive();
   const open = _openGroups();
 
   const aside = document.createElement('aside');
@@ -1527,6 +1536,7 @@ function _buildSidebar() {
   personal.className = 'sb-personal';
   nav.appendChild(personal);
   for (const sec of NAV_SECTIONS) {
+    if (sec.under) continue;
     if (sec.hub) { nav.appendChild(_buildHubEntry(sec)); continue; }
     const rows = sec.items.filter(p => !p.searchOnly);
     if (rows.length) nav.appendChild(_sidebarGroup(sec.label, sec.label, rows, active, open, sec.icon));
@@ -1645,22 +1655,30 @@ const NAV_SECTIONS = [
     { title: 'Injuries', href: '/injuries/', icon: 'medical', keywords: ['injury report', 'hurt', 'out'] },
     { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
   ] },
-  { label: 'Front Office', icon: 'swap', items: [
-    { title: 'Trade Block', href: '/tradeblock/', icon: 'swap' },
-    { title: 'Free Agency', href: '/free-agency/', icon: 'pen' },
-    { title: 'Extensions', href: '/extensions/', icon: 'doc-plus' },
-    { title: 'Transactions', href: '/transactions', icon: 'doc-lines' },
-    { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'] },
-    { title: 'Cap Summary', href: '/cap-summary/', icon: 'money' },
-    { title: 'Franchise Finances', href: '/finances/', icon: 'line-chart', keywords: ['finances', 'front office ledger', 'franchise value', 'share price', 'market cap', 'fair value', 'attendance', 'profit', 'revenue', 'arena naming rights'] },
+  // A section with a `hub` is one row in the sidebar, opening a page of cards
+  // for its items (hub.js); each item's `desc` is its card's line, and items
+  // sharing a `group` are drawn under that heading on the hub page.
+  { label: 'Front Office', icon: 'swap', hub: '/front-office/', items: [
+    { title: 'Front Office', href: '/front-office/', icon: 'swap', searchOnly: true },
+    { title: 'Trade Block', href: '/tradeblock/', icon: 'swap', desc: 'Who every team is shopping, and the picks they\'ll move.' },
+    { title: 'Free Agency', href: '/free-agency/', icon: 'pen', desc: 'The free agent pool, and your team\'s offers.' },
+    { title: 'Extensions', href: '/extensions/', icon: 'doc-plus', desc: 'Who is eligible to extend, and on what terms.' },
+    { title: 'Transactions', href: '/transactions', icon: 'doc-lines', desc: 'Every signing, trade, release and option, newest first.' },
+    { title: 'Transaction Simulator', href: '/transaction-sim/', icon: 'calculator', keywords: ['trade machine', 'trade builder', 'trade simulator'],
+      desc: 'Build a trade or a signing and check it against the rulebook.' },
+    { title: 'Cap Summary', href: '/cap-summary/', icon: 'money', desc: 'Every team\'s salary against the cap and aprons.' },
+    { title: 'Franchise Finances', href: '/finances/', icon: 'line-chart', keywords: ['finances', 'front office ledger', 'franchise value', 'share price', 'market cap', 'fair value', 'attendance', 'profit', 'revenue', 'arena naming rights'],
+      desc: 'Share prices, the books and arena naming rights.' },
   ] },
-  { label: 'History', icon: 'trophy', items: [
-    { title: 'Season Summary', href: '/season-summary', icon: 'scroll' },
-    { title: 'Hall of Champions', href: '/champions/', icon: 'trophy' },
-    { title: 'Hall of Fame', href: '/hof', icon: 'star' },
-    { title: 'Awards', href: '/awards/', icon: 'medal' },
-    { title: 'Season Recaps', href: '/recap/', icon: 'tape' },
-    { title: 'Draft', href: '/draft', icon: 'clipboard-list' },
+  // History is a hub drawn as one row inside Stats (`under`), not a section of
+  // its own; its pages light that row and open Stats (_sidebarActive).
+  { label: 'History', icon: 'trophy', hub: '/history/', under: 'Stats', items: [
+    { title: 'Season Summary', href: '/season-summary', icon: 'scroll', desc: 'Every season\'s champion, award winners and stat leaders.' },
+    { title: 'Hall of Champions', href: '/champions/', icon: 'trophy', desc: 'Every title team, and the rosters that won it.' },
+    { title: 'Hall of Fame', href: '/hof', icon: 'star', desc: 'The greatest careers in NBN, scored.' },
+    { title: 'Awards', href: '/awards/', icon: 'medal', desc: 'MVP, DPOY, All-NBN and the rest, season by season.' },
+    { title: 'Season Recaps', href: '/recap/', icon: 'tape', desc: 'One team\'s season, told start to finish.' },
+    { title: 'Draft', href: '/draft', icon: 'clipboard-list', desc: 'Every draft class, pick by pick.' },
     // The live draft and the guide matter one week a year; /draft links both.
     { title: 'Draft Live', href: '/draft/live/', icon: 'live', searchOnly: true },
     { title: 'Draft Guide', href: '/draft/guide/', icon: 'guide', searchOnly: true },
@@ -1675,6 +1693,7 @@ const NAV_SECTIONS = [
     { title: 'Compare Players', href: '/compare/', icon: 'compare', searchOnly: true },
     { title: 'Ratings Changes', href: '/ratings-changes/', icon: 'trend-bars', searchOnly: true },
     { title: 'Owners', href: '/owners', icon: 'owner' },
+    { title: 'History', href: '/history/', icon: 'trophy' },
     { title: 'Stat Lab', href: '/stats/', icon: 'list', also: ['/h2h', '/frivolities'], keywords: ['stats', 'leaders', 'leaderboards', 'explore'] },
     { title: 'Career Leaders', href: '/stats/totals', icon: 'steps', searchOnly: true },
     { title: 'Single-Game Highs', href: '/stats/highs', icon: 'spike', searchOnly: true },
@@ -1687,32 +1706,30 @@ const NAV_SECTIONS = [
       keywords: ['box score import', 'submit box score', 'type in box score'] },
     { title: 'Trade Retrospectives', href: '/frivolities#retros', icon: 'magnifier', searchOnly: true },
   ] },
-  { label: 'NB¥ Corner', icon: 'yen', items: [
-    { title: 'NB¥ Balances', href: '/nbyen/', icon: 'yen' },
-    { title: 'Betting — bets, Pick\'em, futures', short: 'Betting', href: '/bet/', icon: 'dice' },
-    { title: "Pick'em", href: '/bet/#pickem', icon: 'target', keywords: ['pickem', 'lineup', 'fantasy'] },
+  { label: 'NB¥ Corner', icon: 'yen', hub: '/nbyen-corner/', items: [
+    { title: 'NB¥ Corner', href: '/nbyen-corner/', icon: 'yen', searchOnly: true },
+    { title: 'NB¥ Balances', href: '/nbyen/', icon: 'yen', desc: 'Every member\'s NB¥, and how they earned it.' },
+    { title: 'Betting — bets, Pick\'em, futures', short: 'Betting', href: '/bet/', icon: 'dice', desc: 'Bet on tonight\'s games, and on how the season ends.' },
+    { title: "Pick'em", href: '/bet/#pickem', icon: 'target', keywords: ['pickem', 'lineup', 'fantasy'], desc: 'Pick a six-man lineup each game day.' },
     { title: 'Futures', href: '/bet/#futures', icon: 'line-chart', searchOnly: true },
-    { title: 'Wall Street', href: '/invest', icon: 'candles' },
-    { title: 'Donations', href: '/donations/', icon: 'heart' },
+    { title: 'Wall Street', href: '/invest', icon: 'candles', desc: 'Buy and sell shares in the 30 franchises.' },
+    { title: 'Donations', href: '/donations/', icon: 'heart', desc: 'Support the league, and earn NB¥ for it.' },
   ] },
-  // A section with a `hub` is one row in the sidebar, opening a page of cards
-  // for its items (hub.js); each item's `desc` is its card's line.
-  { label: 'Games', icon: 'controller', hub: '/games/', items: [
-    { title: 'Games', href: '/games/', icon: 'controller', searchOnly: true },
-    { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop', desc: 'One guess a day at the day\'s Perry.' },
-    { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette', desc: 'Guess the NBN player in eight tries. A new one every day.' },
-    { title: 'Trivia', href: '/trivia', icon: 'question', desc: 'How well do you actually know this league?' },
-    { title: 'Tetris', href: '/tetris/', icon: 'blocks', desc: 'For the wait between games, with a members\' leaderboard.' },
+  { label: 'Off the Court', icon: 'tv', hub: '/off-the-court/', items: [
+    { title: 'Off the Court', href: '/off-the-court/', icon: 'tv', searchOnly: true, keywords: ['media', 'games'] },
+    { title: 'News', href: '/news/', icon: 'newspaper', group: 'Watch & read', desc: 'League news, power rankings and columns, written by NBN members.' },
+    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv', group: 'Watch & read', desc: 'The greatest playoff performances in NBN history, ranked and annotated.' },
+    { title: 'NBNFL', href: '/nbnfl/', icon: 'football', noSearch: true, group: 'Watch & read', desc: 'The Bengals in NBN\'s sister football league, and their players\' real NFL stats.' },
+    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play', group: 'Watch & read', desc: 'Every streamed game, on the NBN channel.' },
+    { title: 'Daily Perry Game', href: '/perry/', icon: 'hoop', group: 'Play', desc: 'One guess a day at the day\'s Perry.' },
+    { title: 'Daily Poeltl', href: '/poeltl/', icon: 'silhouette', group: 'Play', desc: 'Guess the NBN player in eight tries. A new one every day.' },
+    { title: 'Trivia', href: '/trivia', icon: 'question', group: 'Play', desc: 'How well do you actually know this league?' },
+    { title: 'Tetris', href: '/tetris/', icon: 'blocks', group: 'Play', desc: 'For the wait between games, with a members\' leaderboard.' },
   ] },
-  { label: 'Media', icon: 'tv', hub: '/media/', items: [
-    { title: 'Media', href: '/media/', icon: 'tv', searchOnly: true },
-    { title: 'News', href: '/news/', icon: 'newspaper', desc: 'League news, power rankings and columns, written by NBN members.' },
-    { title: 'NBNTV Classics', href: '/nbntv-classics', icon: 'tv', desc: 'The greatest playoff performances in NBN history, ranked and annotated.' },
-    { title: 'NBNFL', href: '/nbnfl/', icon: 'football', noSearch: true, desc: 'The Bengals in NBN\'s sister football league, and their players\' real NFL stats.' },
-    { title: 'YouTube', href: 'https://youtube.com/@nothingbutnetNBN/streams', icon: 'play', desc: 'Every streamed game, on the NBN channel.' },
-  ] },
-  { label: 'Committees', icon: 'columns', href: '/committees/', items: [
-    { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns' },
+  // /committees/ is its own hand-built page (live signals per committee), so
+  // it doesn't load hub.js; the section is a hub only for the sidebar row.
+  { label: 'Committees', icon: 'columns', hub: '/committees/', items: [
+    { title: 'Committees', short: 'All committees', href: '/committees/', icon: 'columns', searchOnly: true },
     { title: 'Rosters Committee — compliance & cap sheet diffs', short: 'Rosters', href: '/committees/rosters/', icon: 'clipboard-check' },
     // The same roles the dashboard's own boot gate admits; anyone else is sent home.
     { title: 'PDC Committee', short: 'PDC', href: '/committees/pdc/', icon: 'ballot',
@@ -1723,29 +1740,26 @@ const NAV_SECTIONS = [
     { title: 'TRC Committee — trade requests', short: 'TRC', href: '/committees/trc/', icon: 'scale',
       roles: ['trc', 'trc_head'] },
   ] },
-  { label: 'About', icon: 'people', hub: '/about/', items: [
-    { title: 'About', href: '/about/', icon: 'people', searchOnly: true },
-    { title: 'Members', href: '/members/', icon: 'people', desc: 'Everyone in NBN: tenures, teams, achievements and rings.' },
-    { title: 'Roles & Permissions', href: '/roles', icon: 'key', desc: 'Who can do what: roles, committees and permissions.' },
-    { title: 'Constitution', href: '/constitution/', icon: 'charter', desc: 'The founding document of the league.' },
-    { title: 'Rulebook', href: '/rulebook/', icon: 'book', desc: 'The salary cap, trades, free agency, extensions and the draft.' },
+  { label: 'League Office', icon: 'briefcase', hub: '/office/', items: [
+    { title: 'League Office', href: '/office/', icon: 'briefcase', searchOnly: true, keywords: ['about'] },
+    { title: 'Members', href: '/members/', icon: 'people', group: 'About NBN', desc: 'Everyone in NBN: tenures, teams, achievements and rings.' },
+    { title: 'Roles & Permissions', href: '/roles', icon: 'key', group: 'About NBN', desc: 'Who can do what: roles, committees and permissions.' },
+    { title: 'Constitution', href: '/constitution/', icon: 'charter', group: 'About NBN', desc: 'The founding document of the league.' },
+    { title: 'Rulebook', href: '/rulebook/', icon: 'book', group: 'About NBN', desc: 'The salary cap, trades, free agency, extensions and the draft.' },
     // Searchable, but its own entry in the sidebar's account menu (_buildAccount).
     { title: 'Change Log', href: '/changelog', icon: 'tag', searchOnly: true },
     // Searchable, but its own entry at the top of the sidebar (_buildInboxEntry).
     { title: 'Inbox', href: '/inbox/', icon: 'inbox', searchOnly: true },
-    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus', desc: 'What a GM does, and how to get a team.' },
-  ] },
-  { label: 'League Office', icon: 'briefcase', hub: '/office/', items: [
-    { title: 'League Office', href: '/office/', icon: 'briefcase', searchOnly: true },
-    { title: 'Proposals', href: '/proposals/', icon: 'vote', desc: 'Rule proposals up for a vote.' },
-    { title: 'Suggestions', href: '/suggestions/', icon: 'bulb', desc: 'Suggest a change to NBN, and see what the league thinks of it.' },
-    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope', desc: 'Memos from the league office to the league.' },
+    { title: 'Join NBN', short: 'Join', href: '/join/', icon: 'person-plus', group: 'About NBN', desc: 'What a GM does, and how to get a team.' },
+    { title: 'Proposals', href: '/proposals/', icon: 'vote', group: 'Governance', desc: 'Rule proposals up for a vote.' },
+    { title: 'Suggestions', href: '/suggestions/', icon: 'bulb', group: 'Governance', desc: 'Suggest a change to NBN, and see what the league thinks of it.' },
+    { title: 'League Office Memos', short: 'Memos', href: '/memos/', icon: 'envelope', group: 'Governance', desc: 'Memos from the league office to the league.' },
     { title: 'League Settings', href: '/cap-settings/', icon: 'gear',
       keywords: ['cap settings', 'salary cap', 'apron', 'minimum salary', 'league year'],
-      desc: 'The cap, aprons and minimum salaries by season, and the rookie scale.' },
+      group: 'Governance', desc: 'The cap, aprons and minimum salaries by season, and the rookie scale.' },
     { title: 'Rookie Scale', href: '/cap-settings/#rookie-scale', icon: 'ruler', searchOnly: true },
-    { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'], desc: 'Who has a strike, and what for.' },
-    { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [], desc: 'The working list of what needs doing on the site.' },
+    { title: 'Strikes', href: '/strikes/', icon: 'warning', roles: ['bod'], group: 'Governance', desc: 'Who has a strike, and what for.' },
+    { title: 'Backlog', href: '/backlog/', icon: 'checklist', roles: [], group: 'Governance', desc: 'The working list of what needs doing on the site.' },
   ] },
 ];
 

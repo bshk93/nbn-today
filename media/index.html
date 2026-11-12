@@ -2,16 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/css/shared.css">
-  <title>Media - NBN</title>
+  <title>NBN | Moved | Media</title>
   <!-- NBN:og -->
-  <meta name="description" content="NBN media — league news, NBNTV Classics, the NBNFL and the YouTube channel.">
+  <meta name="description" content="Moved — Media is now part of Off the Court.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="NBN">
-  <meta property="og:title" content="Media - NBN">
-  <meta property="og:description" content="NBN media — league news, NBNTV Classics, the NBNFL and the YouTube channel.">
+  <meta property="og:title" content="NBN | Moved | Media">
+  <meta property="og:description" content="Moved — Media is now part of Off the Court.">
   <meta property="og:url" content="https://nbn.today/media/">
   <meta property="og:image" content="https://nbn.today/og-default.png">
   <meta property="og:image:width" content="1200">
@@ -23,20 +21,16 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
+  <!-- Media and Games merged into /off-the-court/ (2026-11-12). Shared links are still in Discord, so this stub keeps them
+       working instead of 404ing. -->
+  <script>
+    location.replace('/off-the-court/' + location.search + location.hash);
+  </script>
+  <meta http-equiv="refresh" content="0; url=/off-the-court/">
 </head>
 <body>
-  <!-- The cards are NAV_SECTIONS' "Media" section (nav.js), drawn by hub.js. -->
-  <div class="page ui-page">
-    <nav class="nav"></nav>
-    <header class="ui-header">
-      <div>
-        <h1 class="ui-title">Media</h1>
-      </div>
-    </header>
-    <div class="ui-hub"></div>
-  </div>
-  <script src="/nav.js"></script>
-  <script src="/hub.js"></script>
-  <script src="/token-badge.js"></script>
+  <p style="font-family:var(--font-sans);padding:2rem">
+    Media is now part of <a href="/off-the-court/">Off the Court</a>.
+  </p>
 </body>
 </html>
