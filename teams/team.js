@@ -387,7 +387,47 @@ const coachingConfigReady = new Promise(resolve => {
     font-size: var(--text-base); user-select: none; touch-action: none;
   }
   .drag-handle:active { cursor: grabbing; }
-  #team-settings-wrap tr.dragging { opacity: 0.4; }
+  button.drag-handle { border: none; background: none; padding: 0; font: inherit; font-size: var(--text-base); }
+  button.drag-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: var(--radius-sm); }
+  #team-settings-wrap tr.dragging td { opacity: 0.3; }
+  /* Edit mode's two views of the same rows: Lineup (order and minutes) and
+     Details (jersey, secondary, pin). One table, so nothing has to be kept
+     in sync between them; each view hides the other's columns. */
+  .ts-view-toggle { margin-bottom: 0.75rem; }
+  .ts-view-lineup .ts-num, .ts-view-lineup .ts-pos-edit { display: none; }
+  .ts-view-details .ts-handle, .ts-view-details .ts-min, .ts-view-details .ts-pos-text { display: none; }
+  .ts-table tbody tr.ts-section td { background: var(--bg-subtle); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding-block: 0.3rem; }
+  .ts-table .ts-section-sub { margin-left: 0.5rem; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  /* The whole row is the grab area in Lineup view (press and hold on touch);
+     its controls keep working as controls. */
+  .ts-view-lineup tbody tr.ts-row { cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .ts-view-lineup tbody tr.ts-row :is(input, button:not(.drag-handle), label) { cursor: auto; }
+  .ts-table.editing .ts-name a { pointer-events: none; color: inherit; }
+  #team-settings-wrap tr.ts-swap-target td { background: var(--accent-panel-bg); box-shadow: inset 0 1px 0 var(--accent), inset 0 -1px 0 var(--accent); }
+  .ts-drop-line { position: fixed; z-index: 1001; height: 3px; margin-top: -1.5px; border-radius: var(--radius-sm); background: var(--accent); pointer-events: none; }
+  .ts-ghost { position: fixed; z-index: 1002; pointer-events: none; max-width: calc(100vw - 16px); padding: 0.35rem 0.7rem; background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ts-pos-sub { display: none; }
+  /* A phone: the edit table has to fit the card, or the browser zooms the
+     whole page out to show it and every target shrinks (it was 641px wide
+     on a 390px screen). Positions go under the name, names wrap, the
+     stepper tightens; Details drops the slot, since its rows are in lineup
+     order anyway. */
+  @media (max-width: 640px) {
+    .ts-table td.ts-name { white-space: normal; }
+    .ts-view-lineup .ts-pos { display: none; }
+    .ts-view-lineup .ts-pos-sub { display: block; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); }
+    .ts-table tbody tr.ts-illegal .ts-pos-sub { color: var(--danger-light); font-weight: 700; }
+    .ts-view-details .ts-slot { display: none; }
+    .ts-table.editing .ts-handle { width: 1.4rem; }
+    .drag-handle { width: 1.3rem; }
+    .ts-table.editing .ts-min { width: auto; }
+    .ts-min-edit { gap: 0.25rem; }
+    .ts-stepper button { width: 1.35rem; }
+    .ts-stepper input { width: 1.9rem; }
+    .ts-res { padding: 0 0.3rem; }
+    .ts-table .ts-section-sub { display: none; }
+  }
+  body.ts-dragging, body.ts-dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
@@ -1181,7 +1221,7 @@ document.body.innerHTML = `
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked <i class="ui-icon ui-icon--warning" aria-hidden="true"></i> is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
+            <p class="settings-subsub" id="team-settings-hint" hidden>Lineup: drag a player to set the depth chart (on a phone, press and hold first). Drop him on another player to swap the two, or between rows to slot him in there. The starters start, the bench comes in in order, and players under Inactive are not in the game, so drop a player there to leave a slot empty. Details: jersey numbers and secondary positions. Primary position comes from 2K. Tick <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked <i class="ui-icon ui-icon--warning" aria-hidden="true"></i> is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -6160,27 +6200,33 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     tr.classList.toggle('ts-inactive', !slotted);
   }
 
-  // The Inactive line itself. In edit mode it carries a drag handle and
-  // moves like a player row.
+  // The Inactive line itself. In edit mode it heads the Inactive section,
+  // and a player dropped under it is left out of the game. It isn't
+  // dragged itself: players are moved across it.
   function dividerRow(tbody, colCount, forEdit) {
     const tr = tbody.insertRow();
     tr.className = 'ts-divider';
     tr._divider = true;
-    let span = colCount;
-    if (forEdit) {
-      const handleTd = tr.insertCell();
-      handleTd.className = 'ts-handle';
-      const handle = document.createElement('span');
-      handle.className = 'drag-handle';
-      handle.textContent = '⠿';
-      handle.title = 'Drag to set who is in the game: players below this line are left out';
-      handleTd.appendChild(handle);
-      tr._handle = handle;
-      span--;
-    }
     const td = tr.insertCell();
-    td.colSpan = span;
+    td.colSpan = colCount;
     td.textContent = 'Inactive: not in the game';
+    if (forEdit) {
+      const sub = document.createElement('span');
+      sub.className = 'ts-section-sub';
+      sub.textContent = 'drop a player here to leave his slot empty';
+      td.appendChild(sub);
+    }
+    return tr;
+  }
+
+  // Starters / Bench headers in edit mode. Where they sit is worked out
+  // from the player rows after every move (layoutRows), never dragged.
+  function sectionRow(colCount, label) {
+    const tr = document.createElement('tr');
+    tr.className = 'ts-section';
+    const td = tr.insertCell();
+    td.colSpan = colCount;
+    td.textContent = label;
     return tr;
   }
 
@@ -6415,13 +6461,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       const autoSortBtn = button('Auto-sort');
       autoSortBtn.title = 'Fill PG/SG/SF/PF/C with the best eligible player at each position, then rank the bench by OVR — a starting point to drag from, not a save';
       autoSortBtn.addEventListener('click', () => autoSort());
-      actions.push(autoSortBtn);
+      const benchBtn = button('Sort bench');
+      benchBtn.title = 'Order the bench by minutes, most first (ties by OVR), with RES players last. Starters and Inactive stay put';
+      benchBtn.addEventListener('click', () => sortBench());
+      actions.push(autoSortBtn, benchBtn);
     }
     actions.push(cancelBtn, saveBtn);
     setActions(...actions);
 
     const table = document.createElement('table');
-    table.className = 'ts-table editing';
+    table.className = 'ts-table editing ts-view-lineup';
     buildHead(table, true);
 
     const tbody = table.createTBody();
@@ -6593,75 +6642,312 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       const playerRows = Array.from(tbody.rows).filter(tr => tr._rosterCtl);
       tbody.insertBefore(divider, playerRows[keep] || null);
 
+      afterReorder();
+    }
+
+    // The bench by minutes, most first; ties by OVR; RES players last.
+    // Starters and the Inactive section don't move. A starting point like
+    // Auto-sort: nothing is saved until Save.
+    function sortBench() {
+      if (!CS) return;
+      const bench = slotPlan().filter(p => p.slot && p.i >= STARTERS);
+      const ovrOf = slug => parseFloat(currentOvr && currentOvr[slug]) || 0;
+      const sorted = bench
+        .map((p, idx) => ({
+          tr: p.tr, idx,
+          res: p.ctl.resCheck.checked ? 1 : 0,
+          min: +p.ctl.minInput.value || 0,
+          ovr: ovrOf(p.ctl.slug),
+        }))
+        .sort((a, b) => (a.res - b.res) || (b.min - a.min) || (b.ovr - a.ovr) || (a.idx - b.idx));
+      if (sorted.every((s, i) => s.idx === i)) return;
+      sorted.forEach(s => tbody.insertBefore(s.tr, divider));
+      afterReorder();
+    }
+
+    // Puts the section headers where the rows say they go: Starters on top,
+    // Bench before the 6th slotted player, and the Inactive line after the
+    // 15th at most (a 16th player above it would hold no slot, so he drops
+    // under it).
+    function layoutRows() {
+      if (!CS) return;
+      const above = [];
+      for (const tr of tbody.rows) {
+        if (tr === divider) break;
+        if (tr._rosterCtl) above.push(tr);
+      }
+      const max = CS.MINUTES_SLOTS.length;
+      if (above.length > max) tbody.insertBefore(divider, above[max]);
+      if (tbody.firstChild !== startersHdr) tbody.insertBefore(startersHdr, tbody.firstChild);
+      tbody.insertBefore(benchHdr, above[STARTERS] || divider);
+    }
+
+    function afterReorder() {
+      layoutRows();
       minutesDirty = true;
       relabelSlots();
       refreshMinutesTotal();
     }
 
-    // Raw mouse/touch events, listening on `document` while a drag is live,
-    // rather than native HTML5 drag-and-drop (no touch equivalent at all on
-    // iOS Safari) or Pointer Events (setPointerCapture + touch-action:none
-    // still left this not reliably suppressing the page's own scroll on
-    // real devices — a captured pointer's touchmove can still be treated as
-    // passive by the browser, silently no-opping preventDefault). Explicit
-    // `{ passive: false }` on touchmove is what actually stops the page
-    // scrolling under the drag; without it, calling preventDefault() there
-    // does nothing in current Chrome/Safari, which is the likelier reason
-    // the previous attempt didn't work on a real phone.
-    let draggedTr = null;
+    // Dragging rows. Raw mouse and touch events on `document` while a drag
+    // is live, not HTML5 drag-and-drop (no touch at all on iOS Safari) or
+    // Pointer Events (a real phone's page scroll still won the drag). The
+    // whole row is the grab area: a mouse drag starts once it has moved a
+    // few pixels, so a click is still a click; a touch starts after a short
+    // press and hold, so a swipe still scrolls the page, or at once on the
+    // ⠿ handle, whose touch-action stops the scroll. `touchmove` is
+    // `{ passive: false }` so preventDefault() actually holds the page still.
+    //
+    // The rows don't move until the drop. The drop is shown in place: a
+    // player row lit up means the two swap, a line between rows means he
+    // goes in there and the rest shift. A label above the pointer says where
+    // he'd end up ("→ C, swaps with …"), above it so a finger doesn't cover
+    // it, and small so it doesn't cover the row it's naming. The page scrolls
+    // on its own near the top and bottom edges.
+    const HOLD_MS = 280;
+    const EDGE_PX = 70;
+    let drag = null;
 
-    function pointFromEvent(e) {
-      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      return { x: e.clientX, y: e.clientY };
+    const isControl = el => !!el.closest('input, select, textarea, label, a, button:not(.drag-handle)');
+    const lineupView = () => table.classList.contains('ts-view-lineup');
+
+    function scrollerFor(el) {
+      for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+        const oy = getComputedStyle(n).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight) return n;
+      }
+      return null; // the window
     }
 
-    function endDrag(tr, onMove, onEnd) {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onEnd);
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
-      document.removeEventListener('touchcancel', onEnd);
-      if (draggedTr !== tr) return;
+    function beginDrag(tr, x, y) {
+      const ghost = document.createElement('div');
+      ghost.className = 'ts-ghost';
+      ghost.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(ghost);
+      const line = document.createElement('div');
+      line.className = 'ts-drop-line';
+      line.hidden = true;
+      document.body.appendChild(line);
+      tr.classList.add('dragging');
+      document.body.classList.add('ts-dragging');
+      drag = { tr, ghost, line, x, y, target: null, lit: null, raf: 0, scroller: scrollerFor(table) };
+      dragMove(x, y);
+      drag.raf = requestAnimationFrame(autoScroll);
+    }
+
+    function dragMove(x, y) {
+      if (!drag) return;
+      drag.x = x; drag.y = y;
+      findTarget();
+    }
+
+    // What a drop at the pointer would do: {swap: row} or {before: node}
+    // (null = the end of the table).
+    function findTarget() {
+      const { y, tr: dragged } = drag;
+      const rows = Array.from(tbody.rows);
+      let target = null;
+      let hit = null;
+      for (const r of rows) {
+        const b = r.getBoundingClientRect();
+        if (y >= b.top && y < b.bottom) { hit = { r, b }; break; }
+      }
+      const firstPlayer = rows.find(r => r._rosterCtl);
+      if (!hit) {
+        target = y < rows[0].getBoundingClientRect().top ? { before: firstPlayer } : { before: null };
+      } else if (hit.r === dragged) {
+        target = null;
+      } else if (hit.r._rosterCtl) {
+        const f = (y - hit.b.top) / hit.b.height;
+        target = f < 0.25 ? { before: hit.r } : f > 0.75 ? { before: hit.r.nextSibling } : { swap: hit.r };
+      } else if (hit.r === startersHdr) {
+        target = { before: firstPlayer };
+      } else {
+        // The Bench header or the Inactive line: the top of that section.
+        target = { before: hit.r.nextSibling };
+      }
+      if (target && 'before' in target && (target.before === dragged || target.before === dragged.nextSibling)) target = null;
+      drag.target = target;
+      showTarget();
+    }
+
+    const nameOf = tr => tr.querySelector('.ts-name a').textContent;
+
+    // Where the dragged player would land: his slot label, or 'Inactive'.
+    function landing(target) {
+      if (target.swap) {
+        const t = target.swap._rosterCtl.slotTd.textContent;
+        return t === '—' ? 'Inactive' : t;
+      }
+      const rows = Array.from(tbody.rows);
+      const seq = rows.filter(r => (r._rosterCtl || r === divider) && r !== drag.tr);
+      let at = seq.length;
+      if (target.before) {
+        for (let i = rows.indexOf(target.before); i < rows.length; i++) {
+          const k = seq.indexOf(rows[i]);
+          if (k >= 0) { at = k; break; }
+        }
+      }
+      seq.splice(at, 0, drag.tr);
+      const n = seq.indexOf(drag.tr);
+      const d = seq.indexOf(divider);
+      return n > d || n >= CS.MINUTES_SLOTS.length ? 'Inactive' : slotLabel(n);
+    }
+
+    function showTarget() {
+      const { target, line, ghost, tr } = drag;
+      ghost.textContent = target
+        ? `${nameOf(tr)} → ${landing(target)}${target.swap ? `, swaps with ${nameOf(target.swap)}` : ''}`
+        : nameOf(tr);
+      const gw = ghost.offsetWidth;
+      ghost.style.left = `${Math.max(8, Math.min(window.innerWidth - gw - 8, drag.x - gw / 2))}px`;
+      ghost.style.top = `${Math.max(8, drag.y - 56)}px`;
+      const lit = target && target.swap ? target.swap : null;
+      if (drag.lit !== lit) {
+        if (drag.lit) drag.lit.classList.remove('ts-swap-target');
+        if (lit) lit.classList.add('ts-swap-target');
+        drag.lit = lit;
+      }
+      if (!target || target.swap) { line.hidden = true; return; }
+      const tb = table.getBoundingClientRect();
+      let y;
+      if (target.before) y = target.before.getBoundingClientRect().top;
+      else y = tbody.rows[tbody.rows.length - 1].getBoundingClientRect().bottom;
+      line.hidden = false;
+      line.style.left = `${tb.left}px`;
+      line.style.width = `${tb.width}px`;
+      line.style.top = `${y}px`;
+    }
+
+    function autoScroll() {
+      if (!drag) return;
+      const top = drag.scroller ? drag.scroller.getBoundingClientRect().top : 0;
+      const bottom = drag.scroller ? drag.scroller.getBoundingClientRect().bottom : window.innerHeight;
+      let dy = 0;
+      if (drag.y < top + EDGE_PX) dy = -Math.ceil((top + EDGE_PX - drag.y) / EDGE_PX * 16);
+      else if (drag.y > bottom - EDGE_PX) dy = Math.ceil((drag.y - (bottom - EDGE_PX)) / EDGE_PX * 16);
+      if (dy) {
+        if (drag.scroller) drag.scroller.scrollTop += dy; else window.scrollBy(0, dy);
+        findTarget();
+      }
+      drag.raf = requestAnimationFrame(autoScroll);
+    }
+
+    function swapRows(a, b) {
+      const mark = document.createComment('');
+      a.replaceWith(mark);
+      b.replaceWith(a);
+      mark.replaceWith(b);
+    }
+
+    function endDrag(apply) {
+      if (!drag) return;
+      const { tr, ghost, line, target, lit, raf } = drag;
+      cancelAnimationFrame(raf);
+      ghost.remove();
+      line.remove();
+      if (lit) lit.classList.remove('ts-swap-target');
       tr.classList.remove('dragging');
-      draggedTr = null;
-      minutesDirty = true;
-      relabelSlots();
-      refreshMinutesTotal();
+      document.body.classList.remove('ts-dragging');
+      drag = null;
+      if (!apply || !target) return;
+      if (target.swap) swapRows(tr, target.swap);
+      else tbody.insertBefore(tr, target.before);
+      afterReorder();
     }
 
-    function attachDrag(tr, handle) {
-      function onMove(e) {
-        if (draggedTr !== tr) return;
-        if (e.cancelable) e.preventDefault();
-        const { x, y } = pointFromEvent(e);
-        const targetRow = document.elementFromPoint(x, y);
-        const tbodyRow = targetRow && targetRow.closest('tr');
-        if (!tbodyRow || tbodyRow === tr || tbodyRow.parentElement !== tbody) return;
-        const rect = tbodyRow.getBoundingClientRect();
-        const before = (y - rect.top) < rect.height / 2;
-        tbody.insertBefore(tr, before ? tbodyRow : tbodyRow.nextSibling);
-      }
-      function onEnd() { endDrag(tr, onMove, onEnd); }
-      function onStart(e) {
-        if (e.type === 'mousedown' && e.button !== 0) return;
-        draggedTr = tr;
-        tr.classList.add('dragging');
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onEnd);
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend', onEnd);
-        document.addEventListener('touchcancel', onEnd);
-      }
-      handle.addEventListener('mousedown', onStart);
-      handle.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('keydown', e => {
+      if (drag && e.key === 'Escape') endDrag(false);
+    });
+
+    tbody.addEventListener('mousedown', e => {
+      if (e.button !== 0 || !lineupView() || drag) return;
+      const tr = e.target.closest('tr');
+      if (!tr || !tr._rosterCtl || isControl(e.target)) return;
+      e.preventDefault(); // no text selection
+      const sx = e.clientX, sy = e.clientY;
+      let started = false;
+      const move = ev => {
+        if (!started) {
+          if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+          started = true;
+          beginDrag(tr, sx, sy);
+        }
+        dragMove(ev.clientX, ev.clientY);
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        if (started) endDrag(true);
+      };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    });
+
+    let pressing = false;
+    tbody.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1 || !lineupView() || drag) return;
+      const tr = e.target.closest('tr');
+      if (!tr || !tr._rosterCtl || isControl(e.target)) return;
+      const t = e.touches[0];
+      const sx = t.clientX, sy = t.clientY;
+      let lx = sx, ly = sy, started = false;
+      pressing = true;
+      const start = () => {
+        timer = null;
+        started = true;
+        if (navigator.vibrate) navigator.vibrate(10);
+        beginDrag(tr, lx, ly);
+      };
+      const move = ev => {
+        const p = ev.touches[0];
+        if (!p) return;
+        lx = p.clientX; ly = p.clientY;
+        if (!started) {
+          // Moved before the hold finished: it's a scroll, not a drag.
+          if (Math.hypot(lx - sx, ly - sy) > 8) done();
+          return;
+        }
+        if (ev.cancelable) ev.preventDefault();
+        dragMove(lx, ly);
+      };
+      const done = ev => {
+        clearTimeout(timer);
+        pressing = false;
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', done);
+        document.removeEventListener('touchcancel', done);
+        if (started) endDrag(!ev || ev.type === 'touchend');
+      };
+      document.addEventListener('touchmove', move, { passive: false });
+      document.addEventListener('touchend', done);
+      document.addEventListener('touchcancel', done);
+      let timer = e.target.closest('.drag-handle') ? null : setTimeout(start, HOLD_MS);
+      if (!timer) start();
+    }, { passive: true });
+    // A press and hold opens the context menu on Android; not while dragging.
+    tbody.addEventListener('contextmenu', e => { if (pressing || drag) e.preventDefault(); });
+
+    // The handle is a button, so the keyboard can reorder too: arrow keys
+    // move a player one place, across the Inactive line as well.
+    function nudge(tr, dir) {
+      const order = Array.from(tbody.rows).filter(r => r._rosterCtl || r === divider);
+      const other = order[order.indexOf(tr) + dir];
+      if (!other) return;
+      if (other === divider) tbody.insertBefore(tr, dir < 0 ? divider : divider.nextSibling);
+      else swapRows(tr, other);
+      afterReorder();
     }
 
     const { rows: startRows, line: startLine, filled } = orderedRows(startMinutes);
     // A vacated slot was given to someone else, so Save has to send it.
     if (filled) minutesDirty = true;
     let divider = null;
+    const colCount = table.tHead.rows[0].cells.length;
+    const startersHdr = sectionRow(colCount, 'Starters');
+    const benchHdr = sectionRow(colCount, 'Bench');
     startRows.forEach((row, i) => {
-      if (CS && i === startLine) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
+      if (CS && i === startLine) divider = dividerRow(tbody, colCount, true);
       const bio = biosData[row.SLUG] || {};
       const jersey = bio.jersey_number ?? '';
       // A pick that matches the default, or 'none' when there is none, is the
@@ -6671,16 +6957,24 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         ? '' : (bio.secondary_pos || '');
 
       const tr = tbody.insertRow();
+      tr.classList.add('ts-row');
 
       if (CS) {
         const handleTd = tr.insertCell();
         handleTd.className = 'ts-handle';
-        const handle = document.createElement('span');
+        const handle = document.createElement('button');
+        handle.type = 'button';
         handle.className = 'drag-handle';
         handle.textContent = '⠿';
-        handle.title = 'Drag to reorder — table order sets the depth chart slot';
+        handle.title = 'Drag to move him: drop on a player to swap, between rows to slot in. Arrow keys move him one place';
+        handle.setAttribute('aria-label', `Move ${displayNameFromBio(bio.name || '') || row.SLUG} (arrow keys)`);
+        handle.addEventListener('keydown', e => {
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+          e.preventDefault();
+          nudge(tr, e.key === 'ArrowUp' ? -1 : 1);
+          handle.focus();
+        });
         handleTd.appendChild(handle);
-        attachDrag(tr, handle);
       }
 
       let slotTd = null;
@@ -6731,7 +7025,26 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       if (secondaryPos && ![...secSel.options].some(o => o.value === secondaryPos)) {
         secSel.appendChild(new Option(`/ ${secondaryPos} · exception`, secondaryPos, false, true));
       }
-      secSel.addEventListener('change', () => refreshSecNote());
+      // Lineup view shows the positions as text; the select is on Details.
+      const posText = document.createElement('span');
+      posText.className = 'ts-pos-text';
+      // On a phone the Pos column gives way, and this copy under the name
+      // shows instead (CSS).
+      const posSub = document.createElement('div');
+      posSub.className = 'ts-pos-sub';
+      tr.querySelector('.ts-name').appendChild(posSub);
+      const syncPosText = () => {
+        const sec = secSel.value === 'none' ? '' : (secSel.value || twoKSec);
+        posText.textContent = rowPrimary;
+        if (sec) {
+          const s2 = document.createElement('span');
+          s2.className = 'ts-pos2';
+          s2.textContent = ` / ${sec}`;
+          posText.appendChild(s2);
+        }
+        posSub.replaceChildren(...posText.cloneNode(true).childNodes);
+      };
+      secSel.addEventListener('change', () => { refreshSecNote(); syncPosText(); });
       posWrap.appendChild(secSel);
       // The pin: check this position before every game. With no secondary it
       // means "make sure 2K has none", since 2K can add one back.
@@ -6747,7 +7060,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       pinIcon.setAttribute('aria-hidden', 'true');
       pinLabel.append(pinCheck, pinIcon);
       posWrap.appendChild(pinLabel);
-      posTd.appendChild(posWrap);
+      syncPosText();
+      posTd.append(posText, posWrap);
 
       if (CS) {
         const slot = i < startLine ? CS.MINUTES_SLOTS[i] : '';
@@ -6816,12 +7130,42 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       });
     });
     if (CS) {
-      if (!divider) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
-      attachDrag(divider, divider._handle);
+      if (!divider) divider = dividerRow(tbody, colCount, true);
+      layoutRows();
     }
 
     refreshMinutesTotal();
     mountTable(table, meter);
+    if (CS) {
+      // Lineup: order and minutes. Details: jersey #, secondary position,
+      // pin. The same rows in the same order, so a switch loses nothing.
+      const toggle = document.createElement('div');
+      toggle.className = 'ui-segmented ts-view-toggle';
+      toggle.setAttribute('role', 'group');
+      toggle.setAttribute('aria-label', 'Edit view');
+      [['lineup', 'Lineup'], ['details', 'Details']].forEach(([key, label]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.dataset.view = key;
+        const on = key === 'lineup';
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+        b.addEventListener('click', () => {
+          table.classList.toggle('ts-view-lineup', key === 'lineup');
+          table.classList.toggle('ts-view-details', key === 'details');
+          toggle.querySelectorAll('button').forEach(x => {
+            const sel = x === b;
+            x.classList.toggle('active', sel);
+            x.setAttribute('aria-pressed', String(sel));
+          });
+        });
+        toggle.appendChild(b);
+      });
+      wrapEl.insertBefore(toggle, wrapEl.firstChild);
+    } else {
+      table.classList.replace('ts-view-lineup', 'ts-view-details');
+    }
     refreshSecNote();
     wrapEl.insertBefore(secNote, wrapEl.lastChild);
     wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
