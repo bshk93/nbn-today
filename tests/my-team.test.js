@@ -117,6 +117,9 @@ eq('array slugs work too', M.classify(el('a', { href: '/players/?p=tatum-jayson'
   eq('identity band never', M.scopeFor(band), null);
   const off = el('section', { 'data-mine-off': '' });
   eq('data-mine-off never', M.scopeFor(el('a', {}, el('tr', {}, off))), null);
+  // A work page (committee dashboards, worklists) opts out on <body>.
+  const offPage = el('body', { 'data-mine-off': '' });
+  eq('data-mine-off on body never', M.scopeFor(el('a', {}, el('li', {}, el('main', {}, offPage)))), null);
 }
 
 // ── Own team page ────────────────────────────────────────────────────────────

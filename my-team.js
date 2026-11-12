@@ -14,7 +14,10 @@
 // builds its own canvas or SVG reads window.NbnMine.isMine().
 //
 // Off switch: "Highlight my team" in the account menu (nbn_highlight_mine).
-// Nothing is marked on your own team page, where every row would be.
+// Nothing is marked on your own team page, where every row would be, or on a
+// work page that puts data-mine-off on its <body>: the committee dashboards,
+// /committees, /ratings-changes and /free-agency, where your own team
+// standing out is noise at best and a bias cue at worst.
 //
 // The pure half (classify, scopeFor) is pinned by tests/my-team.test.js.
 (function (global) {
