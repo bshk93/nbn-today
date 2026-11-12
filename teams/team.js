@@ -272,12 +272,14 @@ const coachingConfigReady = new Promise(resolve => {
   .section-title { font-size: var(--text-md); font-weight: 600; margin-bottom: 0.25rem; }
   .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem; }
 
-  /* One integrated card for Team Settings + Coaching Profile, rather than two
-     independent sections (which carry their own 3rem gap and full-weight h2
-     each) — same bordered-card shape as .exceptions-card/.ch-card below. */
-  .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
-  .settings-subsection + .settings-subsection { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid var(--border-subtle); }
-  .settings-subtitle { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); margin-bottom: 0.5rem; }
+  /* The Coaching tab's sections (Note to the streamer, Rotation, Coaching
+     Profile) are ruled, not boxed, like the homepage's: a 2px rule, then the
+     heading in the display face. The cards inside Coaching Profile stay
+     cards. */
+  .settings-card { padding: 0; }
+  .settings-card.note-card, .settings-subsection { border-top: 2px solid var(--text-primary); padding-top: 0.7rem; }
+  .settings-subsection + .settings-subsection { margin-top: 2.5rem; }
+  .settings-subtitle { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.1; color: var(--text-primary); margin-bottom: 0.5rem; }
   .settings-subsub { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.65rem; }
   .settings-card .table-wrap { border: none; padding: 0; }
   /* Coaching Profile's group/pool cards default to a plain stack (mobile,
@@ -292,102 +294,276 @@ const coachingConfigReady = new Promise(resolve => {
     /* Roster Settings (the player table) stays the wide, primary panel on
        the left; Coaching Profile becomes a narrower rail beside it instead
        of a third full-width block stacked underneath. */
-    .settings-card { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 1.75rem; align-items: start; }
-    .settings-card .settings-subsection + .settings-subsection {
-      margin-top: 0; padding-top: 0; border-top: none;
-      border-left: 1px solid var(--border-subtle); padding-left: 1.75rem;
-    }
+    .settings-card { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 2.5rem; align-items: start; }
+    .settings-card .settings-subsection + .settings-subsection { margin-top: 0; }
     .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
   }
-  .settings-card.note-card { display: block; margin-bottom: 1rem; }
+  .settings-card.note-card { display: block; margin-bottom: 2.5rem; }
   .sn-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); color: var(--text-primary); }
   .sn-meta { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
   .sn-meta.open { color: var(--gold); }
   .sn-meta.clear { color: var(--success-light); }
   .sn-edit textarea { width: 100%; min-height: 5rem; resize: vertical; }
   .sn-count { font-size: var(--text-xs); color: var(--text-dim); margin-right: auto; }
-  .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 1.9rem; margin-bottom: 0.5rem; }
+  .settings-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; min-height: 2rem; margin-bottom: 0.75rem; }
   .settings-head .settings-subtitle { margin-bottom: 0; }
   .settings-actions { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
   .ts-status { font-size: var(--text-xs); color: var(--text-muted); }
 
-  /* Rotation table (setupTeamSettingsTab). */
-  .ts-meter { margin-bottom: 0.75rem; }
-  .ts-meter-label { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.3rem; }
-  .ts-meter-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--gold); }
-  .ts-meter.ok .ts-meter-val { color: var(--success-light); }
-  .ts-meter.over .ts-meter-val { color: var(--danger-light); }
-  .ts-meter-track { height: 6px; border-radius: var(--radius-sm); background: var(--bg-subtle); overflow: hidden; }
-  .ts-meter-fill { height: 100%; background: var(--gold); transition: width 0.15s; }
-  .ts-meter.ok .ts-meter-fill { background: var(--success-light); }
-  .ts-meter.over .ts-meter-fill { background: var(--danger-light); }
+  /* Rotation (setupTeamSettingsTab). Broadcast, like the Roster tab: the
+     display face for slots, figures and headings; OVR as a heat badge; rows
+     ruled, not boxed; colour only where it means something (an over/under
+     budget, an illegal starter, the drop target). */
+
+  /* Minutes: a stat strip, not a progress bar with a caption. Starters and
+     bench are the two parts of the 240; the bar is them, in that order. */
+  .ts-summary { margin-bottom: 1rem; }
+  .ts-sum-stats { display: flex; align-items: flex-end; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .ts-sum-stat { display: flex; flex-direction: column; gap: 0.2rem; }
+  .ts-sum-k { font-family: var(--font-display); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); line-height: 1; }
+  .ts-sum-stat > b { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .ts-sum-stat .ui-statline > small { font-size: var(--text-sm); }
+  .ts-sum-total { margin-left: auto; align-items: flex-end; }
+  .ts-sum-total .ts-sum-k { display: flex; align-items: center; gap: 0.4rem; }
+  .ts-sum-track { display: flex; height: 4px; background: var(--bg-subtle); overflow: hidden; }
+  .ts-sum-track > span { display: block; height: 100%; }
+  .ts-sum-start { background: var(--accent); }
+  .ts-sum-bench { background: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: inset 2px 0 0 var(--bg-card); }
+  .ts-summary.over .ts-sum-start, .ts-summary.over .ts-sum-bench { background: var(--danger); }
+  .ts-sum-legend { display: inline-block; width: 0.6em; height: 0.6em; margin-right: 0.35em; vertical-align: 0.05em; }
+  .ts-sum-legend.start { background: var(--accent); }
+  .ts-sum-legend.bench { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+  /* The table. */
   .ts-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
-  .ts-table th { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); }
-  .ts-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+  .ts-table th { color: var(--text-muted); text-align: left; padding: 0.4rem 0.5rem; border-bottom: 2px solid var(--text-primary); }
+  .ts-table td { padding: 0.5rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
   .ts-table tbody tr:last-child td { border-bottom: none; }
-  /* Classes, not nth-child: the Inactive line is a row of its own, so a
-     row's index is no longer its slot. Set by markRow. */
-  .ts-table tbody tr.ts-last-starter td { border-bottom: 2px solid var(--border); }
-  .ts-table tbody tr.ts-starter .ts-slot { color: var(--accent-light); font-weight: 700; }
-  .ts-table tbody tr.ts-inactive { opacity: 0.55; }
-  .ts-table tbody tr.ts-divider td { background: var(--bg-subtle); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); padding-block: 0.3rem; }
-  .ts-slot { width: 2.6rem; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .ts-num { width: 2.4rem; text-align: center !important; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+  /* Section headings (Starters, Bench, Inactive): a heading with its own
+     minutes, not a grey band. Classes, not nth-child: the headings are rows
+     of their own, so a row's index is no longer its slot (markRow). */
+  .ts-table tbody tr:is(.ts-section, .ts-divider) td {
+    padding: 1rem 0.5rem 0.35rem; border-bottom: 1px solid var(--border);
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary);
+  }
+  .ts-table tbody tr:first-child:is(.ts-section, .ts-divider) td { padding-top: 0.6rem; }
+  .ts-sec-row { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+  .ts-sec-meta { font-family: var(--font-sans); font-size: var(--text-xs); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); text-align: right; }
+  .ts-sec-meta b { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .ts-table tbody tr.ts-inactive td:not(.ts-handle) { opacity: 0.5; }
+  .ts-slot { width: 2.8rem; font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; letter-spacing: 0.02em; color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ts-table tbody tr.ts-starter .ts-slot { color: var(--text-primary); }
+  .ts-num { width: 2.6rem; text-align: center !important; font-family: var(--font-display); font-size: var(--text-base); font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .ts-name { font-weight: 600; }
+  .ts-name a { color: var(--text-primary); text-decoration: none; }
+  .ts-name a:hover { color: var(--link); }
   .ts-name .twoway-games, .roster-name-top .twoway-games { margin-left: 0.4rem; font-weight: 600; }
   .ts-name .ts-injury { margin-left: 0.4rem; font-weight: 600; white-space: nowrap; }
   .roster-injury { font-weight: 600; white-space: nowrap; font-style: normal; }
-  .ts-2w-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--gold); }
-  .ts-illegal-note { margin-bottom: 0.75rem; font-size: var(--text-xs); color: var(--danger-light); }
-  .ts-table tbody tr.ts-illegal td { background: var(--danger-bg); }
-  .ts-table tbody tr.ts-illegal .ts-pos { color: var(--danger-light); font-weight: 700; }
-  .ts-name a { color: var(--text-primary); text-decoration: none; }
-  .ts-name a:hover { color: var(--accent-light); }
-  .ts-ovr { width: 2.6rem; text-align: right !important; font-variant-numeric: tabular-nums; color: var(--text-muted); }
-  .ts-ovr-inline { display: none; margin-left: 0.35rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-muted); }
-  .ts-pos { width: 6.5rem; white-space: nowrap; }
-  .ts-pos2 { color: var(--text-muted); }
-  .ts-min { width: 9rem; text-align: right !important; white-space: nowrap; }
-  .ts-minbar { display: inline-block; vertical-align: middle; width: 4rem; height: 4px; border-radius: var(--radius-sm); background: var(--bg-subtle); overflow: hidden; margin-right: 0.5rem; }
-  .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
-  .ts-minval { display: inline-block; min-width: 1.4rem; font-variant-numeric: tabular-nums; font-weight: 600; }
-  .ts-minval.dim { color: var(--text-dim); font-weight: 400; }
-  .ts-res-tag { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.35rem; }
-  .ts-input { height: 1.75rem; padding: 0 0.35rem; font-size: var(--text-xs); border-radius: var(--radius-sm); }
-  .ts-num-input { width: 2.2rem; text-align: center; }
-  .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.3rem; }
-  .ts-sec-select { width: auto; color: var(--text-secondary); }
-  .ts-sec-select.ts-sec-illegal { color: var(--danger-light); border-color: var(--danger-light); }
-  .ts-pos2.ts-pos2-illegal { color: var(--danger-light); font-weight: 700; }
+  .ts-ovr { width: 3rem; text-align: center !important; }
+  .ts-ovr .ui-ovr { font-size: var(--text-base); }
+  .ts-ovr-inline { display: none; margin-left: 0.4rem; font-size: var(--text-sm); vertical-align: 0.05em; }
+  .ts-pos { width: 6.5rem; white-space: nowrap; font-family: var(--font-display); font-size: var(--text-base); font-weight: 600; letter-spacing: 0.02em; color: var(--text-primary); }
+  .ts-pos2 { color: var(--text-muted); font-weight: 500; }
+  .ts-pos2.ts-pos2-illegal { color: var(--danger); font-weight: 700; }
   .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
-  .ts-pin { display: inline-flex; align-items: center; gap: 0.15rem; font-size: var(--text-xs); cursor: pointer; user-select: none; }
-  .ts-pin-mark { margin-left: 0.25rem; font-size: var(--text-xs); color: var(--text-muted); }
-  .ts-pos-wait { margin-left: 0.3rem; font-size: var(--text-xs); color: var(--gold); }
+  .ts-pin-mark { margin-left: 0.35rem; color: var(--text-muted); }
+  .ts-pos-wait { margin-left: 0.35rem; font-size: var(--text-xs); color: var(--gold); }
+
+  /* Read view minutes: a share-of-48 bar and the figure. */
+  .ts-min { width: 9.5rem; text-align: right !important; white-space: nowrap; }
+  .ts-minbar { display: inline-block; vertical-align: middle; width: 4.5rem; height: 3px; background: var(--bg-subtle); margin-right: 0.6rem; }
+  .ts-minbar > span { display: block; height: 100%; background: var(--accent); }
+  .ts-table tbody tr:not(.ts-starter) .ts-minbar > span { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .ts-minval { display: inline-block; min-width: 1.6rem; font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .ts-minval.dim { color: var(--text-dim); font-weight: 500; }
+  .ts-res-tag { font-family: var(--font-display); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; color: var(--gold); }
+
+  /* Alerts above the table: one line each, a tone stripe and an icon. */
+  .ts-alert { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; padding: 0.5rem 0.75rem; font-size: var(--text-sm); line-height: 1.4; border-left: 2px solid currentColor; }
+  .ts-alert[hidden] { display: none; }
+  .ts-alert.danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
+  .ts-alert.warning { color: var(--gold); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+  .ts-alert::before { flex: none; margin-top: 0.2em; }
+
+  /* An illegal starter: a danger stripe on the row's edge and a faint tint,
+     not a solid red block. */
+  .ts-table tbody tr.ts-illegal td { background: color-mix(in srgb, var(--danger) 9%, transparent); }
+  .ts-table tbody tr.ts-illegal td:first-child { box-shadow: inset 3px 0 0 var(--danger); }
+  .ts-table tbody tr.ts-illegal :is(.ts-pos, .ts-pos-sub) { color: var(--danger); }
+  .ts-table tbody tr.ts-illegal .ts-slot { color: var(--danger); }
+
+  /* Edit mode: a toolbar (view switch, sort tools), one line of help. */
+  .ts-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .ts-tools { display: flex; gap: 0.4rem; }
+  .ts-help { margin-bottom: 1rem; font-size: var(--text-sm); color: var(--text-muted); line-height: 1.45; }
+  .ts-help b { color: var(--text-secondary); font-weight: 600; }
+  #team-settings-wrap[data-view="details"] :is(.ts-tools-lineup, .ts-only-lineup),
+  #team-settings-wrap[data-view="lineup"] .ts-only-details { display: none; }
+
+  /* Edit controls. Square, quiet until used. */
+  .ts-input { height: 2rem; padding: 0 0.4rem; font-size: var(--text-sm); border-radius: var(--radius-sm); }
+  .ts-num-input { width: 2.6rem; text-align: center; font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; }
+  .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .ts-sec-select { width: auto; color: var(--text-secondary); font-family: inherit; }
+  .ts-sec-select.ts-sec-illegal { color: var(--danger); border-color: var(--danger); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .ts-stepper { display: inline-flex; align-items: stretch; height: 1.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-  .ts-stepper button { width: 1.5rem; border: none; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: var(--text-sm); cursor: pointer; padding: 0; }
+  .ts-stepper { display: inline-flex; align-items: stretch; height: 2rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-page); overflow: hidden; }
+  .ts-stepper button { width: 1.75rem; border: none; background: none; color: var(--text-muted); font: inherit; font-size: var(--text-base); line-height: 1; cursor: pointer; padding: 0; }
   .ts-stepper button:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
-  .ts-stepper input { width: 2.2rem; border: none; border-inline: 1px solid var(--border); border-radius: 0; text-align: center; font-size: var(--text-xs); padding: 0; -moz-appearance: textfield; }
+  .ts-stepper button:disabled { cursor: default; opacity: 0.4; }
+  .ts-stepper input { width: 2.4rem; height: 100%; border: none; border-radius: 0; background: none; text-align: center; font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; font-variant-numeric: tabular-nums; padding: 0; -moz-appearance: textfield; }
+  .ts-stepper input:focus { outline: none; }
+  .ts-stepper:focus-within { border-color: var(--accent); box-shadow: var(--focus-ring); }
   .ts-stepper input::-webkit-outer-spin-button, .ts-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .ts-min-edit:has(.ts-res input:checked) .ts-stepper { opacity: 0.35; }
-  .ts-res { display: inline-flex; align-items: center; height: 1.75rem; padding: 0 0.45rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em; color: var(--text-dim); cursor: pointer; user-select: none; }
-  .ts-res input { position: absolute; opacity: 0; pointer-events: none; }
-  .ts-res:has(input:checked) { color: var(--gold); border-color: var(--gold-border); background: var(--gold-bg); }
-  .ts-res:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .ts-res:has(input:disabled) { opacity: 0.4; cursor: default; }
-  @media (max-width: 640px) {
-    .ts-ovr, .ts-minbar { display: none; }
-    .ts-ovr-inline { display: inline; }
-    .ts-table td, .ts-table th { padding-inline: 0.3rem; }
+  /* RES and the pin are toggles drawn as square chips; the checkbox inside
+     stays the control, for the keyboard and for the code that reads it. */
+  :is(.ts-res, .ts-pin) {
+    position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;
+    height: 2rem; min-width: 2rem; padding: 0 0.5rem;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.06em;
+    color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; user-select: none;
   }
-  .ts-handle { width: 1.8rem; padding: 0.3rem 0.2rem !important; }
+  :is(.ts-res, .ts-pin):hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  :is(.ts-res, .ts-pin) input { position: absolute; opacity: 0; pointer-events: none; }
+  .ts-res:has(input:checked) { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 12%, transparent); }
+  .ts-pin { padding: 0; }
+  .ts-pin:has(input:checked) { color: var(--accent-light); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  :is(.ts-res, .ts-pin):has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+  :is(.ts-res, .ts-pin):has(input:disabled) { opacity: 0.4; cursor: default; }
+
+  /* Edit mode's two views of the same rows: Lineup (order and minutes) and
+     Details (jersey, secondary, pin). One table, so nothing has to be kept
+     in sync between them; each view hides the other's columns. */
+  .ts-view-lineup .ts-num, .ts-view-lineup .ts-pos-edit { display: none; }
+  .ts-view-details .ts-handle, .ts-view-details .ts-min, .ts-view-details .ts-pos-text { display: none; }
+
+  /* Dragging. The whole row is the grab area in Lineup view (press and hold
+     on touch); its controls keep working as controls. */
+  .ts-handle { width: 1.8rem; padding: 0.3rem 0.1rem !important; }
   .drag-handle {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 1.6rem; height: 1.6rem; cursor: grab; color: var(--text-dim);
+    width: 1.6rem; height: 2rem; cursor: grab; color: var(--text-dim);
     font-size: var(--text-base); user-select: none; touch-action: none;
+    border: none; background: none; padding: 0; font-family: inherit; border-radius: var(--radius-sm);
   }
-  .drag-handle:active { cursor: grabbing; }
-  #team-settings-wrap tr.dragging { opacity: 0.4; }
+  .drag-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ts-view-lineup tbody tr.ts-row { cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .ts-view-lineup tbody tr.ts-row:hover td { background: var(--bg-hover); }
+  .ts-view-lineup tbody tr.ts-row:hover .drag-handle { color: var(--text-secondary); }
+  body.ts-dragging .ts-view-lineup tbody tr.ts-row:hover:not(.ts-illegal) td { background: none; }
+  .ts-view-lineup tbody tr.ts-row :is(input, button:not(.drag-handle), label) { cursor: auto; }
+  .ts-table.editing .ts-name a { pointer-events: none; color: inherit; }
+  /* Where the lifted player came from: a hatched hole the size of his row. */
+  #team-settings-wrap tr.dragging td {
+    background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, transparent) 0 6px, transparent 6px 12px);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 50%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  #team-settings-wrap tr.dragging td > * { visibility: hidden; }
+  /* A swap: the row he'd trade places with, lit and outlined. */
+  #team-settings-wrap tr.ts-swap-target td {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+    box-shadow: inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent);
+  }
+  #team-settings-wrap tr.ts-swap-target td:first-child { box-shadow: inset 4px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  #team-settings-wrap tr.ts-swap-target td:last-child { box-shadow: inset -2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent); }
+  /* A move: a thick bar on the boundary, tinted either side, with its flag. */
+  .ts-drop-bar {
+    position: fixed; z-index: 1001; height: 18px; margin-top: -9px; pointer-events: none;
+    display: flex; align-items: center; justify-content: flex-end;
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .ts-drop-bar::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; background: var(--accent); }
+  .ts-drop-tag {
+    position: relative; margin-right: 0.5rem; padding: 0.2rem 0.5rem;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.1;
+    color: var(--text-on-accent); background: var(--accent-fill); border-radius: var(--radius-sm); white-space: nowrap;
+  }
+  .ts-drop-flag { position: fixed; z-index: 1001; margin: 0; transform: translate(-100%, -50%); pointer-events: none; }
+  :is(.ts-drop-bar, .ts-drop-flag)[hidden] { display: none; }
+  /* The lifted row: off the table, scaled toward you, with the overlay
+     shadow, and a strip under it saying where he'd land. */
+  .ts-lift {
+    position: fixed; z-index: 1002; pointer-events: none;
+    background: var(--bg-card); border: 1px solid var(--accent); border-radius: var(--radius); overflow: hidden;
+    transform-origin: 50% 100%;
+  }
+  .ts-lift.up { transform: scale(1.04); box-shadow: var(--shadow-overlay); }
+  .ts-lift table { width: 100%; border-collapse: collapse; }
+  .ts-lift td { border-bottom: none !important; background: var(--bg-card); }
+  .ts-lift tr.ts-inactive td:not(.ts-handle) { opacity: 1; }
+  .ts-lift .drag-handle { color: var(--accent-light); }
+  .ts-lift-tag {
+    padding: 0.35rem 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-on-accent); background: var(--accent-fill);
+  }
+  .ts-lift-tag b { font-size: var(--text-md); letter-spacing: 0.02em; }
+  .ts-lift-tag.idle { color: var(--text-muted); background: var(--bg-subtle); }
+  .ts-lift.landing .ts-lift-tag { opacity: 0; }
+  @media (prefers-reduced-motion: no-preference) {
+    .ts-lift { transition: transform 0.16s ease-out, box-shadow 0.16s ease-out, top 0.15s ease-out; }
+    .ts-lift.tracking { transition: transform 0.16s ease-out, box-shadow 0.16s ease-out; }
+    .ts-lift.landing { transition: transform 0.18s ease-in, box-shadow 0.18s ease-in, top 0.18s ease-in, left 0.18s ease-in; }
+    .ts-lift.landing .ts-lift-tag { transition: opacity 0.1s; }
+    #team-settings-wrap tr.ts-landed td { animation: ts-landed 0.9s ease-out; }
+    @keyframes ts-landed {
+      from { background-color: color-mix(in srgb, var(--accent) 34%, transparent); }
+      to { background-color: transparent; }
+    }
+  }
+
+  /* Swipe to set minutes: the stepper takes horizontal swipes (the page
+     keeps vertical ones), and a readout floats above it while one is on. */
+  .ts-stepper { touch-action: pan-y; }
+  .ts-stepper input:not(:disabled) { cursor: ew-resize; }
+  .ts-stepper.scrubbing { border-color: var(--accent); box-shadow: var(--focus-ring); }
+  .ts-stepper.scrubbing input { color: var(--accent-light); }
+  body.ts-scrubbing, body.ts-scrubbing * { cursor: ew-resize !important; -webkit-user-select: none; user-select: none; }
+  .ts-scrub {
+    position: fixed; z-index: 1003; pointer-events: none; transform: translate(-50%, -100%);
+    min-width: 10rem; padding: 0.55rem 0.85rem 0.6rem; text-align: center;
+    background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--accent);
+    border-radius: var(--radius); box-shadow: var(--shadow-overlay);
+  }
+  .ts-scrub-name { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
+  .ts-scrub-val { display: flex; align-items: baseline; justify-content: center; gap: 0.3rem; margin-top: 0.15rem; }
+  .ts-scrub-val b { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .ts-scrub-val small { font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .ts-scrub-val .ui-chip { align-self: center; }
+  .ts-scrub-track { height: 4px; margin-top: 0.45rem; background: var(--bg-subtle); }
+  .ts-scrub-track > span { display: block; height: 100%; background: var(--accent); }
+  .ts-scrub-hint { margin-top: 0.35rem; font-size: var(--text-xs); color: var(--text-dim); }
+  body.ts-dragging, body.ts-dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+
+  .ts-pos-sub { display: none; }
+  /* A phone: the edit table has to fit the card, or the browser zooms the
+     whole page out to show it and every target shrinks (it was 641px wide
+     on a 390px screen). OVR rides by the name, positions go under it,
+     names wrap, the controls tighten; Details drops the slot, since its
+     rows are in lineup order anyway. */
+  @media (max-width: 640px) {
+    .ts-ovr, .ts-minbar { display: none; }
+    .ts-ovr-inline { display: inline-block; }
+    .ts-table td, .ts-table th { padding-inline: 0.3rem; }
+    .ts-table td.ts-name { white-space: normal; }
+    .ts-view-lineup .ts-pos { display: none; }
+    .ts-view-lineup .ts-pos-sub { display: block; margin-top: 0.1rem; font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.02em; color: var(--text-secondary); }
+    .ts-view-details .ts-slot { display: none; }
+    .ts-table.editing .ts-handle { width: 1.3rem; }
+    .ts-slot { width: 2.3rem; }
+    .drag-handle { width: 1.2rem; }
+    .ts-table .ts-min { width: auto; }
+    .ts-min-edit { gap: 0.25rem; }
+    .ts-stepper button { width: 1.45rem; }
+    .ts-stepper input { width: 1.9rem; }
+    .ts-res { padding: 0 0.35rem; min-width: 0; }
+    .ts-sum-stats { gap: 1rem; }
+    .ts-sec-hint { display: none; }
+  }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
@@ -1181,7 +1357,6 @@ document.body.innerHTML = `
               <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
               <div class="settings-actions" id="team-settings-actions"></div>
             </div>
-            <p class="settings-subsub" id="team-settings-hint" hidden>Drag ⠿ to set the depth chart: the top five start, the rest come off the bench in order. Players below the Inactive line are not in the game, so drag it up to leave a slot empty. Primary position comes from 2K. Tick <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> to have the streamer check a player's secondary position before every game, since 2K resets it when ratings update. A secondary marked <i class="ui-icon ui-icon--warning" aria-hidden="true"></i> is more than one step from the primary (§ 2.3): it counts only once the streamer OKs it.</p>
             <div id="team-settings-wrap"><div class="status">Loading…</div></div>
           </div>
           <div class="settings-subsection">
@@ -6042,7 +6217,6 @@ const coachingTab = { record: undefined, editing: { roster: false, profile: fals
 function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, currentOvr) {
   const wrapEl = document.getElementById(wrapId);
   const actionsEl = document.getElementById('team-settings-actions');
-  const hintEl = document.getElementById('team-settings-hint');
   const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
   const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
 
@@ -6160,28 +6334,66 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     tr.classList.toggle('ts-inactive', !slotted);
   }
 
-  // The Inactive line itself. In edit mode it carries a drag handle and
-  // moves like a player row.
+  // The Inactive line itself. In edit mode it heads the Inactive section,
+  // and a player dropped under it is left out of the game. It isn't
+  // dragged itself: players are moved across it.
   function dividerRow(tbody, colCount, forEdit) {
-    const tr = tbody.insertRow();
+    const tr = sectionRow(colCount, 'Inactive');
     tr.className = 'ts-divider';
     tr._divider = true;
-    let span = colCount;
+    setSectionMeta(tr, 'Not in the game');
     if (forEdit) {
-      const handleTd = tr.insertCell();
-      handleTd.className = 'ts-handle';
-      const handle = document.createElement('span');
-      handle.className = 'drag-handle';
-      handle.textContent = '⠿';
-      handle.title = 'Drag to set who is in the game: players below this line are left out';
-      handleTd.appendChild(handle);
-      tr._handle = handle;
-      span--;
+      const hint = document.createElement('span');
+      hint.className = 'ts-sec-hint';
+      hint.textContent = ' · drop a player here to leave his slot empty';
+      tr.querySelector('.ts-sec-meta').appendChild(hint);
     }
-    const td = tr.insertCell();
-    td.colSpan = span;
-    td.textContent = 'Inactive: not in the game';
+    tbody.appendChild(tr);
     return tr;
+  }
+
+  // Starters / Bench / Inactive headings: the name on the left, its minutes
+  // (or a note) on the right. In edit mode where they sit is worked out from
+  // the player rows after every move (layoutRows), never dragged.
+  function sectionRow(colCount, label) {
+    const tr = document.createElement('tr');
+    tr.className = 'ts-section';
+    const td = tr.insertCell();
+    td.colSpan = colCount;
+    td.innerHTML = '<div class="ts-sec-row"><span class="ts-sec-label"></span><span class="ts-sec-meta"></span></div>';
+    td.querySelector('.ts-sec-label').textContent = label;
+    return tr;
+  }
+
+  function setSectionMeta(tr, text, mins) {
+    const el = tr.querySelector('.ts-sec-meta');
+    el.textContent = text || '';
+    if (mins != null) {
+      const b = document.createElement('b');
+      b.textContent = mins;
+      el.append(b, ' min');
+    }
+  }
+
+  // Minutes by part: the five starters, the bench (RES counts for nothing).
+  function splitMinutes(minutes) {
+    let start = 0, bench = 0;
+    CS.MINUTES_SLOTS.forEach((slot, i) => {
+      const m = minutes[slot];
+      if (!m || m.res) return;
+      if (i < STARTERS) start += Number(m.minutes) || 0;
+      else bench += Number(m.minutes) || 0;
+    });
+    return { start, bench };
+  }
+
+  // A rating as the site's OVR badge, on the same heat scale as the Roster tab.
+  function ovrBadge(ovr, cls) {
+    const el = document.createElement('span');
+    el.className = `ui-ovr ui-heat${cls ? ` ${cls}` : ''}`;
+    el.style.setProperty('--heat', Math.max(0, Math.min(1, (ovr - 65) / 30)).toFixed(2));
+    el.textContent = ovr;
+    return el;
   }
 
   // Where a player may start: his 2K primary, one step either side of it,
@@ -6213,23 +6425,40 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     return `${n}${sfx}`;
   }
 
-  // The 240-minute budget as a bar above the table, rather than a line of
-  // text under it, so an unbalanced depth chart is the first thing seen.
+  // The 240-minute budget as a stat strip above the table, so an unbalanced
+  // depth chart is the first thing seen: starters, bench, and the total
+  // against 240 with a chip saying how far off it is. The bar is the two
+  // parts in order; over budget it turns red.
   function minutesMeter() {
     const el = document.createElement('div');
-    el.className = 'ts-meter';
-    el.innerHTML = '<div class="ts-meter-label"><span>Minutes</span><span class="ts-meter-val"></span></div>'
-      + '<div class="ts-meter-track"><div class="ts-meter-fill"></div></div>';
+    el.className = 'ts-summary';
+    el.innerHTML = `
+      <div class="ts-sum-stats">
+        <div class="ts-sum-stat"><span class="ts-sum-k"><i class="ts-sum-legend start"></i>Starters</span><b data-k="start"></b></div>
+        <div class="ts-sum-stat"><span class="ts-sum-k"><i class="ts-sum-legend bench"></i>Bench</span><b data-k="bench"></b></div>
+        <div class="ts-sum-stat ts-sum-total">
+          <span class="ts-sum-k">Minutes <span class="ui-chip ui-chip--sm" data-k="state"></span></span>
+          <span class="ui-statline"><b data-k="total"></b><small>/ ${CS.MINUTES_BUDGET}</small></span>
+        </div>
+      </div>
+      <div class="ts-sum-track"><span class="ts-sum-start"></span><span class="ts-sum-bench"></span></div>`;
+    const $ = k => el.querySelector(`[data-k="${k}"]`);
     el.update = minutes => {
-      const total = CS.minutesTotal(minutes);
+      const { start, bench } = splitMinutes(minutes);
+      const total = start + bench;
       const budget = CS.MINUTES_BUDGET;
       const diff = budget - total;
-      el.classList.toggle('ok', diff === 0);
+      $('start').textContent = start;
+      $('bench').textContent = bench;
+      $('total').textContent = total;
+      const state = $('state');
+      state.className = `ui-chip ui-chip--sm ${diff === 0 ? 'ui-chip--success' : diff > 0 ? 'ui-chip--warning' : 'ui-chip--danger'}`;
+      state.textContent = diff === 0 ? 'Balanced' : diff > 0 ? `${diff} left` : `${-diff} over`;
+      if (diff === 0) state.dataset.icon = 'check'; else delete state.dataset.icon;
       el.classList.toggle('over', diff < 0);
-      el.querySelector('.ts-meter-val').textContent = diff === 0
-        ? `${total} / ${budget}`
-        : `${total} / ${budget} · ${diff > 0 ? `${diff} left` : `${-diff} over`}`;
-      el.querySelector('.ts-meter-fill').style.width = `${Math.min(100, total / budget * 100)}%`;
+      const scale = Math.max(budget, total);
+      el.querySelector('.ts-sum-start').style.width = `${start / scale * 100}%`;
+      el.querySelector('.ts-sum-bench').style.width = `${bench / scale * 100}%`;
     };
     return el;
   }
@@ -6263,18 +6492,13 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     const ovr = (currentOvr && currentOvr[row.SLUG]) || '';
     // On a phone the OVR column is dropped for width, so the rating rides
     // next to the name instead — a coach setting minutes still needs it.
-    if (ovr) {
-      const inline = document.createElement('span');
-      inline.className = 'ts-ovr-inline';
-      inline.textContent = ovr;
-      td.appendChild(inline);
-    }
+    if (ovr) td.appendChild(ovrBadge(ovr, 'ts-ovr-inline'));
     if (bio.type === 'two-way') td.appendChild(twoWayGamesBadge(row.SLUG, '2W · '));
     td.dataset.slug = row.SLUG;
     addInjuryBadge(td, row.SLUG);
     const ovrTd = tr.insertCell();
     ovrTd.className = 'ts-ovr';
-    ovrTd.textContent = ovr || '—';
+    if (ovr) ovrTd.appendChild(ovrBadge(ovr)); else ovrTd.textContent = '—';
   }
 
   function setActions(...btns) {
@@ -6296,6 +6520,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     gridWrap.className = 'ui-table-wrap table-wrap';
     gridWrap.appendChild(table);
     wrapEl.innerHTML = '';
+    delete wrapEl.dataset.view;
     if (meter) wrapEl.appendChild(meter);
     wrapEl.appendChild(gridWrap);
   }
@@ -6303,16 +6528,25 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
   function renderReadView() {
     editing = coachingTab.editing.roster = false;
     const minutes = (coachingTab.record && coachingTab.record.minutes) || {};
-    if (hintEl) hintEl.hidden = true;
     const table = document.createElement('table');
     table.className = 'ts-table';
     buildHead(table, false);
 
     const tbody = table.createTBody();
     const { rows, line } = orderedRows(minutes);
+    const colCount = table.tHead.rows[0].cells.length;
+    const split = CS ? splitMinutes(minutes) : null;
     rows.forEach((row, i) => {
       const bio = biosData[row.SLUG] || {};
-      if (CS && i === line) dividerRow(tbody, table.tHead.rows[0].cells.length, false);
+      if (CS && i === 0 && line > 0) {
+        const h = tbody.appendChild(sectionRow(colCount, 'Starters'));
+        setSectionMeta(h, '', split.start);
+      }
+      if (CS && i === STARTERS && i < line) {
+        const h = tbody.appendChild(sectionRow(colCount, 'Bench'));
+        setSectionMeta(h, '', split.bench);
+      }
+      if (CS && i === line) dividerRow(tbody, colCount, false);
       const tr = tbody.insertRow();
 
       const slot = CS && i < line ? CS.MINUTES_SLOTS[i] : '';
@@ -6404,24 +6638,27 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     editing = coachingTab.editing.roster = true;
     const startMinutes = (coachingTab.record && coachingTab.record.minutes) || {};
     let minutesDirty = false;
-    if (hintEl) hintEl.hidden = false;
 
     const saveBtn = button('Save', 'primary');
     const cancelBtn = button('Cancel', 'ghost');
     const statusEl = document.createElement('span');
     statusEl.className = 'ts-status';
-    const actions = [statusEl];
+    // The header keeps only what ends the edit; the sort tools sit with the
+    // view switch in the toolbar above the table (Lineup view only).
+    setActions(statusEl, cancelBtn, saveBtn);
+    const sortTools = [];
     if (CS) {
       const autoSortBtn = button('Auto-sort');
-      autoSortBtn.title = 'Fill PG/SG/SF/PF/C with the best eligible player at each position, then rank the bench by OVR — a starting point to drag from, not a save';
+      autoSortBtn.title = 'Fill PG/SG/SF/PF/C with the best eligible player at each position, then rank the bench by OVR. A starting point, not a save';
       autoSortBtn.addEventListener('click', () => autoSort());
-      actions.push(autoSortBtn);
+      const benchBtn = button('Sort bench');
+      benchBtn.title = 'Order the bench by minutes, most first (ties by OVR), with RES players last. Starters and Inactive stay put';
+      benchBtn.addEventListener('click', () => sortBench());
+      sortTools.push(autoSortBtn, benchBtn);
     }
-    actions.push(cancelBtn, saveBtn);
-    setActions(...actions);
 
     const table = document.createElement('table');
-    table.className = 'ts-table editing';
+    table.className = 'ts-table editing ts-view-lineup';
     buildHead(table, true);
 
     const tbody = table.createTBody();
@@ -6462,7 +6699,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     // play counts toward their 50. Named here once they're given minutes,
     // so it is a choice made knowingly. Never blocks the save.
     const twoWayNote = document.createElement('div');
-    twoWayNote.className = 'ts-2w-note';
+    twoWayNote.className = 'ts-alert warning';
+    twoWayNote.dataset.icon = 'warning';
     twoWayNote.hidden = true;
 
     function refreshTwoWayNote(minutes) {
@@ -6480,7 +6718,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     // Save (the API refuses it too); one already saved that way is flagged
     // but not blocking, matching the API, so the team can still save.
     const startersNote = document.createElement('div');
-    startersNote.className = 'ts-illegal-note';
+    startersNote.className = 'ts-alert danger';
+    startersNote.dataset.icon = 'warning';
     startersNote.hidden = true;
 
     function refreshStarters(minutes) {
@@ -6508,7 +6747,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     // Secondaries outside § 2.3, named so the team knows the streamer has to
     // OK them. Never blocks the save.
     const secNote = document.createElement('div');
-    secNote.className = 'ts-2w-note';
+    secNote.className = 'ts-alert warning';
     secNote.hidden = true;
 
     function refreshSecNote() {
@@ -6536,7 +6775,12 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       const minutes = minutesFromDom();
       if (meter) meter.update(minutes);
       refreshTwoWayNote(minutes);
-      if (CS) refreshStarters(minutes);
+      if (CS) {
+        refreshStarters(minutes);
+        const { start, bench } = splitMinutes(minutes);
+        setSectionMeta(startersHdr, '', start);
+        setSectionMeta(benchHdr, '', bench);
+      }
     }
 
     // Relabels every row's Slot cell and enables/disables its Min controls
@@ -6593,75 +6837,490 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       const playerRows = Array.from(tbody.rows).filter(tr => tr._rosterCtl);
       tbody.insertBefore(divider, playerRows[keep] || null);
 
+      afterReorder();
+    }
+
+    // The bench by minutes, most first; ties by OVR; RES players last.
+    // Starters and the Inactive section don't move. A starting point like
+    // Auto-sort: nothing is saved until Save.
+    function sortBench() {
+      if (!CS) return;
+      const bench = slotPlan().filter(p => p.slot && p.i >= STARTERS);
+      const ovrOf = slug => parseFloat(currentOvr && currentOvr[slug]) || 0;
+      const sorted = bench
+        .map((p, idx) => ({
+          tr: p.tr, idx,
+          res: p.ctl.resCheck.checked ? 1 : 0,
+          min: +p.ctl.minInput.value || 0,
+          ovr: ovrOf(p.ctl.slug),
+        }))
+        .sort((a, b) => (a.res - b.res) || (b.min - a.min) || (b.ovr - a.ovr) || (a.idx - b.idx));
+      if (sorted.every((s, i) => s.idx === i)) return;
+      sorted.forEach(s => tbody.insertBefore(s.tr, divider));
+      afterReorder();
+    }
+
+    // Puts the section headers where the rows say they go: Starters on top,
+    // Bench before the 6th slotted player, and the Inactive line after the
+    // 15th at most (a 16th player above it would hold no slot, so he drops
+    // under it).
+    function layoutRows() {
+      if (!CS) return;
+      const above = [];
+      for (const tr of tbody.rows) {
+        if (tr === divider) break;
+        if (tr._rosterCtl) above.push(tr);
+      }
+      const max = CS.MINUTES_SLOTS.length;
+      if (above.length > max) tbody.insertBefore(divider, above[max]);
+      if (tbody.firstChild !== startersHdr) tbody.insertBefore(startersHdr, tbody.firstChild);
+      tbody.insertBefore(benchHdr, above[STARTERS] || divider);
+    }
+
+    function afterReorder() {
+      layoutRows();
       minutesDirty = true;
       relabelSlots();
       refreshMinutesTotal();
     }
 
-    // Raw mouse/touch events, listening on `document` while a drag is live,
-    // rather than native HTML5 drag-and-drop (no touch equivalent at all on
-    // iOS Safari) or Pointer Events (setPointerCapture + touch-action:none
-    // still left this not reliably suppressing the page's own scroll on
-    // real devices — a captured pointer's touchmove can still be treated as
-    // passive by the browser, silently no-opping preventDefault). Explicit
-    // `{ passive: false }` on touchmove is what actually stops the page
-    // scrolling under the drag; without it, calling preventDefault() there
-    // does nothing in current Chrome/Safari, which is the likelier reason
-    // the previous attempt didn't work on a real phone.
-    let draggedTr = null;
+    // Dragging rows. Raw mouse and touch events on `document` while a drag
+    // is live, not HTML5 drag-and-drop (no touch at all on iOS Safari) or
+    // Pointer Events (a real phone's page scroll still won the drag). The
+    // whole row is the grab area: a mouse drag starts once it has moved a
+    // few pixels, so a click is still a click; a touch starts after a short
+    // press and hold, so a swipe still scrolls the page, or at once on the
+    // ⠿ handle, whose touch-action stops the scroll. `touchmove` is
+    // `{ passive: false }` so preventDefault() actually holds the page still.
+    //
+    // Picking a player up lifts his row off the table: a copy scales up with
+    // a shadow and floats just above the pointer, so neither it nor the drop
+    // spot is under the finger. Where he came from is left as a hatched hole.
+    // The rows don't move until the drop; the drop is shown in place, loud:
+    // a lit row with a SWAP flag means the two swap, a thick bar with a MOVE
+    // HERE flag means he goes in there and the rest shift. The strip under
+    // the lifted row says where he'd end up. On the drop the copy settles
+    // into his new row, which flashes; a cancel floats it back. All motion
+    // is off under prefers-reduced-motion. The page scrolls on its own near
+    // the top and bottom edges.
+    const HOLD_MS = 280;
+    const EDGE_PX = 70;
+    let drag = null;
 
-    function pointFromEvent(e) {
-      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      return { x: e.clientX, y: e.clientY };
+    const isControl = el => !!el.closest('input, select, textarea, label, a, .ts-stepper, button:not(.drag-handle)');
+
+    // Swipe to set minutes: a finger on a player's minutes, slid left or
+    // right, takes a minute off or adds one every SCRUB_PX, with a big
+    // readout above it (and a tick on phones that can buzz). A mouse can
+    // drag the number the same way. Up or down first is a scroll, which
+    // touch-action: pan-y leaves to the page; a tap is still a tap (the
+    // keyboard, or the − and + buttons). Nothing is saved until Save.
+    const SCRUB_PX = 9;
+    function attachScrub(stepper, input, label, set) {
+      let st = null;
+      let readout = null;
+      function draw() {
+        if (!readout) {
+          readout = document.createElement('div');
+          readout.className = 'ts-scrub';
+          readout.setAttribute('aria-hidden', 'true');
+          readout.innerHTML = '<div class="ts-scrub-name"></div>'
+            + '<div class="ts-scrub-val"><b></b><small>min</small><span class="ui-chip ui-chip--sm ui-chip--accent"></span></div>'
+            + '<div class="ts-scrub-track"><span></span></div>'
+            + '<div class="ts-scrub-hint">Slide left or right</div>';
+          readout.querySelector('.ts-scrub-name').textContent = label;
+          document.body.appendChild(readout);
+        }
+        const v = +input.value || 0;
+        const d = v - st.v0;
+        readout.querySelector('b').textContent = v;
+        const chip = readout.querySelector('.ui-chip');
+        chip.textContent = d > 0 ? `+${d}` : d < 0 ? `\u2212${-d}` : '0';
+        chip.hidden = d === 0;
+        readout.querySelector('.ts-scrub-track > span').style.width = `${v / 48 * 100}%`;
+        const r = stepper.getBoundingClientRect();
+        const half = readout.offsetWidth / 2;
+        readout.style.left = `${Math.max(half + 8, Math.min(window.innerWidth - half - 8, r.left + r.width / 2))}px`;
+        readout.style.top = `${r.top - 10}px`;
+      }
+      function start(x, y, kind) {
+        if (input.disabled || drag) return false;
+        st = { x, y, v0: +input.value || 0, on: false, kind };
+        return true;
+      }
+      function move(x, y, ev) {
+        if (!st) return;
+        const dx = x - st.x, dy = y - st.y;
+        if (!st.on) {
+          if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { end(); return; } // a scroll
+          if (Math.abs(dx) < 6) return;
+          st.on = true;
+          st.x = x; // count from here, so the first minute isn't a jump
+          stepper.classList.add('scrubbing');
+          document.body.classList.add('ts-scrubbing');
+          input.blur();
+        }
+        if (ev && ev.cancelable) ev.preventDefault();
+        const v = Math.max(0, Math.min(48, st.v0 + Math.round((x - st.x) / SCRUB_PX)));
+        if (v !== (+input.value || 0)) {
+          set(v);
+          if (st.kind === 'touch' && navigator.vibrate) navigator.vibrate(4);
+        }
+        draw();
+      }
+      function end(ev) {
+        if (!st) return;
+        const was = st.on;
+        st = null;
+        stepper.classList.remove('scrubbing');
+        document.body.classList.remove('ts-scrubbing');
+        if (readout) { readout.remove(); readout = null; }
+        // After a swipe, no click on the button the finger let go over.
+        if (was && ev && ev.cancelable) ev.preventDefault();
+      }
+      stepper.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) start(e.touches[0].clientX, e.touches[0].clientY, 'touch');
+      }, { passive: true });
+      stepper.addEventListener('touchmove', e => {
+        if (e.touches[0]) move(e.touches[0].clientX, e.touches[0].clientY, e);
+      }, { passive: false });
+      stepper.addEventListener('touchend', e => end(e));
+      stepper.addEventListener('touchcancel', () => end());
+      // The mouse scrubs from the number only; − and + stay buttons.
+      input.addEventListener('mousedown', e => {
+        if (e.button !== 0 || !start(e.clientX, e.clientY, 'mouse')) return;
+        const mm = ev => move(ev.clientX, ev.clientY, ev);
+        const mu = ev => {
+          document.removeEventListener('mousemove', mm);
+          document.removeEventListener('mouseup', mu);
+          end(ev);
+        };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+      });
+    }
+    const lineupView = () => table.classList.contains('ts-view-lineup');
+
+    function scrollerFor(el) {
+      for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+        const oy = getComputedStyle(n).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && n.scrollHeight > n.clientHeight) return n;
+      }
+      return null; // the window
     }
 
-    function endDrag(tr, onMove, onEnd) {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onEnd);
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
-      document.removeEventListener('touchcancel', onEnd);
-      if (draggedTr !== tr) return;
-      tr.classList.remove('dragging');
-      draggedTr = null;
-      minutesDirty = true;
-      relabelSlots();
-      refreshMinutesTotal();
+    const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    // A copy of the row in a table of its own, its cells pinned to the
+    // widths they have on the page, so the lifted row reads as the row.
+    function liftedCopy(tr) {
+      const t = document.createElement('table');
+      t.className = table.className;
+      const row = tr.cloneNode(true);
+      row.classList.remove('dragging', 'ts-swap-target');
+      Array.from(tr.cells).forEach((td, i) => {
+        row.cells[i].style.width = `${td.getBoundingClientRect().width}px`;
+      });
+      t.createTBody().appendChild(row);
+      return t;
     }
 
-    function attachDrag(tr, handle) {
-      function onMove(e) {
-        if (draggedTr !== tr) return;
-        if (e.cancelable) e.preventDefault();
-        const { x, y } = pointFromEvent(e);
-        const targetRow = document.elementFromPoint(x, y);
-        const tbodyRow = targetRow && targetRow.closest('tr');
-        if (!tbodyRow || tbodyRow === tr || tbodyRow.parentElement !== tbody) return;
-        const rect = tbodyRow.getBoundingClientRect();
-        const before = (y - rect.top) < rect.height / 2;
-        tbody.insertBefore(tr, before ? tbodyRow : tbodyRow.nextSibling);
+    function overlay(cls) {
+      const el = document.createElement('div');
+      el.className = cls;
+      el.hidden = true;
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+      return el;
+    }
+
+    function beginDrag(tr, x, y) {
+      const rect = tr.getBoundingClientRect();
+      const ghost = document.createElement('div');
+      ghost.className = 'ts-lift';
+      ghost.setAttribute('aria-hidden', 'true');
+      const tag = document.createElement('div');
+      tag.className = 'ts-lift-tag';
+      ghost.append(liftedCopy(tr), tag);
+      ghost.style.left = `${rect.left}px`;
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.top = `${rect.top}px`;
+      document.body.appendChild(ghost);
+      const bar = overlay('ts-drop-bar');
+      bar.innerHTML = '<span class="ts-drop-tag"></span>';
+      const flag = overlay('ts-drop-tag ts-drop-flag');
+      tr.classList.add('dragging');
+      document.body.classList.add('ts-dragging');
+      drag = { tr, ghost, tag, bar, flag, x, y, target: null, lit: null, raf: 0, scroller: scrollerFor(table) };
+      // Next frame, so the scale and the rise animate from the row itself.
+      requestAnimationFrame(() => {
+        ghost.classList.add('up');
+        setTimeout(() => ghost.classList.add('tracking'), 170);
+      });
+      dragMove(x, y);
+      drag.raf = requestAnimationFrame(autoScroll);
+    }
+
+    function dragMove(x, y) {
+      if (!drag) return;
+      drag.x = x; drag.y = y;
+      findTarget();
+      placeGhost();
+    }
+
+    // The lifted row sits with its bottom edge just above the pointer.
+    function placeGhost() {
+      const { ghost, y } = drag;
+      ghost.style.top = `${Math.max(4, y - ghost.offsetHeight - 24)}px`;
+    }
+
+    // What a drop at the pointer would do: {swap: row} or {before: node}
+    // (null = the end of the table).
+    function findTarget() {
+      const { y, tr: dragged } = drag;
+      const rows = Array.from(tbody.rows);
+      let target = null;
+      let hit = null;
+      for (const r of rows) {
+        const b = r.getBoundingClientRect();
+        if (y >= b.top && y < b.bottom) { hit = { r, b }; break; }
       }
-      function onEnd() { endDrag(tr, onMove, onEnd); }
-      function onStart(e) {
-        if (e.type === 'mousedown' && e.button !== 0) return;
-        draggedTr = tr;
-        tr.classList.add('dragging');
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onEnd);
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend', onEnd);
-        document.addEventListener('touchcancel', onEnd);
+      const firstPlayer = rows.find(r => r._rosterCtl);
+      if (!hit) {
+        target = y < rows[0].getBoundingClientRect().top ? { before: firstPlayer } : { before: null };
+      } else if (hit.r === dragged) {
+        target = null;
+      } else if (hit.r._rosterCtl) {
+        const f = (y - hit.b.top) / hit.b.height;
+        target = f < 0.25 ? { before: hit.r } : f > 0.75 ? { before: hit.r.nextSibling } : { swap: hit.r };
+      } else if (hit.r === startersHdr) {
+        target = { before: firstPlayer };
+      } else {
+        // The Bench header or the Inactive line: the top of that section.
+        target = { before: hit.r.nextSibling };
       }
-      handle.addEventListener('mousedown', onStart);
-      handle.addEventListener('touchstart', onStart, { passive: true });
+      if (target && 'before' in target && (target.before === dragged || target.before === dragged.nextSibling)) target = null;
+      drag.target = target;
+      showTarget();
+    }
+
+    const nameOf = tr => tr.querySelector('.ts-name a').textContent;
+
+    // Where the dragged player would land: his slot label, or 'Inactive'.
+    function landing(target) {
+      if (target.swap) {
+        const t = target.swap._rosterCtl.slotTd.textContent;
+        return t === '—' ? 'Inactive' : t;
+      }
+      const rows = Array.from(tbody.rows);
+      const seq = rows.filter(r => (r._rosterCtl || r === divider) && r !== drag.tr);
+      let at = seq.length;
+      if (target.before) {
+        for (let i = rows.indexOf(target.before); i < rows.length; i++) {
+          const k = seq.indexOf(rows[i]);
+          if (k >= 0) { at = k; break; }
+        }
+      }
+      seq.splice(at, 0, drag.tr);
+      const n = seq.indexOf(drag.tr);
+      const d = seq.indexOf(divider);
+      return n > d || n >= CS.MINUTES_SLOTS.length ? 'Inactive' : slotLabel(n);
+    }
+
+    function showTarget() {
+      const { target, tag, bar, flag, tr } = drag;
+      // The strip under the lifted row: where a drop would put him.
+      if (!target) {
+        tag.textContent = 'Drop on a player to swap, between rows to move';
+        tag.classList.add('idle');
+      } else {
+        const to = landing(target);
+        const strong = document.createElement('b');
+        strong.textContent = to;
+        tag.classList.remove('idle');
+        tag.replaceChildren(to === 'Inactive' ? 'Out of the game: ' : 'To ', strong);
+        if (target.swap) tag.append(` · swaps with ${nameOf(target.swap)}`);
+      }
+      const lit = target && target.swap ? target.swap : null;
+      if (drag.lit !== lit) {
+        if (drag.lit) drag.lit.classList.remove('ts-swap-target');
+        if (lit) lit.classList.add('ts-swap-target');
+        drag.lit = lit;
+      }
+      const tb = table.getBoundingClientRect();
+      if (lit) {
+        const r = lit.getBoundingClientRect();
+        flag.hidden = false;
+        flag.textContent = 'Swap';
+        flag.style.left = `${tb.right - 8}px`;
+        flag.style.top = `${r.top + r.height / 2}px`;
+      } else {
+        flag.hidden = true;
+      }
+      if (!target || target.swap) { bar.hidden = true; return; }
+      let y;
+      if (target.before) y = target.before.getBoundingClientRect().top;
+      else y = tbody.rows[tbody.rows.length - 1].getBoundingClientRect().bottom;
+      bar.hidden = false;
+      bar.style.left = `${tb.left}px`;
+      bar.style.width = `${tb.width}px`;
+      bar.style.top = `${y}px`;
+      const to = landing(target);
+      bar.firstChild.textContent = to === 'Inactive' ? 'Out of the game' : `Move here · ${to}`;
+    }
+
+    function autoScroll() {
+      if (!drag) return;
+      const top = drag.scroller ? drag.scroller.getBoundingClientRect().top : 0;
+      const bottom = drag.scroller ? drag.scroller.getBoundingClientRect().bottom : window.innerHeight;
+      let dy = 0;
+      if (drag.y < top + EDGE_PX) dy = -Math.ceil((top + EDGE_PX - drag.y) / EDGE_PX * 16);
+      else if (drag.y > bottom - EDGE_PX) dy = Math.ceil((drag.y - (bottom - EDGE_PX)) / EDGE_PX * 16);
+      if (dy) {
+        if (drag.scroller) drag.scroller.scrollTop += dy; else window.scrollBy(0, dy);
+        findTarget();
+      }
+      drag.raf = requestAnimationFrame(autoScroll);
+    }
+
+    function swapRows(a, b) {
+      const mark = document.createComment('');
+      a.replaceWith(mark);
+      b.replaceWith(a);
+      mark.replaceWith(b);
+    }
+
+    function endDrag(apply) {
+      if (!drag) return;
+      const { tr, ghost, bar, flag, target, lit, raf } = drag;
+      cancelAnimationFrame(raf);
+      bar.remove();
+      flag.remove();
+      if (lit) lit.classList.remove('ts-swap-target');
+      document.body.classList.remove('ts-dragging');
+      drag = null;
+      const moved = apply && target;
+      if (moved) {
+        if (target.swap) swapRows(tr, target.swap);
+        else tbody.insertBefore(tr, target.before);
+        afterReorder();
+      }
+      // Settle: the lifted copy drops into the row's place (its new one, or
+      // back where it was), then the row comes back and, if it moved,
+      // flashes, along with the player it swapped with.
+      const finish = () => {
+        ghost.remove();
+        if (!drag || drag.tr !== tr) tr.classList.remove('dragging');
+        if (!moved || reducedMotion()) return;
+        const rows = target.swap ? [tr, target.swap] : [tr];
+        rows.forEach(r => {
+          r.classList.remove('ts-landed');
+          void r.offsetWidth; // restart the animation
+          r.classList.add('ts-landed');
+          setTimeout(() => r.classList.remove('ts-landed'), 900);
+        });
+      };
+      if (reducedMotion()) { finish(); return; }
+      const r = tr.getBoundingClientRect();
+      ghost.classList.add('landing');
+      ghost.classList.remove('up');
+      ghost.style.top = `${r.top}px`;
+      ghost.style.left = `${r.left}px`;
+      setTimeout(finish, 190);
+    }
+
+    document.addEventListener('keydown', e => {
+      if (drag && e.key === 'Escape') endDrag(false);
+    });
+
+    tbody.addEventListener('mousedown', e => {
+      if (e.button !== 0 || !lineupView() || drag) return;
+      const tr = e.target.closest('tr');
+      if (!tr || !tr._rosterCtl || isControl(e.target)) return;
+      e.preventDefault(); // no text selection
+      const sx = e.clientX, sy = e.clientY;
+      let started = false;
+      const move = ev => {
+        if (!started) {
+          if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+          started = true;
+          beginDrag(tr, sx, sy);
+        }
+        dragMove(ev.clientX, ev.clientY);
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', move);
+        document.removeEventListener('mouseup', up);
+        if (started) endDrag(true);
+      };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup', up);
+    });
+
+    let pressing = false;
+    tbody.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1 || !lineupView() || drag) return;
+      const tr = e.target.closest('tr');
+      if (!tr || !tr._rosterCtl || isControl(e.target)) return;
+      const t = e.touches[0];
+      const sx = t.clientX, sy = t.clientY;
+      let lx = sx, ly = sy, started = false;
+      pressing = true;
+      const start = () => {
+        timer = null;
+        started = true;
+        if (navigator.vibrate) navigator.vibrate(10);
+        beginDrag(tr, lx, ly);
+      };
+      const move = ev => {
+        const p = ev.touches[0];
+        if (!p) return;
+        lx = p.clientX; ly = p.clientY;
+        if (!started) {
+          // Moved before the hold finished: it's a scroll, not a drag.
+          if (Math.hypot(lx - sx, ly - sy) > 8) done();
+          return;
+        }
+        if (ev.cancelable) ev.preventDefault();
+        dragMove(lx, ly);
+      };
+      const done = ev => {
+        clearTimeout(timer);
+        pressing = false;
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', done);
+        document.removeEventListener('touchcancel', done);
+        if (started) endDrag(!ev || ev.type === 'touchend');
+      };
+      document.addEventListener('touchmove', move, { passive: false });
+      document.addEventListener('touchend', done);
+      document.addEventListener('touchcancel', done);
+      let timer = e.target.closest('.drag-handle') ? null : setTimeout(start, HOLD_MS);
+      if (!timer) start();
+    }, { passive: true });
+    // A press and hold opens the context menu on Android; not while dragging.
+    tbody.addEventListener('contextmenu', e => { if (pressing || drag) e.preventDefault(); });
+
+    // The handle is a button, so the keyboard can reorder too: arrow keys
+    // move a player one place, across the Inactive line as well.
+    function nudge(tr, dir) {
+      const order = Array.from(tbody.rows).filter(r => r._rosterCtl || r === divider);
+      const other = order[order.indexOf(tr) + dir];
+      if (!other) return;
+      if (other === divider) tbody.insertBefore(tr, dir < 0 ? divider : divider.nextSibling);
+      else swapRows(tr, other);
+      afterReorder();
     }
 
     const { rows: startRows, line: startLine, filled } = orderedRows(startMinutes);
     // A vacated slot was given to someone else, so Save has to send it.
     if (filled) minutesDirty = true;
     let divider = null;
+    const colCount = table.tHead.rows[0].cells.length;
+    const startersHdr = sectionRow(colCount, 'Starters');
+    const benchHdr = sectionRow(colCount, 'Bench');
     startRows.forEach((row, i) => {
-      if (CS && i === startLine) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
+      if (CS && i === startLine) divider = dividerRow(tbody, colCount, true);
       const bio = biosData[row.SLUG] || {};
       const jersey = bio.jersey_number ?? '';
       // A pick that matches the default, or 'none' when there is none, is the
@@ -6671,16 +7330,24 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         ? '' : (bio.secondary_pos || '');
 
       const tr = tbody.insertRow();
+      tr.classList.add('ts-row');
 
       if (CS) {
         const handleTd = tr.insertCell();
         handleTd.className = 'ts-handle';
-        const handle = document.createElement('span');
+        const handle = document.createElement('button');
+        handle.type = 'button';
         handle.className = 'drag-handle';
         handle.textContent = '⠿';
-        handle.title = 'Drag to reorder — table order sets the depth chart slot';
+        handle.title = 'Drag to move him: drop on a player to swap, between rows to slot in. Arrow keys move him one place';
+        handle.setAttribute('aria-label', `Move ${displayNameFromBio(bio.name || '') || row.SLUG} (arrow keys)`);
+        handle.addEventListener('keydown', e => {
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+          e.preventDefault();
+          nudge(tr, e.key === 'ArrowUp' ? -1 : 1);
+          handle.focus();
+        });
         handleTd.appendChild(handle);
-        attachDrag(tr, handle);
       }
 
       let slotTd = null;
@@ -6731,7 +7398,26 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       if (secondaryPos && ![...secSel.options].some(o => o.value === secondaryPos)) {
         secSel.appendChild(new Option(`/ ${secondaryPos} · exception`, secondaryPos, false, true));
       }
-      secSel.addEventListener('change', () => refreshSecNote());
+      // Lineup view shows the positions as text; the select is on Details.
+      const posText = document.createElement('span');
+      posText.className = 'ts-pos-text';
+      // On a phone the Pos column gives way, and this copy under the name
+      // shows instead (CSS).
+      const posSub = document.createElement('div');
+      posSub.className = 'ts-pos-sub';
+      tr.querySelector('.ts-name').appendChild(posSub);
+      const syncPosText = () => {
+        const sec = secSel.value === 'none' ? '' : (secSel.value || twoKSec);
+        posText.textContent = rowPrimary;
+        if (sec) {
+          const s2 = document.createElement('span');
+          s2.className = 'ts-pos2';
+          s2.textContent = ` / ${sec}`;
+          posText.appendChild(s2);
+        }
+        posSub.replaceChildren(...posText.cloneNode(true).childNodes);
+      };
+      secSel.addEventListener('change', () => { refreshSecNote(); syncPosText(); });
       posWrap.appendChild(secSel);
       // The pin: check this position before every game. With no secondary it
       // means "make sure 2K has none", since 2K can add one back.
@@ -6747,7 +7433,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       pinIcon.setAttribute('aria-hidden', 'true');
       pinLabel.append(pinCheck, pinIcon);
       posWrap.appendChild(pinLabel);
-      posTd.appendChild(posWrap);
+      syncPosText();
+      posTd.append(posText, posWrap);
 
       if (CS) {
         const slot = i < startLine ? CS.MINUTES_SLOTS[i] : '';
@@ -6791,6 +7478,12 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         plusBtn.disabled = !slot;
         plusBtn.addEventListener('click', () => stepMinutes(1));
         stepper.append(minusBtn, minInput, plusBtn);
+        attachScrub(stepper, minInput, displayNameFromBio(bio.name || '') || row.SLUG, v => {
+          if (v === +minInput.value) return;
+          minInput.value = String(v);
+          minutesDirty = true;
+          refreshMinutesTotal();
+        });
 
         const resLabel = document.createElement('label');
         resLabel.className = 'ts-res';
@@ -6816,13 +7509,67 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       });
     });
     if (CS) {
-      if (!divider) divider = dividerRow(tbody, table.tHead.rows[0].cells.length, true);
-      attachDrag(divider, divider._handle);
+      if (!divider) divider = dividerRow(tbody, colCount, true);
+      layoutRows();
     }
 
     refreshMinutesTotal();
     mountTable(table, meter);
+    // One line of help per view, in place of the paragraph that used to sit
+    // over the whole table.
+    const HELP = {
+      lineup: '<b>Drag</b> a player to reorder him (on a phone, press and hold first). Drop him <b>on a player</b> to swap the two, or <b>between rows</b> to slot him in. Players under Inactive are not in the game. <b>Swipe</b> a player\'s minutes left or right to change them.',
+      details: 'Primary positions come from 2K. <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> has the streamer check a player\'s positions before every game, since 2K resets them when ratings update. A secondary more than one step from the primary (§ 2.3) counts once the streamer OKs it.',
+    };
+    const help = document.createElement('p');
+    help.className = 'ts-help';
+    const setView = key => {
+      table.classList.toggle('ts-view-lineup', key === 'lineup');
+      table.classList.toggle('ts-view-details', key === 'details');
+      wrapEl.dataset.view = key;
+      help.innerHTML = HELP[key];
+    };
+    if (CS) {
+      // Lineup: order and minutes. Details: jersey #, secondary position,
+      // pin. The same rows in the same order, so a switch loses nothing.
+      const toolbar = document.createElement('div');
+      toolbar.className = 'ts-toolbar';
+      const toggle = document.createElement('div');
+      toggle.className = 'ui-segmented ts-view-toggle';
+      toggle.setAttribute('role', 'group');
+      toggle.setAttribute('aria-label', 'Edit view');
+      [['lineup', 'Lineup'], ['details', 'Details']].forEach(([key, label]) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.dataset.view = key;
+        const on = key === 'lineup';
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', String(on));
+        b.addEventListener('click', () => {
+          setView(key);
+          toggle.querySelectorAll('button').forEach(x => {
+            const sel = x === b;
+            x.classList.toggle('active', sel);
+            x.setAttribute('aria-pressed', String(sel));
+          });
+        });
+        toggle.appendChild(b);
+      });
+      const tools = document.createElement('div');
+      tools.className = 'ts-tools ts-tools-lineup';
+      tools.append(...sortTools);
+      toolbar.append(toggle, tools);
+      wrapEl.insertBefore(help, wrapEl.firstChild);
+      wrapEl.insertBefore(toolbar, wrapEl.firstChild);
+      setView('lineup');
+    } else {
+      wrapEl.insertBefore(help, wrapEl.firstChild);
+      setView('details');
+    }
     refreshSecNote();
+    secNote.classList.add('ts-only-details');
+    twoWayNote.classList.add('ts-only-lineup');
     wrapEl.insertBefore(secNote, wrapEl.lastChild);
     wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
     wrapEl.insertBefore(startersNote, wrapEl.lastChild);
