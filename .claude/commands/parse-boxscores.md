@@ -63,20 +63,14 @@ season, image paths) and one `waiting` line per game still missing a side —
 leave those alone and name the missing team in the report. No ready games: say
 so and go to step 7.
 
-### 3. Transcribe every game twice, in two Sonnet subagents
+### 3. Transcribe every game in one Sonnet subagent
 
-Don't read the screenshots yourself. Spawn **two** `general-purpose` Agents with
-`model: "sonnet"` and `run_in_background: false`, **in one message** so they run
-side by side — reader A and reader B. Each gets the `ready` lines from step 2
-and the same instructions, except for where it writes: A to
-`<scratchpad>/night/a/<id>.txt`, B to `<scratchpad>/night/b/<id>.txt`. Neither
-is told about the other. Why two: a reader's slips are the main source of wrong
-numbers (on 2026-11-11, 11 of 2,460 cells, every one a misread of a sharp
-image), and the totals check below only covers a side whose totals row is on
-screen. Two independent reads rarely make the same slip.
+Don't read the screenshots yourself. Spawn **one** `general-purpose` Agent with
+`model: "sonnet"` and `run_in_background: false` for the whole night, passing it the `ready`
+lines from step 2 and these instructions:
 
 > For each game, read its images (all games' images in one batch of Read
-> calls), then write `<scratchpad>/night/<a or b>/<id>.txt` — one file per game, all
+> calls), then write `<scratchpad>/night/<id>.txt` — one file per game, all
 > files in one batch of Write calls. Transcribe only; compute nothing, comment
 > on nothing. Format:
 >
@@ -105,27 +99,9 @@ screen. Two independent reads rarely make the same slip.
 > Reply with one line per game: `<id> done`, plus the header you read if it
 > differs from the example.
 
-If either reader reports a different header, follow "The first game after a new
+If the subagent reports a different header, follow "The first game after a new
 2K release" above: the validator will hold those games, and that is a code
 change, not a retry.
-
-#### 3b. Compare the two reads
-
-```bash
-python3 build/parse_night.py compare <scratchpad>/night
-```
-
-A game whose two reads agree on every cell is written to `night/<id>.txt` and
-goes on to step 4. A game that doesn't is listed cell by cell
-(`G. Williams (home): reb a=7 b=2`) and not written. For those only,
-`SendMessage` reader A the disagreement lines and ask it to look at **only
-those cells** again and write the settled game to `night/<id>.txt`, starting
-from its own `a/<id>.txt`. It must not be told which reading is "right"; it
-looks again. Don't settle a cell yourself, and don't pick between a and b.
-
-The third look is still checked by step 4's validator like any other read. A
-cell reader A still can't settle (calls unreadable, or keeps its first reading
-against b with no explanation): show the user the line and ask.
 
 ### 4. Check and commit everything
 
@@ -147,8 +123,8 @@ script reports it as `HELD`. Nothing is written.
 
 For each held game only:
 
-- **`[!]` cell flags** (bounds, points, minutes, totals): `SendMessage`
-  reader A the flagged lines and ask it to re-read only those cells and fix
+- **`[!]` cell flags** (bounds, points, minutes, totals): `SendMessage` the
+  same subagent the flagged lines and ask it to re-read only those cells and fix
   them in `<id>.txt`. Then re-run step 4 — committed games are no longer
   pending, so they are skipped.
 - **`[!] header`**: stop and tell the user (see the 2K-release section). Don't
@@ -170,7 +146,7 @@ when the screenshots arrive.
 
 ### 6. Clean up
 
-`rm -rf <scratchpad>/night` once nothing is held (that includes `a/` and `b/`).
+`rm -rf <scratchpad>/night` once nothing is held.
 
 ### 7. Injury reports
 
