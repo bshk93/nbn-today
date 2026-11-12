@@ -1,6 +1,6 @@
 ---
 name: nba2k-box-score-capture
-description: Capture every NBA 2K box score screen from an NBN YouTube VOD as sharp 1080p screenshots with Claude in Chrome, then upload them to the night's box score queue on nbn.today. Use when a night's box scores exist only as a stream or VOD, not as uploaded screenshots.
+description: Capture every NBA 2K box score screen and the league injury report from an NBN YouTube VOD with Claude in Chrome, then upload them to the night's box score and injury queues on nbn.today. Use when a night's box scores exist only as a stream or VOD, not as uploaded screenshots.
 ---
 
 # NBA 2K box score capture (YouTube VOD)
@@ -17,9 +17,10 @@ then committed by `/parse-boxscores` as usual. This skill never commits
 anything, and never reads or types a number into the stats.
 
 Input: a YouTube URL (usually an NBN "Box Scores" stream). Output: every box
-score screen uploaded to `nbn.today/committees/stats` under the right date, a
-zip of the same screenshots named `NN_AWAY-at-HOME_XmYYs_Team[_p1|_p2].jpg`
-with a `manifest.json`, and a summary table.
+score screen and the injury report uploaded to `nbn.today/committees/stats`
+under the right date, a zip of the same screenshots
+(`NN_AWAY-at-HOME_XmYYs_Team[_p1|_p2].jpg`, `injuries_XmYYs_pN.jpg`) with a
+`manifest.json`, and a summary table.
 
 The box score screen has a NAME column and MIN, PTS, REB, AST, STL, BLK, TO,
 FG, 3PT, FT, OR, FLS columns. The team logos and line score are on the left.
@@ -60,11 +61,14 @@ window._isBox=async(a,b)=>{const c=document.createElement('canvas');c.width=160;
 controls or overlays. Use it before every screenshot.
 
 **The returned quality must be `hd1080`.** If it isn't (YouTube can refuse it
-on a slow connection), say so in the report: the 2026-11-11 test frames came
-out at 1126×670, which was readable but leaves little margin on small digits.
+on a slow connection), say so in the report. Even at `hd1080` the screenshot
+is the browser window, so it comes out at the window's size (about 1126 px
+wide in the 11-10 and 11-11 tests, read with 0 errors left after
+`/parse-boxscores`). A wider browser window gives a sharper capture; record
+the real width in the manifest as `width`, not just the stream quality.
 
 ## 2. Find the box score range (JS only, no screenshots)
-- Run `await _isBox(0, duration)` in chunks of about 100s, because long calls time out. It returns the seconds where the yellow table chrome appears. The contiguous span is the box score section. Standings and injury screens later in the video use a different layout and drop out.
+- Run `await _isBox(0, duration)` in chunks of about 100s, because long calls time out. It returns the seconds where the yellow table chrome appears. The contiguous span is the box score section. Standings and injury screens use a different layout and drop out here; step 4b finds the injury screen.
 - Run `await _seg(start, end, 0.5)` in chunks of about 70s. Long segments (4s or more) are stable team screens. Runs of 0.5–1s segments are the operator scrolling a table, the Team Comparison screen, or the Daily View between games.
 
 ## 3. Map each game (low-res screenshots)
@@ -87,6 +91,32 @@ Save copies to your outputs folder as `<Video>_BoxScores/NN_AWAY-at-HOME_XmYYs_T
 ```
 The VOD link and timestamps are the lasting source for every number: uploaded
 screenshots are deleted 14 days after commit, the VOD isn't.
+
+## 4b. Capture the injury report
+
+The streamer shows MyNBA's **Injury History → Entire League** screen once a
+night, usually just after the last box score. `/parse-injuries` needs it, and
+it reads anyone missing from the list as **healed**, so a partial list does
+real damage: capture all of it or none.
+
+- Run `_seg` over the rest of the video after the box score section (and the
+  first 60s before it), then take a `scale: 0.3` screenshot of each stable
+  segment. The injury screen has "Injury History" and "Entire League" at the
+  top, and NAME, STATUS, OVR, INJURY, DURATION columns.
+- Capture the top of the list, then each scrolled screen, until the bottom is
+  on screen: the scrollbar at the right reaches the end, or the list is
+  shorter than one screen. Consecutive screens should overlap by a row or
+  two, so no player falls between them. At most 6 screenshots.
+- **The bottom never appears** (the streamer stopped scrolling): capture what
+  there is, don't upload it, and report it as cut off.
+- Only a **New Injury** popup (one team's notice with rotation buttons), no
+  list: capture the popups, upload them, and say so; `/parse-injuries` has a
+  path for popups and knows they aren't the whole list.
+- No injury screen anywhere in the video: say so in the report. Don't look
+  for one in another video.
+
+Save them as `injuries_XmYYs_pN.jpg` and add them to `manifest.json` under
+`"injuries": [{"file", "t", "part", "bottom": true|false}]`.
 
 ## 5. Check before uploading
 
@@ -113,6 +143,13 @@ box re-render before the next.
   hand. Skip it and say so; don't add a second copy.
 - A side allows at most 4 images.
 
+The injury report goes in the same night's **Injuries** row: the element with
+`data-slot="injury"` inside that date's day, which holds its own hidden
+`input[type=file]`. Upload the screens top to bottom, at most 6. If the row
+already has screenshots for that date, someone uploaded it by hand: skip it
+and say so. A committed report shows as links instead of an upload box, so
+don't upload over it either.
+
 Uploading pays the usual box score reward to the signed-in member; that's
 expected.
 
@@ -120,10 +157,11 @@ expected.
 Run `document.getElementById('ovl')?.remove()` on the YouTube tab. Zip the
 outputs folder and send it to the user.
 
-Report a table: # | AWAY @ HOME | final (winner first, note OT) | timestamp → team (p1/p2) | uploaded. Then list exceptions: missing p2 screens, sides with no Total row on any frame, frames where a mid-list row is highlighted, games skipped as already uploaded, and the quality if it wasn't `hd1080`.
+Report a table: # | AWAY @ HOME | final (winner first, note OT) | timestamp → team (p1/p2) | uploaded. Then one line for the injury report: how many screens, whether the bottom of the list was reached, and uploaded or not. Then list exceptions: missing p2 screens, sides with no Total row on any frame, frames where a mid-list row is highlighted, games skipped as already uploaded, and the quality if it wasn't `hd1080`.
 
-End with: run `/parse-boxscores` to commit the night. Its validator is what
-checks the numbers, not this skill.
+End with: run `/parse-boxscores` to commit the night; it does the injury
+report as its step 7. Its validator is what checks the numbers, not this
+skill.
 
 ## Speed notes
 - Never scan visually second by second. The `_isBox` and `_seg` passes replace about 100 screenshots.
