@@ -2390,7 +2390,7 @@
         latestNight.then(night => {
           if (!night || night.date !== t.date) return;
           night.games.forEach(g => TonightHero.setFinal(hero, g.away_team, g.home_team, g.away_score, g.home_score,
-            `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`));
+            `/boxscores/?date=${encodeURIComponent(night.date)}&game=${g.away_team}-${g.home_team}`, g));
         });
         // A star close to a career milestone gets it as his card's storyline.
         const slugs = t.games.flatMap(g => [g.stars.away, g.stars.home]).filter(Boolean).map(x => x.slug);

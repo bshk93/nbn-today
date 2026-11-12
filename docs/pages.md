@@ -61,6 +61,9 @@ stays if the API fails.
 - **Two additions on the page:** a star within 2 games of a career milestone
   gets it as his card's storyline (`Milestones.upcoming`, `addStory`), and a
   game whose box score is in shows its final (`setFinal`, off `latestNight`).
+  For the featured game, `setFinal` also turns the poster's VS into the score
+  (linked to the box score) and each star's last-5 line into his line in that
+  game; a star missing from the box keeps his last 5.
 - **No games on the date:** it asks `/api/tonight?date=` for the `next`
   slate and shows that under "Next up", with this date's last night.
 - **The rail** moves only when someone moves it (swipe, Prev/Next, a dot);

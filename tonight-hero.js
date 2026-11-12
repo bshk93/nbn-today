@@ -14,7 +14,8 @@
 // Tonight graphic); every animation is off under prefers-reduced-motion.
 //
 //   TonightHero.mount(el, data, { lastNight, previewHref, label })
-//   TonightHero.setFinal(el, away, home, awayPts, homePts, href)
+//   TonightHero.setFinal(el, away, home, awayPts, homePts, href, box)
+//     (box: the /api/boxscores game, for the featured game's star lines)
 //   TonightHero.addStory(el, slug, text)
 (function (global) {
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
@@ -235,19 +236,48 @@
       + '<button type="button" class="th-next ui-btn ui-btn--ghost ui-btn--sm" aria-label="Next card">Next</button>'
       + '</div></div>';
     el._thStories = posterStories(data, feat);
+    el._thFeat = feat;
     el._thFeatSlugs = [fs.away && fs.away.slug, fs.home && fs.home.slug].filter(Boolean);
     countUp(el.querySelector('.th-num'), n);
     setupRail(el);
     return true;
   }
 
-  /** A played game's final in place of its tip time, linked to the box score. */
-  function setFinal(el, away, home, ap, hp, href) {
+  /** A played game's final in place of its tip time, linked to the box score.
+   *  When it is the featured game, the poster's VS becomes the score and each
+   *  star's last-5 line becomes his line in this game (from `box`, the
+   *  /api/boxscores game). A star missing from the box keeps his last 5. */
+  function setFinal(el, away, home, ap, hp, href, box) {
     const card = el.querySelector(`.th-card[data-away="${away}"][data-home="${home}"]`);
-    if (!card) return;
-    const t = card.querySelector('.th-card-tip');
-    t.innerHTML = `<b class="${ap > hp ? 'th-win' : ''}">${esc(ap)}</b>–<b class="${hp > ap ? 'th-win' : ''}">${esc(hp)}</b> Final`;
-    if (href) card.href = href;
+    if (card) {
+      const t = card.querySelector('.th-card-tip');
+      t.innerHTML = `<b class="${ap > hp ? 'th-win' : ''}">${esc(ap)}</b>–<b class="${hp > ap ? 'th-win' : ''}">${esc(hp)}</b> Final`;
+      if (href) card.href = href;
+    }
+    const feat = el._thFeat;
+    if (!feat || feat.away !== away || feat.home !== home) return;
+    const vs = el.querySelector('.th-vs');
+    if (vs) {
+      const fin = document.createElement(href ? 'a' : 'div');
+      fin.className = 'th-vs th-vs--final';
+      if (href) fin.href = href;
+      fin.innerHTML = `<span class="th-score"><b class="${ap > hp ? 'th-win' : ''}">${esc(ap)}</b><i>–</i>`
+        + `<b class="${hp > ap ? 'th-win' : ''}">${esc(hp)}</b></span><span class="th-final">Final</span>`
+        + `<small>${esc(away)} @ ${esc(home)}${href ? '<span class="th-box"> · Box score ›</span>' : ''}</small>`;
+      vs.replaceWith(fin);
+    }
+    const label = el.querySelector('.th-label a');
+    if (label && href) label.href = href;
+    if (!box) return;
+    for (const side of ['away', 'home']) {
+      const star = feat.stars && feat.stars[side];
+      const row = star && (box[`${side}_players`] || []).find(p => p.slug === star.slug);
+      const node = el.querySelector(`.th-side--${side}`);
+      if (!row || !node) continue;
+      node.querySelector('.th-line').innerHTML = [[row.pts, 'PTS'], [row.reb, 'REB'], [row.ast, 'AST']]
+        .map(([v, k]) => `<span><b>${esc(v == null ? 0 : v)}</b> ${k}</span>`).join(' ');
+      node.querySelector('.th-line-sub').textContent = 'This game';
+    }
   }
 
   /** A storyline found on the page (a milestone) for a star's cards and,
