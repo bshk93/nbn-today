@@ -23,6 +23,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   stopped catching a moved column or a TOTALS mismatch. Those two failures put
   plausible numbers in the wrong fields of an append-only file, so nothing
   downstream would ever report them.
+- Run build/test_parse_night_compare.py; abort if the double read has stopped
+  naming a cell its two transcriptions disagree on.
 - Run tests/cap-health.test.js; abort if the § 1.3/1.4 cap-and-apron or § 2.1
   roster rules behind the team page's Cap Health card have drifted. Pure node,
   no browser and no network — unlike tests/frontend/run.js, which stays out of
@@ -94,6 +96,14 @@ if box_test.exists():
     if result.returncode != 0:
         print('\nCommit aborted: the box score validator no longer catches what it must.')
         print('Fix build/validate_boxscore.py, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+compare_test = Path('build/test_parse_night_compare.py')
+if compare_test.exists():
+    result = subprocess.run(['python3', str(compare_test)], stdout=subprocess.DEVNULL)
+    if result.returncode != 0:
+        print('\nCommit aborted: parse_night.py compare no longer catches a split double read.')
+        print('Fix build/parse_night.py, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 cap_health_test = Path('tests/cap-health.test.js')
