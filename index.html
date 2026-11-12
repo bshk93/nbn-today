@@ -433,13 +433,9 @@
       align-items: stretch;
       max-width: var(--page-width-wide);
       margin: 0 auto;
-      padding-top: 2rem;
-    }
-    /* Beside the docked sidebar the body's own top padding is enough: the
-       ticker then lines up with the sidebar's logo instead of sitting a
-       band below it. */
-    @media (min-width: 900px) {
-      html[data-sidebar] .page-wrap { padding-top: 0; }
+      /* The body's own top padding is enough, at every width: the first row
+         then sits where every other page's header does, not a band lower. */
+      padding-top: 0;
     }
 
     /* Ticker: the latest night's finals, its top performers, then the
@@ -1057,7 +1053,7 @@
 
     /* Phones */
     @media (max-width: 600px) {
-      :root .page-wrap { padding: 1.25rem 1rem 3rem; }
+      :root .page-wrap { padding: 0 1rem 3rem; }
       /* Not on phones: too narrow to read a scrolling line. */
       :root .ticker { display: none; }
       /* Tag on its own line above the headline, so the headline gets the
