@@ -3412,6 +3412,11 @@ function buildPickOptions(sel, fromTeam, currentValue) {
       const claims = (p.leaves || []).length
         ? mine.map(l => ({ leaf: l.leaf_id, desc: l.description }))
         : ((p.owner || '').toUpperCase() === team ? [{ leaf: null, desc: '' }] : []);
+      // A ladder's keeper: sending it to the team owed the pick removes the
+      // protection (or lowers it, with a protection number).
+      if (p.ladder && p.ladder.from === team && (p.owner || '').toUpperCase() !== team) {
+        claims.push({ leaf: null, desc: `top-${p.ladder.protect_top} protection, owed to ${p.ladder.to}` });
+      }
       claims.forEach(c => {
         const o = document.createElement('option');
         o.value = c.leaf || tradePickId(p);

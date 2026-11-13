@@ -430,11 +430,21 @@
       const others = new Set((p.leaves || []).filter(l => l.team !== abbr).map(l => l.team));
       return others.size === 1 ? [...others][0] : null;
     }
-    // What sending this band to `dest` does, in words, or '' if it's just a
-    // band changing hands. Mirrors _describe_pick_claims in the API.
-    function bandEffect(p, abbr, dest, top) {
+    // The protection this team holds on a pick it owes: a band, or a ladder
+    // (keeps the pick if it lands in the top N, else owes a fallback). Null
+    // when it holds neither. `rest`: the team the pick goes to otherwise.
+    function myProtection(p, abbr) {
       const band = myBand(p, abbr);
-      if (!band || !dest || restHolder(p, abbr) !== dest) return '';
+      if (band) return { ...band, rest: restHolder(p, abbr) };
+      const L = p.ladder;
+      if (L && L.from === abbr && L.protect_top) return { min: p.round === 1 ? 1 : 31, max: L.protect_top, rest: L.to, ladder: true };
+      return null;
+    }
+    // What sending this protection to `dest` does, in words, or '' if it's
+    // just a band changing hands. Mirrors _describe_pick_claims in the API.
+    function bandEffect(p, abbr, dest, top) {
+      const band = myProtection(p, abbr);
+      if (!band || !dest || band.rest !== dest) return '';
       if (!top) return 'Protection removed';
       return p.round === 1 && band.min === 1 ? `Protection lowered to top ${top}` : `Protection lowered to picks ${band.min}-${top}`;
     }
@@ -450,9 +460,9 @@
       const rnd = p.round === 1 ? '1st' : '2nd';
       const base = `${p.year} ${rnd}`;
       const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
-      const band = myBand(p, teamAbbr);
-      if (band && restHolder(p, teamAbbr) && (band.min === 1 || band.min === 31)) {
-        return `${base} (${p.orig}) · your protection, picks ${band.min}-${band.max} · rest is ${restHolder(p, teamAbbr)}'s`;
+      const band = myProtection(p, teamAbbr);
+      if (band && band.rest && (band.ladder || band.min === 1 || band.min === 31)) {
+        return `${base} (${p.orig}) · your protection, picks ${band.min}-${band.max} · rest is ${band.rest}'s`;
       }
       if (mine.length) {
         const desc = mine.map(l => l.description).join(' / ');
@@ -642,7 +652,7 @@
           if (sel.picks.has(key)) {
             const dest = buildDestSelect(slotId, others, sel.picks, key);
             if (dest) body.appendChild(dest);
-            const band = myBand(p, abbr);
+            const band = myProtection(p, abbr);
             if (band) {
               body.appendChild(buildProtectInput(sel, key, band));
               const effect = bandEffect(p, abbr, sel.picks.get(key), sel.protections.get(key));
@@ -901,7 +911,7 @@
           const leafId = pickLeafId(p, from);
           if (leafId) asset.leaf_id = leafId;
           const top = sel.protections.get(pkey);
-          if (top && ((p.round === 1 && isOutright(p, from)) || myBand(p, from))) asset.protection = top;
+          if (top && ((p.round === 1 && isOutright(p, from)) || myProtection(p, from))) asset.protection = top;
           const key = `${from}→${destAbbr}`;
           if (!grouped.has(key)) grouped.set(key, []);
           grouped.get(key).push(asset);
