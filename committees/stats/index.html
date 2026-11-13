@@ -218,6 +218,14 @@
         <h2>Parsing the screenshots</h2>
         <span class="note">Needs Claude Code</span>
       </div>
+      <div class="card-body" id="parse-run" hidden>
+        <p>Uploads done? This starts a Claude Code session in the cloud that runs
+          <code>/parse-boxscores</code> on everything ready, then the injury report and the tweets.</p>
+        <div class="links">
+          <button class="ui-btn ui-btn--sm" id="parse-run-btn" type="button">Uploads done: parse now</button>
+        </div>
+        <p class="note" id="parse-run-status" role="status"></p>
+      </div>
       <div class="card-body ui-prose">
         <p>Turning a Ready to parse game into a box score takes
           <a href="https://claude.com/claude-code">Claude Code</a>. Nothing on this page does it.
@@ -295,7 +303,8 @@
   // Writes, for the stats role: POST /api/boxscore/upload/side (one image for
   // one team), DELETE /api/boxscore/pending/{id}/images/{file},
   // POST /api/injuries/upload, DELETE /api/injuries/pending/{id}/images/{file},
-  // and PUT /api/streaming-days/{date}/youtube.
+  // PUT /api/streaming-days/{date}/youtube, and POST /api/boxscores/parse-request
+  // (start the /parse-boxscores cloud task; nbn-api routers/parse_request.py).
 
   let me = { name: null, roles: [] };
   const storedToken = () => localStorage.getItem('nbn_token');
@@ -894,6 +903,51 @@
       + '<div class="links"><a class="link-chip" href="/boxscores/submit/">Work the queue</a></div>';
   }
 
+  // ── Parse now (fires the /parse-boxscores cloud task) ────────────────────
+  // POST /api/boxscores/parse-request (stats/rosters). The server holds the
+  // task's token and refuses an empty queue or a second run inside its
+  // cooldown; this only shows what it says. Hidden until the server says the
+  // task is set up.
+
+  const fmtAt = iso => { try { return new Date(iso).toLocaleString(); } catch (e) { return iso; } };
+  const sessionLink = url => url
+    ? ` <a href="${esc(url)}" target="_blank" rel="noopener">Watch the run</a>.` : '';
+
+  async function setupParseRun() {
+    if (!hasStatsRole()) return;
+    let st;
+    try { st = await jget('/api/boxscores/parse-request', { headers: authHeaders() }); }
+    catch (e) { return; }
+    if (!st.configured) return;
+    document.getElementById('parse-run').hidden = false;
+    const status = document.getElementById('parse-run-status');
+    const btn = document.getElementById('parse-run-btn');
+    if (st.last) {
+      status.innerHTML = st.last.ok
+        ? `Last run started by ${esc(st.last.by)}, ${esc(fmtAt(st.last.at))}.${sessionLink(st.last.session_url)}`
+        : `Last request by ${esc(st.last.by)} failed: ${esc(st.last.error || '')}`;
+    }
+    btn.onclick = async () => {
+      btn.disabled = true;
+      status.textContent = 'Starting…';
+      try {
+        const r = await fetch('/api/boxscores/parse-request', {
+          method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: '{}' });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok) {
+          status.innerHTML = `Started. It commits the night and posts to Discord as it goes.${sessionLink(j.session_url)}`;
+        } else {
+          const d = j.detail;
+          status.innerHTML = esc(typeof d === 'string' ? d : (d && d.message) || ('HTTP ' + r.status))
+            + sessionLink(d && d.session_url);
+        }
+      } catch (e) {
+        status.textContent = 'Could not reach the API.';
+      }
+      btn.disabled = false;
+    };
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
 
   async function init() {
@@ -904,6 +958,7 @@
 
     document.getElementById('parse-card').hidden = !hasStatsRole();
     renderQueue();
+    setupParseRun();
 
     jget('/api/build/status').then(renderBuild).catch(() => {
       document.getElementById('build-text').textContent = 'Could not reach the build status endpoint.';

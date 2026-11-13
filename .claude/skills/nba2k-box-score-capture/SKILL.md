@@ -14,7 +14,8 @@ description: Capture every NBA 2K box score screen and the league injury report 
 downloads from cloud servers, so this can't run in a cloud session. The output
 goes into the same pending queue as hand-uploaded screenshots, and the night is
 then committed by `/parse-boxscores` as usual. This skill never commits
-anything, and never reads or types a number into the stats.
+anything itself (at most it presses the button that starts that parse), and
+never reads or types a number into the stats.
 
 Input: a YouTube URL (usually an NBN "Box Scores" stream). Output: every box
 score screen and the injury report uploaded to `nbn.today/committees/stats`
@@ -271,6 +272,21 @@ has screenshots, or shows links (a committed report), skip it and say so.
 Finally, re-run the step 0 JS once and confirm every side you uploaded now
 shows an image.
 
+### Start the parse
+
+If the "Parsing the screenshots" card shows an **Uploads done: parse now**
+button, press it once, but only when the night is complete: every game you
+captured has both sides up, nothing was held back as incomplete, and the
+injury list was uploaded whole or reported missing. It starts a Claude Code
+cloud session that runs `/parse-boxscores` and commits the night. Read the
+status line under the button and put it in the report: the "Watch the run"
+link, or the reason it refused (nothing ready, a run already started). Don't
+press it again on a refusal, and don't press it with `force`.
+
+Anything incomplete: don't press it. Say what's missing, and leave the parse
+to the user. No button (not set up, or not the stats role): say to run
+`/parse-boxscores` by hand.
+
 ## 6. Clean up and report
 
 Run `document.getElementById('ovl')?.remove()` on the YouTube tab. Send the
@@ -286,9 +302,9 @@ no Total row on any frame, mid-list highlights, sides skipped as already
 uploaded, quality if not `hd1080`. Last, the tool-call count for the run, so
 this file's budget can be checked against it.
 
-End with: run `/parse-boxscores` to commit the night; it does the injury
-report as its step 7. Its validator is what checks the numbers, not this
-skill.
+End with the parse: the run's link if the button started one, otherwise run
+`/parse-boxscores` to commit the night (it does the injury report as its step
+7). Its validator is what checks the numbers, not this skill.
 
 ## Speed notes
 
