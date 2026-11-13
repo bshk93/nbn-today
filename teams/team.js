@@ -844,7 +844,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-month { font-size: var(--text-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
   .sched-table td { padding: 0.45rem 1rem; }
   .sched-table .sched-date { width: 7.5rem; }
-  /* The team, the Playoffs tag and the stream mark share one centred row, so
+  /* The team, the Playoffs or Cup tag and the stream mark share one centred row, so
      the mark lines up with the name rather than the text baseline. */
   .sched-opp-team { display: inline-flex; align-items: center; vertical-align: middle; }
   .sched-opp a { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.35rem; font-weight: 600; color: var(--text-primary); }
@@ -857,6 +857,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-tag { margin-left: 0.35rem; font-size: var(--text-xs); }
   .sched-tag-stream { display: inline-flex; font-size: var(--text-base); color: var(--accent-light); }
   .sched-tag-po { color: var(--danger); font-weight: 600; }
+  .sched-tag-cup { color: var(--gold); font-weight: 600; }
   tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
   .rival-card {
@@ -1608,6 +1609,7 @@ async function renderSchedule(allGames, season) {
     }
     const { home, opp } = side(g);
     const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
+    const cup = g.note === 'NBA Cup' ? ' <span class="sched-tag sched-tag-cup" title="NBA Cup group game">Cup</span>' : '';
     const stream = g.stream ? ' <span class="sched-tag sched-tag-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
     let res;
     if (g.result) {
@@ -1620,7 +1622,7 @@ async function renderSchedule(allGames, season) {
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
       <td class="muted sched-date">${fmtDay(g.date)}</td>
       <td class="sched-opp"><span class="muted">${home ? 'vs' : '@'}</span>
-        <span class="sched-opp-team"><a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${stream}</span></td>
+        <span class="sched-opp-team"><a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${cup}${stream}</span></td>
       <td class="right">${res}</td>
       <td class="right muted sched-rec">${g.recAfter || ''}</td>
     </tr>`;

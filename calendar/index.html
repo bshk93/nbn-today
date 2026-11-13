@@ -1208,6 +1208,7 @@
           // the merge into scheduledGamesByDate below) — public data, shown
           // here since /schedule was retired in favor of this page for that.
           let text = `${g.away_team} @ ${g.home_team}`;
+          if (g.note === 'NBA Cup') text += ' · Cup';
           if (g.streamer) text += ` · ${g.streamer}`;
           if (g.stream) text += ' · stream';
           pip.textContent = text;
