@@ -117,15 +117,44 @@ python3 build/parse_night.py compare <scratchpad>/night
 
 A game whose two reads agree on every cell is written to `night/<id>.txt` and
 goes on to step 4. A game that doesn't is listed cell by cell
-(`G. Williams (home): reb a=7 b=2`) and not written. For those only,
-`SendMessage` reader A the disagreement lines and ask it to look at **only
-those cells** again and write the settled game to `night/<id>.txt`, starting
-from its own `a/<id>.txt`. It must not be told which reading is "right"; it
-looks again. Don't settle a cell yourself, and don't pick between a and b.
+(`G. Williams (home): reb a=7 b=2`) and not written. For each disputed
+**column** (side + stat), do a **fresh re-read** (below). It writes the
+settled column into both `a/` and `b/`, so re-running `compare` passes the
+game once every disagreement is settled. Don't settle a cell yourself, and
+don't pick between a and b.
 
-The third look is still checked by step 4's validator like any other read. A
-cell reader A still can't settle (calls unreadable, or keeps its first reading
-against b with no explanation): show the user the line and ask.
+A disagreement that isn't a cell (a player in one read and not the other, the
+header, the final score): show the user the line and ask.
+
+#### Fresh re-read (3b and step 5)
+
+A reader asked to re-check its own transcript repeats it: on 2026-11-12 reader
+A answered "no change" for two cells that were plainly wrong (Landale's 8
+rebounds read as 2, Smith's 0 turnovers as 1). So a re-read is always a **new**
+reader that has never seen the transcript.
+
+1. Enlarge the tables: `python3 build/parse_night.py crop <scratchpad>/night <id>`
+   writes `<file>.table.png` beside each image (the left panel cut away, the
+   table doubled).
+2. Spawn **one new** `general-purpose` Agent, `model: "sonnet"`,
+   `run_in_background: false`, for all the night's flagged columns at once.
+   Give it, per column: the game id, which team's screenshots (that side's
+   `.table.png` files, with the originals as reference), the column's label as
+   printed (`REB`, `TO`, `3PT`…) and the players' names in transcript order.
+   **Never give it the old values or the totals delta.** Ask it to read that
+   column top to bottom, plus the TOTAL row's cell if one is printed, and write
+   `<scratchpad>/night/<id>.<side>.<COL>.reread`, one line per player
+   (`J. Landale|8`, `TOTAL|40`; shooting cells as `made-att`).
+3. For each file: `python3 build/parse_night.py reread <scratchpad>/night <id> <home|away> <COL> <file>`.
+   It changes the transcript only when the screen proves the fresh values: the
+   column sums to the printed TOTAL (which the fresh reader read the same), or,
+   with no TOTAL, each cell the two reads split on matches one of them and every
+   cell they agreed on reads the same again. It prints `settled` with each
+   changed cell, or `NOT settled` with the reason and changes nothing.
+
+A settled column needs nobody's sign-off: it is what the screen says, checked
+against the screen's own total, not a number adjusted to pass. `NOT settled`
+goes to the user with both readings; don't re-read a second time.
 
 ### 4. Check and commit everything
 
@@ -147,10 +176,14 @@ script reports it as `HELD`. Nothing is written.
 
 For each held game only:
 
-- **`[!]` cell flags** (bounds, points, minutes, totals): `SendMessage`
-  reader A the flagged lines and ask it to re-read only those cells and fix
-  them in `<id>.txt`. Then re-run step 4 — committed games are no longer
+- **`[!] totals:` flags** (`TOR REB: players sum to 34, TOTALS row says 40`)
+  and **`[!] team PTS`** (re-read the side's `PTS` column):
+  a **fresh re-read** of that side's column (step 3b). Settled columns are
+  written into `<id>.txt`; then re-run step 4 — committed games are no longer
   pending, so they are skipped.
+- **Other `[!]` cell flags** (bounds, minutes): a fresh re-read of the
+  flagged cells, as above. Nothing printed proves a fix for these, so show the
+  user both readings and ask.
 - **`[!] header`**: stop and tell the user (see the 2K-release section). Don't
   commit.
 - **A name with 0 or 2+ roster matches**: ask the user. Don't invent a slug —
@@ -158,8 +191,8 @@ For each held game only:
   passes. A genuinely new player needs a bio first.
 - **`is in the YY-YY season`** / **`404 … Only the current season's file is
   created on demand`**: the upload's date or season is wrong; tell the user.
-- A totals delta you can't find after one re-read, or a cell the subagent
-  calls unreadable: show the user the report line and ask.
+- `NOT settled` from a fresh re-read, or a cell the reader calls unreadable:
+  show the user the report line and both readings, and ask.
 
 Never edit a number to get a check to pass.
 
