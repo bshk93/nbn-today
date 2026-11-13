@@ -292,6 +292,20 @@
 
     .cd-trow.later { opacity: 0.55; }
 
+    /* ── Roster Moves tab ─────────────────────────────────────────────── */
+    .mv-list { border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-card); overflow: hidden; }
+    .mv-row { display: flex; align-items: flex-start; gap: 0.6rem 0.8rem; padding: 0.6rem 0.9rem; font-size: var(--text-sm); }
+    .mv-row + .mv-row { border-top: 1px solid var(--border); }
+    .mv-when { color: var(--text-muted); font-size: var(--text-xs); white-space: nowrap; min-width: 3.6rem; padding-top: 0.15rem; }
+    .mv-body { flex: 1; min-width: 0; color: var(--text-secondary); }
+    .mv-body .ui-chip { margin-right: 0.4rem; }
+    .mv-body strong { color: var(--text-primary); }
+    .mv-sub { color: var(--text-muted); font-size: var(--text-xs); margin-top: 0.15rem; }
+    .mv-row .cd-btn { flex-shrink: 0; }
+    .mv-row.done .mv-body { opacity: 0.7; }
+    #moves-done-wrap { margin-top: 1.2rem; }
+    #moves-done-wrap summary { cursor: pointer; color: var(--text-muted); font-size: var(--text-sm); margin-bottom: 0.5rem; }
+
     /* ── My games tab ──────────────────────────────────────────────────── */
     .mine-warn {
       border: 1px solid var(--border); border-left: 3px solid var(--gold, var(--gold));
@@ -580,6 +594,7 @@
         <button class="tab active" data-tab="mine">My games<span class="tab-badge" id="mine-tab-badge" hidden></span></button>
         <button class="tab" data-tab="claim">Claim Games</button>
         <button class="tab" data-tab="coaching">Coaching Settings<span class="tab-badge" id="coaching-tab-badge" hidden></span></button>
+        <button class="tab" data-tab="moves">Roster Moves<span class="tab-badge" id="moves-tab-badge" hidden></span></button>
         <button class="tab" data-tab="planner">Planner</button>
       </div>
 
@@ -677,6 +692,14 @@
         </div>
       </div>
 
+      <div class="tab-panel hidden" id="tab-moves">
+        <div id="moves-list"><div class="empty">Loading…</div></div>
+        <details id="moves-done-wrap" hidden>
+          <summary id="moves-done-sum">Entered</summary>
+          <div id="moves-done"></div>
+        </details>
+      </div>
+
       <div class="tab-panel hidden" id="tab-coaching">
         <div id="starters-unknown"></div>
         <div id="coaching-dash-wrap">
@@ -704,6 +727,8 @@
        renderer — shared with teams/team.js's Coaching tab so a team's
        settings read the same way in both places. -->
   <script src="/coaching-config.js"></script>
+  <script src="/contract.js"></script>
+  <script src="/feed-types.js"></script>
   <script src="/milestones.js"></script>
   <script src="/names.js"></script>
   <script src="/league-time.js"></script>
@@ -805,6 +830,98 @@
         }));
       }
       return playerLookupPromise;
+    }
+
+    // ── Roster Moves tab ─────────────────────────────────────────────
+    // Every ledger transaction that moves a player on or off a roster since
+    // the queue started, from GET /api/roster-entry (which decides what
+    // counts). Ticking one says it is in the 2K roster file.
+
+    let rosterMoves = [];
+    const escMv = s => String(s == null ? '' : s).replace(/[&<>"']/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    async function loadRosterMoves() {
+      try {
+        const data = await fetch('/api/roster-entry').then(r => r.ok ? r.json() : { items: [] });
+        rosterMoves = data.items || [];
+      } catch (e) {
+        rosterMoves = [];
+      }
+      await renderRosterMoves();
+    }
+
+    async function renderRosterMoves() {
+      const { resolveName } = await playerLookup();
+      const ctx = { name: slug => resolveName(slug) || slug, team: abbr => `<strong>${escMv(abbr)}</strong>`, esc: escMv };
+      const pending = rosterMoves.filter(m => !m.done);
+      const done = rosterMoves.filter(m => m.done).reverse();
+
+      const list = document.getElementById('moves-list');
+      list.innerHTML = '';
+      if (!pending.length) {
+        list.innerHTML = '<div class="empty">Nothing to enter. Every roster move is in 2K.</div>';
+      } else {
+        const box = div('mv-list');
+        pending.forEach(m => box.appendChild(moveRow(m, ctx)));
+        list.appendChild(box);
+      }
+
+      const wrap = document.getElementById('moves-done-wrap');
+      wrap.hidden = !done.length;
+      document.getElementById('moves-done-sum').textContent = `Entered (${done.length})`;
+      const doneEl = document.getElementById('moves-done');
+      doneEl.innerHTML = '';
+      if (done.length) {
+        const box = div('mv-list');
+        done.forEach(m => box.appendChild(moveRow(m, ctx)));
+        doneEl.appendChild(box);
+      }
+
+      const badge = document.getElementById('moves-tab-badge');
+      badge.textContent = pending.length;
+      badge.hidden = pending.length === 0;
+    }
+
+    function moveRow(m, ctx) {
+      const row = div('mv-row' + (m.done ? ' done' : ''));
+      row.appendChild(div('mv-when', fmtDayHdr(m.date).replace(/^\w+, /, '')));
+      const body = div('mv-body');
+      const h = FeedTypes.headline(m, ctx) || { html: escMv(m.description || m.type), sub: '' };
+      const tone = FeedTypes.tone(m.type);
+      body.innerHTML = `<span class="ui-chip${tone ? ' ui-chip--' + tone : ''}">${escMv(FeedTypes.label(m.type))}</span>${h.html}`;
+      const subs = [];
+      if (h.sub) subs.push(h.subHtml ? h.sub : escMv(h.sub));
+      if (m.done) subs.push(escMv(`Entered by ${m.done.by || 'someone'}, ${fmtDayHdr(m.done.at.slice(0, 10))}`));
+      if (subs.length) {
+        const sub = div('mv-sub');
+        sub.innerHTML = subs.join(' · ');
+        body.appendChild(sub);
+      }
+      row.appendChild(body);
+      const b = document.createElement('button');
+      b.className = 'cd-btn';
+      b.textContent = m.done ? 'Undo' : 'Mark entered';
+      b.onclick = () => setMoveDone(m, !m.done, b);
+      row.appendChild(b);
+      return row;
+    }
+
+    async function setMoveDone(m, done, btn) {
+      btn.disabled = true;
+      try {
+        const r = await fetch(`/api/roster-entry/${encodeURIComponent(m.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${storedToken()}` },
+          body: JSON.stringify({ done }),
+        });
+        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || `HTTP ${r.status}`);
+        m.done = (await r.json()).done;
+        await renderRosterMoves();
+      } catch (e) {
+        btn.disabled = false;
+        alert(`Couldn't save: ${e.message}`);
+      }
     }
 
     // Everything a team wants entered in 2K, in one place: its player
@@ -3365,6 +3482,7 @@
       }
 
       loadCoachingDashboard();
+      loadRosterMoves();
       loadStreamingDays();
       loadStarters();
 
