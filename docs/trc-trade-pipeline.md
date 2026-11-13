@@ -253,6 +253,18 @@ Endpoints — all under `/api/trade-requests`:
   It had already drifted: it never got "Release after the trade". The sim now
   mounts `trade-builder.js`, and its inline trade code is
   gone. Don't reintroduce a page-local copy.
+- `trades/view/index.html` (2026-11-13) — **one request per page**,
+  `/trades/view/?id=<id>`. Every inbox notice and both #trc-alerts posts link
+  here (`trc_notify.trade_path`), and so does each team page's pending-trade
+  banner, so a GM opens the trade itself rather than finding it in the
+  dashboard. Visibility is unchanged and **stays private by decision**: the
+  page reads `GET /api/trade-requests/{id}`, which 404s anyone but the parties
+  and the committee, and the page shows that the same as a wrong id. Making
+  agreed trades public while under review was considered and turned down.
+  The card itself (team panels, checks, votes, buttons) is
+  `trades/trade-request.js` + `trade-request.css`, shared with the dashboard,
+  which is now just the queue: each card links to its trade's page. Don't
+  copy the card into a third page; load the module.
 - `committees/trc/index.html` — new dashboard, gated to `trc`/`trc_head`/
   `admin`, structural template `committees/stream/index.html`. Queue (open
   requests, sorted `ready_to_finalize` first) and History (terminal). Row

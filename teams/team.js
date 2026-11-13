@@ -5441,7 +5441,7 @@ function renderOfferSheetBanner(offers) {
 // Trades this team is in that were submitted to the TRC and aren't decided yet.
 // Only the team's own front office sees it: GET /api/trade-requests answers
 // the parties and the committee, nobody else. Decided requests drop off here
-// and stay in the TRC page's history.
+// and stay in the TRC page's history. Each links to its own trade page.
 async function renderTradeRequestBanner(biosData) {
   const el = document.getElementById('trade-request-banner');
   const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
@@ -5483,7 +5483,7 @@ async function renderTradeRequestBanner(biosData) {
       Trade with <b>${others}</b> submitted, awaiting approval.${legal ? '' : ' <span class="tag">fails a check</span>'}
       <span class="meta">${abbr} gets ${side(i.trade.transfers, 'to_team')} · sends ${side(i.trade.transfers, 'from_team')}</span>
       <span class="meta">${stage(i)} · proposed by ${esc(i.created_by)} ${String(i.created_at).slice(0, 10)} ·
-        <a href="/committees/trc/">open on the TRC page</a></span>
+        <a href="/trades/view/?id=${encodeURIComponent(i.id)}">open the trade</a></span>
     </div>`;
   }).join('');
 }

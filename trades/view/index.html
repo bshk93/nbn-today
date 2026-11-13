@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="/theme-boot.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="/css/team-colors.css">
+  <link rel="stylesheet" href="/trades/trade-request.css">
+  <script src="/names.js"></script>
+  <script src="/contract.js"></script>
+  <script src="/cap-health.js"></script>
+  <title>NBN | Trade</title>
+  <!-- NBN:og -->
+  <meta name="description" content="One trade request: what each team gives and gets, whether it is legal, and where it stands with the TRC.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Trade">
+  <meta property="og:description" content="One trade request: what each team gives and gets, whether it is legal, and where it stands with the TRC.">
+  <meta property="og:url" content="https://nbn.today/trades/view/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+</head>
+<body data-mine-off>
+  <div class="page ui-page">
+    <nav class="nav"></nav>
+
+    <header class="ui-header">
+      <div>
+        <h1 class="ui-title" id="title">Trade</h1>
+      </div>
+    </header>
+
+    <div id="gate"></div>
+    <div id="app" hidden></div>
+  </div>
+
+  <script src="/trades/trade-request.js"></script>
+  <script>
+    // One trade request, by id. Who may see it is the API's call: the teams
+    // in it and the TRC. Anyone else gets the same answer as a wrong id.
+    const ID = new URLSearchParams(location.search).get('id') || '';
+    const TERMINAL = new Set(['finalized', 'rejected', 'withdrawn']);
+
+    function renderGate(signedIn) {
+      document.getElementById('gate').innerHTML = `
+        <div class="gate">
+          <h2>${signedIn ? "This trade isn't here" : 'Sign in to see this trade'}</h2>
+          <p>${signedIn
+            ? "Either the link is wrong or the trade isn't yours to see. Only the teams in a trade and the Trade Request Committee can open it."
+            : "Sign in on nbn.today in this browser and you're signed in here automatically, or paste your member token via the profile menu."}</p>
+          <a href="/committees/trc/">All your trade requests</a>
+        </div>`;
+    }
+
+    async function load() {
+      let item;
+      try {
+        item = await authedFetch(`/api/trade-requests/${encodeURIComponent(ID)}`);
+      } catch (e) {
+        document.getElementById('app').hidden = true;
+        renderGate(true);
+        return;
+      }
+      const title = item.finalized?.trade_number ? `Trade ${item.finalized.trade_number}` : `Request #${item.number}`;
+      document.getElementById('title').textContent = `${title}: ${item.parties.join(item.parties.length === 2 ? ' ⇄ ' : ' · ')}`;
+      document.title = `NBN | ${title}`;
+      const app = document.getElementById('app');
+      app.hidden = false;
+      app.innerHTML = renderRequest(item, TERMINAL.has(item.status), true);
+      wireActions(load);
+    }
+
+    async function init() {
+      await loadMe();
+      if (!me.name || !ID) { renderGate(!!me.name); return; }
+      [BIOS, OVRS] = await Promise.all([
+        fetch('/api/players').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+        fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      ]);
+      await load();
+    }
+
+    init();
+  </script>
+  <script src="/nav.js"></script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
