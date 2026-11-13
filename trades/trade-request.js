@@ -204,7 +204,8 @@ function assetRow(a, route, checks, showRoute, season) {
     </div>`;
   }
   const terms = [];
-  if (a.protection) terms.push(`top-${a.protection} protected`);
+  if (a.claim) terms.push(esc(a.claim));
+  else if (a.protection) terms.push(`top-${a.protection} protected`);
   if (a.swap_with) terms.push(`swap with ${esc(a.swap_with)}`);
   if (a.ladder_protect_top) terms.push(`top-${a.ladder_protect_top} protected, else ${
     (a.ladder_fallback || []).map(f => esc(pickLabel(f))).join(' + ') || 'fallback'}`);

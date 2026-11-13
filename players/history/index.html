@@ -283,7 +283,8 @@
           if (a.type === 'pick') {
             let s = `${a.year} R${a.round} ${a.orig}`;
             const mods = [];
-            if (a.protection) mods.push(`top-${a.protection} prot.`);
+            if (a.claim) mods.push(a.claim);
+            else if (a.protection) mods.push(`top-${a.protection} prot.`);
             if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
             if (a.ladder_fallback && a.ladder_fallback.length) {
               const fb = a.ladder_fallback.map(f => `${f.year} R${f.round} ${f.orig}`).join(' / ');

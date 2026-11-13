@@ -3399,27 +3399,44 @@ function buildPickOptions(sel, fromTeam, currentValue) {
   sel.innerHTML = '<option value="">— select pick —</option>';
   if (!fromTeam) return;
   const usedIds = getUsedPickIds();
-  if (currentValue) usedIds.delete(currentValue);
+  if (currentValue) usedIds.delete(pickIdOfValue(currentValue));
+  const team = fromTeam.toUpperCase();
   allPicks
-    .filter(p => (p.owner || '').toUpperCase() === fromTeam.toUpperCase() && !p.player && !usedIds.has(tradePickId(p)))
+    .filter(p => !p.player && !usedIds.has(tradePickId(p)))
     .sort((a, b) => a.year - b.year || a.round - b.round)
     .forEach(p => {
-      const o = document.createElement('option');
-      o.value = tradePickId(p);
-      o.textContent = tradePickLabel(p);
-      o.dataset.year = p.year;
-      o.dataset.round = p.round;
-      o.dataset.orig = p.orig;
-      sel.appendChild(o);
+      // A contingent pick is listed once per claim the team holds on it, so
+      // a team can send one band of a protected pick: its own protection
+      // band sent to the team holding the rest is the protection removed.
+      const mine = (p.leaves || []).filter(l => l.team === team);
+      const claims = (p.leaves || []).length
+        ? mine.map(l => ({ leaf: l.leaf_id, desc: l.description }))
+        : ((p.owner || '').toUpperCase() === team ? [{ leaf: null, desc: '' }] : []);
+      claims.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.leaf || tradePickId(p);
+        o.textContent = tradePickLabel(p) + (c.desc ? ` · ${c.desc}` : '');
+        o.dataset.year = p.year;
+        o.dataset.round = p.round;
+        o.dataset.orig = p.orig;
+        if (c.leaf) o.dataset.leaf = c.leaf;
+        sel.appendChild(o);
+      });
     });
 }
 
 function getUsedPickIds() {
   const used = new Set();
   document.querySelectorAll('#trade-legs .trade-asset-row[data-asset-type="pick"] .trade-asset-sel').forEach(sel => {
-    if (sel.value) used.add(sel.value);
+    if (sel.value) used.add(pickIdOfValue(sel.value));
   });
   return used;
+}
+
+// A pick option's value is the pick's id, or the leaf_id of one claim on it
+// ("2027-1-CHI:protected:0"). Either way, the pick it names.
+function pickIdOfValue(v) {
+  return v.includes(':') ? v.split(':')[0].replace(/-/g, '|') : v;
 }
 
 function tradePickId(p) {
@@ -3468,6 +3485,7 @@ function collectTrade() {
         round: parseInt(opt.dataset.round),
         orig: opt.dataset.orig,
       };
+      if (opt.dataset.leaf) asset.leaf_id = opt.dataset.leaf;
       const prot = row.querySelector('.trade-prot-inp').value;
       if (prot) asset.protection = parseInt(prot);
       assets.push(asset);
@@ -4493,7 +4511,8 @@ function renderDetailsCell(t) {
       if (a.type === 'pick') {
         let s = `${a.year} R${a.round} ${a.orig}`;
         const mods = [];
-        if (a.protection) mods.push(`top-${a.protection} prot.`);
+        if (a.claim) mods.push(a.claim);
+        else if (a.protection) mods.push(`top-${a.protection} prot.`);
         if (a.swap_with) mods.push(`swap w/ ${a.swap_with}`);
         if (a.ladder_fallback && a.ladder_fallback.length) {
           const fb = a.ladder_fallback.map(f => `${f.year} R${f.round} ${f.orig}`).join(' / ');

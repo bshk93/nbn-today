@@ -60,6 +60,7 @@
       .tb-swap .tb-dest-sel { margin-top: 0; }
       .tb-swap-add { margin: 0.15rem 1rem 0.4rem; font-size: var(--text-xs); padding: 0.3rem 0.6rem; }
       .tb-protect { display: flex; align-items: center; gap: 0.4rem; padding: 0.1rem 1rem 0.3rem 2.4rem; font-size: var(--text-xs); color: var(--text-muted); }
+      .tb-band-note { padding: 0 1rem 0.35rem 2.4rem; font-size: var(--text-xs); color: var(--success); }
       .tb-protect input { width: 3.5rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: var(--text-xs); padding: 0.15rem 0.3rem; font-family: inherit; }
       .tb-type-badge { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 0.05rem 0.35rem; border-radius: var(--radius-sm); margin-right: 0.4rem; flex-shrink: 0; }
       .tb-type-player      { background: var(--bg-card); color: var(--accent-light); }
@@ -348,7 +349,7 @@
       const yr = curYr();
       const [rosterText, picksJson, tpeJson] = await Promise.all([
         fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : '').catch(() => ''),
-        fetch(`/api/picks/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`/api/picks/${abbr}?claims=all`).then(r => r.ok ? r.json() : []).catch(() => []),
         fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []).catch(() => []),
       ]);
 
@@ -414,6 +415,30 @@
 
     function roundLabel(r) { return r === 1 ? '1st' : '2nd'; }
 
+    // The one band of a protected pick this team holds, or null. A top-4
+    // protected 1st is two bands: the protecting team's 1-4 and the
+    // receiver's 5-60. Sending your band to the team with the rest removes
+    // the protection; sending it with a smaller threshold lowers it.
+    const BAND_RE = /^protected band (\d+)-(\d+)$/;
+    function myBand(p, abbr) {
+      const mine = (p.leaves || []).filter(l => l.team === abbr);
+      const m = mine.length === 1 && BAND_RE.exec(mine[0].description || '');
+      return m ? { min: +m[1], max: +m[2] } : null;
+    }
+    // The one team holding every other band, or null.
+    function restHolder(p, abbr) {
+      const others = new Set((p.leaves || []).filter(l => l.team !== abbr).map(l => l.team));
+      return others.size === 1 ? [...others][0] : null;
+    }
+    // What sending this band to `dest` does, in words, or '' if it's just a
+    // band changing hands. Mirrors _describe_pick_claims in the API.
+    function bandEffect(p, abbr, dest, top) {
+      const band = myBand(p, abbr);
+      if (!band || !dest || restHolder(p, abbr) !== dest) return '';
+      if (!top) return 'Protection removed';
+      return p.round === 1 && band.min === 1 ? `Protection lowered to top ${top}` : `Protection lowered to picks ${band.min}-${top}`;
+    }
+
     function slotOf(abbr) { return teamSlots.find(id => slotTeam[id] === abbr); }
 
     function pickLeafId(p, teamAbbr) {
@@ -425,6 +450,10 @@
       const rnd = p.round === 1 ? '1st' : '2nd';
       const base = `${p.year} ${rnd}`;
       const mine = (p.leaves || []).filter(l => l.team === teamAbbr);
+      const band = myBand(p, teamAbbr);
+      if (band && restHolder(p, teamAbbr) && (band.min === 1 || band.min === 31)) {
+        return `${base} (${p.orig}) · your protection, picks ${band.min}-${band.max} · rest is ${restHolder(p, teamAbbr)}'s`;
+      }
       if (mine.length) {
         const desc = mine.map(l => l.description).join(' / ');
         return `${base} · ${p.orig} orig · ${desc}`;
@@ -547,6 +576,8 @@
       dest.addEventListener('change', () => {
         selMap.set(key, dest.value || null);
         dest.classList.toggle('unset', !dest.value);
+        // A pick's destination decides what sending a protection band does.
+        if (selMap === selections[slotId].picks) renderAllPanels();
         updateCheckBtn();
       });
       return dest;
@@ -611,7 +642,17 @@
           if (sel.picks.has(key)) {
             const dest = buildDestSelect(slotId, others, sel.picks, key);
             if (dest) body.appendChild(dest);
-            if (p.round === 1 && isOutright(p, abbr)) body.appendChild(buildProtectInput(sel, key));
+            const band = myBand(p, abbr);
+            if (band) {
+              body.appendChild(buildProtectInput(sel, key, band));
+              const effect = bandEffect(p, abbr, sel.picks.get(key), sel.protections.get(key));
+              if (effect) {
+                const note = document.createElement('div');
+                note.className = 'tb-band-note';
+                note.textContent = `${effect}: ${sel.picks.get(key)} ${sel.protections.get(key) ? 'gets more of' : 'gets'} this pick${sel.protections.get(key) ? '' : ' unprotected'}`;
+                body.appendChild(note);
+              }
+            } else if (p.round === 1 && isOutright(p, abbr)) body.appendChild(buildProtectInput(sel, key));
           }
         });
       }
@@ -619,19 +660,24 @@
       renderSwaps(body, slotId, abbr, others);
     }
 
-    function buildProtectInput(sel, key) {
+    // `band`: the team is sending its band of a protected pick, and may keep
+    // the top of it. The threshold must fall inside the band.
+    function buildProtectInput(sel, key, band) {
+      const lo = band ? band.min : 1, hi = band ? band.max - 1 : 29;
       const wrap = document.createElement('label');
       wrap.className = 'tb-protect';
       const input = document.createElement('input');
-      input.type = 'number'; input.min = 1; input.max = 29; input.placeholder = 'none';
+      input.type = 'number'; input.min = lo; input.max = hi; input.placeholder = band ? 'all' : 'none';
       input.value = sel.protections.get(key) || '';
       input.addEventListener('click', e => e.stopPropagation());
-      input.addEventListener('input', () => {
+      // A band re-renders its note, which would steal focus mid-typing.
+      input.addEventListener(band ? 'change' : 'input', () => {
         const n = parseInt(input.value, 10);
-        if (n >= 1 && n <= 29) sel.protections.set(key, n); else sel.protections.delete(key);
+        if (n >= lo && n <= hi) sel.protections.set(key, n); else sel.protections.delete(key);
+        if (band) renderAllPanels();
         updateCheckBtn();
       });
-      wrap.append('Protected top', input);
+      wrap.append(band ? `Keep picks ${lo} through` : 'Protected top', input);
       return wrap;
     }
 
@@ -855,7 +901,7 @@
           const leafId = pickLeafId(p, from);
           if (leafId) asset.leaf_id = leafId;
           const top = sel.protections.get(pkey);
-          if (top && p.round === 1 && isOutright(p, from)) asset.protection = top;
+          if (top && ((p.round === 1 && isOutright(p, from)) || myBand(p, from))) asset.protection = top;
           const key = `${from}→${destAbbr}`;
           if (!grouped.has(key)) grouped.set(key, []);
           grouped.get(key).push(asset);
@@ -1117,7 +1163,8 @@
             return {
               label: `${p.year} ${p.round === 1 ? '1st' : '2nd'}` + (p.orig !== abbr ? ` (${p.orig})` : ''),
               to: sel.picks.get(pickKey(p)) || '?',
-              protections: mine.map(l => l.description).join(' / ')
+              protections: bandEffect(p, abbr, sel.picks.get(pickKey(p)), sel.protections.get(pickKey(p)))
+                           || mine.map(l => l.description).join(' / ')
                            || (sel.protections.get(pickKey(p)) ? `Top ${sel.protections.get(pickKey(p))} protected` : '')
                            || (p.protected ? `Top ${p.protected} protected` : ''),
             };

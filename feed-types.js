@@ -109,7 +109,7 @@
   function asset(a, ctx) {
     if (a.type === 'player') return ctx.esc(ctx.name(a.slug));
     if (a.type === 'pick') {
-      const prot = a.protection ? ` (top-${a.protection} prot.)` : '';
+      const prot = a.claim ? ` (${a.claim})` : a.protection ? ` (top-${a.protection} prot.)` : '';
       return ctx.esc(`${a.year} ${a.orig} ${ROUND(a.round)}${a.swap_with ? ' swap' : ''}${prot}`);
     }
     if (a.type === 'swap') return ctx.esc(`the right to swap ${a.year} ${ROUND(a.round)}s`);
