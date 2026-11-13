@@ -7,6 +7,7 @@ Everything else lives here so a whole stream night takes a handful of tool
 calls instead of five per game.
 
     python3 build/parse_night.py fetch <dir>             # download every ready game
+    python3 build/parse_night.py compare <dir>           # two reads -> <dir>/<id>.txt
     python3 build/parse_night.py run <dir> [--commit]    # check every <dir>/<id>.txt
 
 `run` without --commit is a dry run. With it, a game is committed only when
@@ -28,6 +29,13 @@ Transcription format, one file per game, <dir>/<id>.txt:
 Values are in the order of #columns, as read off the screen. The header is
 mapped label by label, so a moved column lands in the right field and the
 validator's header check still stops the commit.
+
+`compare` is the double read. Two readers transcribe each game independently
+into <dir>/a/<id>.txt and <dir>/b/<id>.txt; a game whose two reads agree on
+every cell is written to <dir>/<id>.txt, and one that doesn't is listed cell
+by cell and left out until a third look settles those cells. The validator's
+totals check only covers a side whose totals row is on screen; two readers
+rarely make the same slip, so this covers the rest.
 """
 from __future__ import annotations
 
@@ -274,14 +282,80 @@ def cmd_run(d: Path, commit: bool):
     return 1 if held else 0
 
 
+def _read_cells(text: str) -> dict:
+    """One read as {cell key: value}, each a string so the two reads compare
+    exactly. Rows are keyed by name, not position: a reader who skips a player
+    shifts every row below him, and that is one disagreement, not twenty."""
+    data = parse_compact(text, {"home_team": "HOME", "away_team": "AWAY"})
+    cells = {"header": ",".join(data.get("columns", []))}
+    for k in ("home_pts", "away_pts"):
+        cells[k] = str(data.get(k, "-"))
+    for side in ("home", "away"):
+        cells[f"{side} TOTAL"] = json.dumps(data.get(f"{side}_totals"), sort_keys=True)
+        for r in data.get(f"{side}_rows", []):
+            name = r.pop("player")
+            key = f"{side} {''.join(norm_words(name)) or name}"
+            if key in cells:
+                key += " (again)"
+            cells[key] = name + " | " + " ".join(f"{k}={r[k]}" for k in sorted(r))
+    return cells
+
+
+def compare_reads(a: str, b: str) -> list[str]:
+    """Every cell where two reads of one game differ; empty when they agree."""
+    try:
+        ca, cb = _read_cells(a), _read_cells(b)
+    except ValueError as e:
+        return [f"unreadable transcription: {e}"]
+    out = []
+    for k in sorted(set(ca) | set(cb)):
+        va, vb = ca.get(k, "(missing)"), cb.get(k, "(missing)")
+        if va == vb:
+            continue
+        if " | " in va and " | " in vb:
+            fa = dict(x.split("=") for x in va.split(" | ")[1].split())
+            fb = dict(x.split("=") for x in vb.split(" | ")[1].split())
+            diffs = [f"{f} a={fa.get(f)} b={fb.get(f)}" for f in sorted(set(fa) | set(fb)) if fa.get(f) != fb.get(f)]
+            out.append(f"{va.split(' | ')[0]} ({k.split()[0]}): " + ", ".join(diffs))
+        else:
+            out.append(f"{k}: a={va} b={vb}")
+    return out
+
+
+def cmd_compare(d: Path) -> int:
+    ids = sorted({f.stem for f in (d / "a").glob("*.txt")} | {f.stem for f in (d / "b").glob("*.txt")})
+    if not ids:
+        sys.exit(f"no reads in {d}/a or {d}/b")
+    split = 0
+    for gid in ids:
+        fa, fb = d / "a" / f"{gid}.txt", d / "b" / f"{gid}.txt"
+        if not (fa.exists() and fb.exists()):
+            print(f"== {gid}: only one read ({'a' if fa.exists() else 'b'}) — not written")
+            split += 1
+            continue
+        diffs = compare_reads(fa.read_text(), fb.read_text())
+        if diffs:
+            split += 1
+            print(f"== {gid}: {len(diffs)} disagreement(s) — not written")
+            for x in diffs:
+                print("   " + x)
+        else:
+            shutil.copyfile(fa, d / f"{gid}.txt")
+            print(f"== {gid}: reads agree — written")
+    print(f"\n{split} game(s) need a third look" if split else "\nall reads agree")
+    return 1 if split else 0
+
+
 def main():
-    if len(sys.argv) < 3 or sys.argv[1] not in ("fetch", "run"):
+    if len(sys.argv) < 3 or sys.argv[1] not in ("fetch", "run", "compare"):
         print(__doc__)
         return 2
     d = Path(sys.argv[2])
     if sys.argv[1] == "fetch":
         cmd_fetch(d)
         return 0
+    if sys.argv[1] == "compare":
+        return cmd_compare(d)
     return cmd_run(d, "--commit" in sys.argv[3:])
 
 
