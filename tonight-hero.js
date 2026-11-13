@@ -93,8 +93,10 @@
   function gameCard(g, i, previewHref) {
     const a = g.stars && g.stars.away, h = g.stars && g.stars.home;
     const story = g.storylines.find(s => !/^Live on/.test(s)) || '';
-    const chip = g.stream ? '<span class="th-chip th-chip--live">Stream</span>'
-      : g.featured ? '<span class="th-chip">Game of the night</span>' : '';
+    // An NBA Cup game says so beside the stream chip, not instead of it.
+    const chip = (g.cup ? '<span class="th-chip th-chip--cup">Cup</span>' : '')
+      + (g.stream ? '<span class="th-chip th-chip--live">Stream</span>'
+        : g.featured ? '<span class="th-chip">Game of the night</span>' : '');
     return `<a class="th-card${g.featured ? ' th-card--feat' : ''}" style="--i:${i}" href="${esc(previewHref(g))}"`
       + ` data-away="${esc(g.away)}" data-home="${esc(g.home)}" data-slugs="${esc([a && a.slug, h && h.slug].filter(Boolean).join(' '))}">`
       + `<span class="th-half th-half--a" data-team="${esc(g.away)}"></span><span class="th-half th-half--h" data-team="${esc(g.home)}"></span>`
@@ -106,7 +108,7 @@
       + `<span class="th-card-story">${esc(story)}</span>`
       // Tip times mean nothing in NBN (games are played when they're streamed
       // or simmed), so the foot says Preview until the final is in.
-      + `<span class="th-card-foot"><span class="th-card-tip">Preview</span>${chip}</span>`
+      + `<span class="th-card-foot"><span class="th-card-tip">Preview</span>${chip ? `<span class="th-chips">${chip}</span>` : ''}</span>`
       + '</span></a>';
   }
 
