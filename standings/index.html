@@ -115,6 +115,18 @@
     .result-second     { background: var(--bg-card); color: var(--accent-light); }
     .result-first      { background: var(--purple-light-bg); color: var(--purple-light); }
 
+    /* NBA Cup (/nba-cup.js) */
+    .cup-conf { display: grid; gap: var(--space-4); align-content: start; }
+    .cup-conf .ui-section-title { margin-bottom: 0; }
+    .cup-group-name { font-size: var(--text-sm); font-weight: 700; color: var(--text-primary); margin: 0 0 var(--space-1); }
+    .cup-group-name .muted { color: var(--text-muted); font-weight: 400; }
+    .cup-qf { display: grid; gap: var(--space-2); }
+    .cup-qf-game { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-sm); flex-wrap: wrap; }
+    .cup-qf-game .vs { color: var(--text-muted); }
+    .cup-qf-team { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; color: var(--text-primary); }
+    .cup-qf-team .muted { color: var(--text-muted); font-weight: 400; font-size: var(--text-xs); }
+    tr.cup-in td { color: var(--text-primary); }
+
     /* Playoff Odds */
     .odds-intro { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 var(--space-4); }
     .odds-row { cursor: pointer; }
@@ -266,6 +278,7 @@
       <button class="ui-tab active" role="tab" aria-selected="true" data-tab="standings">Standings</button>
       <button class="ui-tab" role="tab" aria-selected="false" data-tab="odds">Playoff Odds</button>
       <button class="ui-tab" role="tab" aria-selected="false" data-tab="playoffs">Playoffs</button>
+      <button class="ui-tab" role="tab" aria-selected="false" data-tab="cup" hidden>NBA Cup</button>
     </div>
 
     <div class="tab-panel active" id="tab-standings">
@@ -280,6 +293,10 @@
       <div id="odds-content"><div id="status">Loading…</div></div>
     </div>
 
+    <div class="tab-panel" id="tab-cup">
+      <div id="cup-content"><div id="status">Loading…</div></div>
+    </div>
+
     <div class="tab-panel" id="tab-playoffs">
       <div class="controls">
         <label for="bracket-season-select">Season</label>
@@ -290,6 +307,7 @@
   </div>
 
   <script src="/clinch.js"></script>
+  <script src="/nba-cup.js"></script>
   <script>
     // ── Tab logic ─────────────────────────────────────────────────────────────
     // #odds opens on a tab, so the homepage can link straight to it.
@@ -301,6 +319,7 @@
       btn.classList.add('active'); btn.setAttribute('aria-selected', 'true');
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'odds') loadOdds();
+      if (name === 'cup') loadCup();
     }
     // A tab switch is a history entry, so Back returns to the last tab
     // instead of leaving the page.
@@ -708,6 +727,65 @@
     if (location.hash === '#odds') showTab('odds');
 
     // ── CSV parser ────────────────────────────────────────────────────────────
+    // ── NBA Cup tab ───────────────────────────────────────────────────────────
+    //
+    // The group stage and the quarterfinals it seeds, all from /nba-cup.js
+    // (the rules are there). The tab only shows when this season's schedule
+    // has Cup games.
+    const cupPromise = NbaCup.load().catch(() => null);
+    cupPromise.then(cup => {
+      if (!cup) return;
+      document.querySelector('.ui-tab[data-tab="cup"]').hidden = false;
+      if (location.hash === '#cup') showTab('cup');
+    });
+    let cupLoaded = false;
+    function loadCup() {
+      if (cupLoaded) return;
+      cupLoaded = true;
+      const el = document.getElementById('cup-content');
+      cupPromise.then(cup => {
+        if (!cup) { el.innerHTML = '<div id="status">No NBA Cup this season.</div>'; return; }
+        renderCup(el, cup);
+      });
+    }
+
+    function renderCup(el, cup) {
+      const status = NbaCup.status(cup);
+      const seedOf = {};
+      for (const conf of ['East', 'West']) for (const s of cup.bracket[conf]?.seeds || []) seedOf[s.team] = s;
+      const teamCell = t => `<a href="/teams/${t.toLowerCase()}/"><img class="team-logo" src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">${t}</a>`;
+      const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
+      const qTag = t => (seedOf[t]
+        ? `<span class="clinch clinch-x" title="${seedOf[t].wildcard ? 'Wild card' : 'Group winner'}, quarterfinal seed ${seedOf[t].seed}">Q${seedOf[t].seed}</span>` : '');
+      const table = (rows, { rank = true } = {}) => `<div class="ui-table-wrap table-wrap"><table>
+        <thead><tr>${rank ? '<th></th>' : ''}<th>Team</th><th class="right">W</th><th class="right">L</th><th class="right">+/−</th><th class="right">PTS</th></tr></thead>
+        <tbody>${rows.map((r, i) => `<tr class="${status[r.team] ? 'cup-in' : ''}">
+          ${rank ? `<td class="seed">${i + 1}</td>` : ''}
+          <td class="team">${teamCell(r.team)}${qTag(r.team)}</td>
+          <td class="right">${r.w}</td><td class="right">${r.l}</td>
+          <td class="right">${r.gp ? signed(r.diff) : '—'}</td>
+          <td class="right muted">${r.gp ? r.pf : '—'}</td></tr>`).join('')}</tbody></table></div>`;
+
+      const conf = c => {
+        const groups = cup.groups.filter(g => g.conf === c);
+        const b = cup.bracket[c];
+        const qfTeam = s => `<span class="cup-qf-team"><span class="muted">${s.seed}</span>${teamCell(s.team)}<span class="muted">${s.wildcard ? 'wild card' : s.group}</span></span>`;
+        return `<div class="cup-conf"><h2 class="ui-section-title">${c === 'East' ? 'Eastern' : 'Western'} Conference</h2>`
+          + groups.map(g => `<div><h3 class="cup-group-name">${g.name.replace(c, 'Group')}${g.complete ? ' <span class="muted">· final</span>' : ''}</h3>${table(g.rows)}</div>`).join('')
+          + `<div><h3 class="cup-group-name">Wild card <span class="muted">· best second-place team</span></h3>${table(NbaCup.wildcardRace(cup, c))}</div>`
+          + (b ? `<div><h3 class="cup-group-name">Quarterfinals${cup.final ? '' : ' <span class="muted">· if the group stage ended today</span>'}</h3><div class="cup-qf">`
+            + b.games.map(([hi, lo]) => `<div class="cup-qf-game">${qfTeam(hi)}<span class="vs">vs</span>${qfTeam(lo)}</div>`).join('')
+            + '</div></div>' : '')
+          + '</div>';
+      };
+      const left = cup.dates.filter(d => !cup.games.filter(g => g.date === d).every(g => g.played));
+      el.innerHTML = `<div class="conferences">${conf('East')}${conf('West')}</div>`
+        + `<p class="clinch-key">${cup.played} of ${cup.total} group games played`
+        + (left.length ? ` · Cup nights left: ${left.map(shortDay).join(', ')}` : '')
+        + ` · Q1–Q3 win their groups, Q4 is the wild card; the higher seed hosts`
+        + ` · Ties: head-to-head, then margin (an overtime game counts as zero), points scored, last season’s record</p>`;
+    }
+
     // ── Standings tab ─────────────────────────────────────────────────────────
     const RESULT_ORDER = ['Champion', 'Runner-Up', 'Conf Finals', 'Second Round', 'First Round', 'Missed'];
 

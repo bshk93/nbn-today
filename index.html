@@ -522,7 +522,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "standings" "cup" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-stream-vod { grid-area: streamvod; }
@@ -532,6 +532,7 @@
       :root #dash-injuries  { grid-area: injuries; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
+      :root #dash-cup       { grid-area: cup; }
       :root #dash-ranks     { grid-area: ranks; }
       :root #dash-movers    { grid-area: movers; }
       :root #dash-market    { grid-area: market; }
@@ -607,6 +608,9 @@
       letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted);
     }
     .dash-stand-line + .dash-stand-row { border-top: none; }
+    /* NBA Cup: the standings card's rows, three groups to a conference. */
+    .dash-cup-group + .dash-cup-group { margin-top: var(--space-3); }
+    .dash-cup-next { font-size: var(--text-xs); color: var(--text-muted); }
     .dash-stand-mark { margin-left: 0.15rem; font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; color: var(--success); }
     .dash-leaders-stats { display: flex; width: 100%; margin: 0.15rem 0 0.35rem; }
     .dash-leaders-stats > button { flex: 1; padding: var(--space-1) 0; font-size: var(--text-xs); }
@@ -1183,6 +1187,8 @@
     <div class="dash-main">
       <!-- In-season only. In the wide column so both conferences fit to the play-in line. -->
       <div class="dash-card" id="dash-standings" hidden></div>
+      <!-- NBA Cup group tables (nba-cup.js), from the first Cup night until the knockouts are done. -->
+      <div class="dash-card" id="dash-cup" hidden></div>
       <div class="dash-card" id="dash-feed">
         <div class="dash-card-title">Around the League</div>
         <div class="dash-skel" style="width:90%"></div>
@@ -1263,6 +1269,7 @@
   <script src="/names.js"></script>
   <script src="/milestones.js"></script>
   <script src="/clinch.js"></script>
+  <script src="/nba-cup.js"></script>
   <script src="/power-rank.js"></script>
   <script src="/vod.js"></script>
   <script src="/tonight-hero.js"></script>
@@ -2631,6 +2638,41 @@
         `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings">Standings</a></div></div>`
         + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
       $('dash-standings').hidden = false;
+    }).catch(() => {});
+
+    // ── NBA Cup ───────────────────────────────────────────────────────────
+    //
+    // Each group's table while the Cup is on (NbaCup.isActive: the first Cup
+    // night until three weeks after the last, for the knockouts). The rules
+    // and the Q1–Q4 marks are nba-cup.js's, so this agrees with /standings#cup.
+    Promise.all([schedulePromise, standingsPromise]).then(async ([sched, rows]) => {
+      if (!sched) return;
+      const cup = await NbaCup.load({ schedule: sched, standings: rows });
+      if (!NbaCup.isActive(cup, asof || today)) return;
+      const seedOf = {};
+      for (const c of ['East', 'West']) for (const s of cup.bracket[c]?.seeds || []) seedOf[s.team] = s;
+      const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
+      const group = g => `<div class="dash-cup-group"><div class="dash-stand-head"><span class="dash-stand-conf-name">${esc(g.name)}</span>`
+        + '<span class="dash-stand-rec">W–L</span><span class="dash-stand-gb">+/−</span></div>'
+        + g.rows.map((r, i) => {
+          const q = seedOf[r.team];
+          return `<a class="dash-stand-row${q ? ' is-po' : ''}" href="/teams/${esc(r.team)}/">`
+            + `<span class="dash-stand-seed ui-rank">${i + 1}</span>`
+            + `<img src="/logos/sm/logo-${esc(r.team.toLowerCase())}.webp" alt="">`
+            + `<span class="dash-stand-abbr"><span class="short">${esc(r.team)}</span><span class="full">${esc((typeof TEAM_LIST !== 'undefined' && TEAM_LIST[r.team]) || r.team)}</span></span>`
+            + (q ? `<span class="dash-stand-mark" title="${q.wildcard ? 'Wild card' : 'Group winner'}, quarterfinal seed ${q.seed}">Q${q.seed}</span>` : '')
+            + `<span class="dash-stand-rec">${r.w}–${r.l}</span><span class="dash-stand-gb">${r.gp ? signed(r.diff) : '—'}</span></a>`;
+        }).join('') + '</div>';
+      const conf = c => `<div class="dash-stand-conf">${cup.groups.filter(g => g.conf === c).map(group).join('')}</div>`;
+      const next = cup.dates.find(d => cup.games.some(g => g.date === d && !g.played));
+      const day = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      const note = !next ? (cup.final ? 'Group stage final' : '')
+        : next === (asof || today) ? 'Cup night tonight' : `Next Cup night ${day(next)}`;
+      $('dash-cup').innerHTML =
+        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings#cup">NBA Cup</a></div>`
+        + (note ? `<span class="dash-cup-next">${esc(note)}</span>` : '') + '</div>'
+        + `<div class="dash-standings-grid">${conf('East')}${conf('West')}</div>`;
+      $('dash-cup').hidden = false;
     }).catch(() => {});
 
     // ── Who loads first ───────────────────────────────────────────────────

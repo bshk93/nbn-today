@@ -36,6 +36,8 @@ any other hook has to live here too rather than in `.git/hooks`.
   Depth mode has stopped keeping players at their own positions on a tie.
 - Run tests/clinch.test.js; abort if the clinched / eliminated marks on
   /standings could mark a team that isn't mathematically safe.
+- Run tests/nba-cup.test.js; abort if the NBA Cup group tiebreaks, wild card
+  or quarterfinal seeding (nba-cup.js) have drifted from the NBA's rules.
 - Run tests/my-team.test.js; abort if the your-team callouts (my-team.js)
   could mark another team, an off-roster player, or the sidebar.
 - Run tests/power-rank.test.js; abort if the homepage Power Rankings card
@@ -168,6 +170,15 @@ if clinch_test.exists() and shutil.which('node'):
         print(result.stdout)
         print('\nCommit aborted: the standings clinch marks no longer hold (see FAIL lines above).')
         print('Fix Clinch.marks in clinch.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+cup_test = Path('tests/nba-cup.test.js')
+if cup_test.exists() and shutil.which('node'):
+    result = subprocess.run(['node', str(cup_test)], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stdout)
+        print('\nCommit aborted: the NBA Cup standings no longer hold (see FAIL lines above).')
+        print('Fix nba-cup.js, or bypass with: git commit --no-verify')
         sys.exit(1)
 
 advanced_test = Path('tests/advanced-stats.test.js')
