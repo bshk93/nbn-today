@@ -90,11 +90,13 @@
     return out.slice(0, 10);
   }
 
-  function gameCard(g, i, previewHref) {
+  function gameCard(g, i, previewHref, cupNight) {
     const a = g.stars && g.stars.away, h = g.stars && g.stars.home;
     const story = g.storylines.find(s => !/^Live on/.test(s)) || '';
-    // An NBA Cup game says so beside the stream chip, not instead of it.
-    const chip = (g.cup ? '<span class="th-chip th-chip--cup">Cup</span>' : '')
+    // An NBA Cup game says so beside the stream chip, not instead of it. On a
+    // Cup night every game is one (the NBA schedules nothing else), so the
+    // poster says it once instead.
+    const chip = (g.cup && !cupNight ? '<span class="th-chip th-chip--cup">Cup</span>' : '')
       + (g.stream ? '<span class="th-chip th-chip--live">Stream</span>'
         : g.featured ? '<span class="th-chip">Game of the night</span>' : '');
     return `<a class="th-card${g.featured ? ' th-card--feat' : ''}" style="--i:${i}" href="${esc(previewHref(g))}"`
@@ -203,6 +205,7 @@
     const ln = opts.lastNight !== undefined ? opts.lastNight : data.last_night;
     const unit = n === 1 ? 'Game' : 'Games';
     const when = opts.label ? '' : 'Tonight';
+    const cupNight = games.every(g => g.cup);
     const fs = feat.stars || {};
 
     el.classList.add('th');
@@ -214,7 +217,8 @@
       + '<div class="th-count">'
       + (opts.label ? `<span class="th-kicker">${esc(opts.label)}</span>` : '')
       + `<span class="th-num">${n}</span><span class="th-unit">${unit}${when ? `<br>${when}` : ''}</span>`
-      + `<span class="th-date">${esc(dateLine(data.date))}</span></div>`
+      + `<span class="th-date">${esc(dateLine(data.date))}</span>`
+      + (cupNight ? '<span class="th-chip th-chip--cup th-cup-night">NBA Cup night</span>' : '') + '</div>'
       + '<div class="th-feat">'
       // One dark chip, so the diagonal seam behind it never cuts the words.
       + '<div class="th-label"><span class="th-label-chip">'
@@ -230,7 +234,7 @@
       + '<div class="th-rail-wrap">'
       + '<div class="th-rail" tabindex="0" aria-label="Games">'
       + lastNightCard(ln)
-      + games.map((g, i) => gameCard(g, i + 1, previewHref)).join('')
+      + games.map((g, i) => gameCard(g, i + 1, previewHref, cupNight)).join('')
       + '</div>'
       + '<div class="th-controls">'
       + '<button type="button" class="th-prev ui-btn ui-btn--ghost ui-btn--sm" aria-label="Previous card">Prev</button>'

@@ -172,6 +172,7 @@
 /* Inverse of the page, so it reads on every theme and either team half. */
 .th-chip--cup { background: var(--text-primary); color: var(--bg-card); }
 .th-chips { display: flex; gap: 0.3em; }
+.th-cup-night { display: inline-block; margin-top: var(--space-2); font-size: var(--text-sm); }
 .th-card--feat { box-shadow: inset 0 0 0 3px var(--gold); }
 
 .th-card--last { flex-basis: 19rem; flex-direction: column; gap: var(--space-2); padding: var(--space-3); color: var(--text-primary); background: var(--bg-subtle); border: 1px solid var(--border); }
@@ -233,6 +234,7 @@
   .th-poster { padding: var(--space-4) var(--space-4) 0; min-height: 0; }
   .th-count { display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: var(--space-3); }
   .th-kicker, .th-date { grid-column: 1 / -1; }
+  .th-cup-night { grid-column: 1 / -1; justify-self: start; }
   .th-num { font-size: 5.5em; }
   .th-unit { font-size: 1.7em; }
   .th-feat { flex-basis: 100%; }
