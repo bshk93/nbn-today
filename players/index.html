@@ -1435,8 +1435,8 @@
 
     const fName    = field('Name (Last, First)', 'name',       'text');
 
-    // Position multi-select pills. Only before his positions are frozen
-    // from 2K (bio.position): after that `pos` is derived from them, and the
+    // Position multi-select pills. Only before 2K's positions are copied to
+    // the bio (bio.position): after that `pos` is derived from them, and the
     // API ignores it on a bio edit.
     const posLbl = document.createElement('label');
     posLbl.textContent = 'Positions';
@@ -1447,7 +1447,7 @@
     if (posFrozen) {
       const rec = initial.position;
       posPicker.textContent = `${rec.primary}${initial.pos && initial.pos[1] ? ' / ' + initial.pos[1] : ''}`
-        + ` (frozen from 2K on ${rec.set}; it changes only when he changes teams. The secondary is set in Roster Settings)`;
+        + ` (the primary is 2K's and moves when 2K re-rates him. The secondary is set in Roster Settings)`;
     }
     if (!posFrozen) ['PG', 'SG', 'SF', 'PF', 'C'].forEach(p => {
       const btn = document.createElement('button');

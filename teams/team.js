@@ -6140,9 +6140,8 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 }
 
 // Positions, mirroring "Positions" in nbn-api routers/players.py. A
-// player's primary is 2K's as it was when frozen (bio.position), and stays
-// put through 2K re-ratings until he changes teams. Without a frozen record
-// yet, 2K's today stands in.
+// player's primary is 2K's today (§ 2.3). bio.position is the API's copy of
+// it, which stands in only for a player 2K hasn't rated.
 const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
 function frozenPos(bio) {
   const rec = bio && bio.position;
@@ -6153,9 +6152,10 @@ function twoKPos(attrSnap) {
   return Array.isArray(pos) ? pos.filter(p => POSITION_ORDER.includes(p)) : [];
 }
 function primaryPos(bio, attrSnap) {
+  const twoK = twoKPos(attrSnap)[0];
+  if (twoK) return twoK;
   const rec = frozenPos(bio);
-  if (rec) return rec.primary;
-  return twoKPos(attrSnap)[0] || '—';
+  return rec ? rec.primary : '—';
 }
 function secondaryPosOptions(primary) {
   const i = POSITION_ORDER.indexOf(primary);
@@ -6181,13 +6181,13 @@ function secondaryIsLegal(bio, attrSnap, sec) {
   return !sec || sec === 'none' || secondaryPool(bio, attrSnap).includes(sec);
 }
 
-// The secondary while the team hasn't chosen: the one frozen with his
-// primary, or 2K's today if nothing is frozen. Mirrors default_secondary.
+// The secondary while the team hasn't chosen: 2K's today, or the stored
+// record's for a player 2K hasn't rated. Mirrors default_secondary.
 function defaultSecondary(bio, attrSnap) {
-  const rec = frozenPos(bio);
-  if (rec) return POSITION_ORDER.includes(rec.secondary) && rec.secondary !== rec.primary ? rec.secondary : null;
   const pos = twoKPos(attrSnap);
-  return pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
+  if (pos.length) return pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
+  const rec = frozenPos(bio);
+  return rec && POSITION_ORDER.includes(rec.secondary) && rec.secondary !== rec.primary ? rec.secondary : null;
 }
 
 // The secondary a player actually has. bio.secondary_pos null: the team
@@ -6196,7 +6196,7 @@ function defaultSecondary(bio, attrSnap) {
 function effectiveSecondary(bio, attrSnap) {
   const sec = bio && bio.secondary_pos;
   if (sec === 'none') return null;
-  return sec || defaultSecondary(bio, attrSnap);
+  return sec && sec !== primaryPos(bio, attrSnap) ? sec : defaultSecondary(bio, attrSnap);
 }
 
 // The Coaching tab's two sections, Roster Settings and the Coaching Profile,
