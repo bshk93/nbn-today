@@ -59,9 +59,15 @@
 // round trips before first paint, then the fonts after those. Preloading here
 // makes it two. The @imports stay as they are, so the cascade is unchanged;
 // a new shared sheet works without being listed, it just isn't hurried.
+//
+// These two lists are also written into every page's <head> as static
+// <link rel="preload"> tags (build/head_preloads.py reads them from here), so
+// the downloads start while the page is still arriving instead of after this
+// script. A page with that block skips the ones below; a page without it
+// (one added since the last run) still gets them.
 (function () {
   var head = document.head;
-  if (!head) return;
+  if (!head || document.querySelector('link[data-nbn-preload]')) return;
   function preload(href, as, type) {
     var l = document.createElement('link');
     l.rel = 'preload'; l.as = as; l.href = href;

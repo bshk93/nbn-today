@@ -250,7 +250,10 @@
   // rows) and `schedule` (GET /api/schedule) may be passed in by a page
   // that already has them.
   async function load({ schedule, standings } = {}) {
-    const j = u => fetch(u).then(r => (r.ok ? r.json() : null)).catch(() => null);
+    // nav.js's shared GET when it's on the page, so the schedule and the
+    // season's games aren't fetched a second time.
+    const j = u => (global.nbnGetJSON ? global.nbnGetJSON(u)
+      : fetch(u).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))).catch(() => null);
     const sched = schedule || await j('/api/schedule');
     if (!sched || !Array.isArray(sched.games) || !sched.games.some(g => g.note === NOTE)) return null;
     const rows = standings || await fetch('/standings/standings-history.csv')

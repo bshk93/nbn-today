@@ -2,6 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- NBN:preload (build/head_preloads.py) -->
+  <link rel="preload" href="/css/theme.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/nav-chrome.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/fonts.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/dialogs.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/components.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/sidebar.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/team-colors.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/ui-icons.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/fonts/InterVariable.subset.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
+  <link rel="preload" href="/fonts/BarlowCondensed-700-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
+  <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
+  <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
@@ -1239,10 +1252,13 @@
   <script>
     if (!localStorage.getItem('nbn_token')) document.getElementById('visitor-intro').hidden = false;
 
-    fetch('/version.json').then(r => r.json()).then(d => {
-      const el = document.getElementById('site-version');
-      if (el) el.textContent = 'v' + d.version;  // links to the changelog
-    });
+    // After the parse, so nav.js (loaded below) is there to share its own
+    // request for the same file.
+    document.addEventListener('DOMContentLoaded', () =>
+      (window.nbnGetJSON ? nbnGetJSON('/version.json') : fetch('/version.json').then(r => r.json())).then(d => {
+        const el = document.getElementById('site-version');
+        if (el) el.textContent = 'v' + d.version;  // links to the changelog
+      }).catch(() => {}));
 
     // Typing anywhere on the homepage (outside a form field) jumps straight
     // into the site search, seeded with the character just typed.
@@ -1309,8 +1325,12 @@
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-    const jget = (url, opts) =>
-      fetch(url, opts).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
+    // A plain GET goes through nav.js's nbnGetJSON, so a URL nav.js (or another
+    // card) also asks for is fetched once. Anything with options — a token, a
+    // method — goes straight out and is never shared.
+    const jget = (url, opts) => (!opts && window.nbnGetJSON)
+      ? window.nbnGetJSON(url)
+      : fetch(url, opts).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
 
     // Dollars at homepage altitude — "$140.1M", not the exact figure the team
     // page shows. Someone wanting the cent is one click from it. Below $1M,
@@ -1380,6 +1400,52 @@
     const tonightJson = d => tonightMemo[d || ''] || (tonightMemo[d || ''] = jget('/api/tonight' + (d ? `?date=${encodeURIComponent(d)}` : '')));
     tonightJson(asof).catch(() => {});
 
+    // ── Who loads first ───────────────────────────────────────────────────
+    //
+    // The API is one process, and its requests share one CPU: thirty fired
+    // at once all finish late, the first one asked included. Measured, the
+    // Tonight graphic's request answered in 98ms on its own and waited 1.3s
+    // among the page's thirty. So the page asks in three waves:
+    //
+    //   1. now: the Tonight graphic, the schedule and game day, the slate,
+    //      the standings, and a signed-in owner's team card;
+    //   2. once the graphic's answer is in (1.5s at most): the rest of the
+    //      main column — the feed, NBN Twitter, the injury report — and the
+    //      VOD days (`afterHero`);
+    //   3. once the team card has rendered (4s at most), wave 2 has answered
+    //      (2s at most), and the browser is idle (`afterBandOne`): the side
+    //      column's lists, the movers and On This Day.
+    //
+    // (Waiting for a card to scroll near doesn't work here: the cards are
+    // `hidden` until filled, so they have no box to watch, and an always-shown
+    // neighbour is measured before the cards above it have filled in.)
+    //
+    // A new card picks the latest wave it can live with.
+    const heroReady = Promise.race([tonightJson(asof).catch(() => null), new Promise(r => setTimeout(r, 1500))]);
+    // Every wave-2 request, so wave 3 can wait for them. They are all asked
+    // for while the script first runs, so the list is complete by the time
+    // heroReady settles.
+    const wave2 = [];
+    const afterHero = fn => { const p = heroReady.then(fn); wave2.push(p); return p; };
+    const wave2Done = heroReady.then(() => Promise.race([
+      Promise.allSettled(wave2), new Promise(r => setTimeout(r, 2000))]));
+
+    // ── Wave 3 (see "Who loads first" at the top) ─────────────────────────
+    //
+    // A signed-in owner's team card goes first. The heavy cards wait until it
+    // has rendered and wave 2 has answered, then load when the browser is
+    // idle: Milestone Watch alone needs the 1MB player_seasons.csv.
+    // Signed out there is no team card; 4s caps the wait if the card never
+    // renders.
+    let markBandOne = () => {};
+    const bandOneReady = Promise.all([
+      token ? new Promise(r => { markBandOne = r; setTimeout(r, 4000); }) : null,
+      wave2Done,
+    ]);
+    const afterBandOne = fn => bandOneReady
+      .then(() => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 0))))
+      .then(fn);
+
     // standings-history.csv, fetched once for the whole page. No field in it
     // is quoted, so splitting on commas is a full parse.
     const standingsPromise = fetch('/standings/standings-history.csv')
@@ -1405,7 +1471,7 @@
       nbnGameDay().then(d => { today = d; }),
     ]).then(([sched]) => sched);
     // Per-date status; the card reads only each night's Box Scores video from it.
-    const streamingDaysPromise = jget('/api/streaming-days').catch(() => ({}));
+    const streamingDaysPromise = afterHero(() => jget('/api/streaming-days')).catch(() => ({}));
 
     // Where the league is in its year, derived from the schedule's own date
     // range rather than a stored flag — there is no phase field on the API, and
@@ -1911,7 +1977,7 @@
       // The row reads as a headline built from the entry's details
       // (FeedTypes.headline), not its `description`, which is written for the
       // office. Names come from a bios fetch for just the players named.
-      jget('/api/transactions?limit=40').then(d => {
+      afterHero(() => jget('/api/transactions?limit=40')).then(d => {
         const txns = (d.transactions || []).filter(t => !t.voided);
         const slugs = txnSlugs(txns);
         const bios = slugs.size
@@ -1938,7 +2004,7 @@
       });
 
     const feedFromNews = () =>
-      jget('/api/news').then(d => (d.articles || [])
+      afterHero(() => jget('/api/news')).then(d => (d.articles || [])
         .filter(a => a.status === 'published')
         .map(a => ({
           ts: a.published_at || a.created_at || '',
@@ -2177,7 +2243,7 @@
     };
 
     // Shared with the ticker, which lists the same report.
-    const injuriesPromise = jget('/api/injuries').catch(() => null);
+    const injuriesPromise = afterHero(() => jget('/api/injuries')).catch(() => null);
     // Out before Hurt, then the longest injury first — the card's order and
     // the ticker's.
     const injOrder = (a, b) => (/^out$/i.test(b.status || '') - /^out$/i.test(a.status || ''))
@@ -2286,7 +2352,7 @@
     // there is no movement column at all rather than a column of "new".
     const pct = p => (p >= 0.995 ? '>99%' : p > 0 && p < 0.005 ? '<1%' : `${Math.round(p * 100)}%`);
     Promise.all([
-      jget('/api/news/rankings/series').catch(() => null),
+      afterBandOne(() => jget('/api/news/rankings/series')).catch(() => null),
       oddsPromise, recordsPromise, liveSeasonPromise, seasonGamesPromise,
     ]).then(([series, odds, records, liveSeason, games]) => {
       const day = asof || today;
@@ -2675,21 +2741,6 @@
       $('dash-cup').hidden = false;
     }).catch(() => {});
 
-    // ── Who loads first ───────────────────────────────────────────────────
-    //
-    // A signed-in owner's team card goes first. The heavy cards near the foot
-    // of the page wait until it has rendered, then load when the browser is
-    // idle: Milestone Watch alone is 31 requests (every roster CSV plus the
-    // 1MB player_seasons.csv), and fired at load they took the six connections
-    // a browser allows per host ahead of the card's own. Signed out there is
-    // no team card, so they start straight away; 4s caps the wait if the card
-    // never renders.
-    let markBandOne = () => {};
-    const bandOneReady = token ? new Promise(r => { markBandOne = r; setTimeout(r, 4000); }) : Promise.resolve();
-    const afterBandOne = fn => bandOneReady
-      .then(() => new Promise(r => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 1500 }) : setTimeout(r, 0))))
-      .then(fn);
-
     // ── Ratings movers ────────────────────────────────────────────────────
     //
     // The three biggest OVR gains and drops in the latest 2K scrape, off the
@@ -2697,7 +2748,7 @@
     // keeps them in their own table: they were never synced into the live OVR.
     // `since` keeps the payload to recent scrapes as the history grows; a
     // league that hasn't scraped in six months simply has no card.
-    afterBandOne(() => jget(`/api/ratings-changes?since=${dayBefore(today, 183)}`)).then(d => {
+    afterBandOne(() => jget(`/api/ratings-changes?since=${dayBefore(today, 183)}&latest=1`)).then(d => {
       const entries = (d && d.entries) || [];
       const date = entries.length ? entries[0].date : null;
       const moves = entries.filter(e => e.date === date && e.ovr && !e.ovr_stub
@@ -2927,7 +2978,8 @@
     const OTD_SHOWN = 4;
     const ROUND_NAME = { 1: 'First Round', 2: 'Conference Semifinals', 3: 'Conference Finals', 4: 'Finals' };
     const teamSpan = abbr => headlineCtx({}).team(String(abbr));
-    jget(`/api/on-this-day?date=${encodeURIComponent(today)}`).then(async d => {
+    const otdDay = today;   // the date as the page opened, as it always asked
+    afterBandOne(() => jget(`/api/on-this-day?date=${encodeURIComponent(otdDay)}`)).then(async d => {
       const year = date => date.slice(0, 4);
       const items = [];
       (d.clinches || []).forEach(c => items.push({ rank: c.title ? 0 : 1, date: c.date, html: c.title
@@ -3026,7 +3078,7 @@
       + `<div class="dash-tw-new-row"><span class="dash-tw-err" id="tw-err"></span>`
       + `<span class="dash-tw-count" id="tw-count">280</span>`
       + `<button class="ui-btn ui-btn--primary ui-btn--sm" id="tw-post" disabled>Post</button></div></form>`;
-    jget(`/api/tweets?limit=${TW_PAGE}`, { headers: auth }).then(list => {
+    afterHero(() => jget(`/api/tweets?limit=${TW_PAGE}`, { headers: auth })).then(list => {
       if (!list.length && !token) return;
       const card = $('dash-tweets');
       card.innerHTML = '<div class="dash-card-title">NBN Twitter</div>'
@@ -3889,9 +3941,14 @@
       el.innerHTML = '';
     }
 
+    // The first check shares nav.js's request (its calendar badge asks too);
+    // every poll after it goes out fresh, since the shared one is kept 15s.
+    let first = !!window.nbnGetJSON;
     function check() {
-      fetch('/api/stream/live')
-        .then(r => (r.ok ? r.json() : Promise.reject()))
+      const req = first ? nbnGetJSON('/api/stream/live')
+        : fetch('/api/stream/live').then(r => (r.ok ? r.json() : Promise.reject()));
+      first = false;
+      req
         .then(s => (s && s.live ? show(s) : hide()))
         // A failed check leaves things as they are rather than cutting off a stream mid-watch.
         .catch(() => {});

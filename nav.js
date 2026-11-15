@@ -957,8 +957,8 @@ function _streamLive() {
     const c = JSON.parse(sessionStorage.getItem(STREAM_LIVE_KEY));
     if (c && Date.now() - c.at < 60 * 1000) return Promise.resolve(c.live);
   } catch { /* private browsing / nothing cached */ }
-  return fetch('/api/stream/live')
-    .then(r => (r.ok ? r.json() : null))
+  return nbnGetJSON('/api/stream/live')
+    .catch(() => null)
     .then(d => {
       const live = !!(d && d.live);
       try { sessionStorage.setItem(STREAM_LIVE_KEY, JSON.stringify({ live, at: Date.now() })); } catch { /* ignore */ }
@@ -1001,6 +1001,29 @@ function _getJson(url) {
     .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
 }
 
+// One request per public URL per page load. The homepage and nav.js both want
+// the schedule, the season's box-score index, the stream status and the
+// version; asked separately, each went out twice and queued on the one API
+// process. The first caller's request is shared for MEMO_MS, then a later ask
+// fetches again, so a card that refreshes after a write still gets fresh data.
+// Each caller gets its own parse of the body, so one caller sorting or editing
+// what it got can't change what another reads. A failed request isn't kept.
+// Public GETs only: anything sent with a token must not be shared.
+const MEMO_MS = 15 * 1000;
+const _memo = new Map();
+function nbnGetJSON(url) {
+  const hit = _memo.get(url);
+  let body = hit && Date.now() - hit.at < MEMO_MS ? hit.body : null;
+  if (!body) {
+    body = fetch(url).then(r => (r.ok ? r.text() : Promise.reject(new Error(r.status))));
+    const entry = { body, at: Date.now() };
+    _memo.set(url, entry);
+    body.catch(() => { if (_memo.get(url) === entry) _memo.delete(url); });
+  }
+  return body.then(t => JSON.parse(t));
+}
+window.nbnGetJSON = nbnGetJSON;
+
 // A count cached in sessionStorage under this member's name, so signing in as
 // someone else in the same tab never shows the last person's queue.
 function _cachedCount(key, who, fetchCount) {
@@ -1019,7 +1042,7 @@ function _cachedCount(key, who, fetchCount) {
 // stats and stream counts.
 let _schedulePromise = null;
 function _schedule() {
-  if (!_schedulePromise) _schedulePromise = fetch('/api/schedule').then(r => (r.ok ? r.json() : null)).catch(() => null);
+  if (!_schedulePromise) _schedulePromise = nbnGetJSON('/api/schedule').catch(() => null);
   return _schedulePromise;
 }
 let _enteredPromise = null;
@@ -1028,8 +1051,7 @@ function _enteredGames(season) {
     // A failed fetch must not read as "nothing entered": that turns every game
     // of the season into a missing box score. Reject instead (the count then
     // shows nothing and isn't cached), and let the next ask try again.
-    _enteredPromise = fetch(`/api/boxscores/games?season=${encodeURIComponent(season)}`)
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+    _enteredPromise = nbnGetJSON(`/api/boxscores/games?season=${encodeURIComponent(season)}`)
       .then(games => (Array.isArray(games) ? games : Promise.reject(new Error('bad index'))))
       .catch(e => { _enteredPromise = null; throw e; });
   }
@@ -1412,7 +1434,7 @@ function _buildAccount() {
 
   // The Change Log, with the version the site is on beside it.
   const changelog = _acctItem('a', 'Change Log', 'tag', '/changelog');
-  fetch('/version.json').then(r => r.json()).then(d => {
+  nbnGetJSON('/version.json').then(d => {
     if (d?.version) changelog.insertAdjacentHTML('beforeend', `<span class="sb-acct-item-meta">v${d.version}</span>`);
   }).catch(() => {});
 
