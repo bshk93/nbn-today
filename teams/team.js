@@ -370,6 +370,8 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
   .ts-pin-mark { margin-left: 0.35rem; color: var(--text-muted); }
   .ts-pos-wait { margin-left: 0.35rem; font-size: var(--text-xs); color: var(--gold); }
+  .ts-pos-2k { margin-left: 0.4rem; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
+  .ts-take2k { width: auto; margin-right: 0.15rem; }
 
   /* Read view minutes: a share-of-48 bar and the figure. */
   .ts-min { width: 9.5rem; text-align: right !important; white-space: nowrap; }
@@ -6140,8 +6142,9 @@ function setupPicksEditable(titleId, wrapEl, picks, teamAbbr, bios = {}, allPick
 }
 
 // Positions, mirroring "Positions" in nbn-api routers/players.py. A
-// player's primary is 2K's today (§ 2.3). bio.position is the API's copy of
-// it, which stands in only for a player 2K hasn't rated.
+// player's primary is 2K's as it was when frozen (bio.position), and stays
+// put through 2K re-ratings until he changes teams. Without a frozen record
+// yet, 2K's today stands in.
 const POSITION_ORDER = ['PG', 'SG', 'SF', 'PF', 'C'];
 function frozenPos(bio) {
   const rec = bio && bio.position;
@@ -6152,10 +6155,9 @@ function twoKPos(attrSnap) {
   return Array.isArray(pos) ? pos.filter(p => POSITION_ORDER.includes(p)) : [];
 }
 function primaryPos(bio, attrSnap) {
-  const twoK = twoKPos(attrSnap)[0];
-  if (twoK) return twoK;
   const rec = frozenPos(bio);
-  return rec ? rec.primary : '—';
+  if (rec) return rec.primary;
+  return twoKPos(attrSnap)[0] || '—';
 }
 function secondaryPosOptions(primary) {
   const i = POSITION_ORDER.indexOf(primary);
@@ -6181,13 +6183,29 @@ function secondaryIsLegal(bio, attrSnap, sec) {
   return !sec || sec === 'none' || secondaryPool(bio, attrSnap).includes(sec);
 }
 
-// The secondary while the team hasn't chosen: 2K's today, or the stored
-// record's for a player 2K hasn't rated. Mirrors default_secondary.
-function defaultSecondary(bio, attrSnap) {
-  const pos = twoKPos(attrSnap);
-  if (pos.length) return pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
+// § 2.3: a player keeps his positions until his team takes 2K's current
+// ones. 2K's listing when it differs from his, or null. Mirrors
+// differs_from_2k.
+function twoKDiffers(bio, attrSnap) {
   const rec = frozenPos(bio);
-  return rec && POSITION_ORDER.includes(rec.secondary) && rec.secondary !== rec.primary ? rec.secondary : null;
+  const pos = twoKPos(attrSnap);
+  if (!rec || !pos.length) return null;
+  const sec = pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
+  return rec.primary !== pos[0] || (rec.secondary || null) !== sec ? { primary: pos[0], secondary: sec } : null;
+}
+// His bio as it would be after taking 2K's positions.
+function bioWith2K(bio, twoK) {
+  return { ...bio, position: { ...(bio.position || {}), primary: twoK.primary, secondary: twoK.secondary } };
+}
+const twoKLabel = twoK => twoK.primary + (twoK.secondary ? `/${twoK.secondary}` : '');
+
+// The secondary while the team hasn't chosen: the one frozen with his
+// primary, or 2K's today if nothing is frozen. Mirrors default_secondary.
+function defaultSecondary(bio, attrSnap) {
+  const rec = frozenPos(bio);
+  if (rec) return POSITION_ORDER.includes(rec.secondary) && rec.secondary !== rec.primary ? rec.secondary : null;
+  const pos = twoKPos(attrSnap);
+  return pos.length > 1 && pos[1] !== pos[0] ? pos[1] : null;
 }
 
 // The secondary a player actually has. bio.secondary_pos null: the team
@@ -6196,7 +6214,7 @@ function defaultSecondary(bio, attrSnap) {
 function effectiveSecondary(bio, attrSnap) {
   const sec = bio && bio.secondary_pos;
   if (sec === 'none') return null;
-  return sec && sec !== primaryPos(bio, attrSnap) ? sec : defaultSecondary(bio, attrSnap);
+  return sec || defaultSecondary(bio, attrSnap);
 }
 
 // The Coaching tab's two sections, Roster Settings and the Coaching Profile,
@@ -6601,6 +6619,14 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
           : 'The streamer checks before every game that 2K gives him no secondary position';
         posTd.appendChild(pin);
       }
+      const twoKNow = twoKDiffers(bio, attributesData[row.SLUG]);
+      if (twoKNow) {
+        const hint = document.createElement('span');
+        hint.className = 'ts-pos-2k';
+        hint.textContent = `2K: ${twoKLabel(twoKNow)}`;
+        hint.title = "2K lists him differently. He stays as he is unless you take 2K's in edit mode (Details)";
+        posTd.appendChild(hint);
+      }
       if (posWaiting(row.SLUG)) {
         const w = document.createElement('span');
         w.className = 'ts-pos-wait';
@@ -6754,16 +6780,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
 
     function refreshSecNote() {
       const lines = fields.map(f => {
-        const sec = f.secSel.value || defaultSecondary(biosData[f.slug], attributesData[f.slug]);
-        if (secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec)) return null;
+        const sec = f.secSel.value || defaultSecondary(f.rowBio(), attributesData[f.slug]);
+        if (secondaryIsLegal(f.rowBio(), attributesData[f.slug], sec)) return null;
         const name = displayNameFromBio((biosData[f.slug] || {}).name || '') || f.slug;
         const exc = posException(f.slug);
         const ok = exc && exc.approved && exc.secondary === sec;
         return `${name} at ${sec}${ok ? " (OK'd)" : ''}`;
       }).filter(Boolean);
       fields.forEach(f => {
-        const sec = f.secSel.value || defaultSecondary(biosData[f.slug], attributesData[f.slug]);
-        f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(biosData[f.slug], attributesData[f.slug], sec));
+        const sec = f.secSel.value || defaultSecondary(f.rowBio(), attributesData[f.slug]);
+        f.secSel.classList.toggle('ts-sec-illegal', !secondaryIsLegal(f.rowBio(), attributesData[f.slug], sec));
       });
       secNote.hidden = !lines.length;
       secNote.dataset.icon = 'warning';
@@ -7377,29 +7403,51 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       posTd.className = 'ts-pos';
       const posWrap = document.createElement('span');
       posWrap.className = 'ts-pos-edit';
+      // § 2.3: he stays as he is, or his team takes 2K's current positions.
+      // The choice only shows when 2K lists him differently.
+      const twoKNow = twoKDiffers(bio, attributesData[row.SLUG]);
+      let take2k = null;
+      const rowBio = () => (take2k && take2k.value === '2k' ? bioWith2K(bio, twoKNow) : bio);
+      const curPrimary = () => primaryPos(rowBio(), attributesData[row.SLUG]);
+      const curDefaultSec = () => defaultSecondary(rowBio(), attributesData[row.SLUG]);
       const rowPrimary = primaryPos(bio, attributesData[row.SLUG]);
-      posWrap.appendChild(document.createTextNode(rowPrimary));
+      if (twoKNow) {
+        take2k = document.createElement('select');
+        take2k.className = 'ts-input ts-take2k';
+        take2k.setAttribute('aria-label', 'Primary position');
+        take2k.title = "2K lists him differently. Keep him as he is, or take 2K's positions";
+        take2k.append(new Option(`${rowPrimary} (keep)`, ''), new Option(`${twoKNow.primary} (2K)`, '2k'));
+        posWrap.appendChild(take2k);
+      } else {
+        posWrap.appendChild(document.createTextNode(rowPrimary));
+      }
       // Rulebook § 2.3: the secondary is one step either side of the primary,
       // or any position 2K has listed for him. Any other position can still
       // be picked, marked as an exception: one the streamer has to OK.
       // Blank keeps the default secondary; 'none' removes it.
-      const eligiblePos = secondaryPool(bio, attributesData[row.SLUG]);
-      const otherPos = POSITION_ORDER.includes(rowPrimary)
-        ? POSITION_ORDER.filter(p => p !== rowPrimary && !eligiblePos.includes(p)) : [];
-      const twoKSec = twoKSecRow;
       const secSel = document.createElement('select');
       secSel.className = 'ts-input ts-sec-select';
       secSel.setAttribute('aria-label', 'Secondary position');
-      [{ value: '', label: twoKSec ? `/ ${twoKSec} (2K)` : '/ – (2K)' },
-       ...(twoKSec ? [{ value: 'none', label: '/ none' }] : []),
-       ...eligiblePos.filter(p => p !== twoKSec).map(p => ({ value: p, label: `/ ${p}` })),
-       ...otherPos.map(p => ({ value: p, label: `/ ${p} · exception` }))].forEach(o => {
-        secSel.appendChild(new Option(o.label, o.value, false, o.value === secondaryPos));
-      });
-      // Keep a saved exception selectable even if the primary has moved.
-      if (secondaryPos && ![...secSel.options].some(o => o.value === secondaryPos)) {
-        secSel.appendChild(new Option(`/ ${secondaryPos} · exception`, secondaryPos, false, true));
-      }
+      const fillSecSel = keep => {
+        const primary = curPrimary();
+        const eligiblePos = secondaryPool(rowBio(), attributesData[row.SLUG]);
+        const otherPos = POSITION_ORDER.includes(primary)
+          ? POSITION_ORDER.filter(p => p !== primary && !eligiblePos.includes(p)) : [];
+        const dflt = curDefaultSec();
+        if (keep === dflt || keep === primary) keep = '';
+        secSel.replaceChildren();
+        [{ value: '', label: dflt ? `/ ${dflt} (2K)` : '/ – (2K)' },
+         ...(dflt ? [{ value: 'none', label: '/ none' }] : []),
+         ...eligiblePos.filter(p => p !== dflt).map(p => ({ value: p, label: `/ ${p}` })),
+         ...otherPos.map(p => ({ value: p, label: `/ ${p} · exception` }))].forEach(o => {
+          secSel.appendChild(new Option(o.label, o.value, false, o.value === keep));
+        });
+        // Keep a saved exception selectable even if the primary has moved.
+        if (keep && ![...secSel.options].some(o => o.value === keep)) {
+          secSel.appendChild(new Option(`/ ${keep} · exception`, keep, false, true));
+        }
+      };
+      fillSecSel(secondaryPos);
       // Lineup view shows the positions as text; the select is on Details.
       const posText = document.createElement('span');
       posText.className = 'ts-pos-text';
@@ -7409,8 +7457,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       posSub.className = 'ts-pos-sub';
       tr.querySelector('.ts-name').appendChild(posSub);
       const syncPosText = () => {
-        const sec = secSel.value === 'none' ? '' : (secSel.value || twoKSec);
-        posText.textContent = rowPrimary;
+        const sec = secSel.value === 'none' ? '' : (secSel.value || curDefaultSec());
+        posText.textContent = curPrimary();
         if (sec) {
           const s2 = document.createElement('span');
           s2.className = 'ts-pos2';
@@ -7420,6 +7468,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         posSub.replaceChildren(...posText.cloneNode(true).childNodes);
       };
       secSel.addEventListener('change', () => { refreshSecNote(); syncPosText(); });
+      if (take2k) take2k.addEventListener('change', () => { fillSecSel(secSel.value); refreshSecNote(); syncPosText(); });
       posWrap.appendChild(secSel);
       // The pin: check this position before every game. With no secondary it
       // means "make sure 2K has none", since 2K can add one back.
@@ -7506,7 +7555,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       }
 
       fields.push({
-        slug: row.SLUG, primary: rowPrimary, jerseyInput, secSel, pinCheck,
+        slug: row.SLUG, primary: rowPrimary, jerseyInput, secSel, pinCheck, take2k, rowBio,
         originalJersey: String(jersey), originalSecondaryPos: secondaryPos,
       });
     });
@@ -7579,8 +7628,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     cancelBtn.addEventListener('click', () => renderReadView());
 
     saveBtn.addEventListener('click', async () => {
-      const changed = fields.filter(({ jerseyInput, secSel, originalJersey, originalSecondaryPos }) =>
+      const changed = fields.filter(({ jerseyInput, secSel, take2k, originalJersey, originalSecondaryPos }) =>
         String(jerseyInput.value.trim()) !== originalJersey || secSel.value !== originalSecondaryPos
+        || (take2k && take2k.value === '2k')
       );
       // Send only the pins that changed.
       const pins = {};
@@ -7596,14 +7646,15 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
 
       try {
         const token = getToken();
-        const requests = changed.map(({ slug, jerseyInput, secSel }) => {
+        const requests = changed.map(({ slug, jerseyInput, secSel, take2k }) => {
           const val = jerseyInput.value.trim();
           const jersey_number = val === '' ? null : val;
           const secondary_pos = secSel.value === '' ? null : secSel.value;
+          const take_2k_position = !!(take2k && take2k.value === '2k');
           return fetch(`/api/players/${slug}/team-settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ jersey_number, secondary_pos }),
+            body: JSON.stringify({ jersey_number, secondary_pos, take_2k_position }),
           });
         });
         // Minutes live on the coaching-settings record alongside `values`
@@ -7650,7 +7701,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         // it is open, apply what was saved here and redraw this section only.
         if (coachingTab.editing.profile) {
           if (coachingReq) coachingTab.record = await (await coachingReq).json();
-          changed.forEach(({ slug, jerseyInput, secSel }) => {
+          changed.forEach(({ slug, jerseyInput, secSel, take2k, rowBio }) => {
+            if (take2k && take2k.value === '2k') biosData[slug] = { ...rowBio(), pos: undefined };
             const bio = biosData[slug] || (biosData[slug] = {});
             const val = jerseyInput.value.trim();
             bio.jersey_number = val === '' ? null : val;
