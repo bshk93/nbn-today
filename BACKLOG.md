@@ -23,21 +23,22 @@ which made the same list read as both done and open; it is not coming back.
 
 ## 1. Data integrity / open reconciliation
 
-### [P1] The API grows to ~1 GB between restarts, which is what fills swap
-Measured 2026-11-15: 21 hours after a restart, the `nbn-api` uvicorn process
-peaked at 1.26 GB (`VmHWM`) and sat at 370 MB RAM + 657 MB swap. That's half
-the box. The next deploy restarted it, and it dropped to 117 MB while total
-swap went from 94% to 61%. So the API's own growth fills swap, not side
-projects.
+### [P2] Watch whether the API still grows between restarts
+Measured 2026-11-15: 21 hours after a restart, the `nbn-api` process peaked at
+1.26 GB and sat at 370 MB RAM + 657 MB swap, half the box. A restart dropped it
+to 117 MB.
 
-Not yet profiled. Candidates: the in-memory game-highs index (rebuilt when an
-allstats file changes; are old copies kept?), per-request caches with no bound,
-the Tonight card PNG renderer. Next step: log `VmRSS`/`VmSwap` hourly for a day
-(`check_box_health.py` already reads them) to see whether it climbs steadily
-(a leak) or in steps (a cache or index rebuild), then `tracemalloc` the
-suspect. Until then, the guardrails from 2026-11-15 (systemd `MemoryLow` and
-an OOM score for the API, `lowprio` for agent jobs, `nbn-box-health.timer`)
-keep it from taking the site down, but they don't fix it.
+**Fixed that day:** the biggest piece was the player gamelog index, which held
+every box score row as a dict (252 MB). It now keeps interned tuples (51 MB).
+The service also runs with `MALLOC_ARENA_MAX=2`, so the thread pool's freed
+memory isn't held in per-thread arenas. Fully warm after the fix: about 200 MB.
+
+**Left:** see whether it still climbs over a day or two. `nbn-box-health.timer`
+logs the API's RAM and swap every 5 minutes (`journalctl -u nbn-box-health`).
+If it climbs steadily, it's a leak; if it jumps after box score commits, it's
+an index rebuild holding two copies. Next suspects: the game-highs index
+rebuild (28 MB kept, more while building), `get_boxscore_games` (31 MB), the
+Tonight card renderer. Delete this item if it holds under ~350 MB for a week.
 
 ### [P1] The leaked GitHub PAT still needs rotating — it is off disk, not revoked
 `/srv/shiny/nothing-but-stats/.git/config` had `origin` set to
