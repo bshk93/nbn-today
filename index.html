@@ -535,7 +535,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "standings" "cup" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
+        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-stream-vod { grid-area: streamvod; }
@@ -545,7 +545,6 @@
       :root #dash-injuries  { grid-area: injuries; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
-      :root #dash-cup       { grid-area: cup; }
       :root #dash-ranks     { grid-area: ranks; }
       :root #dash-movers    { grid-area: movers; }
       :root #dash-market    { grid-area: market; }
@@ -623,7 +622,13 @@
     .dash-stand-line + .dash-stand-row { border-top: none; }
     /* NBA Cup: the standings card's rows, three groups to a conference. */
     .dash-cup-group + .dash-cup-group { margin-top: var(--space-3); }
-    .dash-cup-next { font-size: var(--text-xs); color: var(--text-muted); }
+    /* Only where full names fit: on a phone column it pushes the row past the
+       card, and the bold row (plus its title) already says the team is in. */
+    .dash-cup-wc { display: none; margin-left: 0.3rem; font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; color: var(--text-muted); }
+    @container (min-width: 320px) { .dash-cup-wc { display: inline; } }
+    .dash-cup-next { margin: calc(-1 * var(--space-2)) 0 var(--space-2); font-size: var(--text-xs); color: var(--text-muted); }
+    /* Standings | NBA Cup: the card's views, at the head's right. */
+    .dash-stand-views > button { padding: var(--space-1) var(--space-3); font-size: var(--text-xs); }
     .dash-stand-mark { margin-left: 0.15rem; font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; color: var(--success); }
     .dash-leaders-stats { display: flex; width: 100%; margin: 0.15rem 0 0.35rem; }
     .dash-leaders-stats > button { flex: 1; padding: var(--space-1) 0; font-size: var(--text-xs); }
@@ -1198,10 +1203,9 @@
     <!-- Band 2 — around the league. Public, so it renders for visitors too.
          Main column: the night's best performances, then the feed. -->
     <div class="dash-main">
-      <!-- In-season only. In the wide column so both conferences fit to the play-in line. -->
+      <!-- In-season only. In the wide column so both conferences fit to the play-in line.
+           While the NBA Cup is on (nba-cup.js), its group tables are a second view of this card. -->
       <div class="dash-card" id="dash-standings" hidden></div>
-      <!-- NBA Cup group tables (nba-cup.js), from the first Cup night until the knockouts are done. -->
-      <div class="dash-card" id="dash-cup" hidden></div>
       <div class="dash-card" id="dash-feed">
         <div class="dash-card-title">Around the League</div>
         <div class="dash-skel" style="width:90%"></div>
@@ -2653,6 +2657,48 @@
         `<a class="dash-vod-score" href="/boxscores/?date=${encodeURIComponent(date)}">Box scores</a>`);
     }).catch(() => {});
 
+    // ── Standings card ────────────────────────────────────────────────────
+    //
+    // One card, two views: the conference standings and, while the Cup is on,
+    // the NBA Cup groups. Each arrives on its own promise and registers here;
+    // the switch appears once there are two. It opens on the standings.
+    const standViews = {};
+    const STAND_VIEWS = [
+      { key: 'league', label: 'Standings', href: '/standings' },
+      { key: 'cup',    label: 'NBA Cup',   href: '/standings#cup' },
+    ];
+    let standCurrent = 'league';
+    let standPicked = false;
+    const standView = (key, html) => {
+      standViews[key] = html;
+      const card = $('dash-standings');
+      const have = STAND_VIEWS.filter(v => standViews[v.key] != null);
+      // The standings come first unless the visitor has already switched.
+      if (!standPicked || !standViews[standCurrent]) standCurrent = have[0].key;
+      const show = k => {
+        standCurrent = k;
+        const v = STAND_VIEWS.find(x => x.key === k);
+        card.querySelector('.dash-card-title a').href = v.href;
+        card.querySelector('.dash-stand-body').innerHTML = standViews[k];
+        card.querySelectorAll('.dash-stand-views button').forEach(b =>
+          b.setAttribute('aria-pressed', String(b.dataset.view === k)));
+      };
+      card.innerHTML =
+        '<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings">Standings</a></div>'
+        + (have.length > 1
+          ? '<div class="ui-segmented dash-stand-views" role="group" aria-label="Standings">'
+            + have.map(v => `<button type="button" data-view="${v.key}">${esc(v.label)}</button>`).join('') + '</div>'
+          : '')
+        + '</div><div class="dash-stand-body"></div>';
+      const seg = card.querySelector('.dash-stand-views');
+      if (seg) seg.addEventListener('click', e => {
+        const btn = e.target.closest('button');
+        if (btn) { standPicked = true; show(btn.dataset.view); }
+      });
+      show(standCurrent);
+      card.hidden = false;
+    };
+
     // ── Standings ─────────────────────────────────────────────────────────
     //
     // Each conference in full, while a season is being played, with games
@@ -2700,10 +2746,7 @@
           + (marks[r.TEAM] ? `<span class="dash-stand-mark" title="${esc(Clinch.LABELS[marks[r.TEAM]])}">${esc(marks[r.TEAM])}</span>` : '')
           + `<span class="dash-stand-rec">${esc(r.W)}–${esc(r.L)}</span><span class="dash-stand-gb" title="Games back">${gb(list[0], r)}</span></a>`).join('') + '</div>';
       };
-      $('dash-standings').innerHTML =
-        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings">Standings</a></div></div>`
-        + `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`;
-      $('dash-standings').hidden = false;
+      standView('league', `<div class="dash-standings-grid">${conf('East', 'East')}${conf('West', 'West')}</div>`);
     }).catch(() => {});
 
     // ── NBA Cup ───────────────────────────────────────────────────────────
@@ -2722,11 +2765,12 @@
         + '<span class="dash-stand-rec">W–L</span><span class="dash-stand-gb">+/−</span></div>'
         + g.rows.map((r, i) => {
           const q = seedOf[r.team];
-          return `<a class="dash-stand-row${q ? ' is-po' : ''}" href="/teams/${esc(r.team)}/">`
+          return `<a class="dash-stand-row${q ? ' is-po' : ''}" href="/teams/${esc(r.team)}/"${q ? ` title="${q.wildcard ? 'Wild card' : 'Group winner'}, quarterfinal seed ${q.seed}"` : ''}>`
             + `<span class="dash-stand-seed ui-rank">${i + 1}</span>`
             + `<img src="/logos/sm/logo-${esc(r.team.toLowerCase())}.webp" alt="">`
             + `<span class="dash-stand-abbr"><span class="short">${esc(r.team)}</span><span class="full">${esc((typeof TEAM_LIST !== 'undefined' && TEAM_LIST[r.team]) || r.team)}</span></span>`
-            + (q ? `<span class="dash-stand-mark" title="${q.wildcard ? 'Wild card' : 'Group winner'}, quarterfinal seed ${q.seed}">Q${q.seed}</span>` : '')
+            // Advancing rows are already bold; only the wild card gets a tag.
+            + (q && q.wildcard ? `<span class="dash-cup-wc" title="Wild card, quarterfinal seed ${q.seed}">WC</span>` : '')
             + `<span class="dash-stand-rec">${r.w}–${r.l}</span><span class="dash-stand-gb">${r.gp ? signed(r.diff) : '—'}</span></a>`;
         }).join('') + '</div>';
       const conf = c => `<div class="dash-stand-conf">${cup.groups.filter(g => g.conf === c).map(group).join('')}</div>`;
@@ -2734,11 +2778,8 @@
       const day = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
       const note = !next ? (cup.final ? 'Group stage final' : '')
         : next === (asof || today) ? 'Cup night tonight' : `Next Cup night ${day(next)}`;
-      $('dash-cup').innerHTML =
-        `<div class="dash-standings-head"><div class="dash-card-title"><a class="ui-title-link" href="/standings#cup">NBA Cup</a></div>`
-        + (note ? `<span class="dash-cup-next">${esc(note)}</span>` : '') + '</div>'
-        + `<div class="dash-standings-grid">${conf('East')}${conf('West')}</div>`;
-      $('dash-cup').hidden = false;
+      standView('cup', (note ? `<div class="dash-cup-next">${esc(note)}</div>` : '')
+        + `<div class="dash-standings-grid">${conf('East')}${conf('West')}</div>`);
     }).catch(() => {});
 
     // ── Ratings movers ────────────────────────────────────────────────────
