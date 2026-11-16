@@ -66,7 +66,8 @@ confirm dialog reads. Check ids are `qo_*`, mapped to § 3.1 in
 ## Grandfathering
 
 The 16 players who were current-season (26-27) RFAs on adoption day were
-recorded as `extended` by `nbn-api/migrate_grandfather_qos.py`, with
+recorded as `extended` by a one-off migration (`migrate_grandfather_qos.py`,
+removed 2026-11-16, in nbn-api's git history), with
 `note: "grandfathered…"` and no `txn_id`. Without that they would all have
 lapsed to UFA the moment the code shipped. Their teams can withdraw like
 anyone else's.
