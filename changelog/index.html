@@ -96,11 +96,9 @@
   </div>
 
   <script>
-    fetch('/changelog.json')
-      .then(r => r.json())
-      .then(entries => {
-        const container = document.getElementById('entries');
-        container.innerHTML = entries.map(e => `
+    // changelog.json holds the newest releases; everything older is in
+    // changelog-archive.json, fetched only on request (build/archive_changelog.py).
+    const entryHtml = e => `
           <div class="entry">
             <div class="entry-header">
               <span class="version">v${e.version}</span>
@@ -109,13 +107,31 @@
             <ul class="changes">
               ${e.changes.map(c => `<li>${c}</li>`).join('')}
             </ul>
-          </div>
-        `).join('');
-        const latest = entries[0];
-        document.getElementById('current-version').textContent = `Current version: v${latest.version}`;
+          </div>`;
+    const container = document.getElementById('entries');
+    fetch('/changelog.json')
+      .then(r => r.json())
+      .then(entries => {
+        container.innerHTML = entries.map(entryHtml).join('');
+        document.getElementById('current-version').textContent = `Current version: v${entries[0].version}`;
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'ui-btn';
+        more.id = 'older';
+        more.style.marginTop = '1.5rem';
+        more.textContent = 'Show older releases';
+        more.addEventListener('click', () => {
+          more.disabled = true;
+          more.textContent = 'Loading…';
+          fetch('/changelog-archive.json')
+            .then(r => r.json())
+            .then(older => { more.remove(); container.insertAdjacentHTML('beforeend', older.map(entryHtml).join('')); })
+            .catch(() => { more.disabled = false; more.textContent = 'Could not load older releases. Try again'; });
+        });
+        container.after(more);
       })
       .catch(() => {
-        document.getElementById('entries').innerHTML =
+        container.innerHTML =
           '<p style="color:var(--danger);">Failed to load changelog.</p>';
       });
   </script>

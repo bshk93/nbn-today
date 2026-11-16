@@ -3,12 +3,10 @@
 Internal working list of what needs doing and what would be nice to have.
 Viewable at `/backlog` (admin-only nav link); the member-facing board is `/suggestions`.
 
-Last full review: **2026-10-06**. **32 open items**: 5 P1, 11 P2, 14 P3, plus
-2 nice-to-haves (counted from the `###` headings and the § 4 bullets). The
-previous count, from 2026-09-19, matched neither its own split nor the
-headings, so recount rather than adjust. Not re-measured in the 2026-10-06
-review: the Discord backfill counts, `/suggestions`, and the futures/`/invest`
-entry.
+Last full review: **2026-10-06**; recounted **2026-11-16** after the cleanup
+pass (which deleted two items, retitled two to what is left, and added five).
+**33 open items: 5 P1, 13 P2, 15 P3, plus 5 nice-to-haves**, counted from the
+`###` headings and the § 4 bullets. Recount rather than adjust.
 
 Legend: **[P1]** correctness/data integrity · **[P2]** should do · **[P3]** nice to have
 
@@ -150,7 +148,7 @@ same day: ten band sets and the 2029 MIA/MIN swap. Open, as `kind`ed tasks in
 - **conflict (3):** Trade 65's "2032 MIA 2nd" (likely the 2031 one, two
   tasks); Trade 73 sends HOU the 2032 CLE 2nd.
 - **confirm (5):** 2027 LAC 2nd and 2029 DET 1st (both wrong from the
-  2026-07-19 seed, see nbn-api `CLAUDE.md` § "Correcting a pick's
+  2026-07-19 seed, see `nbn-api/docs/picks.md` § "Correcting a pick's
   structure"), 2027 IND 2nd, 2027 MIL 2nd, 2028 LAL 2nd (ledger add only).
 - **sheet (11):** the site is right; only the league sheet changes.
 
@@ -522,21 +520,6 @@ the `cap-health.js` treatment first — a pure function taking its inputs as
 arguments — not querying for it from the page. A second copy is how two
 surfaces start disagreeing about who is in violation.
 
-### [P3] Other standing manual-review items
-The full, current list is `SECTION_REVIEW` in `nbn-api/rulebook_coverage.py`
-(and the 👁 badges it produces). Don't keep a second copy here; this one went
-stale. The ones that bite most often:
-
-- § 4.5 trade restrictions beyond the extension freeze, § 4.6 Touch Rule
-  (multi-team trades)
-- § 3.7 DPE — no exception type exists
-- § 3.11 the 25/30/35% max tier isn't derived from service time
-- § 3.13 option and guarantee structure
-- § 6.1 a PLAYER_OPT decision has no automated check
-- § 3.15 the 48h match clock and the offer-value cap hold aren't modeled. This
-  one isn't in `SECTION_REVIEW`'s § 3.15 note, which mentions only the funding
-  link.
-
 ### [P3] Trade exceptions still not tradeable
 Creation and consumption are both automatic now (§ 4.1a). Trading a TPE isn't
 supported — real CBA doesn't allow it either, so this may be "won't do";
@@ -549,7 +532,7 @@ being banked, which it wasn't before.
 
 **The clock started 2026-08-25.** `nbn-cap-history.timer` now appends a row per
 team per day to `cap-history.jsonl` — Team Salary on both bases, apron position,
-hard-cap level, roster counts (`nbn-api/CLAUDE.md` § "Cap history"). The
+hard-cap level, roster counts (`nbn-api/docs/ledger-and-audit.md` § "Cap history"). The
 four-year lookback is satisfiable from **2030-08-25**, so this is now a waiting
 problem rather than a blocked one, and the earlier correction stands: had the
 snapshot waited until 2029 to start, it would have shipped around 2033.
@@ -565,70 +548,23 @@ switched off, note the dates here. Checked 2026-10-06: a row every day from
 
 ## 3. Tooling / infrastructure
 
-### [P3] The edit log starts from 2026-08-25, permanently
-`edits.jsonl` went live 2026-08-25 — `storage._atomic_write` records a
-value-level diff of every write that bypasses the ledger, from the four side
-doors (`PUT /api/players/{slug}`, `PUT /api/roster/{team}`,
-`PUT /api/deadcap/{team}`, `PUT /api/picks/...`). `GET /api/edits` reads it
-back by file, actor or key, and is now public — the player page's "Edit
-history" disclosure (below the transactions table, same "Player History" card)
-calls it scoped to `key=<slug>` (`nbn-api/CLAUDE.md` § "The edit log").
-
-- **Left, and permanent:** the log starts on 2026-08-25. **The 25-26
-  fractional-cent poopoo diffs (PHI, UTA) were the motivating case and it
-  cannot answer them** — those edits predate it. This is forensics going forward only.
-  Don't re-open this expecting it to explain an old diff.
-
-### [P3] Nothing runs the frontend smoke suite, and authenticated pages are uncovered
-`tests/frontend/run.js` shipped 2026-08-25 — puppeteer against a real vhost,
-asking each page four things: 200, nothing thrown, every same-origin request
-succeeded, and the content the page exists to show actually appeared. It found a
-real defect on its first run — the nine `"NA"` `photo_url` bios, fixed
-2026-08-29 — which is the argument for the rest of it.
-
-**Coverage went from 18 pages to 43 on 2026-09-19** (22 assertions to 47; a few
-pages carry more than one). On 2026-10-06 `run.js` has 48 rows across 42
-distinct paths. Run twice that day against `nbn.today`: the second run passed
-all 48. The first failed one `/stats/highs/` row and passed on rerun. A likely
-cause is `GET /api/game-highs` building its in-memory index on the first
-request after a box score lands. Worth knowing before a nightly timer starts
-reporting it as a real failure. Every `min` was read off a real render
-and then set well below it, so the floors survive the league doing something
-ordinary. Two lessons are written into `tests/frontend/README.md` rather than
-here, because they are what the next person adding a row needs:
-
-- Where a count can legitimately *shrink*, the row says so — `/ratings-changes`
-  produces nothing from a scrape that changed nothing.
-- **Don't assert on a worklist.** `/suggestions` and the rosters dashboard's
-  reconciliation tabs are public and
-  render fine, but their content is a list of things that are *supposed* to
-  reach zero. A `min` on either goes red the day the league clears it. A test
-  that fails on success is worse than no test, so both are deliberately
-  uncovered.
+### [P3] The render suite doesn't cover signed-in pages
+`tests/frontend/run.js` renders every page in `PAGES` and asserts on its content
+(200, nothing thrown, same-origin requests succeed, the thing the page shows
+actually appears). **CI runs it on every push since 2026-11-16**, against the
+commit served by `build/preview_live.py`. Lessons for adding a row are in
+`tests/frontend/README.md` (don't assert on a worklist; say so where a count can
+shrink).
 
 What is left:
 
-- **Nothing runs it.** This is now the whole of the item's value at risk:
-  ~42 pages of assertions that only fire when someone remembers. Still true on
-  2026-10-06: no timer or hook runs it. Deliberately not
-  in the pre-commit hook — it launches a browser, needs the site up and `npm ci`
-  done, and takes a couple of minutes, none of which belongs between a commit
-  and its author. The two candidates both have a cost worth weighing: a
-  `deploy.sh` hook runs in the **live** checkout, which has no `node_modules`,
-  and would add those minutes to every deploy; a nightly systemd timer runs
-  detached and needs somewhere to report a failure (Discord, like
-  `check_stats_integrity.py` already does). The timer is the better shape.
 - **No authenticated pages.** `/committees/pdc`, `/free-agency`, `/extensions`,
-  `/strikes`, `/committees/stream`, `/transactions`, `/inbox`, `/bet`, `/invest` and team
-  edit mode. Confirmed 2026-09-19 that signed out they each render a sign-in
-  prompt correctly, so the gap is real but not hiding a defect. Covering them
-  means minting a real session against the live API, and a write path exercised
-  from a dev page is a real write — so this needs a decision, not just effort.
-- **~70 pages still uncovered**, but they are now the thin ones: static prose
-  (`/constitution`, `/legal`, `/join`), per-stat leaderboard
-  pages that share one `table.js`, and the 30 team shells that share one
-  `team.js`. The heavy data-driven pages are done.
-
+  `/strikes`, `/committees/stream`, `/transactions`, `/inbox`, `/bet`, `/invest`
+  and team edit mode. Signed out they each render a sign-in prompt (checked
+  2026-09-19). Covering them means a real session against the live API, where a
+  write from a test page is a real write, so it needs a decision, not just effort.
+- **About 70 thin pages uncovered**: static prose (`/constitution`, `/legal`,
+  `/join`) and the 30 team shells that all run one `team.js` (one is covered).
 ### [P3] Client-side errors are invisible
 Entered 2026-08-16, split 2026-08-25 when the `/api/health` half was done.
 
@@ -649,31 +585,22 @@ catch what we thought to check, this catches what members actually hit.
 and unauthenticated, 503 when the data directory is unreachable
 (`nbn-api/tests/test_health.py`).
 
-### [P3] Fifth copy of the same frontend primitives — `nbn-data.js` is overdue
-Entered 2026-08-16. `contract.js` exists because the contract grammar had
-already diverged twice; `teams/lineup.js` exists for the same reason. The rest
-of the shared primitives never got that treatment, and the count has grown
-(2026-08-16 in brackets):
+### [P3] The last local copies of the shared helpers
+`nbn-data.js` (2026-11-16) carries `NBN.esc`, `NBN.parseCSV` and `NBN.TEAMS`,
+and `names.js` the player-name rule. Pages moved onto them: 50 escapers, 12
+team maps, and the `displayName` copies, now one-line calls into `names.js`.
+`build/check_dup_helpers.py` (hook and CI) fails a commit that adds a copy back
+(baseline in `build/dup-helpers-baseline.json`). Left:
 
-| Helper | Files defining one, 2026-10-06 |
-|---|---|
-| `TEAMS` abbr → name map | **19** (13) |
-| `displayName()` | **11** (11) |
-| `parseCSV()` | **11** (10) |
-| `parseSalary` / `fmtMoney` | **7** (7) |
-
-Same failure mode as the contract shorthand, just quieter — one page renders
-"Wallace, Keaton" and another "Keaton Wallace". **`names.js` (2026-09-23)
-covers part of that**: `nbnPlayerName()` is the shared display rule and 28
-files load it. But the 11 local `displayName()` copies are still there, so
-it's a sixth copy until they're replaced. A root `nbn-data.js` carrying
-those six, adopted first in the four heaviest consumers (`teams/team.js`,
-`players/index.html`, `cap-summary/`, `transaction-sim/`), then opportunistically.
-
-Note the constraint in CLAUDE.md: the 30 team shells load only `team.js`, so it
-has to be pulled in the same injected-script + awaited-promise way
-`lineupReady` / `contractReady` are, not by touching the shells.
-
+- **`teams/team.js`** keeps its own escaper, team map and `parseCSV`: the 30 team
+  shells load only `team.js`, so it has to pull `nbn-data.js` in the way
+  `lineupReady` / `contractReady` do. Natural to do in the team page rewrite.
+- **Ten `parseCSV` copies** that really do parse differently (no trim, CRLF
+  handling, padding short rows). Each needs checking against its page's data
+  before it can become `NBN.parseCSV`.
+- **`parseSalary` / `fmtMoney`** (7 files) and **`fmtDate`** (19) aren't in
+  `nbn-data.js` yet; their copies differ in output format, so each move is a
+  visible change to check with before/after screenshots.
 ### [P3] Futures markets: no roster model for opening odds, insider trading open
 Futures markets shipped 2026-09-25 (`docs/nbyen-economy.md` § 4a). Left:
 
@@ -701,6 +628,36 @@ and none of it is in front of them. Seeding the board with that subset is the
 job.
 
 ---
+
+### [P2] Commit the timers that exist only on the server
+`nbn-box-health`, `nbn-fa-holds`, `nbn-playoff-odds` and `nbs-snapshot` (and
+whatever schedules `perry_daily.py`) are referenced by code and docs but have no
+unit file in `nbn-api`, unlike the other eight. A lost box loses their
+schedules. `systemctl cat` each on pallet and commit them beside the rest.
+
+### [P2] Run `migrate_dead_type.py`, then drop the `"dead"` read paths
+27 bios still carry the legacy `type: "dead"`, and eleven pages plus
+`nbn-api/routers/news.py` still treat it as roster-exempt. On pallet,
+`venv/bin/python migrate_dead_type.py` reports each (roster, deadcap row,
+remaining salaries); `--apply` clears only the ones on no roster. Rostered ones
+are for the rosters committee. Once none are left, delete the read paths.
+
+### [P3] Finish splitting `routers/transactions.py`
+2026-11-16 moved the models and the pure rules to `routers/txn/` (11,541 to
+8,485 lines). The rest reaches a loader that tests replace by assigning to the
+transactions module (42 names), so moving it would leave those tests reading
+live data. Finishing means tests stub loaders where they are defined (or a
+fixture does), one test file at a time; `tests/test_txn_package.py` then allows
+more to move.
+
+### [P3] `/compare` scrolls sideways on a phone
+At 390px the page is 823px wide (on live as well). Probably the side-by-side
+attribute grid; it needs to stack.
+
+### [P3] CI can't run the JS-vs-Python mirror tests in nbn-api
+`test_js_mirrors.py` and `test_contract_shorthand.py` need the nbn-today
+checkout. A read-only `NBN_TODAY_TOKEN` secret on the nbn-api repo lets its CI
+check it out; without it those two skip there (they run on the box).
 
 ## 4. Nice to have
 
