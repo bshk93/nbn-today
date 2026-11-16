@@ -49,9 +49,9 @@ def counts(text):
     out = {}
     for key, name in HELPERS.items():
         n = 0
-        for m in re.finditer(rf'(?m)^[ \t]*(?:function\s+{name}\s*\(|(?:const|let|var)\s+{name}\s*=\s*)(.{{0,60}})', text):
+        for m in re.finditer(rf'(?m)^[ \t]*(?:function\s+{name}\s*\(|(?:const|let|var)\s+{name}\s*=\s*)([\s\S]{{0,80}})', text):
             tail = m.group(1)
-            if 'NBN.' in tail:
+            if re.match(r'(?:NBN\.|\w*\)\s*\{\s*return\s+(?:NBN\.|nbnPlayerName\())', tail):
                 continue                     # an alias of the shared copy
             if key == 'TEAMS' and not tail.lstrip().startswith('{'):
                 continue                     # a list of abbreviations, a different thing
