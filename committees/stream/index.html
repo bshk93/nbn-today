@@ -1915,7 +1915,8 @@
         openLink.href = rec.youtube_url;
         openLink.target = '_blank';
         openLink.rel = 'noopener';
-        openLink.textContent = '▶️';
+        openLink.dataset.icon = 'play';
+        openLink.setAttribute('aria-label', 'Open the linked video');
         openLink.title = 'Open the linked video';
         wrap.appendChild(openLink);
       }

@@ -92,6 +92,7 @@ ICONS = {
     'stream':    [fill(circle(12, 12, 2.2)),
                   stroke('M8.2 7.8a6 6 0 0 0 0 8.4M15.8 7.8a6 6 0 0 1 0 8.4M5.2 4.8a10.2 10.2 0 0 0 0 14.4M18.8 4.8a10.2 10.2 0 0 1 0 14.4')],
     'tv':        [stroke('M3 5.5h18v11.5H3zM8 21h8M12 17v4')],
+    'play':      [fill('M7 4.5v15l13-7.5z')],
     'camera':    [fill('M2 7.5h5l2-3h6l2 3h5v13H2z' + circle(12, 13.8, 3.8), evenodd=True)],
     'image':     [stroke('M3 4h18v16H3z'), fill(circle(8.5, 9.5, 1.9)), stroke('M3.5 19l6-6.5 4 4 2.8-2.8L20.5 18')],
     'quote':     [fill('M3 19v-5.5C3 9 5 6.4 8.8 5l.9 1.8C7.6 8 6.6 9.6 6.4 12H10v7z'

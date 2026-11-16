@@ -63,7 +63,8 @@ METRICS = {
     # A literal elevation shadow. Insets (state stripes, rings) and the tokens
     # (--shadow-overlay, --focus-ring) are how shadows are meant to be written.
     'shadow':    re.compile(r'box-shadow\s*:(?!\s*(?:none\b|var\(|inset\b))'),
-    'emoji':     re.compile('[\U0001F300-\U0001FAFF☀-➿⭐⭕]'),
+    # ▶ ◀ with VS16 (U+FE0F) render as emoji; bare, they are text arrows.
+    'emoji':     re.compile('[\U0001F300-\U0001FAFF☀-➿⭐⭕]|[▶◀]\uFE0F'),
     'bare_page': re.compile(r'class="page"'),
 }
 

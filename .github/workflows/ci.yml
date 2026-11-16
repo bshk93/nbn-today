@@ -60,3 +60,5 @@ jobs:
         working-directory: tests/frontend
         env: { NBN_BASE: "http://127.0.0.1:8099" }
         run: node run.js
+      - name: Dialog primitives (nav.js, css/dialogs.css)
+        run: CHROME="$CHROME_PATH" PORT=8124 bash build/run_dialog_tests.sh
