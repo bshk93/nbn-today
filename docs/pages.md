@@ -183,7 +183,7 @@ RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped
 
 One long page, not tabs (redesigned 2026-11). Top to bottom:
 
-- **Hero** (`header.tn-hero`): the team-colour band with name, franchise facts (`renderHeaderFacts`), this season's record, seed, streak and point diff, and the next-game card. Prev/next arrows and Share sit here too; phones drop the arrows.
+- **Hero** (`header.tn-hero`): the team-colour band with name, franchise facts (`renderHeaderFacts`), this season's record, seed, streak and point diff, and the next-game card. Prev/next arrows and Share sit here too; phones drop the arrows. Behind it, faded, is the team's secondary mark from `logos/secondary/` (where each came from is in `sources.json` beside them), never the primary logo already shown on the left. The `#tn-wm` SVG filter turns it into a white tint weighted by the mark's own light and dark, so a navy mark still shows on a navy band.
 - **Sticky section bar** (`nav#tn-nav`): Season, Roster, Cap & Picks, Schedule, History, Front Office. Each link is an in-page anchor, and the bar highlights whichever section is on screen.
 - **Owner panel** (`details#owner-panel`): only for a member whose roles or `owner_of` name this team. It shows what's coming up (option deadline, trade deadline, draft), what's waiting on you (offer sheets, team options, extension-eligible players, trading block count) and tool links. It's open by default on desktop and collapsed on phones.
 - **Season** (`#season-grid`): last-10 form bars, conference standings ±3, team leaders, both projected fives for the next game, and injuries.

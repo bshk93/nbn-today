@@ -573,7 +573,11 @@ const coachingConfigReady = new Promise(resolve => {
     background: var(--tp);
     padding: 1.6rem 1.75rem 1.5rem; margin-bottom: 1rem; display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: end; }
   .tn-hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--ta); }
-  .tn-watermark { position: absolute; right: -60px; top: -40px; width: 340px; opacity: 0.12; pointer-events: none; }
+  /* The team's secondary mark, not the logo already on the left
+     (logos/secondary/, sources.json). #tn-wm tints it white by its own
+     light and dark, so every mark reads on every band colour. */
+  .tn-watermark { position: absolute; right: 330px; top: 50%; transform: translateY(-50%); height: calc(100% - 2rem); width: auto; max-width: 26%;
+    object-fit: contain; object-position: center; opacity: 0.13; filter: url(#tn-wm); pointer-events: none; }
   .tn-hero-main, .tn-hero-side { position: relative; z-index: 1; min-width: 0; }
   .tn-hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
   .tn-name-row { display: flex; align-items: center; gap: 1rem; }
@@ -596,14 +600,15 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-share { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius-sm);
     font: inherit; font-size: var(--text-sm); padding: 0.25rem 0.7rem; cursor: pointer; }
   .tn-share:hover { background: rgba(255,255,255,0.12); }
-  .tn-next { display: block; background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
+  .tn-next { display: block; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
     padding: 0.9rem 1rem; min-width: 230px; color: white; text-decoration: none; }
   .tn-next:hover { background: rgba(0,0,0,0.4); }
   .tn-next .lbl { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
   .tn-next .match { display: flex; align-items: center; gap: 0.6rem; margin: 0.4rem 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }
   .tn-next .match img { width: 34px; height: 34px; }
   .tn-next .when { font-size: var(--text-sm); opacity: 0.85; }
-  .tn-next .go { font-size: var(--text-sm); margin-top: 0.4rem; color: var(--ta); font-weight: 600; }
+  /* White, not the accent: several teams' accent is close to their band (Chicago's red on red). */
+  .tn-next .go { font-size: var(--text-sm); margin-top: 0.4rem; color: white; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,0.45); }
   .tn-nav { position: sticky; top: 0; z-index: 20; background: var(--bg-page); display: flex; gap: 0.25rem; overflow-x: auto;
     border-bottom: 1px solid var(--border); margin: 0 0 1.25rem; scrollbar-width: none; }
   .tn-nav a { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-md);
@@ -713,7 +718,7 @@ const coachingConfigReady = new Promise(resolve => {
     .tn-facts { gap: 0 var(--space-3); font-size: var(--text-xs); } .tn-facts .thf b { font-size: var(--text-md); }
     .tn-name { font-size: var(--text-xl); } .tn-logo { width: 48px; height: 48px; } .tn-arrow { display: none; }
     .tn-record .big { font-size: var(--text-2xl); } .tn-next { min-width: 0; }
-    .tn-watermark { width: 220px; right: -50px; top: -20px; }
+    .tn-watermark { top: 1rem; transform: none; height: 170px; max-width: 62%; right: -12px; object-position: right center; }
     .tn-capbar { margin: 1rem 0; } .tn-capbar .mk span { display: none; }
     .tn-caplegend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: var(--text-xs); color: var(--text-muted); margin: -0.25rem 0 1rem; }
     .tn-caplegend b { color: var(--text-secondary); font-weight: 600; }
@@ -1411,7 +1416,9 @@ document.body.innerHTML = `
          panel keeps its id (tab-franchise, ...) so its lazy loading and its
          #hash links still work; a panel loads when it nears the screen. -->
     <header class="tn-hero">
-      <img class="tn-watermark" src="/logos/md/logo-${slug}.webp" alt="" onerror="this.remove()">
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="tn-wm" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -0.138 -0.465 -0.047 1 0"/></filter></svg>
+      <img class="tn-watermark" src="/logos/secondary/logo-${abbr.toLowerCase()}.webp" alt="" onerror="this.remove()">
       <div class="tn-hero-main">
         <div class="tn-name-row">
           ${prevAbbr ? `<a class="tn-arrow" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
