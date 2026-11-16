@@ -23,7 +23,9 @@ it reads /api/me, and the session/signal calls it also makes fail quietly.
 import argparse
 import http.server
 import pathlib
+import re
 import urllib.error
+import urllib.parse
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -43,7 +45,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _local(self):
         """The checkout's own file for this path, if it has one."""
-        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        path = urllib.parse.unquote(self.path.split('?', 1)[0].split('#', 1)[0])
         if path.startswith('/api/') or path.endswith('.csv'):
             return None
         target = (ROOT / path.lstrip('/')).resolve()
@@ -53,6 +55,32 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return target
         return None
 
+    def _page_path(self):
+        """A page (no extension, or .html) rather than data or an asset."""
+        path = self.path.split('?', 1)[0].split('#', 1)[0]
+        last = path.rstrip('/').rsplit('/', 1)[-1]
+        return not path.startswith('/api/') and ('.' not in last or last.endswith('.html'))
+
+    def _serve_file(self, file, status=200):
+        body = file.read_bytes()
+        self.send_response(status)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        if self.command != 'HEAD':
+            self.wfile.write(body)
+
+    def _as_nginx(self):
+        """A page this checkout doesn't have is answered the way nginx would
+        answer it, from this checkout, never by fetching the live page: that
+        would show the live site's version of a page this branch moved or
+        deleted. /members/{name}/ is nginx's one page rewrite; anything else
+        is this checkout's 404.html (which also runs redirects.js)."""
+        path = self.path.split('?', 1)[0]
+        if re.fullmatch(r'/members/[^/]+/?', path):
+            return self._serve_file(ROOT / 'members' / 'profile' / 'index.html')
+        return self._serve_file(ROOT / '404.html', 404)
+
     def end_headers(self):
         # Always fresh: the point is to see edits on reload.
         self.send_header('Cache-Control', 'no-store')
@@ -61,11 +89,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self._local():
             return super().do_GET()
+        if self._page_path():
+            return self._as_nginx()
         self._proxy()
 
     def do_HEAD(self):
         if self._local():
             return super().do_HEAD()
+        if self._page_path():
+            return self._as_nginx()
         self._proxy()
 
     def _write(self):

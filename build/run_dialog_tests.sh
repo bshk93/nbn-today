@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Drive build/test_dialogs.html with headless Chrome and fail on any FAIL line.
 #
-# Deliberately not in the pre-commit hook: it needs a Chrome binary, and a
-# fresh checkout has no guarantee of one. Run it by hand after touching the
-# dialog primitives in nav.js or css/dialogs.css.
+# Not in the pre-commit hook: it needs a Chrome binary, and a fresh checkout
+# has no guarantee of one. CI runs it on every push (.github/workflows/ci.yml);
+# run it by hand after touching the dialog primitives in nav.js or
+# css/dialogs.css.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 

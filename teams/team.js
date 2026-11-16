@@ -28,7 +28,7 @@
 //   displayNameFromBio           "LAST, FIRST" → "First Last"
 //   calcAge                      ISO dob → age string
 //   fmtDate                      ISO date → short display date
-//   parseCapHolds                legacy CSV cap-holds string → object
+//   parseCapHolds                cap-holds string → object
 //   currentSeasonYr              infers current season year
 //   parseSalaryNum               "$37,000,000" → 37000000
 //   fmtDollars                   number → "$37.0M"
@@ -2776,132 +2776,13 @@ const isInjuredOut = inj => !!inj && /^out$/i.test(inj.status || '');
 
 function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRows = [], seasonStates = {}, attributesData = {}, mode = 'contracts', latestSeasonBySlug = {}, rowActions = null, rotation = null, injuries = {}) {
   if (!rows.length) return null;
-  // Neither format's key column: the CSV came back as something else (a
-  // truncated or error response). Rendering it threw on the first row once,
-  // which killed every section after the roster too.
-  if (!('SLUG' in rows[0]) && !('PLAYER' in rows[0])) return null;
+  // No SLUG column: the CSV came back as something else (a truncated or error
+  // response). Rendering it threw on the first row once, which killed every
+  // section after the roster too. Every roster has been SLUG-only since
+  // 2026-08; the old PLAYER, POS, AGE… layout and its renderer are gone.
+  if (!('SLUG' in rows[0])) return null;
   const curYr = currentSeasonYr();
-  const hasSlug = 'SLUG' in rows[0] && !('PLAYER' in rows[0]);
 
-  if (!hasSlug) {
-    // ── Legacy format: CSV has PLAYER, POS, AGE, TYPE, CAP_HOLDS, salary cols ──
-    const salaryKeys = Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= curYr);
-    const ovrMin = 60, ovrMax = 99;
-
-    const cols = [
-      { key: 'PLAYER', label: 'Player',   cls: 'bold',         },
-      { key: 'POS',    label: 'Pos',      cls: 'muted center', },
-      { key: 'AGE',    label: 'Age',      cls: 'center',       },
-      { key: 'OVR',    label: 'OVR',      cls: 'center bold',  },
-      ...salaryKeys.map((k, i) => ({
-        key: k, label: k, cls: 'right' + (i === 0 ? ' div-left' : ''),
-        display: r => formatSalary(r[k]),
-      })),
-    ];
-
-    const typeOrder = { player: 0, 'two-way': 1, 'draft-rights': 2, dead: 3 };
-    const sorted = [...rows].sort((a, b) => {
-      const ta = typeOrder[a.TYPE] ?? 4, tb = typeOrder[b.TYPE] ?? 4;
-      if (ta !== tb) return ta - tb;
-      return (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
-    });
-
-    const table = document.createElement('table');
-    const thead = table.createTHead();
-    const hr = thead.insertRow();
-    cols.forEach(col => {
-      const th = document.createElement('th');
-      th.textContent = col.label;
-      if (col.cls?.includes('right')) th.classList.add('right');
-      if (col.cls?.includes('center')) th.classList.add('center');
-      hr.appendChild(th);
-    });
-
-    const tbody = table.createTBody();
-    let lastType = null;
-    const LABELS = { 'two-way': 'Two-Way Contracts', 'draft-rights': 'Draft Rights', dead: 'Dead Cap' };
-
-    sorted.forEach(row => {
-      if (row.TYPE !== lastType && LABELS[row.TYPE]) {
-        const sep = tbody.insertRow();
-        sep.className = 'subheader';
-        const td = sep.insertCell();
-        td.colSpan = cols.length;
-        td.textContent = LABELS[row.TYPE];
-        lastType = row.TYPE;
-      } else if (row.TYPE !== lastType) {
-        lastType = row.TYPE;
-      }
-
-      const tr = tbody.insertRow();
-      if (row.TYPE === 'two-way')      tr.className = 'row-twoway';
-      if (row.TYPE === 'draft-rights') tr.className = 'row-draft-rights';
-      if (row.TYPE === 'dead')         tr.className = 'row-dead';
-
-      const capMap = parseCapHolds(row.CAP_HOLDS);
-
-      cols.forEach(col => {
-        const td = tr.insertCell();
-        col.cls?.split(' ').forEach(c => c && td.classList.add(c));
-
-        if (col.key === 'PLAYER') {
-          const a = document.createElement('a');
-          a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
-          a.textContent = row.PLAYER;
-          td.appendChild(a);
-        } else if (col.key === 'OVR') {
-          const n = parseFloat(row.OVR);
-          td.textContent = isNaN(n) ? '—' : String(n);
-          if (!isNaN(n)) {
-            const t = Math.min(1, Math.max(0, (n - ovrMin) / (ovrMax - ovrMin)));
-            td.classList.add('ui-heat');
-            td.style.setProperty('--heat', t.toFixed(3));
-            const ovrSlug = playerSlug(row.PLAYER);
-            if (ovrSlug && window.RatingsPopup) {
-              RatingsPopup.attach(td, ovrSlug, { name: row.PLAYER });
-            }
-          }
-        } else if (/^\d{2}-\d{2}$/.test(col.key)) {
-          td.textContent = col.display ? col.display(row) : (row[col.key] || '—');
-          const capType = capMap[col.key];
-          if (capType && CAP_HOLD_CSS[capType]) td.classList.add(CAP_HOLD_CSS[capType]);
-        } else if (col.display) {
-          td.textContent = col.display(row);
-        } else {
-          td.textContent = row[col.key] ?? '—';
-        }
-      });
-    });
-
-    const hasCapData = rows.some(r => r.CAP_HOLDS && r.CAP_HOLDS.trim() !== '');
-    if (!hasCapData) return table;
-
-    const allTypes = new Set();
-    rows.forEach(r => {
-      Object.values(parseCapHolds(r.CAP_HOLDS || '')).forEach(t => allTypes.add(t));
-    });
-
-    const legend = document.createElement('div');
-    legend.className = 'cap-legend';
-    ['PLAYER_OPT', 'TEAM_OPT', 'UFA', 'RFA', 'NON_GTD'].forEach(type => {
-      if (!allTypes.has(type)) return;
-      const item = document.createElement('span');
-      item.className = 'cap-legend-item';
-      const swatch = document.createElement('span');
-      swatch.className = 'cap-swatch';
-      swatch.style.background = SWATCH_COLORS[type];
-      item.appendChild(swatch);
-      item.appendChild(document.createTextNode(CAP_HOLD_LABELS[type]));
-      legend.appendChild(item);
-    });
-
-    const legacyWrap = document.createElement('div');
-    legacyWrap.appendChild(table);
-    legacyWrap.appendChild(legend);
-    return legacyWrap;
-  }
-
-  // ── New format: SLUG + TYPE, OVR from currentOvr, rest from biosData ────────
   biosData = biosData || {};
 
   const attrBadgeCutoffs = computeAttrBadgeCutoffs(attributesData);
@@ -4220,13 +4101,12 @@ function playerSlug(name) {
   return String(name || '').toLowerCase().replace(/, /g, '-').replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
-// rosterRows: current roster rows (SLUG or legacy PLAYER format), used to mark
+// rosterRows: current roster rows (SLUG), used to mark
 // which all-time players are still on the team.
 function computeCurrentSlugSet(rosterRows) {
   const slugs = new Set();
   (rosterRows || []).forEach(r => {
     if (r.SLUG) slugs.add(r.SLUG.trim());
-    else if (r.PLAYER) slugs.add(playerSlug(r.PLAYER));
   });
   return slugs;
 }
@@ -6237,7 +6117,7 @@ const coachingTab = { record: undefined, editing: { roster: false, profile: fals
 function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, currentOvr) {
   const wrapEl = document.getElementById(wrapId);
   const actionsEl = document.getElementById('team-settings-actions');
-  const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
+  const hasSlug = rosterRows.length && 'SLUG' in rosterRows[0];
   const activeRows = hasSlug ? rosterRows.filter(r => r.SLUG) : [];
 
   if (!activeRows.length) {
@@ -8527,7 +8407,7 @@ function setupWhatIfMode(realRosterRows, biosData, capLevels, currentOvr, realDe
   if (!enterBtn || !panel) return;
 
   // What-If Mode only understands the current SLUG-format roster CSV.
-  const hasSlug = realRosterRows.length && 'SLUG' in realRosterRows[0] && !('PLAYER' in realRosterRows[0]);
+  const hasSlug = realRosterRows.length && 'SLUG' in realRosterRows[0];
   if (!hasSlug) { enterBtn.style.display = 'none'; return; }
 
   const exitBtn      = document.getElementById('whatif-exit-btn');

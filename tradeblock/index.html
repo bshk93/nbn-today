@@ -1241,12 +1241,9 @@
       // Case-insensitive: older entries are hand-cased ("Jared McCain") where the
       // bio now renders "Jared Mccain", and an exact match listed him twice.
       const onBlock = new Set(pendingEntries.map(e => e.player.toLowerCase()));
-      const isNewFormat = myRoster.length > 0 && 'SLUG' in myRoster[0] && !('PLAYER' in myRoster[0]);
-      const available = isNewFormat
-        ? myRoster
-            .filter(r => { const bio = biosData[r.SLUG]; return (!bio || bio.type !== 'dead') && !onBlock.has(displayNameFromBio((bio && bio.name) || '').toLowerCase()); })
-            .map(r => { const bio = biosData[r.SLUG] || {}; return { player: displayNameFromBio(bio.name || '') || r.SLUG }; })
-        : myRoster.filter(r => r.TYPE !== 'dead' && !onBlock.has((r.PLAYER || '').toLowerCase())).map(r => ({ player: r.PLAYER }));
+      const available = myRoster
+        .filter(r => { const bio = biosData[r.SLUG]; return r.SLUG && (!bio || bio.type !== 'dead') && !onBlock.has(displayNameFromBio((bio && bio.name) || '').toLowerCase()); })
+        .map(r => { const bio = biosData[r.SLUG] || {}; return { player: displayNameFromBio(bio.name || '') || r.SLUG }; });
       body.appendChild(blockSection('player',
         available.map(({ player }) => ({ value: player, label: player })),
         player => pendingEntries.push({ player, notes: '' })));
@@ -1369,12 +1366,6 @@
     // every loaded roster; otherwise only players on the block.
     function computeSalaryYears() {
       const set = new Set();
-      // Legacy-format rosters carry salary columns inline.
-      Object.values(rosterData).forEach(rows => {
-        if (rows.length > 0 && 'PLAYER' in rows[0]) {
-          Object.keys(rows[0]).filter(k => /^\d{2}-\d{2}$/.test(k) && k >= CUR_YR).forEach(k => set.add(k));
-        }
-      });
       const addBioYears = slug => {
         const bio = slug ? biosData[slug] : null;
         if (bio && bio.salaries) Object.keys(bio.salaries).filter(k => k >= CUR_YR).forEach(k => set.add(k));
@@ -1387,27 +1378,18 @@
       salaryYears = [...set].sort();
     }
 
-    function makePlayerRow(team, player, notes, rosterRows, isNewFormat, knownSlug) {
-      let row;
-      if (isNewFormat) {
-        const slug = knownSlug || rosterNameToSlug(player);
-        const bio = slug ? biosData[slug] : null;
-        row = {
-          team, player, isPick: false, slug,
-          pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
-          ovr: slug ? (ovrCurrent[slug] || '') : '',
-          age: bio ? calcAgeFromDob(bio.dob) : '',
-          notes: notes || '',
-          cap_holds: bio ? (bio.cap_holds || {}) : {},
-        };
-        salaryYears.forEach(yr => { row[yr] = (bio && bio.salaries && bio.salaries[yr]) || '—'; });
-      } else {
-        const pr = rosterRows.find(r => r.PLAYER === player) || {};
-        const legacyHolds = {};
-        (pr.CAP_HOLDS || '').split(',').forEach(p => { const [y, t] = p.split(':'); if (y && t) legacyHolds[y.trim()] = t.trim(); });
-        row = { team, player, isPick: false, slug: rosterNameToSlug(player), pos: pr.POS || '—', ovr: pr.OVR || '', age: pr.AGE || '', notes: notes || '', cap_holds: legacyHolds };
-        salaryYears.forEach(yr => { row[yr] = pr[yr] || '—'; });
-      }
+    function makePlayerRow(team, player, notes, knownSlug) {
+      const slug = knownSlug || rosterNameToSlug(player);
+      const bio = slug ? biosData[slug] : null;
+      const row = {
+        team, player, isPick: false, slug,
+        pos: bio ? ((bio.pos || []).join('/') || '—') : '—',
+        ovr: slug ? (ovrCurrent[slug] || '') : '',
+        age: bio ? calcAgeFromDob(bio.dob) : '',
+        notes: notes || '',
+        cap_holds: bio ? (bio.cap_holds || {}) : {},
+      };
+      salaryYears.forEach(yr => { row[yr] = (bio && bio.salaries && bio.salaries[yr]) || '—'; });
       return row;
     }
 
@@ -1433,30 +1415,20 @@
           const block = tbData[team] || {};
           const notesByPlayer = {};
           (block.players || []).forEach(({ player, notes }) => { notesByPlayer[player] = notes || ''; });
-          const isNewFormat = rosterRows.length > 0 && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
           rosterRows.forEach(r => {
-            let player, isDead, slug;
-            if (isNewFormat) {
-              slug = r.SLUG;
-              const bio = biosData[slug];
-              isDead = bio && bio.type === 'dead';
-              player = displayNameFromBio((bio && bio.name) || '') || slug;
-            } else {
-              isDead = r.TYPE === 'dead';
-              player = r.PLAYER;
-            }
-            if (isDead) return;
-            tableRows.push(makePlayerRow(team, player, notesByPlayer[player], rosterRows, isNewFormat, slug));
+            const slug = r.SLUG;
+            const bio = biosData[slug];
+            if (!slug || (bio && bio.type === 'dead')) return;
+            const player = displayNameFromBio((bio && bio.name) || '') || slug;
+            tableRows.push(makePlayerRow(team, player, notesByPlayer[player], slug));
           });
           (block.picks || []).forEach(p => tableRows.push(makePickRow(team, p)));
         });
       } else {
         // Only players/picks explicitly placed on the block.
         Object.entries(tbData).forEach(([team, block]) => {
-          const rosterRows = rosterData[team] || [];
-          const isNewFormat = rosterRows.length > 0 && 'SLUG' in rosterRows[0] && !('PLAYER' in rosterRows[0]);
           (block.players || []).forEach(({ player, notes }) => {
-            tableRows.push(makePlayerRow(team, player, notes, rosterRows, isNewFormat));
+            tableRows.push(makePlayerRow(team, player, notes));
           });
           (block.picks || []).forEach(p => tableRows.push(makePickRow(team, p)));
         });

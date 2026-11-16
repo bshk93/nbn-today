@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- A moved page: go straight there, before anything draws (redirects.js). -->
+  <script src="/redirects.js"></script>
+  <script>
+    (function () {
+      var to = window.nbnRedirect && nbnRedirect(location.pathname, location.search, location.hash);
+      if (to) location.replace(to);
+    })();
+  </script>
   <!-- NBN:preload (build/head_preloads.py) -->
   <link rel="preload" href="/css/theme.css" as="style" data-nbn-preload>
   <link rel="preload" href="/css/nav-chrome.css" as="style" data-nbn-preload>
