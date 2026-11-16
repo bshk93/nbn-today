@@ -335,14 +335,7 @@
 
 
   function displayName(canonical) {
-    if (typeof nbnPlayerName === 'function') return nbnPlayerName(canonical);  // /names.js
-    if (!canonical) return '';
-    const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    if (canonical.includes(',')) {
-      const [last, first] = canonical.split(',', 2);
-      return toTitle(`${first.trim()} ${last.trim()}`);
-    }
-    return toTitle(canonical);
+    return nbnPlayerName(canonical);  // /names.js
   }
 
   function nameOf(slug) { return displayName((BIOS[slug] || {}).name || slug); }

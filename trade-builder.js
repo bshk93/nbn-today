@@ -175,12 +175,8 @@
     }
 
     function displayName(raw) {
-      if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
-      if (!raw) return '';
-      const [last, first] = raw.split(', ');
-      const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
-      return first ? `${tc(first)} ${tc(last)}` : tc(last);
-    }
+    return nbnPlayerName(raw);  // /names.js
+  }
 
     function curYr() {
       if (LEAGUE_YEAR) return LEAGUE_YEAR;
