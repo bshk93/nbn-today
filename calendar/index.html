@@ -1195,7 +1195,8 @@
         yt.href = ytUrl;
         yt.target = '_blank';
         yt.rel = 'noopener';
-        yt.textContent = '▶️ VOD';
+        yt.dataset.icon = 'play';
+        yt.textContent = 'VOD';
         yt.title = 'Box scores video for this day’s games';
         yt.addEventListener('click', e => e.stopPropagation());
         cell.appendChild(yt);
