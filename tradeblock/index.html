@@ -529,24 +529,25 @@
     // ── Player bio lookup ─────────────────────────────────────────────────────
 
     let biosData = {};
-    const nameToSlugMap = new Map(); // display name (lowercase) → slug
+    const nameToSlugMap = new Map(); // nameKey(display name) → slug
+
+    // How block names compare. The block stores display names, written over
+    // the years by three different casers: hand-typed ("Jared McCain"), the
+    // old title-case ("Jared Mccain", "Royce Oneale") and names.js ("Royce
+    // O'Neale"). Ignoring case, apostrophes and periods makes all three one
+    // name. Mirrors _block_key in nbn-api/routers/players.py.
+    const nameKey = s => String(s || '').toLowerCase().replace(/['’.]/g, '').replace(/\s+/g, ' ').trim();
 
     function buildNameMap(bios) {
       biosData = bios;
       Object.entries(bios).forEach(([slug, bio]) => {
         const dn = displayNameFromBio(bio.name || '');
-        if (dn) nameToSlugMap.set(dn.toLowerCase(), slug);
+        if (dn) nameToSlugMap.set(nameKey(dn), slug);
       });
     }
 
     function displayNameFromBio(canonical) {
-      if (!canonical) return '';
-      const toTitle = s => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      if (canonical.includes(',')) {
-        const [last, first] = canonical.split(',', 2);
-        return toTitle(`${first.trim()} ${last.trim()}`);
-      }
-      return toTitle(canonical);
+      return nbnPlayerName(canonical);  // /names.js
     }
 
     function calcAgeFromDob(dob) {
@@ -555,7 +556,7 @@
     }
 
     function nameToSlug(name) {
-      return nameToSlugMap.get(name.toLowerCase()) || null;
+      return nameToSlugMap.get(nameKey(name)) || null;
     }
 
     // Legacy: slug lookup via player_seasons.csv (kept as fallback)
@@ -1083,7 +1084,7 @@
     // measured against, and the keys that tell a saved row from a new one.
     let savedSnapshot = '';
     let savedKeys = new Set();
-    const playerKey = e => 'p|' + (e.player || '').toLowerCase();
+    const playerKey = e => 'p|' + nameKey(e.player);
     const pickKey = p => `k|${p.year}|${p.round}|${p.team}`;
     const blockSnapshot = () => JSON.stringify({ players: pendingEntries, picks: pendingPicks });
     const blockDirty = () => !!myTeam && blockSnapshot() !== savedSnapshot;
@@ -1240,9 +1241,9 @@
       // ── Players ───────────────────────────────────────────────────────────
       // Case-insensitive: older entries are hand-cased ("Jared McCain") where the
       // bio now renders "Jared Mccain", and an exact match listed him twice.
-      const onBlock = new Set(pendingEntries.map(e => e.player.toLowerCase()));
+      const onBlock = new Set(pendingEntries.map(e => nameKey(e.player)));
       const available = myRoster
-        .filter(r => { const bio = biosData[r.SLUG]; return r.SLUG && (!bio || bio.type !== 'dead') && !onBlock.has(displayNameFromBio((bio && bio.name) || '').toLowerCase()); })
+        .filter(r => { const bio = biosData[r.SLUG]; return r.SLUG && (!bio || bio.type !== 'dead') && !onBlock.has(nameKey(displayNameFromBio((bio && bio.name) || ''))); })
         .map(r => { const bio = biosData[r.SLUG] || {}; return { player: displayNameFromBio(bio.name || '') || r.SLUG }; });
       body.appendChild(blockSection('player',
         available.map(({ player }) => ({ value: player, label: player })),
@@ -1414,13 +1415,13 @@
           if (!VALID_TEAMS_LC.has(team.toLowerCase())) return;
           const block = tbData[team] || {};
           const notesByPlayer = {};
-          (block.players || []).forEach(({ player, notes }) => { notesByPlayer[player] = notes || ''; });
+          (block.players || []).forEach(({ player, notes }) => { notesByPlayer[nameKey(player)] = notes || ''; });
           rosterRows.forEach(r => {
             const slug = r.SLUG;
             const bio = biosData[slug];
             if (!slug || (bio && bio.type === 'dead')) return;
             const player = displayNameFromBio((bio && bio.name) || '') || slug;
-            tableRows.push(makePlayerRow(team, player, notesByPlayer[player], slug));
+            tableRows.push(makePlayerRow(team, player, notesByPlayer[nameKey(player)], slug));
           });
           (block.picks || []).forEach(p => tableRows.push(makePickRow(team, p)));
         });
