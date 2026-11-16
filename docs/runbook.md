@@ -214,10 +214,22 @@ work. What decides it:
   is the deploy, pages and their scripts change together, and a day-old
   `team.js` against today's API is a worse failure than a 304.
 - **The stylesheets.** They reach a page through `@import`, four levels deep.
-  `theme-boot.js` preloads all of them and the three fonts so they download
-  together rather than level by level.
-- **The API is one process.** An endpoint that does a second of Python holds
-  up every other request. The player gamelog did (it parsed every raw box
-  score file per request) until it was indexed; time a new endpoint that
-  reads the raw files before shipping it.
+  Every page's `<head>` carries static preloads for all of them and the three
+  fonts (the `NBN:preload` block, written by `build/head_preloads.py` from
+  `theme-boot.js`'s list, checked by the pre-commit hook), so they start while
+  the page is still arriving. When only `theme-boot.js` inserted them, they
+  waited for that script's own round trip: about 420ms on the homepage
+  (2026-11-15).
+- **The API is one process, and its requests share one CPU.** An endpoint
+  that does a second of Python holds up every other request. The player
+  gamelog did (it parsed every raw box score file per request) until it was
+  indexed; time a new endpoint that reads the raw files before shipping it.
+  Many cheap requests at once are the same problem: on 2026-11-15
+  `/api/tonight` answered in 98ms alone and in 1.3s among the homepage's
+  thirty, because they all ran side by side. So the homepage asks in three
+  waves (`index.html`, "Who loads first"): the Tonight graphic and the first
+  screen, then the rest of the main column once the graphic's answer is in,
+  then the side column's lists. **A new homepage card joins the latest wave
+  it can live with**, and a public GET goes through `jget`, which shares one
+  request per URL with nav.js (`nbnGetJSON`).
 

@@ -56,6 +56,9 @@ any other hook has to live here too rather than in `.git/hooks`.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
+- Run build/head_preloads.py --check; abort if a page that loads theme-boot.js
+  lacks the static NBN:preload block, or carries a stale one, so a new page
+  starts its stylesheets and fonts as early as the rest.
 - Run build/check_design_drift.py; abort if any file gained a literal font
   size, colour, radius, gradient, shadow, emoji or bare .page container
   against build/design-drift-baseline.json. A ratchet: counts only go down.
@@ -223,6 +226,14 @@ if og_tags.exists():
     if result.returncode != 0:
         print('\nCommit aborted: link-preview tags are missing or stale.')
         print('Add the page to PAGES in build/og_tags.py, then run: python3 build/og_tags.py')
+        sys.exit(1)
+
+head_preloads = Path('build/head_preloads.py')
+if head_preloads.exists():
+    result = subprocess.run(['python3', str(head_preloads), '--check'])
+    if result.returncode != 0:
+        print('\nCommit aborted: a page is missing its stylesheet/font preloads, or has stale ones.')
+        print('Run: python3 build/head_preloads.py')
         sys.exit(1)
 
 design_drift = Path('build/check_design_drift.py')
