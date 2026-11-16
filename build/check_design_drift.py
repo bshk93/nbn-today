@@ -33,6 +33,7 @@ the 30 generated team-page shells):
   shadow     any box-shadow other than `none`
   emoji      emoji in markup and scripts, which the site uses as icons
   bare_page  a `class="page"` container that isn't on ui-page
+  link_glyph an arrow after a link's or button's words ("All →"): a word is enough
 """
 import argparse
 import json
@@ -66,6 +67,11 @@ METRICS = {
     # ▶ ◀ with VS16 (U+FE0F) render as emoji; bare, they are text arrows.
     'emoji':     re.compile('[\U0001F300-\U0001FAFF☀-➿⭐⭕]|[▶◀]\uFE0F'),
     'bare_page': re.compile(r'class="page"'),
+    # An arrow or chevron at the end of a link's or button's words ("Game
+    # preview →", "All ›"). The design system's rule is a word with no glyph
+    # (docs/design-system.md, "Linked heading"). Icon-only controls, like the
+    # prev/next chevrons on a band, carry no words and aren't counted.
+    'link_glyph': re.compile(r'\w\s*(?:[→›»↗➜➔]|&rarr;|&rsaquo;|&raquo;)\s*</(?:a|button)>'),
 }
 
 

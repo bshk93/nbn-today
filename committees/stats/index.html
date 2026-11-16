@@ -545,7 +545,7 @@
     wrap.className = 'day-vod';
     const show = () => {
       wrap.innerHTML = rec.youtube_url
-        ? `VOD: <a href="${esc(rec.youtube_url)}" target="_blank" rel="noopener">watch ↗</a>`
+        ? `VOD: <a href="${esc(rec.youtube_url)}" target="_blank" rel="noopener">watch</a>`
         : '<span class="dim">No VOD linked</span>';
       if (canSetVod()) {
         const b = document.createElement('button');

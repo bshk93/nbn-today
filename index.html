@@ -1869,7 +1869,7 @@
         .catch(() => [null, null]);
       if (!a || !h || (!a.five.some(Boolean) && !h.five.some(Boolean))) {
         el.innerHTML = `<div class="dash-five-box">${title}<div class="dash-five-foot">Lineups unavailable.`
-          + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview ›</a>` : '') + '</div></div>';
+          + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview</a>` : '') + '</div></div>';
         return;
       }
       // Last name only: the card is too narrow for two full names a row.
@@ -1918,7 +1918,7 @@
           ? `<div class="dash-five-row dash-five-avg"><span></span><span></span><span class="dash-five-ovr">${avg(a)}</span>`
             + `<span class="dash-five-slot">AVG</span><span class="dash-five-ovr">${avg(h)}</span><span></span><span></span></div>`
           : `<div class="dash-five-foot">Avg OVR ${avg(a)} · ${avg(h)}<br>${how}`
-            + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview ›</a>` : '') + '</div>')
+            + (preview ? `<a class="dash-five-preview" href="${esc(preview)}">Game preview</a>` : '') + '</div>')
         + '</div>';
       if (wide) wireAvatars(el);
     }
@@ -2609,7 +2609,7 @@
         + `style="background-image:url('https://i.ytimg.com/vi/${esc(yt.id)}/hqdefault.jpg')">${NbnVod.ICON}</button>`
         + `</div><div class="dash-vod-cap"><span class="dash-vod-teams">${label}</span>`
         + `<span class="dash-vod-meta">${meta || ''}`
-        + `<a class="dash-vod-yt" href="${esc(url)}" target="_blank" rel="noopener">YouTube ↗</a>`
+        + `<a class="dash-vod-yt" href="${esc(url)}" target="_blank" rel="noopener">YouTube</a>`
         + `</span></div></div>`;
       card.querySelector('.dash-vod-play').addEventListener('click', e => {
         e.currentTarget.outerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(yt.id)}?autoplay=1`
@@ -3963,7 +3963,7 @@
       const head = `<span class="live-pill"><span class="live-dot"></span>LIVE</span>`
         + `<span class="live-title">${esc(s.title || 'Nothing But Net is live')}</span>`
         + (meta ? `<span class="live-meta">${esc(meta)}</span>` : '')
-        + `<a class="live-link" href="https://www.twitch.tv/${CHANNEL}" target="_blank" rel="noopener">Watch on Twitch ↗</a>`;
+        + `<a class="live-link" href="https://www.twitch.tv/${CHANNEL}" target="_blank" rel="noopener">Watch on Twitch</a>`;
       const headEl = el.querySelector('.live-head');
       if (headEl) {
         // Already playing: refresh the text, never rebuild the iframe (that restarts it).
