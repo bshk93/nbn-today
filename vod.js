@@ -12,8 +12,7 @@
   const ICON = '<svg class="vod-icon" viewBox="0 0 20 14" aria-hidden="true">'
     + '<rect width="20" height="14" rx="4" fill="red"/><path d="M8 4l5.5 3L8 10z" fill="white"/></svg>';
 
-  const esc = s => String(s).replace(/[&<>"']/g,
-    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const esc = NBN.esc;
 
   // Markup for a played game: the button, ⏳, or '' — never the stream tag.
   function gameHtml(g, label = 'Watch') {

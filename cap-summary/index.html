@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Cap Summary</title>
@@ -485,18 +486,7 @@
   <div id="chart-tooltip"></div>
 
   <script>
-    const TEAMS = {
-      ATL: "Atlanta Hawks",     BKN: "Brooklyn Nets",       BOS: "Boston Celtics",
-      CHA: "Charlotte Hornets", CHI: "Chicago Bulls",        CLE: "Cleveland Cavaliers",
-      DAL: "Dallas Mavericks",  DEN: "Denver Nuggets",       DET: "Detroit Pistons",
-      GSW: "Golden State Warriors", HOU: "Houston Rockets",  IND: "Indiana Pacers",
-      LAC: "LA Clippers",       LAL: "Los Angeles Lakers",   MEM: "Memphis Grizzlies",
-      MIA: "Miami Heat",        MIL: "Milwaukee Bucks",      MIN: "Minnesota Timberwolves",
-      NOP: "New Orleans Pelicans", NYK: "New York Knicks",   OKC: "Oklahoma City Thunder",
-      ORL: "Orlando Magic",     PHI: "Philadelphia 76ers",   PHX: "Phoenix Suns",
-      POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
-      TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
-    };
+    const TEAMS = NBN.TEAMS;
 
     // Cap-usage categories, in display order. Drives both the table's columns
     // and the Salaries chart tab's stack/legend (see classify() and

@@ -109,16 +109,7 @@
     document.head.appendChild(style);
   }
 
-  const TEAMS = {
-    ATL:"Atlanta Hawks",BKN:"Brooklyn Nets",BOS:"Boston Celtics",CHA:"Charlotte Hornets",
-    CHI:"Chicago Bulls",CLE:"Cleveland Cavaliers",DAL:"Dallas Mavericks",DEN:"Denver Nuggets",
-    DET:"Detroit Pistons",GSW:"Golden State Warriors",HOU:"Houston Rockets",IND:"Indiana Pacers",
-    LAC:"LA Clippers",LAL:"Los Angeles Lakers",MEM:"Memphis Grizzlies",MIA:"Miami Heat",
-    MIL:"Milwaukee Bucks",MIN:"Minnesota Timberwolves",NOP:"New Orleans Pelicans",NYK:"New York Knicks",
-    OKC:"Oklahoma City Thunder",ORL:"Orlando Magic",PHI:"Philadelphia 76ers",PHX:"Phoenix Suns",
-    POR:"Portland Trail Blazers",SAC:"Sacramento Kings",SAS:"San Antonio Spurs",TOR:"Toronto Raptors",
-    UTA:"Utah Jazz",WAS:"Washington Wizards",
-  };
+  const TEAMS = NBN.TEAMS;
   const _FA_HOLD_TYPES = ['UFA', 'RFA'];
   const BLOCK_W = 5;
   const BLOCK_COL_W = [17, 11, 8, 12, 12];
@@ -184,12 +175,8 @@
     }
 
     function displayName(raw) {
-      if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
-      if (!raw) return '';
-      const [last, first] = raw.split(', ');
-      const tc = s => s.toLowerCase().replace(/(^|[\s\-'’])([a-z])/g, (_, sep, ch) => sep + ch.toUpperCase());
-      return first ? `${tc(first)} ${tc(last)}` : tc(last);
-    }
+    return nbnPlayerName(raw);  // /names.js
+  }
 
     function curYr() {
       if (LEAGUE_YEAR) return LEAGUE_YEAR;

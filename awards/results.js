@@ -178,17 +178,7 @@
     { key: 'All-Rookie',  label: 'All-Rookie',  maxRank: 2, scoring: [5,3],   playerCol: 'Player', teamVote: true, tierSize: 5, numTiers: 2 },
   ];
 
-  const TEAMS = {
-    ATL:'Atlanta Hawks', BKN:'Brooklyn Nets', BOS:'Boston Celtics', CHA:'Charlotte Hornets',
-    CHI:'Chicago Bulls', CLE:'Cleveland Cavaliers', DAL:'Dallas Mavericks', DEN:'Denver Nuggets',
-    DET:'Detroit Pistons', GSW:'Golden State Warriors', HOU:'Houston Rockets', IND:'Indiana Pacers',
-    LAC:'LA Clippers', LAL:'Los Angeles Lakers', MEM:'Memphis Grizzlies', MIA:'Miami Heat',
-    MIL:'Milwaukee Bucks', MIN:'Minnesota Timberwolves', NOP:'New Orleans Pelicans',
-    NYK:'New York Knicks', OKC:'Oklahoma City Thunder', ORL:'Orlando Magic',
-    PHI:'Philadelphia 76ers', PHX:'Phoenix Suns', POR:'Portland Trail Blazers',
-    SAC:'Sacramento Kings', SAS:'San Antonio Spurs', TOR:'Toronto Raptors',
-    UTA:'Utah Jazz', WAS:'Washington Wizards',
-  };
+  const TEAMS = NBN.TEAMS;
 
   function displayNameFromBio(bios, slug) {
     const bio = bios[slug];

@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Frivolities &amp; Viz</title>
@@ -37,8 +38,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <!-- /NBN:og -->
   <style>
-                
-                
+
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
@@ -637,18 +637,7 @@
     // Each team's chart colour, from build/team-colors.json (team-colors.js).
     const TEAM_COLORS = Object.fromEntries(Object.entries(window.NBN_TEAM_COLORS).map(([t, c]) => [t, c.chart]));
 
-    const TEAMS = {
-      ATL: "Atlanta Hawks",     BKN: "Brooklyn Nets",       BOS: "Boston Celtics",
-      CHA: "Charlotte Hornets", CHI: "Chicago Bulls",        CLE: "Cleveland Cavaliers",
-      DAL: "Dallas Mavericks",  DEN: "Denver Nuggets",       DET: "Detroit Pistons",
-      GSW: "Golden State Warriors", HOU: "Houston Rockets",  IND: "Indiana Pacers",
-      LAC: "LA Clippers",       LAL: "Los Angeles Lakers",   MEM: "Memphis Grizzlies",
-      MIA: "Miami Heat",        MIL: "Milwaukee Bucks",      MIN: "Minnesota Timberwolves",
-      NOP: "New Orleans Pelicans", NYK: "New York Knicks",   OKC: "Oklahoma City Thunder",
-      ORL: "Orlando Magic",     PHI: "Philadelphia 76ers",   PHX: "Phoenix Suns",
-      POR: "Portland Trail Blazers", SAC: "Sacramento Kings", SAS: "San Antonio Spurs",
-      TOR: "Toronto Raptors",   UTA: "Utah Jazz",            WAS: "Washington Wizards",
-    };
+    const TEAMS = NBN.TEAMS;
 
     function formatName(raw) {
       if (typeof nbnPlayerName === 'function') return nbnPlayerName(raw);  // /names.js
@@ -1012,8 +1001,7 @@
       return '$' + n;
     }
 
-    const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const esc = NBN.esc;
 
     // Mirrors _apply_release's dead-cap logic (transactions.py) — the codebase's
     // canonical definition of what's actually guaranteed for a contract year.
@@ -2464,36 +2452,11 @@
 
   
     // ---- helpers -------------------------------------------------------------
-    function esc(s) {
-      return String(s == null ? '' : s)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
+    function esc(s) { return NBN.esc(s); }
   
-    function parseLine(line) {
-      const out = []; let cur = '', quoted = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (quoted && line[i + 1] === '"') { cur += '"'; i++; }
-          else quoted = !quoted;
-        } else if (ch === ',' && !quoted) { out.push(cur); cur = ''; }
-        else cur += ch;
-      }
-      out.push(cur);
-      return out;
-    }
+    
   
-    function parseCSV(text) {
-      const lines = text.trim().split('\n');
-      const headers = parseLine(lines[0]).map(h => h.trim());
-      return lines.slice(1).map(line => {
-        const vals = parseLine(line);
-        const obj = {};
-        headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
-        return obj;
-      });
-    }
+    function parseCSV(text) { return NBN.parseCSV(text); }
   
     const num = v => {
       const n = parseFloat(v);

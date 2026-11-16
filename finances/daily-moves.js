@@ -67,7 +67,7 @@
     document.head.appendChild(s);
   }
 
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = NBN.esc;
   const fmt = (p, dp = 2) => (p > 0 ? '▲ +' : p < 0 ? '▼ ' : '') + p.toFixed(dp) + '%';
   const short = p => (p > 0 ? '+' : '') + p.toFixed(1);
   const dayLabel = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });

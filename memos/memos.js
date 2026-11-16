@@ -27,7 +27,6 @@ window.memoHeader = function () {
   const d = new Date(m.date + 'T12:00:00').toLocaleDateString('en-US',
     { year: 'numeric', month: 'long', day: 'numeric' });
   const row = (k, v) => `<div class="memo-meta-row"><span class="memo-meta-key">${k}</span><span>${v}</span></div>`;
-  const esc = s => String(s).replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = NBN.esc;
   el.innerHTML = row('Memo', esc(m.number)) + row('Date', d) + row('From', 'League Office') + row('To', esc(m.to));
 };

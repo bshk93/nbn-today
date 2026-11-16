@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <script src="/names.js"></script>
@@ -1391,9 +1392,7 @@
       overlay.focus();
     }
 
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    }
+    function escapeHtml(s) { return NBN.esc(s); }
 
     function expiredBlankPicks(state) {
       if (!state || !state.round1_date) return [];

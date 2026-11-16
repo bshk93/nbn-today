@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/players/subpage.css">
@@ -193,9 +194,7 @@
       const m = /^(\d{2})-(\d{2})$/.exec(season || '');
       return m ? `20${m[1]}-${m[2]}` : (season || '—');
     }
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+    function esc(s) { return NBN.esc(s); }
     function fmtEditTs(ts) {
       if (!ts) return '—';
       const datePart = fmtDate((ts.split('T')[0]) || '');

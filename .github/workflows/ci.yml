@@ -34,8 +34,10 @@ jobs:
           python3 build/head_preloads.py --check
           python3 build/make_ui_icons.py --check
           python3 build/make_team_colors_css.py --check
-      - name: Design drift ratchet
-        run: python3 build/check_design_drift.py
+      - name: Design drift and duplicate-helper ratchets
+        run: |
+          python3 build/check_design_drift.py
+          python3 build/check_dup_helpers.py
       - name: Build and box score tests
         run: |
           pip install -q openpyxl requests   # build/poopoo.py reads and fetches the league sheet
