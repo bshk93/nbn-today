@@ -123,7 +123,7 @@ const PAGES = [
   { path: '/',                        selector: '.dash-feed-row',  min: 5,  what: 'the merged league feed' },
   // The page list that used to sit below the dashboard is the site sidebar
   // now; the homepage is the one place every row of it must be reachable from.
-  { path: '/',                        selector: '.sidebar .sb-row', min: 40, what: 'the site sidebar (the old page directory)' },
+  { path: '/',                        selector: '.sidebar .sb-row', min: 25, what: 'the site sidebar (hub sections fold League Office, About, Media and Games into one row each)' },
   // The rankings strip resolves the newest published edition across every
   // series and then fetches it — two chained calls, so it fails in ways the
   // single-fetch cards cannot. Five, not 30: this is the top of the standing.
