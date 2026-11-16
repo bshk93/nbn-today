@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Write | News</title>
@@ -347,7 +348,7 @@ function addTag(raw) {
   tags.push(t); renderTags();
 }
 function removeTag(i) { tags.splice(i, 1); renderTags(); }
-function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escHtml(s) { return NBN.esc(s); }
 document.getElementById('tag-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(e.target.value); e.target.value = ''; }
   else if (e.key === 'Backspace' && !e.target.value && tags.length) { removeTag(tags.length - 1); }

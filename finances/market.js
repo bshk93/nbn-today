@@ -8,7 +8,7 @@
 // FinMarket.open(team) opens a row from outside (Back, the Books tab).
 (function () {
   const API = '/api';
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = NBN.esc;
   const yen = (v, unit = 'M') => v == null ? '—' : (v < 0 ? '−' : '') + 'NB¥' + (Math.abs(v) / (unit === 'B' ? 1e9 : 1e6)).toFixed(unit === 'B' ? 2 : 0) + unit;
   const signedYen = v => (v > 0 ? '+' : '') + yen(v);
   const pct = (v, dp = 1) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(dp) + '%';

@@ -88,7 +88,7 @@
   const side = {};            // market id → 'buy' | 'sell'
   const contract = {};        // market id → 'yes' | 'no'
 
-  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const esc = NBN.esc;
   const nby = (n, d = 0) => 'NB¥' + Math.abs(Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
   // A share pays NB¥100, so its price in NB¥ is also its odds in percent.
   const px = p => 'NB¥' + (Math.round(p * 100) / 100).toFixed(2);

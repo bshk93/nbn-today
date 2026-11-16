@@ -38,6 +38,9 @@ any other hook has to live here too rather than in `.git/hooks`.
   no output but its own journal, so when its inputs moved out of the repo it
   failed silently for six weeks and awarded nothing. Needs the data directory,
   like smoke_test.py; skipped where node isn't installed.
+- Run build/check_dup_helpers.py; abort if a page defines its own copy of a
+  helper nbn-data.js provides (escaper, CSV parser, team map) beyond the
+  baseline, or uses NBN.* without loading /nbn-data.js.
 - Run build/og_tags.py --check; abort if any page has missing or stale link-preview
   tags. New pages are the case this catches: without it they ship with no Discord
   unfurl and nothing says so.
@@ -136,6 +139,14 @@ if ach_inputs.exists() and shutil.which('node') and HAVE_DATA:
         print(result.stdout)
         print('\nCommit aborted: the achievement awarder can no longer read its inputs.')
         print('Fix INPUTS in build/achievement-notify.js, or bypass with: git commit --no-verify')
+        sys.exit(1)
+
+dup = Path('build/check_dup_helpers.py')
+if dup.exists():
+    result = subprocess.run(['python3', str(dup)])
+    if result.returncode != 0:
+        print('\nCommit aborted: a shared helper was copied into a page again, or a page')
+        print('uses NBN.* without loading /nbn-data.js (see above).')
         sys.exit(1)
 
 og_tags = Path('build/og_tags.py')

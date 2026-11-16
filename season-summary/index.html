@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Season Summary</title>
@@ -88,7 +89,7 @@
 
   <script src="/names.js"></script>
   <script>
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const esc = NBN.esc;
     const blank = s => !s || s === 'NA';
     const logo = abbr => `<img src="/logos/sm/logo-${abbr.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">`;
     const teamLink = abbr => `<a href="/teams/${abbr}/">${logo(abbr)}${abbr}</a>`;

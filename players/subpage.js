@@ -11,7 +11,7 @@
     { key: 'injuries', label: 'Injuries',   path: '/players/injuries/' },
   ];
 
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = NBN.esc;
   const href = (key, slug) => `${PAGES.find(p => p.key === key).path}?p=${encodeURIComponent(slug)}`;
 
   // The strip, into an existing element (the profile reuses its own) or a new one.

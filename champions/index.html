@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Hall of Champions</title>
@@ -205,16 +206,7 @@
 
   <script src="/nav.js"></script>
   <script>
-  const TEAMS = {
-    ATL:"Atlanta Hawks", BKN:"Brooklyn Nets", BOS:"Boston Celtics", CHA:"Charlotte Hornets",
-    CHI:"Chicago Bulls", CLE:"Cleveland Cavaliers", DAL:"Dallas Mavericks", DEN:"Denver Nuggets",
-    DET:"Detroit Pistons", GSW:"Golden State Warriors", HOU:"Houston Rockets", IND:"Indiana Pacers",
-    LAC:"LA Clippers", LAL:"Los Angeles Lakers", MEM:"Memphis Grizzlies", MIA:"Miami Heat",
-    MIL:"Milwaukee Bucks", MIN:"Minnesota Timberwolves", NOP:"New Orleans Pelicans", NYK:"New York Knicks",
-    OKC:"Oklahoma City Thunder", ORL:"Orlando Magic", PHI:"Philadelphia 76ers", PHX:"Phoenix Suns",
-    POR:"Portland Trail Blazers", SAC:"Sacramento Kings", SAS:"San Antonio Spurs", TOR:"Toronto Raptors",
-    UTA:"Utah Jazz", WAS:"Washington Wizards",
-  };
+  const TEAMS = NBN.TEAMS;
   const ROUND_NAMES = { "1":"First Round", "2":"Conf. Semifinals", "3":"Conf. Finals", "4":"NBN Finals" };
 
   // Icon-size logos from logos/sm/; the banner draws its logo big, so it

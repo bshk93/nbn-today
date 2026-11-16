@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Article | News</title>
@@ -379,7 +380,7 @@ let isAuthor = false;
 marked.use({ gfm: true, breaks: true });
 function getToken() { return localStorage.getItem('nbn_token'); }
 function fmtDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); }
-function escHtml(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escHtml(s) { return NBN.esc(s); }
 function badgeHtml(s) { const l = { draft: 'Draft', submitted: 'In Queue', published: 'Published' }; return `<span class="ui-badge${{ submitted: ' ui-badge--warning', published: ' ui-badge--success' }[s] || ''}">${l[s] || s}</span>`; }
 
 function computeFlags(a) {

@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/css/tonight-hero.css">
@@ -1326,8 +1327,7 @@
     const token = localStorage.getItem('nbn_token');
     const auth = token ? { Authorization: 'Bearer ' + token } : {};
 
-    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const esc = NBN.esc;
 
     // A plain GET goes through nav.js's nbnGetJSON, so a URL nav.js (or another
     // card) also asks for is fetched once. Anything with options — a token, a
@@ -3950,8 +3950,7 @@
     const CHANNEL = 'nothingbutnet';
     const el = document.getElementById('live-banner');
     if (!el) return;
-    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const esc = NBN.esc;
 
     // Twitch refuses to play an embed whose `parent` isn't the host serving it.
     // Muted, because browsers block autoplay with sound.

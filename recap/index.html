@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <title>NBN | Season Recap</title>
@@ -103,7 +104,7 @@
     // streaks, opponents), the ledger's trades, and player_awards.csv.
     // Nothing is stored for it. ?team=BOS&season=25-26; nginx sends link
     // unfurlers to /api/og/recap for a card with the same headline.
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const esc = NBN.esc;
     const $ = id => document.getElementById(id);
     const seasonLabel = s => `20${s.slice(0, 2)}–${s.slice(3)}`;
     const jget = url => fetch(url).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))));
