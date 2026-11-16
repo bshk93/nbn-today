@@ -19,18 +19,7 @@
 
 const API = '/api';
 
-const TEAMS = {
-  ATL: 'Atlanta Hawks',        BKN: 'Brooklyn Nets',       BOS: 'Boston Celtics',
-  CHA: 'Charlotte Hornets',    CHI: 'Chicago Bulls',       CLE: 'Cleveland Cavaliers',
-  DAL: 'Dallas Mavericks',     DEN: 'Denver Nuggets',      DET: 'Detroit Pistons',
-  GSW: 'Golden State Warriors',HOU: 'Houston Rockets',     IND: 'Indiana Pacers',
-  LAC: 'LA Clippers',          LAL: 'Los Angeles Lakers',  MEM: 'Memphis Grizzlies',
-  MIA: 'Miami Heat',           MIL: 'Milwaukee Bucks',     MIN: 'Minnesota Timberwolves',
-  NOP: 'New Orleans Pelicans', NYK: 'New York Knicks',     OKC: 'Oklahoma City Thunder',
-  ORL: 'Orlando Magic',        PHI: 'Philadelphia 76ers',  PHX: 'Phoenix Suns',
-  POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings',  SAS: 'San Antonio Spurs',
-  TOR: 'Toronto Raptors',      UTA: 'Utah Jazz',           WAS: 'Washington Wizards',
-};
+const TEAMS = NBN.TEAMS;
 const ABBRS = Object.keys(TEAMS);
 
 const state = {
@@ -53,8 +42,7 @@ const state = {
 
 const $ = id => document.getElementById(id);
 const getToken = () => localStorage.getItem('nbn_token');
-const escHtml = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const escHtml = NBN.esc;
 
 function fmtDate(iso) {
   if (!iso) return '';

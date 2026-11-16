@@ -162,18 +162,7 @@
     { key: 'All-Rookie',  label: 'All-Rookie',  size: 10, isTeam: false, tierSize: 5,   rookiesOnly: true  },
   ];
 
-  const TEAMS = {
-    ATL: 'Atlanta Hawks',    BKN: 'Brooklyn Nets',       BOS: 'Boston Celtics',
-    CHA: 'Charlotte Hornets',CHI: 'Chicago Bulls',        CLE: 'Cleveland Cavaliers',
-    DAL: 'Dallas Mavericks', DEN: 'Denver Nuggets',       DET: 'Detroit Pistons',
-    GSW: 'Golden State Warriors', HOU: 'Houston Rockets', IND: 'Indiana Pacers',
-    LAC: 'LA Clippers',      LAL: 'Los Angeles Lakers',   MEM: 'Memphis Grizzlies',
-    MIA: 'Miami Heat',       MIL: 'Milwaukee Bucks',      MIN: 'Minnesota Timberwolves',
-    NOP: 'New Orleans Pelicans', NYK: 'New York Knicks',  OKC: 'Oklahoma City Thunder',
-    ORL: 'Orlando Magic',    PHI: 'Philadelphia 76ers',   PHX: 'Phoenix Suns',
-    POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings', SAS: 'San Antonio Spurs',
-    TOR: 'Toronto Raptors',  UTA: 'Utah Jazz',            WAS: 'Washington Wizards',
-  };
+  const TEAMS = NBN.TEAMS;
 
   const TEAM_ROLES = new Set([
     'atl','bkn','bos','cha','chi','cle','dal','den','det','gsw',

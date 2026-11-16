@@ -16,6 +16,7 @@
   <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
   <!-- /NBN:preload -->
   <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/css/shared.css">
   <link rel="stylesheet" href="/players/subpage.css">
@@ -170,7 +171,7 @@
   const profile = `/players/?p=${encodeURIComponent(slug)}`;
   const today = new Date().toLocaleDateString('en-CA');
 
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = NBN.esc;
   const fmt = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
   // A table date: in full, or 3/31/26 on a phone so the log fits.
   const tdate = iso => iso ? `<span class="d-long">${fmt(iso)}</span><span class="d-short">${iso.slice(5, 7).replace(/^0/, '')}/${iso.slice(8).replace(/^0/, '')}/${iso.slice(2, 4)}</span>` : '—';

@@ -81,7 +81,7 @@
     }
   `;
 
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const esc = NBN.esc;
   const SLOTS = ['PG', 'SG', 'SF', 'PF', 'C', '6TH'];
   const SLOT_LABEL = { '6TH': '6th' };
   const logo = t => `<img class="pk-logo" src="/logos/sm/logo-${esc(String(t).toLowerCase())}.webp" alt="" onerror="this.style.visibility='hidden'">`;
