@@ -139,7 +139,7 @@ still reads the setting exactly once.
 `round_id` — a deliberate *second* window, with ballots already cast left in the
 old bucket. `ffa-extend` keeps `round_id`, the offers and the ballots, and only
 buys time. Both are on the player view's "FAC Head controls" (`windowControls` /
-`extendModal` in `pdc/index.html`), and the Open button confirms what it will
+`extendModal` in `committees/pdc/index.html`), and the Open button confirms what it will
 discard when a clock exists.
 
 Expiry has no scheduler (§ 4.1) — `free_agency._sweep_ffa_expiry` announces from

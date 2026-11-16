@@ -603,7 +603,7 @@ The committee shell is scaffolded and waiting:
   `poext_head → poext` in `ROLE_IMPLIES`
 - `nav.js:233` already routes those roles to `/pdc`
 - `members/index.html` has the role badges and styling
-- `pdc/index.html` has a `<div id="poext" hidden>` and the copy *"PO-EXT — granted,
+- `committees/pdc/index.html` has a `<div id="poext" hidden>` and the copy *"PO-EXT — granted,
   but this page is a stub for PO-EXT for now. Nothing to do yet."*
 - `GET /api/fa/state` already accepts `poext` in its role check
 

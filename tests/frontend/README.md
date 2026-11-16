@@ -43,6 +43,8 @@ and nothing writes.
 `dev.nbn.today` works via `NBN_BASE` but is not the default, since it sits
 behind basic auth.
 
+**CI runs it on every push** (`.github/workflows/ci.yml`, the `render` job), against the commit served by `build/preview_live.py`, which reads data and `/api` from nbn.today and refuses writes.
+
 **It is not in the pre-commit hook.** It launches a browser and loads 43 pages
 over the network: a couple of minutes, plus a hard dependency on the site being up
 and on `npm ci` having been run. None of that belongs between a commit and its
