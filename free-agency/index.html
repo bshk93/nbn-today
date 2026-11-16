@@ -537,6 +537,9 @@
     let LEAGUE_YEAR = null;
     let BIOS = {};         // slug -> bio
     let YOS = {};          // slug -> years of experience entering this league year (§ 3.1)
+    // Settles once YOS is in. Only the offer form reads YOS, so the table
+    // doesn't wait for it; the form does (openOfferForm).
+    let yosReady = Promise.resolve();
     let CAP_LEVELS = {};   // season -> { min_salary_scale, ... }, from GET /api/cap-levels
     let TEAM_MAP = {};     // slug -> team abbr, from GET /api/team-map
 
@@ -1006,7 +1009,9 @@
       return t;
     }
 
-    function openOfferForm(team, row, existing) {
+    async function openOfferForm(team, row, existing) {
+      // The experience prefill reads YOS; normally long loaded by the first click.
+      await yosReady;
       const slug = row.slug;
       const F = seedForm(row, existing);
       const readOnly = !!existing && existing.status === 'submitted';
@@ -2025,7 +2030,11 @@
       const statusEl = document.getElementById('status');
       try {
         const signedIn = maybeSignedIn();
-        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson, seasonsCsv, yosJson] = await Promise.all([
+        // Years of service is the slowest call here and only the offer form
+        // reads it, so it loads alongside the table instead of in front of it.
+        yosReady = fetch('/api/years-of-service').then(r => r.ok ? r.json() : null).catch(() => null)
+          .then(yosJson => { YOS = (yosJson && yosJson.years) || {}; });
+        const [pool, biosJson, ovrJson, teamMapJson, me, board, ly, myOffers, capLevelsJson, seasonsCsv] = await Promise.all([
           fetch('/api/fa/pool').then(r => r.ok ? r.json() : {}),
           fetch('/api/players').then(r => r.ok ? r.json() : {}),
           fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
@@ -2036,12 +2045,10 @@
           signedIn ? api('/fa/offers').catch(() => []) : Promise.resolve([]),
           fetch('/api/cap-levels').then(r => r.ok ? r.json() : {}),
           fetch('/players/player_seasons.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
-          fetch('/api/years-of-service').then(r => r.ok ? r.json() : null).catch(() => null),
         ]);
 
         POOL = pool;
         BIOS = biosJson;
-        YOS = (yosJson && yosJson.years) || {};
         TEAM_MAP = teamMapJson || {};
         CAP_LEVELS = capLevelsJson || {};
         ME = me || ME;
