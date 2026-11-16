@@ -404,13 +404,25 @@ function _fetchMe() {
 // This member's current team abbreviation ("ATL"), or null — read off the
 // tenures the /members/ directory renders from, since /api/me and
 // /api/members/me only name positions ("owner"), not which team.
+// GET /api/members/public, fetched at most once per page (the your-team lookup
+// and member search both read it). Resolves to an array, or null on failure.
+let _membersPromise = null;
+function _membersPublic() {
+  if (!_membersPromise) {
+    _membersPromise = fetch('/api/members/public')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => (Array.isArray(d) ? d : null))
+      .catch(() => null);
+  }
+  return _membersPromise;
+}
+
 let _myTeamPromise = null;
 function _fetchMyTeam() {
   if (!_myTeamPromise) {
     _myTeamPromise = _fetchMe().then(me => {
       if (!me || !me.name) return null;
-      return fetch('/api/members/public')
-        .then(r => r.ok ? r.json() : null)
+      return _membersPublic()
         .then(members => {
           const active = members?.find(m => m.name === me.name)?.tenures?.filter(t => !t.end);
           if (!active?.length) return null;
@@ -1798,8 +1810,10 @@ function _qualifies(page, roles) {
 // ── Search overlay ───────────────────────────────────────────────────────────
 //
 // Unified site search: static pages (SITE_PAGES), team pages (TEAM_LIST),
-// and players (fetched lazily from /api/players). All three are merged into
-// one result list so Ctrl+K / the ⌕ button works as an all-in-one jump box.
+// players (fetched lazily from /api/players) and league members — owners,
+// GMs, past and present (fetched lazily from /api/members/public). All are
+// merged into one result list so Ctrl+K / the ⌕ button works as an
+// all-in-one jump box.
 
 // The six divisions, for the sidebar's Teams panel. NBN's conferences are the
 // NBA's (checked against the standings' East/West seeds, 2026-10-22), so the
@@ -1831,6 +1845,7 @@ let _searchInput = null;
 let _searchResults = null;
 let _playerCache = null;   // { slug: { name, pos, type } }
 let _ovrCache = null;      // { slug: ovrNumber }
+let _memberCache = null;   // [{ name, meta, current }] from /api/members/public
 let _activeIdx = -1;
 let _rolePages = [];       // ROLE_PAGES this member actually qualifies for
 let _rolesChecked = false; // asked once per page, whatever the answer
@@ -1845,7 +1860,7 @@ function openSearch(initialQuery) {
   // Both are lazy and fire only when someone actually opens the search overlay,
   // so nav.js still makes no request on an ordinary page load — which matters,
   // because it loads on every page of the site.
-  Promise.all([_loadPlayerData(), _loadCommitteePages()]).then(() => _filter());
+  Promise.all([_loadPlayerData(), _loadMemberData(), _loadCommitteePages()]).then(() => _filter());
 }
 
 function closeSearch() {
@@ -1858,7 +1873,7 @@ function _buildSearchOverlay() {
   overlay.style.display = 'none';
   overlay.innerHTML = `
     <div class="search-modal">
-      <input class="search-input" type="text" placeholder="Search pages, teams, players…" autocomplete="off" spellcheck="false">
+      <input class="search-input" type="text" placeholder="Search pages, teams, players, members…" autocomplete="off" spellcheck="false">
       <div class="search-results"></div>
       <div class="search-hint">↑↓ navigate · Enter open · Esc close · Ctrl+K</div>
     </div>`;
@@ -1903,7 +1918,7 @@ function _filter() {
   const q = _searchInput.value.trim().toLowerCase();
 
   if (!q) {
-    _searchResults.innerHTML = '<div class="search-empty">Type to search pages, teams, or players…</div>';
+    _searchResults.innerHTML = '<div class="search-empty">Type to search pages, teams, players, or members…</div>';
     return;
   }
 
@@ -1934,12 +1949,24 @@ function _filter() {
       });
   }
 
-  const all = [...pageMatches, ...teamMatches, ...playerMatches];
+  let memberMatches = [];
+  if (_memberCache) {
+    memberMatches = _memberCache
+      .filter(m => m.name.toLowerCase().includes(q))
+      // Name starts with the query first, then current members, then A–Z.
+      .sort((a, b) => (b.name.toLowerCase().startsWith(q) - a.name.toLowerCase().startsWith(q))
+        || (b.current - a.current) || a.name.localeCompare(b.name))
+      .slice(0, 6)
+      .map(m => ({ type: 'Member', icon: 'owner', title: m.name, meta: m.meta,
+                   href: `/members/${encodeURIComponent(m.name)}/` }));
+  }
+
+  const all = [...pageMatches, ...teamMatches, ...memberMatches, ...playerMatches];
 
   if (!all.length) {
-    _searchResults.innerHTML = _playerCache
+    _searchResults.innerHTML = (_playerCache && _memberCache)
       ? '<div class="search-empty">No results</div>'
-      : '<div class="search-empty">No results yet — still loading players…</div>';
+      : '<div class="search-empty">No results yet — still loading…</div>';
     return;
   }
 
@@ -1950,8 +1977,8 @@ function _filter() {
     a.href = r.href;
     a.innerHTML = `
       <span class="search-result-icon">${_navIcon(r.icon)}</span>
-      <span class="search-result-name">${r.title}</span>
-      <span class="search-result-meta">${r.meta ? `${r.meta} &nbsp;·&nbsp; ` : ''}${r.type}</span>`;
+      <span class="search-result-name">${_escSearch(r.title)}</span>
+      <span class="search-result-meta">${r.meta ? `${_escSearch(r.meta)} &nbsp;·&nbsp; ` : ''}${r.type}</span>`;
     a.addEventListener('click', () => closeSearch());
     _searchResults.appendChild(a);
   });
@@ -1990,6 +2017,33 @@ async function _loadCommitteePages() {
   // The jump box works without this; it just won't list the committee pages.
   const roles = await _myRoles();
   _rolePages = ROLE_PAGES.filter(p => _qualifies(p, roles));
+}
+
+function _escSearch(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Each member's search row: name, plus where they are now ("UTA Owner") or,
+// for a former member, the teams they ran ("Former · LAL, ORL").
+async function _loadMemberData() {
+  if (_memberCache) return;
+  const members = await _membersPublic();
+  if (!members) return;   // member search just won't have data this session
+  const pos = p => (p === 'gm' ? 'GM' : p ? p.charAt(0).toUpperCase() + p.slice(1) : '');
+  _memberCache = members.filter(m => m && m.name).map(m => {
+    const ten = Array.isArray(m.tenures) ? m.tenures : [];
+    const open = ten.filter(t => !t.end).sort((a, b) => (b.start || '').localeCompare(a.start || ''));
+    let meta;
+    if (open.length) {
+      meta = open.map(t => `${(t.team || '').toUpperCase()} ${pos(t.position)}`.trim()).join(', ');
+    } else {
+      const teams = [...new Set(ten.slice().sort((a, b) => (b.start || '').localeCompare(a.start || ''))
+        .map(t => (t.team || '').toUpperCase()).filter(Boolean))];
+      meta = teams.length ? `Former · ${teams.join(', ')}` : '';
+    }
+    return { name: m.name, meta, current: open.length > 0 };
+  });
+  _filter();
 }
 
 async function _loadPlayerData() {
