@@ -5721,7 +5721,12 @@ function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, cale
   const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
   const panel = document.getElementById('owner-panel');
   if (!mine) return;
-  const where = { under_cap: 'under the cap', over_cap: 'over the cap', first_apron: 'over the 1st apron', second_apron: 'over the 2nd apron' }[cap.apron_position] || '';
+  // apron_position is null between the cap and the 1st apron (and when the
+  // snapshot has no thresholds), so read the band off the figures then.
+  const ex = cap.salary_ex_holds ?? cap.salary;
+  const where = { under_cap: 'under the cap', over_cap: 'over the cap', first_apron: 'over the 1st apron', second_apron: 'over the 2nd apron' }[cap.apron_position]
+    || (cap.apron2 && ex > cap.apron2 ? 'over the 2nd apron' : cap.apron1 && ex > cap.apron1 ? 'over the 1st apron'
+      : cap.cap && cap.salary > cap.cap ? 'over the cap' : cap.cap ? 'under the cap' : '');
   const [y1, y2] = String(season).split('-').map(Number);
   const nextSeason = `${String((y1 + 1) % 100).padStart(2, '0')}-${String((y2 + 1) % 100).padStart(2, '0')}`;
   // home.lines is keyed by this roster's players.
@@ -5738,7 +5743,7 @@ function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, cale
     extensionCount ? `<li><a href="/extensions/">${extensionCount} player${extensionCount === 1 ? '' : 's'} eligible for an extension</a></li>` : '',
     myBlockEntries.length ? `<li><a href="/tradeblock/">${myBlockEntries.length} on your trading block</a></li>` : '',
   ].join('') || '<li class="none">Nothing waiting on you</li>';
-  panel.innerHTML = `<summary><span class="os-title">Your front office</span><span class="os-brief">${money(cap.salary)} · ${where}</span></summary>
+  panel.innerHTML = `<summary><span class="os-title">Your front office</span><span class="os-brief">${money(cap.salary)}${where ? ` · ${where}` : ''}</span></summary>
     <div class="os-grid">
       <div><div class="lbl">Coming up</div><ul>${dl || '<li class="none">No league deadline ahead this season</li>'}</ul></div>
       <div><div class="lbl">Waiting on you</div><ul>${waiting}</ul></div>
