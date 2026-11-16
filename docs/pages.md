@@ -179,6 +179,24 @@ RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped
 
 `nbntv-classics/index.html` stores blurbs as a plain JS object (`BLURBS`) keyed by `"{DATE}_{player-slug}"` (e.g. `"2021-06-20_curry-stephen"`). This key is stable across rank changes. Empty string means the blurb hasn't been written yet.
 
+## Team page layout
+
+One long page, not tabs (redesigned 2026-11). Top to bottom:
+
+- **Hero** (`header.tn-hero`): the team-colour band with name, franchise facts (`renderHeaderFacts`), this season's record, seed, streak and point diff, and the next-game card. Prev/next arrows and Share sit here too; phones drop the arrows.
+- **Sticky section bar** (`nav#tn-nav`): Season, Roster, Cap & Picks, Schedule, History, Front Office. Each link is an in-page anchor, and the bar highlights whichever section is on screen.
+- **Owner panel** (`details#owner-panel`): only for a member whose roles or `owner_of` name this team. It shows what's coming up (option deadline, trade deadline, draft), what's waiting on you (offer sheets, team options, extension-eligible players, trading block count) and tool links. It's open by default on desktop and collapsed on phones.
+- **Season** (`#season-grid`): last-10 form bars, conference standings ±3, team leaders, both projected fives for the next game, and injuries.
+- **Roster**: five starter cards, then the full roster table with What If, edit mode and the Moves menu. On phones the table collapses to two lines per player (name, then position · OVR · age, then contract and stats).
+- **Cap & Picks**: the cap bar (cap, 1st and 2nd apron markers), Cap Health, exceptions, trade exceptions and picks.
+- **Schedule, History** (franchise, all-time, draft, season log) and **Front Office** (coaching settings for the team's own front office, then the IRL feed).
+
+Everything above the roster table is drawn by `renderSeasonTop` from a single `GET /api/home/team/{abbr}` call, which starts before the page's main fetch.
+
+The panels below the fold are `.tab-panel`s and still load lazily. An IntersectionObserver calls `revealPanel` when a panel comes within 600px of the screen, and `whenTabShown(tab, fn)` queues work until then.
+
+Old tab hashes still land in the right place: `#franchise`, `#coaching`, `#schedule`, `#draft` and `#irl` go through `goToSection`. It reveals the panel, then `holdSection` keeps the target pinned while sections above it fill in, until the reader scrolls or 8 seconds pass.
+
 ## Team page edit mode
 
 The "Edit" button on Roster and Draft Picks sections in team pages calls `setupEditable`, which uses `buildEditableGrid` for in-browser table editing. Saves go to the API backend (`PUT /api/roster/{ABB}`, and `PUT`/`DELETE /api/picks/{year}/{rnd}/{orig}` one pick at a time) with a `Bearer` token. Token is prompted via a modal and persisted in `localStorage`. A 403 response clears the stored token.

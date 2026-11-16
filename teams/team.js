@@ -9,6 +9,7 @@
 //   namesReady                   resolves once /names.js has loaded
 //   lineupReady                  resolves once /teams/lineup.js has loaded
 //   contractReady                resolves once /contract.js has loaded
+//   nbnDataReady                 resolves once /nbn-data.js (NBN.*) has loaded
 //   capHealthReady               resolves once /cap-health.js has loaded
 //   coachingConfigReady          resolves once /coaching-config.js has loaded
 //   radarReady                   resolves once /radar.js has loaded
@@ -189,6 +190,16 @@ const contractReady = new Promise(resolve => {
   document.head.appendChild(_ct);
 });
 
+// NBN — /nbn-data.js's shared helpers (NBN.esc, NBN.TEAMS, ...). Team shells
+// load only team.js, so it is pulled in here like contract.js.
+const nbnDataReady = new Promise(resolve => {
+  const _nd = document.createElement('script');
+  _nd.src = '/nbn-data.js';
+  _nd.onload = resolve;
+  _nd.onerror = () => { console.error('/nbn-data.js failed to load'); resolve(); };
+  document.head.appendChild(_nd);
+});
+
 // CapHealth — the standing rules (§ 1.3/1.4 cap and aprons, § 2.1/2.1a/2.2
 // roster limits). Soft dependency: if it fails to load the
 // Cap Health card stays hidden and the rest of the page is unaffected, which is
@@ -240,34 +251,6 @@ const coachingConfigReady = new Promise(resolve => {
      then grows proportionally (75% of viewport) up to a 1600px ceiling
      for wide/ultrawide monitors. */
   .page { max-width: var(--page-width-wide); margin: 0 auto; }
-  .team-header-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-  .team-nav-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 2.5rem; height: 2.5rem; border-radius: 50%;
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text-muted); font-size: var(--text-lg); cursor: pointer;
-    text-decoration: none; flex-shrink: 0; line-height: 1;
-  }
-  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; }
-  .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-  /* On the team-colour band (components.css § Team pages): light on colour. */
-  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
-  :root[data-team] .team-share-btn:hover { color: white; border-color: white; }
-  .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-  .team-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
-  .team-header img { width: 140px; height: 140px; object-fit: contain; }
-  .team-header h1 { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; text-align: center; }
   section { margin-bottom: 3rem; }
   .section-title { font-size: var(--text-md); font-weight: 600; margin-bottom: 0.25rem; }
   .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem; }
@@ -565,6 +548,175 @@ const coachingConfigReady = new Promise(resolve => {
     .ts-res { padding: 0 0.35rem; min-width: 0; }
     .ts-sum-stats { gap: 1rem; }
     .ts-sec-hint { display: none; }
+  }
+  /* Overview roster on a phone: slot and name only, with position, OVR, age,
+     contract and stat line as two lines under the name (.roster-sub). */
+  .roster-sub { display: none; }
+  @media (max-width: 640px) {
+    #roster-wrap table.roster-mode-depth th:nth-child(n+3),
+    #roster-wrap table.roster-mode-depth td:nth-child(n+3) { display: none; }
+    #roster-wrap table.roster-mode-depth td { white-space: normal; }
+    #roster-wrap table.roster-mode-depth td.whatif-actions-cell,
+    #roster-wrap table.roster-mode-depth th:last-child:empty { display: table-cell; }
+    .roster-sub { display: flex; flex-direction: column; gap: 0.1rem; margin-top: 0.25rem; padding-left: 2.2rem; }
+    .roster-sub-facts { font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .roster-sub-deal { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  }
+  @media (max-width: 640px) {
+    #roster-wrap table.roster-mode-depth .roster-name-top { flex-wrap: wrap; row-gap: 0.25rem; }
+  }
+  /* ── Redesign (2026-11): hero, sticky section bar, season dashboard ── */
+  .tn { --tp: var(--team-primary); --ta: var(--team-accent); --tc: var(--team-chart, var(--tp)); }
+  /* Flat team band with the accent stripe, like every team header: the
+     design system has no gradients (docs/design-system.md). */
+  .tn-hero { position: relative; overflow: hidden; border-radius: var(--radius); color: white;
+    background: var(--tp);
+    padding: 1.6rem 1.75rem 1.5rem; margin-bottom: 1rem; display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: end; }
+  .tn-hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--ta); }
+  .tn-watermark { position: absolute; right: -60px; top: -40px; width: 340px; opacity: 0.12; pointer-events: none; }
+  .tn-hero-main, .tn-hero-side { position: relative; z-index: 1; min-width: 0; }
+  .tn-hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
+  .tn-name-row { display: flex; align-items: center; gap: 1rem; }
+  .tn-arrow { color: white; opacity: 0.6; font-size: var(--text-xl); line-height: 1; text-decoration: none; padding: 0 0.15rem; }
+  .tn-arrow:hover { opacity: 1; }
+  .tn-logo { width: 64px; height: 64px; border-radius: 50%; background: white; padding: 6px; flex: none; }
+  .tn-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; margin: 0; color: white; }
+  /* The name's one line of franchise facts (renderHeaderFacts): "251–255 ALL-TIME". */
+  .tn-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-5); margin-top: 0.3rem;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.85); }
+  .tn-facts:empty { display: none; }
+  .tn-facts .thf b { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.01em; color: white; }
+  .tn-facts .thf-owner { flex-basis: 100%; order: -1; color: rgba(255,255,255,0.7); }
+  .tn-record { display: flex; flex-wrap: wrap; gap: 0.25rem 2rem; margin-top: 1.25rem; align-items: baseline; }
+  .tn-record:empty { display: none; }
+  .tn-record .big { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--text-2xl) * 1.5); line-height: 0.9; font-variant-numeric: tabular-nums; }
+  .tn-record .stat { display: flex; flex-direction: column; }
+  .tn-record .stat b { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1; font-weight: 700; }
+  .tn-record .stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; margin-top: 0.15rem; }
+  .tn-share { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius-sm);
+    font: inherit; font-size: var(--text-sm); padding: 0.25rem 0.7rem; cursor: pointer; }
+  .tn-share:hover { background: rgba(255,255,255,0.12); }
+  .tn-next { display: block; background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
+    padding: 0.9rem 1rem; min-width: 230px; color: white; text-decoration: none; }
+  .tn-next:hover { background: rgba(0,0,0,0.4); }
+  .tn-next .lbl { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .tn-next .match { display: flex; align-items: center; gap: 0.6rem; margin: 0.4rem 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }
+  .tn-next .match img { width: 34px; height: 34px; }
+  .tn-next .when { font-size: var(--text-sm); opacity: 0.85; }
+  .tn-next .go { font-size: var(--text-sm); margin-top: 0.4rem; color: var(--ta); font-weight: 600; }
+  .tn-nav { position: sticky; top: 0; z-index: 20; background: var(--bg-page); display: flex; gap: 0.25rem; overflow-x: auto;
+    border-bottom: 1px solid var(--border); margin: 0 0 1.25rem; scrollbar-width: none; }
+  .tn-nav a { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-md);
+    color: var(--text-muted); text-decoration: none; padding: 0.7rem 0.8rem; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .tn-nav a.on, .tn-nav a:hover { color: var(--text-primary); border-bottom-color: var(--tc); }
+  .tn-section { scroll-margin-top: 3.5rem; margin-bottom: 2.5rem; }
+  .tn-section .tab-panel { scroll-margin-top: 3.5rem; }
+  .tn-h2 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; font-size: var(--text-xl);
+    margin: 0 0 0.85rem; display: flex; align-items: baseline; gap: 0.75rem; }
+  .tn-h2 small { font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; }
+  .tn-grid { display: grid; gap: 1rem; grid-template-columns: repeat(12, 1fr); }
+  .tn-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; min-width: 0; }
+  .tn-card h3 { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); font-weight: 700;
+    margin: 0 0 0.75rem; display: flex; justify-content: space-between; gap: 1rem; }
+  .tn-card h3 a { color: var(--text-muted); text-decoration: none; font-weight: 600; letter-spacing: 0.04em; text-transform: none; white-space: nowrap; }
+  .tn-card h3 a:hover { color: var(--text-primary); }
+  .span-5 { grid-column: span 5; } .span-7 { grid-column: span 7; } .span-12 { grid-column: span 12; }
+  @media (max-width: 900px) { .tn-grid > * { grid-column: span 12; } }
+  .tn-form { display: flex; align-items: center; gap: 4px; height: 120px; }
+  .tn-form a { flex: 1; display: flex; flex-direction: column; height: 100%; text-decoration: none; }
+  .tn-form .half { height: 50%; display: flex; } .tn-form .half.top { align-items: flex-end; } .tn-form .half.bot { align-items: flex-start; }
+  .tn-form .bar { width: 100%; border-radius: var(--radius-sm); }
+  .tn-form .w { background: var(--success-light); } .tn-form .l { background: var(--danger-light); }
+  .tn-form-axis { display: flex; gap: 4px; margin-top: 0.4rem; }
+  .tn-form-axis span { flex: 1; text-align: center; font-size: var(--text-xs); color: var(--text-dim); overflow: hidden; white-space: nowrap; }
+  .tn-form-axis i { font-style: normal; }
+  .tn-form-sum { display: flex; gap: 0.5rem 1.5rem; margin-top: 0.9rem; font-size: var(--text-sm); color: var(--text-secondary); flex-wrap: wrap; }
+  .tn-form-sum b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .tn-stand { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; white-space: normal; }
+  .tn-stand td { padding: 0.32rem 0.25rem; color: var(--text-secondary); }
+  .tn-stand td.r { text-align: right; } .tn-stand td.seed { width: 1.5rem; color: var(--text-dim); }
+  .tn-stand tr.me td { color: var(--text-primary); font-weight: 700; background: color-mix(in srgb, var(--tc) 18%, transparent); }
+  .tn-stand tr.cut td { border-bottom: 1px dashed var(--border); }
+  .tn-stand tbody tr { border: 0; } .tn-stand tbody tr:hover { background: none; }
+  .tn-stand img { width: 18px; height: 18px; vertical-align: -4px; margin-right: 0.4rem; }
+  .tn-stand a { color: inherit; text-decoration: none; }
+  .tn-leaders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .tn-leader { text-align: center; text-decoration: none; color: inherit; }
+  .tn-leader img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--bg-subtle); border: 2px solid var(--tc); }
+  .tn-leader .v { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; line-height: 1; margin-top: 0.35rem; }
+  .tn-leader .k { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+  .tn-leader .n { font-size: var(--text-sm); margin-top: 0.2rem; color: var(--text-secondary); }
+  .tn-fives { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.25rem 0.75rem; font-size: var(--text-sm); }
+  .tn-fives .hd { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); }
+  .tn-fives .r { text-align: right; }
+  .tn-fives .pos { color: var(--text-dim); text-align: center; font-size: var(--text-xs); font-weight: 700; align-self: center; }
+  .tn-fives .p { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tn-fives .p b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .tn-fives .p.edge b { color: var(--success-light); }
+  .tn-inj { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--text-sm); }
+  .tn-inj li { display: flex; justify-content: space-between; gap: 1rem; color: var(--text-muted); }
+  .tn-inj a { color: var(--text-primary); text-decoration: none; }
+  .tn-starters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .tn-starters:empty { display: none; }
+  @media (max-width: 900px) { .tn-starters { grid-template-columns: 1fr; } }
+  .tn-pc { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    text-decoration: none; color: inherit; display: flex; flex-direction: column; }
+  .tn-pc:hover { border-color: var(--tc); }
+  .tn-pc .top { position: relative; height: 112px; background: var(--tp); border-bottom: 3px solid var(--ta); }
+  .tn-pc .top img { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); height: 104px; width: 104px; object-fit: cover; border-radius: 50% 50% 0 0; }
+  .tn-pc .slot { position: absolute; top: 0.5rem; left: 0.6rem; font-family: var(--font-display); font-weight: 700; color: white; opacity: 0.85; }
+  .tn-pc .ovr { position: absolute; top: 0.45rem; right: 0.55rem; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: white;
+    background: rgba(0,0,0,0.35); border-radius: var(--radius-sm); padding: 0 0.4rem; }
+  .tn-pc .body { padding: 0.65rem 0.75rem 0.75rem; }
+  .tn-pc .nm { font-weight: 700; font-size: var(--text-base); line-height: 1.2; }
+  .tn-pc .sub { font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.1rem; }
+  .tn-pc .line { display: flex; justify-content: space-between; margin-top: 0.55rem; font-variant-numeric: tabular-nums; }
+  .tn-pc .line div { text-align: center; } .tn-pc .line b { display: block; font-size: var(--text-md); }
+  .tn-pc .line span { font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.08em; }
+  .tn-pc .deal { font-size: var(--text-sm); color: var(--text-secondary); margin-top: 0.55rem; padding-top: 0.5rem; border-top: 1px solid var(--border-subtle); }
+  @media (max-width: 900px) {
+    .tn-pc { flex-direction: row; } .tn-pc .top { width: 96px; height: auto; min-height: 96px; flex: none; }
+    .tn-pc .top img { height: 84px; width: 84px; } .tn-pc .body { flex: 1; }
+  }
+  #cap-card { margin-bottom: 1.25rem; }
+  .tn-capbar { position: relative; height: 34px; background: var(--bg-subtle); border-radius: var(--radius-sm); margin: 2.2rem 0 2.6rem; }
+  .tn-capbar .fill { position: absolute; inset: 0 auto 0 0; background: var(--tc); border-radius: var(--radius-sm); }
+  .tn-capbar .mk { position: absolute; top: -8px; bottom: -8px; width: 2px; background: var(--text-secondary); }
+  .tn-capbar .mk span { position: absolute; left: 50%; transform: translateX(-50%); font-size: var(--text-xs); white-space: nowrap; color: var(--text-muted); }
+  .tn-capbar .mk.up span { top: -1.45rem; } .tn-capbar .mk.down span { bottom: -1.45rem; }
+  .tn-capbar .mk span b { color: var(--text-secondary); font-weight: 600; }
+  .tn-caplegend { display: none; }
+  .tn-capfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; }
+  .tn-capfacts b { display: block; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tn-capfacts span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .tn-owner { margin-bottom: 1.5rem; border-color: color-mix(in srgb, var(--tc) 60%, var(--border)); background: color-mix(in srgb, var(--tc) 8%, var(--bg-card)); }
+  .tn-owner[hidden] { display: none; }
+  .tn-owner summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+  .tn-owner summary::-webkit-details-marker { display: none; }
+  .tn-owner .os-title { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-primary); font-weight: 700; }
+  .tn-owner .os-brief { font-size: var(--text-sm); color: var(--text-secondary); }
+  .tn-owner .os-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem 1.5rem; margin-top: 0.9rem; }
+  .tn-owner ul { list-style: none; padding: 0; margin: 0; font-size: var(--text-sm); display: flex; flex-direction: column; gap: 0.3rem; }
+  .tn-owner li { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--text-secondary); }
+  .tn-owner li .when { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tn-owner li.none { color: var(--text-muted); }
+  .tn-owner li a { color: var(--text-primary); text-decoration: none; }
+  .tn-owner li a:hover { color: var(--accent-light); text-decoration: underline; }
+  .tn-owner .lbl { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 0.35rem; }
+  .tn-owner .tools { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  @media (max-width: 640px) {
+    .tn-hero { grid-template-columns: 1fr; padding: 1.25rem 1.1rem 1.1rem; }
+    .tn-hero-side { align-items: stretch; } .tn-share { align-self: flex-end; }
+    .tn-record { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0.5rem 1.5rem; }
+    .tn-record .big { grid-column: 1 / -1; }
+    .tn-form-axis .at { display: none; }
+    .tn-facts { gap: 0 var(--space-3); font-size: var(--text-xs); } .tn-facts .thf b { font-size: var(--text-md); }
+    .tn-name { font-size: var(--text-xl); } .tn-logo { width: 48px; height: 48px; } .tn-arrow { display: none; }
+    .tn-record .big { font-size: var(--text-2xl); } .tn-next { min-width: 0; }
+    .tn-watermark { width: 220px; right: -50px; top: -20px; }
+    .tn-capbar { margin: 1rem 0; } .tn-capbar .mk span { display: none; }
+    .tn-caplegend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: var(--text-xs); color: var(--text-muted); margin: -0.25rem 0 1rem; }
+    .tn-caplegend b { color: var(--text-secondary); font-weight: 600; }
   }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
@@ -1252,36 +1404,51 @@ function attachTooltip(el, textOrFn) {
 }
 
 document.body.innerHTML = `
-  <div class="page ui-page">
+  <div class="page ui-page ui-page--wide tn" data-team="${abbr}">
     <nav class="nav"><a href="/teams">← Teams</a></nav>
-    <div class="team-header-nav">
-      ${prevAbbr ? `<a class="team-nav-btn" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
-      <div class="team-header">
-        <img src="/logos/md/logo-${slug}.webp" alt="${name} logo" onerror="this.onerror=null;this.src='/logos/logo-${slug}.png'">
-        <div class="team-header-text">
-          <h1>${name}</h1>
-          <div class="team-header-facts" id="team-header-facts"></div>
+    <!-- One scrolling page (2026-11 redesign): hero, the season, then every
+         section the old tabs held, reached from the sticky bar. Each old tab's
+         panel keeps its id (tab-franchise, ...) so its lazy loading and its
+         #hash links still work; a panel loads when it nears the screen. -->
+    <header class="tn-hero">
+      <img class="tn-watermark" src="/logos/md/logo-${slug}.webp" alt="" onerror="this.remove()">
+      <div class="tn-hero-main">
+        <div class="tn-name-row">
+          ${prevAbbr ? `<a class="tn-arrow" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
+          <img class="tn-logo" src="/logos/md/logo-${slug}.webp" alt="${name} logo" onerror="this.onerror=null;this.src='/logos/logo-${slug}.png'">
+          <div class="tn-name-text">
+            <h1 class="tn-name">${name}</h1>
+            <div class="tn-facts" id="team-header-facts"></div>
+          </div>
+          ${nextAbbr ? `<a class="tn-arrow" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
         </div>
-        <button type="button" class="team-share-btn" id="team-share-btn" title="Share this team">Share</button>
+        <div class="tn-record" id="hero-record"></div>
       </div>
-      ${nextAbbr ? `<a class="team-nav-btn" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
-    </div>
-    <div class="tabs ui-tabs" role="tablist">
-      <button class="tab ui-tab active" data-tab="overview">Roster</button>
-      <button class="tab ui-tab" data-tab="schedule">Schedule</button>
-      <button class="tab ui-tab" data-tab="coaching" hidden>Coaching</button>
-      <button class="tab ui-tab" data-tab="franchise">Franchise</button>
-      <button class="tab ui-tab" data-tab="draft">Draft History</button>
-      <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
-      <button class="tab ui-tab" data-tab="history">Historical Rosters</button>
-      <button class="tab ui-tab" data-tab="irl">IRL</button>
-    </div>
-    <div class="tab-panel" id="tab-overview">
+      <div class="tn-hero-side">
+        <button type="button" class="tn-share" id="team-share-btn" title="Share this team">Share</button>
+        <div id="hero-next"></div>
+      </div>
+    </header>
+    <nav class="tn-nav" id="tn-nav" aria-label="Sections">
+      <a href="#season" class="on">Season</a><a href="#roster">Roster</a><a href="#cap">Cap &amp; Picks</a>
+      <a href="#schedule">Schedule</a><a href="#history">History</a><a href="#office">Front Office</a>
+    </nav>
+    <details class="tn-card tn-owner" id="owner-panel" hidden></details>
+
+    <section class="tn-section" id="season">
+      <h2 class="tn-h2" id="season-title">Season</h2>
+      <div class="tn-grid" id="season-grid"><div class="status">Loading…</div></div>
+    </section>
+
+    <section class="tn-section" id="roster">
+      <h2 class="tn-h2" id="roster-head">Roster</h2>
+      <div class="tn-starters" id="starter-cards"></div>
+      <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
       <div id="trade-request-banner" style="display:none"></div>
       <section>
         <div class="roster-header-row">
-          <h2 class="section-title" id="roster-title">Roster</h2>
+          <h2 class="section-title" id="roster-title">Full roster</h2>
           <div class="mode-tabs ui-segmented" role="group" id="roster-mode-tabs">
             <button class="mode-tab active" data-mode="depth" type="button">Overview</button>
             <button class="mode-tab" data-mode="contracts" type="button">Contracts</button>
@@ -1313,6 +1480,12 @@ document.body.innerHTML = `
           </div>
         </div>
       </section>
+      </div>
+    </section>
+
+    <section class="tn-section" id="cap">
+      <h2 class="tn-h2">Cap &amp; Picks</h2>
+      <div class="tn-card" id="cap-card" hidden></div>
       <section id="cap-health-section" style="display:none">
         <h2 class="section-title">Cap Health</h2>
         <div id="cap-health-wrap" class="ch-card"></div>
@@ -1329,8 +1502,10 @@ document.body.innerHTML = `
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
         <div class="ui-table-wrap table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-schedule">
+    </section>
+
+    <section class="tn-section" id="schedule">
+      <div class="tab-panel" id="tab-schedule">
       <section>
         <div class="sched-head">
           <h2 class="section-title">Schedule</h2>
@@ -1342,37 +1517,12 @@ document.body.innerHTML = `
         <div class="sched-summary" id="sched-summary"></div>
         <div id="sched-wrap"><div class="status">Loading…</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-coaching">
-      <section>
-        <h2 class="section-title">Settings</h2>
-        <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
-        <div class="settings-card note-card">
-          <div class="settings-head">
-            <h3 class="settings-subtitle">Note to the streamer</h3>
-            <div class="settings-actions" id="streamer-note-actions"></div>
-          </div>
-          <div id="streamer-note-wrap"><div class="status">Loading…</div></div>
-        </div>
-        <div class="settings-card">
-          <div class="settings-subsection">
-            <div class="settings-head">
-              <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
-              <div class="settings-actions" id="team-settings-actions"></div>
-            </div>
-            <div id="team-settings-wrap"><div class="status">Loading…</div></div>
-          </div>
-          <div class="settings-subsection">
-            <div class="settings-head">
-              <h3 class="settings-subtitle" id="coaching-settings-title">Coaching Profile</h3>
-              <div class="settings-actions" id="coaching-settings-actions"></div>
-            </div>
-            <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
-          </div>
-        </div>
-      </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-franchise">
+      </div>
+    </section>
+
+    <section class="tn-section" id="history">
+      <h2 class="tn-h2">History</h2>
+      <div class="tab-panel" id="tab-franchise">
       <section id="identity-section" style="display:none">
         <h2 class="section-title">Team Identity</h2>
         <div id="identity-wrap"></div>
@@ -1400,14 +1550,8 @@ document.body.innerHTML = `
         <h2 class="section-title">Retired Numbers</h2>
         <div class="retired-banners" id="retired-banners"></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-draft">
-      <section>
-        <h2 class="section-title">Draft History</h2>
-        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
-      </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-alltime">
+      </div>
+      <div class="tab-panel" id="tab-alltime">
       <section>
         <h2 class="section-title">All-Time Top Players</h2>
         <p class="section-sub">Regular season · ranked by total Game Score</p>
@@ -1419,15 +1563,59 @@ document.body.innerHTML = `
         <div id="records-wrap"><div class="status">Loading…</div></div>
         <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-history">
+      </div>
+      <div class="tab-panel" id="tab-draft">
+      <section>
+        <h2 class="section-title">Draft History</h2>
+        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
+      </section>
+      </div>
+      <div class="tab-panel" id="tab-history">
       <section>
         <h2 class="section-title">Historical Rosters</h2>
         <div class="hist-controls" id="hist-controls"></div>
         <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-irl"></div>
+      </div>
+    </section>
+
+    <section class="tn-section" id="office">
+      <h2 class="tn-h2">Front Office</h2>
+      <div class="tab-panel" id="tab-coaching" hidden>
+      <section>
+        <h2 class="section-title">Settings</h2>
+        <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
+        <div class="settings-card note-card">
+          <div class="settings-head">
+            <h3 class="settings-subtitle">Note to the streamer</h3>
+            <div class="settings-actions" id="streamer-note-actions"></div>
+          </div>
+          <div id="streamer-note-wrap"><div class="status">Loading…</div></div>
+        </div>
+        <div class="settings-card">
+          <div class="settings-subsection">
+            <div class="settings-head">
+              <h3 class="settings-subtitle" id="team-settings-title">Rotation</h3>
+              <div class="settings-actions" id="team-settings-actions"></div>
+            </div>
+            <div id="team-settings-wrap"><div class="status">Loading…</div></div>
+          </div>
+          <div class="settings-subsection">
+            <div class="settings-head">
+              <h3 class="settings-subtitle" id="coaching-settings-title">Coaching Profile</h3>
+              <div class="settings-actions" id="coaching-settings-actions"></div>
+            </div>
+            <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
+          </div>
+        </div>
+      </section>
+      </div>
+      <section>
+        <h2 class="section-title">IRL</h2>
+        <p class="section-sub">This roster's real NBA games and injury news, kept apart from NBN's own stats.</p>
+        <div class="tab-panel" id="tab-irl"></div>
+      </section>
+    </section>
   </div>
 `;
 
@@ -1444,46 +1632,77 @@ document.head.appendChild(_badgeScript);
 document.getElementById('team-share-btn').onclick = e =>
   window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
 
-// Work for a tab other than Roster runs the first time that tab is shown, so
-// a visit that never opens it doesn't fetch that tab's data or build its
-// tables while the roster is loading. If the tab is already showing (a
-// #franchise link), it runs straight away.
+// Work for a section below the first screen runs the first time its panel
+// nears the screen, so a visit that never scrolls there doesn't fetch that
+// section's data or build its tables while the roster is loading. The panels
+// keep the old tab names (tab-franchise -> 'franchise'), and so does this.
 const _tabFirstShow = {};
+const _revealed = new Set(['overview']);
 function whenTabShown(tab, fn) {
-  const panel = document.getElementById('tab-' + tab);
-  if (panel && !panel.classList.contains('hidden')) { fn(); return; }
+  if (_revealed.has(tab)) { fn(); return; }
   (_tabFirstShow[tab] ||= []).push(fn);
 }
+function revealPanel(tab) {
+  if (_revealed.has(tab)) return;
+  _revealed.add(tab);
+  const queued = _tabFirstShow[tab];
+  if (queued) { delete _tabFirstShow[tab]; queued.forEach(fn => fn()); }
+  if (tab === 'irl') mountIrlFeed();
+  if (tab === 'schedule') mountSchedule();
+}
+const _panelObserver = new IntersectionObserver(entries => entries.forEach(e => {
+  if (!e.isIntersecting) return;
+  _panelObserver.unobserve(e.target);
+  revealPanel(e.target.id.slice(4));
+}), { rootMargin: '600px 0px' });
+document.querySelectorAll('.tab-panel').forEach(p => { if (p.id !== 'tab-overview') _panelObserver.observe(p); });
 // A fetch's text in Promise.allSettled's result shape, for the deferred loads.
 const settledText = url => fetch(url).then(r => { if (!r.ok) throw r; return r.text(); })
   .then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
 
-// The open tab is kept in the URL hash (#coaching), so the reload after a save
-// lands back on the tab the save was made from, and a tab can be linked to.
-function showTab(btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-  btn.classList.add('active');
-  document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-  const queued = _tabFirstShow[btn.dataset.tab];
-  if (queued) { delete _tabFirstShow[btn.dataset.tab]; queued.forEach(fn => fn()); }
-  if (btn.dataset.tab === 'irl') mountIrlFeed();
-  if (btn.dataset.tab === 'schedule') mountSchedule();
+// Old tab links (#franchise, #coaching, #schedule, ...) and the new section
+// links (#season, #cap, ...) both land on their place on the page. A coaching
+// save reloads to #coaching, so it comes back to the section it was made in.
+function goToSection(name, smooth) {
+  const el = document.getElementById('tab-' + name) || document.getElementById(name);
+  if (!el || el.hidden) return false;
+  if (el.id.startsWith('tab-')) revealPanel(name);
+  el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  holdSection(el);
+  return true;
 }
-// A tab switch is a history entry, so Back returns to the last tab instead of
-// leaving the page.
-document.querySelectorAll('.tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    showTab(btn);
-    const url = btn.dataset.tab === 'overview' ? location.pathname + location.search : '#' + btn.dataset.tab;
-    if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
-  });
-});
-window.addEventListener('popstate', () => {
-  const tab = document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1) || 'overview')}"]:not([hidden])`)
-    || document.querySelector('.tab[data-tab="overview"]');
-  if (tab) showTab(tab);
-});
+// Sections above the target fill in as their data arrives, which pushes the
+// target down after the jump. Keep it pinned while the page settles, until the
+// reader scrolls on their own or 8 seconds pass.
+let _holdStop = null;
+function holdSection(el) {
+  if (_holdStop) _holdStop();
+  const ro = new ResizeObserver(() => { if (Math.abs(el.getBoundingClientRect().top - _holdTop) > 4) el.scrollIntoView({ block: 'start' }); });
+  const _holdTop = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+  const stop = () => { ro.disconnect(); clearTimeout(t); ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(e => removeEventListener(e, stop)); _holdStop = null; };
+  const t = setTimeout(stop, 8000);
+  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(e => addEventListener(e, stop, { passive: true }));
+  ro.observe(document.body);
+  _holdStop = stop;
+}
+// The sticky bar follows the scroll.
+{
+  const links = [...document.querySelectorAll('#tn-nav a')];
+  const sections = links.map(a => document.getElementById(a.getAttribute('href').slice(1)));
+  const mark = () => {
+    const y = 90;
+    let on = sections[0];
+    for (const sec of sections) if (sec && !sec.hidden && sec.getBoundingClientRect().top <= y) on = sec;
+    links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + on.id));
+  };
+  addEventListener('scroll', mark, { passive: true });
+  links.forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    const name = a.getAttribute('href').slice(1);
+    goToSection(name, true);
+    history.replaceState(null, '', name === 'season' ? location.pathname + location.search : '#' + name);
+  }));
+}
 
 // IRL tab — this roster's real-world NBA game logs and injury news, from ESPN
 // via /api/irl (/irl-feed.js, shared with /nbnfl). Kept apart from every NBN
@@ -1633,12 +1852,9 @@ async function renderSchedule(allGames, season) {
   wrap.innerHTML = html;
 }
 
-// Open the tab named in the hash. After mountIrlFeed's state is declared, so
-// #irl doesn't hit it before initialisation.
-{
-  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]:not([hidden])`);
-  if (initialTab) showTab(initialTab);
-}
+// Land on the section named in the hash once the page has laid out. After
+// mountIrlFeed's state is declared, so #irl doesn't hit it before initialisation.
+if (location.hash.length > 1) requestAnimationFrame(() => goToSection(location.hash.slice(1)));
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
@@ -2960,6 +3176,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   const groupOf = row => (mode === 'depth' ? row._group : row._type);
 
   const table = document.createElement('table');
+  table.classList.add(`roster-mode-${mode}`);
   const thead = table.createTHead();
   const hr = thead.insertRow();
   cols.forEach(col => {
@@ -3106,6 +3323,28 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         if (row._injury) topRow.appendChild(injuryBadge(row._injury, 'roster-injury'));
 
         cell.appendChild(topRow);
+
+        // Overview on a phone: the other columns don't fit, so the row reads
+        // as two lines under the name instead: position, OVR and age, then
+        // the contract and the per-game line. Hidden above 640px, where the
+        // columns show.
+        if (mode === 'depth' && row.SLUG) {
+          const sub = document.createElement('span');
+          sub.className = 'roster-sub';
+          const ovr = parseFloat(row.OVR);
+          const facts = document.createElement('span');
+          facts.className = 'roster-sub-facts';
+          facts.textContent = [row._pos !== '—' ? row._pos : '', isNaN(ovr) ? '' : `${ovr} OVR`, row._age ? `${row._age} yrs` : '']
+            .filter(Boolean).join(' · ');
+          const deal = document.createElement('span');
+          deal.className = 'roster-sub-deal';
+          const sl = row._statLine;
+          deal.textContent = [summarizeContract({ salaries: row._salaries, cap_holds: row._cap_holds }, curYr),
+            sl ? `${sl.pts.toFixed(1)} pts · ${sl.reb.toFixed(1)} reb · ${sl.ast.toFixed(1)} ast` : '']
+            .filter(Boolean).join(' · ');
+          sub.append(facts, deal);
+          cell.appendChild(sub);
+        }
 
         td.appendChild(cell);
         if (row._notes) {
@@ -5324,6 +5563,183 @@ function renderOfferSheetBanner(offers) {
 // Only the team's own front office sees it: GET /api/trade-requests answers
 // the parties and the committee, nobody else. Decided requests drop off here
 // and stay in the TRC page's history. Each links to its own trade page.
+// ── The top of the page: hero record, next game, owner panel, season ───────
+// Everything here comes from GET /api/home/team/{abbr} (the homepage team
+// card's one request) plus the bios and OVRs the page already loaded. The
+// cap figures are cap history's, computed by the API's own helpers, so this
+// does no cap math.
+const _etDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+const _shortDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+const _ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+const _logoSrc = t => `/logos/md/logo-${String(t).toLowerCase()}.webp`;
+const _headshot = slug => `/api/players/${encodeURIComponent(slug)}/headshot`;
+
+function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, calendar, biosData, currentOvr }) {
+  const esc = NBN.esc;
+  const grid = document.getElementById('season-grid');
+  if (!home) { grid.innerHTML = '<div class="status">Couldn’t load this season.</div>'; return; }
+  const today = _etDate.format(new Date());
+  const season = home.season;
+  const lines = home.lines || {};
+  const bios = biosData || {};
+  const pname = s => nbnPlayerName((bios[s] || {}).name || s);
+  const money = n => compactContractMoney(n || 0);
+
+  // Results, from this team's side.
+  const res = (home.results || []).slice().sort((a, b) => a.date.localeCompare(b.date)).map(r => {
+    const h = r.home_team === abbr, us = h ? r.home_score : r.away_score, them = h ? r.away_score : r.home_score;
+    return { ...r, home: h, us, them, opp: h ? r.away_team : r.home_team, won: us > them, margin: us - them };
+  });
+  const standings = (home.standings || []).filter(r => r.SEASON === season);
+  const me = standings.find(r => r.TEAM === abbr) || {};
+  const [conf, seed] = String(me.SEED || '').split('-');
+  let streak = '';
+  if (res.length) {
+    const last = res[res.length - 1].won; let n = 0;
+    for (let i = res.length - 1; i >= 0 && res[i].won === last; i--) n++;
+    streak = (last ? 'W' : 'L') + n;
+  }
+  const played = new Set(res.map(r => `${r.date}|${r.away_team}|${r.home_team}`));
+  const next = (home.games || []).filter(g => g.date >= today && !played.has(`${g.date}|${g.away_team}|${g.home_team}`))
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const nextOpp = next ? (next.home_team === abbr ? next.away_team : next.home_team) : null;
+  const previewHref = next ? `/preview/?away=${next.away_team}&home=${next.home_team}&date=${next.date}` : '';
+
+  // Hero: this season's record and the next game.
+  document.getElementById('hero-record').innerHTML = (me.W != null ? `
+    <span class="big">${esc(me.W)}–${esc(me.L)}</span>
+    ${seed ? `<span class="stat"><b>${_ordinal(+seed)}</b><span>in the ${esc(conf)}</span></span>` : ''}
+    ${streak ? `<span class="stat"><b>${streak}</b><span>streak</span></span>` : ''}
+    ${me.DIFF ? `<span class="stat"><b>${+me.DIFF > 0 ? '+' : ''}${esc(me.DIFF)}</b><span>point diff</span></span>` : ''}` : '');
+  if (next) document.getElementById('hero-next').innerHTML = `<a class="tn-next" href="${previewHref}">
+    <div class="lbl">Next game</div>
+    <div class="match">${next.home_team === abbr ? 'vs' : '@'} <img src="${_logoSrc(nextOpp)}" alt=""> ${esc(nextOpp)}</div>
+    <div class="when">${_shortDay(next.date)}${next.time_et ? ' · ' + esc(next.time_et) : ''}${next.arena ? ' · ' + esc(next.arena) : ''}</div>
+    <div class="go">Game preview →</div></a>`;
+  document.getElementById('season-title').innerHTML = `${esc(season)} Season <small>${res.length} game${res.length === 1 ? '' : 's'}</small>`;
+
+  // Season dashboard.
+  const last10 = res.slice(-10);
+  const maxM = Math.max(10, ...last10.map(r => Math.abs(r.margin)));
+  const bars = last10.map(r => {
+    const bar = `<div class="bar ${r.won ? 'w' : 'l'}" style="height:${Math.max(6, Math.round(Math.abs(r.margin) / maxM * 100))}%"></div>`;
+    return `<a href="/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}" title="${r.won ? 'W' : 'L'} ${r.us}–${r.them} ${r.home ? 'vs' : '@'} ${r.opp}, ${_shortDay(r.date)}">
+      <div class="half top">${r.won ? bar : ''}</div><div class="half bot">${r.won ? '' : bar}</div></a>`;
+  }).join('');
+  const axis = last10.map(r => `<span title="${r.home ? 'vs' : 'at'} ${r.opp}">${r.home ? '' : '<i class="at">@</i>'}${r.opp}</span>`).join('');
+  const rec = arr => `${arr.filter(r => r.won).length}–${arr.filter(r => !r.won).length}`;
+  const confRows = standings.filter(r => String(r.SEED).startsWith(conf + '-')).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
+  const at = confRows.findIndex(r => r.TEAM === abbr);
+  const from = Math.max(0, Math.min(at - 3, confRows.length - 7));
+  const leader = confRows[0] || {};
+  const gb = r => { const v = ((+leader.W - +r.W) + (+r.L - +leader.L)) / 2; return v ? String(v) : '—'; };
+  const stand = confRows.slice(from, from + 7).map(r => `<tr class="${r.TEAM === abbr ? 'me' : ''}${+r.SEED_NUM === 6 || +r.SEED_NUM === 10 ? ' cut' : ''}">
+    <td class="r seed">${esc(r.SEED_NUM)}</td><td><a href="/teams/${r.TEAM}/"><img src="${_logoSrc(r.TEAM)}" alt="">${esc(r.TEAM)}</a></td>
+    <td class="r">${esc(r.W)}–${esc(r.L)}</td><td class="r">${gb(r)}</td></tr>`).join('');
+  const withGames = Object.keys(lines).filter(s => lines[s] && lines[s].gp);
+  const top = k => withGames.slice().sort((a, b) => lines[b][k] - lines[a][k])[0];
+  const leaders = [['pts', 'Points'], ['reb', 'Rebounds'], ['ast', 'Assists']].map(([k, label]) => {
+    const s = top(k); if (!s) return '';
+    return `<a class="tn-leader" href="/players/?p=${s}"><img src="${_headshot(s)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="v">${lines[s][k].toFixed(1)}</div><div class="k">${label}</div><div class="n">${esc(pname(s))}</div></a>`;
+  }).join('');
+  const myFive = (home.five || {}).players || [];
+  const opp = home.opponent || {};
+  const theirFive = (opp.five || {}).players || [];
+  const fiveCell = (p, other, side) => {
+    if (!p) return `<div class="p ${side}">—</div>`;
+    const edge = other && p.ovr > other.ovr ? ' edge' : '';
+    const n = esc(nbnPlayerName(p.name));
+    return `<div class="p ${side}${edge}">${side === 'r' ? `<b>${p.ovr ?? '—'}</b> ${n}` : `${n} <b>${p.ovr ?? '—'}</b>`}</div>`;
+  };
+  const fives = nextOpp ? `<div class="tn-fives"><div class="hd">${abbr}</div><div></div><div class="hd r">${esc(opp.team || nextOpp)}</div>
+    ${DEPTH_SLOTS.map((pos, k) => fiveCell(myFive[k], theirFive[k], 'l') + `<div class="pos">${pos}</div>` + fiveCell(theirFive[k], myFive[k], 'r')).join('')}</div>`
+    : '<div class="status">No game left on the schedule</div>';
+  const injured = (home.injuries || {}).players || [];
+  grid.innerHTML = `
+    <div class="tn-card span-7"><h3>Form · last ${last10.length}<a href="#schedule" data-goto="schedule">Full schedule →</a></h3>
+      ${last10.length ? `<div class="tn-form">${bars}</div><div class="tn-form-axis">${axis}</div>` : '<div class="status">No games yet</div>'}
+      <div class="tn-form-sum"><span>Home <b>${rec(res.filter(r => r.home))}</b></span><span>Road <b>${rec(res.filter(r => !r.home))}</b></span>
+        <span>Scoring <b>${esc(me.PPG || '—')}</b> · allowing <b>${esc(me.OPPG || '—')}</b></span></div></div>
+    <div class="tn-card span-5"><h3>${esc(conf || '')} standings<a href="/standings/">All →</a></h3><table class="tn-stand"><tbody>${stand}</tbody></table></div>
+    <div class="tn-card span-5"><h3>Team leaders · per game</h3><div class="tn-leaders">${leaders || '<div class="status">No games yet</div>'}</div></div>
+    <div class="tn-card span-7"><h3>${nextOpp ? `Next: ${next.home_team === abbr ? 'vs' : '@'} ${esc(nextOpp)} · projected starters` : 'Next game'}${next ? `<a href="${previewHref}">Preview →</a>` : ''}</h3>${fives}</div>
+    ${injured.length ? `<div class="tn-card span-12"><h3>Injuries</h3><ul class="tn-inj">${injured.map(p => `<li><a href="/players/?p=${p.slug}">${esc(pname(p.slug))}</a>
+      <span>${esc(p.status)}${p.injury ? ' · ' + esc(p.injury) : ''}${p.duration ? ' · ' + esc(p.duration) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
+  grid.querySelectorAll('[data-goto]').forEach(a => a.onclick = e => { e.preventDefault(); goToSection(a.dataset.goto, true); });
+
+  // Starting five as cards, above the full roster table.
+  const age = dob => { if (!dob) return ''; const d = new Date(dob), n = new Date(); return n.getFullYear() - d.getFullYear() - ((n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) ? 1 : 0); };
+  document.getElementById('starter-cards').innerHTML = myFive.map((p, k) => {
+    if (!p) return '';
+    const b = bios[p.slug] || {}, l = lines[p.slug] || {};
+    const deal = summarizeContract({ salaries: b.salaries || {}, cap_holds: b.cap_holds || {} }, currentSeasonYr());
+    return `<a class="tn-pc" href="/players/?p=${p.slug}"><div class="top"><span class="slot">${DEPTH_SLOTS[k]}</span><span class="ovr">${currentOvr[p.slug] ?? p.ovr ?? '—'}</span>
+      <img src="${_headshot(p.slug)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></div>
+      <div class="body"><div class="nm">${esc(pname(p.slug))}</div><div class="sub">${esc((b.pos || p.pos || []).join(' · '))}${b.dob ? ` · ${age(b.dob)} yrs` : ''}</div>
+      <div class="line">${['pts', 'reb', 'ast'].map(k2 => `<div><b>${l.gp ? l[k2].toFixed(1) : '—'}</b><span>${k2.toUpperCase()}</span></div>`).join('')}</div>
+      ${deal ? `<div class="deal">${esc(deal)}</div>` : ''}</div></a>`;
+  }).join('');
+  const cap = home.cap || {};
+  document.getElementById('roster-head').innerHTML = `Roster <small>${cap.roster ?? '—'} players · ${cap.two_way ?? 0} two-way</small>`;
+
+  // Cap bar, above cap health and the picks table.
+  if (cap.salary != null) {
+    const scaleMax = Math.max(cap.salary || 0, cap.apron2 || 0) * 1.08 || 1;
+    const pct = v => (v / scaleMax * 100).toFixed(2) + '%';
+    const mk = (v, label, side) => v ? `<div class="mk ${side}" style="left:${pct(v)}"><span>${label} <b>${money(v)}</b></span></div>` : '';
+    const card = document.getElementById('cap-card');
+    card.innerHTML = `<h3>Team salary · ${esc(season)}</h3>
+      <div class="tn-capbar"><div class="fill" style="width:${pct(cap.salary)}"></div>${mk(cap.cap, 'Cap', 'up')}${mk(cap.apron1, '1st apron', 'down')}${mk(cap.apron2, '2nd apron', 'up')}</div>
+      <div class="tn-caplegend"><span>Cap <b>${money(cap.cap)}</b></span><span>1st apron <b>${money(cap.apron1)}</b></span><span>2nd apron <b>${money(cap.apron2)}</b></span></div>
+      <div class="tn-capfacts"><div><b>${money(cap.salary)}</b><span>Team salary</span></div>
+        <div><b>${cap.apron2 ? money(cap.apron2 - cap.salary) : '—'}</b><span>${cap.salary > cap.apron2 ? 'Over' : 'Under'} 2nd apron</span></div>
+        <div><b>${cap.roster ?? '—'} + ${cap.two_way ?? 0}</b><span>Roster + two-way</span></div>
+        <div><b>${cap.hard_cap ? (cap.hard_cap === 'second_apron' ? '2nd apron' : '1st apron') : 'None'}</b><span>Hard cap</span></div></div>`;
+    card.hidden = false;
+  }
+
+  // Owner panel: the team's own front office only. Open on desktop, one line
+  // on a phone.
+  const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
+  const panel = document.getElementById('owner-panel');
+  if (!mine) return;
+  const where = { under_cap: 'under the cap', over_cap: 'over the cap', first_apron: 'over the 1st apron', second_apron: 'over the 2nd apron' }[cap.apron_position] || '';
+  const [y1, y2] = String(season).split('-').map(Number);
+  const nextSeason = `${String((y1 + 1) % 100).padStart(2, '0')}-${String((y2 + 1) % 100).padStart(2, '0')}`;
+  // home.lines is keyed by this roster's players.
+  const options = Object.keys(lines).filter(s => ((bios[s] || {}).cap_holds || {})[nextSeason] === 'TEAM_OPT');
+  const days = d => Math.round((Date.parse(d) - Date.parse(today)) / 864e5);
+  const dl = [['Team option deadline (rookie scale)', calendar.team_option_deadline], ['Trade deadline', calendar.trade_deadline],
+              ...(calendar.draft_days || []).map(d => ['Draft', d])]
+    .filter(([, d]) => d && d >= today).sort((a, b) => a[1].localeCompare(b[1])).slice(0, 3)
+    .map(([label, d]) => `<li><span>${label}</span><span class="when">${_shortDay(d)} · ${days(d) === 0 ? 'today' : days(d) === 1 ? 'tomorrow' : `${days(d)} days`}</span></li>`).join('');
+  const extensionCount = Object.values(poextEligible || {}).filter(e => e.eligible).length;
+  const waiting = [
+    openOffers.length ? `<li><a href="#offer-sheet-banner" data-goto="roster">${openOffers.length} offer sheet${openOffers.length === 1 ? '' : 's'} to answer</a></li>` : '',
+    options.length ? `<li><a href="#roster" data-goto="roster">${options.length} team option${options.length === 1 ? '' : 's'} for ${nextSeason}: ${options.map(s => esc(pname(s))).join(', ')}</a></li>` : '',
+    extensionCount ? `<li><a href="/extensions/">${extensionCount} player${extensionCount === 1 ? '' : 's'} eligible for an extension</a></li>` : '',
+    myBlockEntries.length ? `<li><a href="/tradeblock/">${myBlockEntries.length} on your trading block</a></li>` : '',
+  ].join('') || '<li class="none">Nothing waiting on you</li>';
+  panel.innerHTML = `<summary><span class="os-title">Your front office</span><span class="os-brief">${money(cap.salary)} · ${where}</span></summary>
+    <div class="os-grid">
+      <div><div class="lbl">Coming up</div><ul>${dl || '<li class="none">No league deadline ahead this season</li>'}</ul></div>
+      <div><div class="lbl">Waiting on you</div><ul>${waiting}</ul></div>
+      <div><div class="lbl">Tools</div><div class="tools">
+        <button type="button" class="ui-btn ui-btn--sm" id="os-whatif">What If Mode</button>
+        <a class="ui-btn ui-btn--sm" href="/transaction-sim/?teams=${abbr}">Trade builder</a>
+        <a class="ui-btn ui-btn--sm" href="/free-agency/">Free agency</a>
+        <a class="ui-btn ui-btn--sm" href="/extensions/">Extensions</a></div></div>
+    </div>`;
+  panel.hidden = false;
+  if (matchMedia('(min-width: 641px)').matches) panel.open = true;
+  panel.querySelectorAll('[data-goto]').forEach(a => a.onclick = e => { e.preventDefault(); goToSection(a.dataset.goto, true); });
+  document.getElementById('os-whatif').onclick = () => {
+    goToSection('roster', true);
+    document.getElementById('whatif-enter-btn')?.click();
+  };
+}
+
 async function renderTradeRequestBanner(biosData) {
   const el = document.getElementById('trade-request-banner');
   const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
@@ -9201,6 +9617,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
 
+  // The strips under the header: this season at a glance, and the owner's
+  // front-office view. One request (the homepage team card's), started now so
+  // it runs alongside the roster's; nothing below waits for it.
+  const homeTeamPromise = fetch(`/api/home/team/${abbr}`).then(r => r.ok ? r.json() : null).catch(() => null);
+
   // Only what the Roster tab and the header need. The other tabs fetch their
   // own data the first time they're opened (whenTabShown).
   const [sr, pr, rr, pkr, biosr, capr, psr, ovrr, tsr, dcr, allpkr, memr, gamesr, lyr, authr, ter, attrr, blockr, offersr, poextr, coachr, rotr, gsr, birdr, injr] = await Promise.allSettled([
@@ -9253,9 +9674,9 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // The Coaching tab is private to the team. It starts hidden; show it now
   // that we know who is looking, and open it if the hash asked for it.
   if (canViewCoachingSettings(abbr)) {
-    const coachingTab = document.querySelector('.tab[data-tab="coaching"]');
-    coachingTab.hidden = false;
-    if (location.hash === '#coaching') showTab(coachingTab);
+    document.getElementById('tab-coaching').hidden = false;
+    _panelObserver.observe(document.getElementById('tab-coaching'));
+    if (location.hash === '#coaching') goToSection('coaching');
   }
 
   // Signing in is the header's job (token-badge.js's Sign in button). This
@@ -9293,6 +9714,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
   renderTradeRequestBanner(biosData);
+  Promise.all([homeTeamPromise, nbnDataReady]).then(([home]) => renderSeasonTop(home, {
+    openOffers, poextEligible, myBlockEntries,
+    calendar: (lyr.status === 'fulfilled' && lyr.value?.calendar) || {},
+    biosData, currentOvr,
+  }));
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
   const currentSlugs = computeCurrentSlugSet(currentRosterRowsParsed);
 
