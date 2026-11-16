@@ -248,7 +248,7 @@ Where to start for a change. Each row names the files and symbols to open; **the
 | Add/change a draft picks column | `buildPicksTable` in `teams/team.js` |
 | Add/change a season history column | `makeSeasonRenderCell` in `teams/team.js` |
 | Add/change an owners table column | `COLS` in `owners/index.html` |
-| Change team page layout or HTML structure | `teams/team.js` |
+| Change team page layout or HTML structure (hero, section bar, owner panel, season grid) | `renderSeasonTop` in `teams/team.js`, `docs/pages.md` § Team page layout |
 | Change cap/MLE/exception display | `renderHardCapBanner`, `renderExceptionsSection` in `teams/team.js` |
 | Change the Cap Health card (standing vs the cap/aprons and § 2.1 roster limits) | `cap-health.js`, `teams/team.js`, `tests/cap-health.test.js` |
 | Change the league-wide compliance board | `committees/rosters/index.html`, `cap-health.js`, `tests/frontend/run.js` |

@@ -71,6 +71,10 @@ const PAGES = [
   // separately from team.js, so a page that renders its tables fine can still
   // come up with no card at all.
   { path: '/teams/UTA/',              selector: '#cap-health-section .ch-row', min: 5, what: 'the cap health standing rows' },
+  // The season-first top (renderSeasonTop) is one /api/home/team call: the
+  // hero record, the form/standings/leaders/fives grid and the starter cards.
+  { path: '/teams/UTA/',              selector: '#season-grid .tn-card', min: 4, what: 'the season grid (form, standings, leaders, fives)' },
+  { path: '/teams/UTA/',              selector: '#starter-cards .tn-pc', min: 5, what: 'the five starter cards' },
   { path: '/h2h/',                    selector: 'table tbody tr',  min: 30, what: 'the head-to-head matrix' },
   { path: '/hof/',                    selector: 'table tbody tr',  min: 100, what: 'the HOF board' },
   { path: '/stats/highs/',            selector: 'table tbody tr',  min: 50, what: 'single-game points highs' },
