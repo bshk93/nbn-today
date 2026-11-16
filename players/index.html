@@ -514,6 +514,52 @@
        width, then the career card and the archetype radar side by side, the
        same height, so neither hangs beside empty space. */
     .player-hero { margin-bottom: var(--space-5); }
+    /* The section bar and This season (renderSeasonNow): a sticky row of
+       in-page links, then this season's line, last ten games and next game. */
+    .pl-nav { position: sticky; top: 0; z-index: 20; display: flex; gap: var(--space-5); overflow-x: auto; scrollbar-width: none;
+      background: var(--bg-page, var(--bg)); border-bottom: 1px solid var(--border); margin: 0 0 var(--space-5); }
+    .pl-nav::-webkit-scrollbar { display: none; }
+    .pl-nav a { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--text-muted); text-decoration: none; padding: var(--space-3) var(--space-1); border-bottom: 3px solid transparent; white-space: nowrap; }
+    .pl-nav a:hover { color: var(--text-primary); }
+    .pl-nav a.on { color: var(--text-primary); border-bottom-color: var(--team-accent, var(--accent)); }
+    .pl-section { scroll-margin-top: 3.5rem; margin-bottom: var(--space-6, 3rem); }
+    .pl-h { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); text-transform: uppercase; line-height: 1; margin: 0 0 var(--space-4); display: flex; align-items: baseline; gap: var(--space-3); }
+    .pl-h small { font-size: var(--text-sm); color: var(--text-muted); letter-spacing: 0.06em; }
+    .sn-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 0.9fr); gap: var(--space-3); }
+    .sn-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); min-width: 0; }
+    .sn-card .hd { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3); }
+    .sn-card .hd a { color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; text-transform: none; font-weight: 600; }
+    .sn-card .hd a:hover { color: var(--text-primary); }
+    .sn-line { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+    .sn-line .big { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: 1; font-variant-numeric: tabular-nums; }
+    .sn-line .lbl { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .sn-line .rk { font-size: var(--text-xs); color: var(--text-secondary); margin-top: 2px; }
+    .sn-line .rk b { color: var(--accent-light); }
+    .sn-shoot { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); color: var(--text-secondary); }
+    .sn-shoot b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .sn-bars { display: flex; align-items: flex-end; gap: 4px; height: 110px; }
+    .sn-bars a { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; text-decoration: none; min-width: 0; }
+    .sn-bars .v { font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+    .sn-bars .b { width: 100%; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: var(--success-light); }
+    .sn-bars .l .b { background: var(--danger-light); }
+    .sn-bars a:hover .b { opacity: 0.8; }
+    .sn-axis { display: flex; gap: 4px; margin-top: var(--space-1); }
+    .sn-axis i { font-style: normal; }
+    .sn-axis span { flex: 1; text-align: center; font-size: var(--text-xs); color: var(--text-dim, var(--text-muted)); white-space: nowrap; overflow: hidden; min-width: 0; }
+    .sn-sum { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-secondary); }
+    .sn-sum b { color: var(--text-primary); }
+    .sn-next .match { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }
+    .sn-next .match img { width: 32px; height: 32px; }
+    .sn-next .when { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-1); }
+    .sn-next .vs { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); color: var(--text-secondary); }
+    .sn-next .vs b { color: var(--text-primary); }
+    .sn-next .go { display: inline-block; margin-top: var(--space-3); font-size: var(--text-sm); font-weight: 600; color: var(--accent-light); text-decoration: none; }
+    @media (max-width: 900px) { .sn-grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 640px) {
+      .pl-nav { gap: var(--space-4); }
+      .sn-axis .at { display: none; }
+    }
     .hero-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-3); align-items: stretch; }
     .career-card {
       display: flex; flex-direction: column; gap: var(--space-3);
@@ -3125,6 +3171,99 @@
 
   // ── Render: player profile ────────────────────────────────────────────────────
 
+  // This season, at the top of a current player's page: the season line with
+  // where it ranks, the last ten games, and the next game with the man he's
+  // likely to line up against. False when he has no games this season.
+  function renderSeasonNow(sec, rows, gameLogPromise) {
+    const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+    const seasonKey = r => parseFloat(r.SEASON) || 0;
+    const cur = allPlayerSeasons.reduce((m, r) => (seasonKey(r) > seasonKey({ SEASON: m }) ? r.SEASON : m), '');
+    const mine = rows.filter(r => r.SEASON === cur && +r.G > 0);
+    if (!cur || !mine.length) return false;
+    const sum = (list, k) => list.reduce((t, r) => t + (+r[k] || 0), 0);
+    const tot = k => sum(mine, k);
+    const g = tot('G');
+    const per = k => tot(k) / g;
+    // Rank among players with at least half the most games anyone has played.
+    const bySlug = {};
+    allPlayerSeasons.filter(r => r.SEASON === cur).forEach(r => {
+      const t = bySlug[r.SLUG] ||= { G: 0, PTS: 0, REB: 0, AST: 0 };
+      ['G', 'PTS', 'REB', 'AST'].forEach(k => { t[k] += +r[k] || 0; });
+    });
+    const pool = Object.values(bySlug);
+    const floor = Math.ceil(Math.max(0, ...pool.map(t => t.G)) / 2);
+    const qualified = pool.filter(t => t.G >= floor);
+    const rank = k => g >= floor ? 1 + qualified.filter(t => t[k] / t.G > per(k) + 1e-9).length : null;
+    const pct = (m, a) => (tot(a) ? (tot(m) / tot(a) * 100).toFixed(1) + '%' : '—');
+    const ts = tot('FGA') + 0.44 * tot('FTA') ? (tot('PTS') / (2 * (tot('FGA') + 0.44 * tot('FTA'))) * 100).toFixed(1) + '%' : '—';
+    const stat = (k, label) => {
+      const r = rank(k);
+      return `<div><div class="big">${per(k).toFixed(1)}</div><div class="lbl">${label}</div>` +
+        `<div class="rk">${r ? `<b>${ordinal(r)}</b> in the NBN` : `${g} of ${floor} games to rank`}</div></div>`;
+    };
+    const teams = [...new Set(mine.map(r => r.TEAM))].reverse().join(' → ');   // rows run newest first
+    sec.innerHTML = `<h2 class="pl-h">${NBN.esc(cur)} season <small>${g} games · ${NBN.esc(teams)}</small></h2>
+      <div class="sn-grid">
+        <div class="sn-card"><div class="hd"><span>Per game</span></div>
+          <div class="sn-line">${stat('PTS', 'Points')}${stat('REB', 'Rebounds')}${stat('AST', 'Assists')}</div>
+          <div class="sn-shoot"><span>FG <b>${pct('FGM', 'FGA')}</b></span><span>3P <b>${pct('3PM', '3PA')}</b></span><span>FT <b>${pct('FTM', 'FTA')}</b></span><span>TS <b>${ts}</b></span><span><b>${(tot('MIN') / g).toFixed(1)}</b> min</span></div>
+        </div>
+        <div class="sn-card" id="sn-form"><div class="hd"><span>Last 10 games · points</span><a href="#stats" data-gamelog="1">Game log →</a></div><div class="status">Loading games…</div></div>
+        <div class="sn-card sn-next" id="sn-next"><div class="hd"><span>Next game</span></div><div class="status">Loading…</div></div>
+      </div>`;
+    sec.querySelector('[data-gamelog]').addEventListener('click', () => {
+      const btn = [...document.querySelectorAll('.toggle-btn')].find(b => b.textContent === 'Game Log');
+      if (btn) btn.click();
+    });
+
+    gameLogPromise.then(log => {
+      const el = document.getElementById('sn-form');
+      const games = (log || []).filter(x => x.season === cur).slice(0, 10).reverse();
+      if (!games.length) { el.querySelector('.status').textContent = 'No box scores yet'; return; }
+      const top = Math.max(30, ...games.map(x => x.pts));
+      // The log writes an away opponent as "@MIL".
+      const opp = x => String(x.opp || '').replace(/^@/, '');
+      const box = x => `/boxscores/?date=${x.date}&game=${x.home ? opp(x) : x.team}-${x.home ? x.team : opp(x)}`;
+      const bars = games.map(x => `<a class="${x.wl === 'W' ? 'w' : 'l'}" href="${box(x)}" title="${NBN.esc(`${x.date} ${x.home ? 'vs' : '@'} ${opp(x)}: ${x.pts} pts, ${x.reb} reb, ${x.ast} ast · ${x.wl} ${x.team_pts}-${x.opp_pts}`)}">` +
+        `<span class="v">${x.pts}</span><span class="b" style="height:${Math.max(4, x.pts / top * 85)}%"></span></a>`).join('');
+      const axis = games.map(x => `<span>${x.home ? '' : '<i class="at">@</i>'}${NBN.esc(opp(x))}</span>`).join('');
+      const avg = games.reduce((t, x) => t + x.pts, 0) / games.length;
+      const w = games.filter(x => x.wl === 'W').length;
+      el.innerHTML = el.querySelector('.hd').outerHTML + `<div class="sn-bars">${bars}</div><div class="sn-axis">${axis}</div>
+        <div class="sn-sum"><b>${avg.toFixed(1)}</b> points a game over these ${games.length} (season ${per('PTS').toFixed(1)}) · team <b>${w}–${games.length - w}</b>, green a win</div>`;
+      el.querySelector('[data-gamelog]').addEventListener('click', () => {
+        const btn = [...document.querySelectorAll('.toggle-btn')].find(b => b.textContent === 'Game Log');
+        if (btn) btn.click();
+      });
+    });
+
+    const abbr = (teamMap[slug] || '').toUpperCase();
+    const nextEl = document.getElementById('sn-next');
+    if (!abbr) { nextEl.querySelector('.status').textContent = 'Not on a roster'; return true; }
+    fetch(`/api/home/team/${abbr}`).then(r => (r.ok ? r.json() : null)).catch(() => null).then(home => {
+      if (!home) { nextEl.querySelector('.status').textContent = 'Schedule unavailable'; return; }
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const played = new Set((home.results || []).map(r => `${r.date}|${r.away_team}|${r.home_team}`));
+      const next = (home.games || []).filter(x => x.date >= today && !played.has(`${x.date}|${x.away_team}|${x.home_team}`))
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
+      if (!next) { nextEl.querySelector('.status').textContent = 'No games left on the schedule'; return; }
+      const isHome = next.home_team === abbr, opp = isHome ? next.away_team : next.home_team;
+      const day = new Date(next.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      const myFive = ((home.five || {}).players || []);
+      const theirFive = (((home.opponent || {}).five || {}).players || []);
+      const k = myFive.findIndex(p => p.slug === slug);
+      const them = k >= 0 ? theirFive[k] : null;
+      const slot = ['PG', 'SG', 'SF', 'PF', 'C'][k];
+      nextEl.innerHTML = `<div class="hd"><span>Next game</span></div>
+        <div class="match">${isHome ? 'vs' : '@'} <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt=""> ${NBN.esc(opp)}</div>
+        <div class="when">${day}${next.time_et ? ' · ' + NBN.esc(next.time_et) : ''}${next.arena ? ' · ' + NBN.esc(next.arena) : ''}</div>
+        ${them ? `<div class="vs">Projected at ${slot}: <a href="/players/?p=${encodeURIComponent(them.slug)}"><b>${NBN.esc(nbnPlayerName(them.name))}</b></a> (${them.ovr ?? '—'})</div>`
+              : k < 0 && myFive.length ? '<div class="vs">Projected off the bench</div>' : ''}
+        <a class="go" href="/preview/?away=${next.away_team}&home=${next.home_team}&date=${next.date}">Game preview →</a>`;
+    });
+    return true;
+  }
+
   function renderPlayer(playerName, rows, playerAwards, seasonLeaders, allPoRows, hofRows) {
     rows = [...rows].sort((a, b) => {
       const sa = parseFloat(a.SEASON) || 0;
@@ -3205,12 +3344,46 @@
 
     // Under the tiles, two cards side by side: the career line with the
     // accolades, and the archetype radar.
+    // The page under the hero: a bar of in-page links, then This season,
+    // Stats and Career as sections (renderSeasonNow, the tables, the cards).
+    const gameLogPromise = fetch(`/api/players/${slug}/gamelog`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => []);
+    const plNav = document.createElement('nav');
+    plNav.className = 'pl-nav'; plNav.id = 'pl-nav'; plNav.setAttribute('aria-label', 'Sections');
+    content.appendChild(plNav);
+    const mkSection = (id, title) => {
+      const sec = document.createElement('section');
+      sec.className = 'pl-section'; sec.id = id;
+      if (title) { const h = document.createElement('h2'); h.className = 'pl-h'; h.textContent = title; sec.appendChild(h); }
+      content.appendChild(sec);
+      return sec;
+    };
+    const seasonSec = mkSection('season', '');
+    const statsSec = mkSection('stats', 'Stats');
+    const careerSec = mkSection('career', 'Career');
+    const hasSeason = renderSeasonNow(seasonSec, rows, gameLogPromise);
+    if (!hasSeason) seasonSec.remove();
+    [hasSeason && ['season', 'This season'], ['stats', 'Stats'], ['career', 'Career']].filter(Boolean).forEach(([id, label]) => {
+      const a = document.createElement('a'); a.href = '#' + id; a.textContent = label; a.dataset.sec = id;
+      plNav.appendChild(a);
+    });
+    {
+      const links = [...plNav.querySelectorAll('a')];
+      const mark = () => {
+        const y = plNav.getBoundingClientRect().bottom + 40;
+        let on = links[0];
+        links.forEach(a => { const el = document.getElementById(a.dataset.sec); if (el && el.getBoundingClientRect().top <= y) on = a; });
+        links.forEach(a => a.classList.toggle('on', a === on));
+      };
+      addEventListener('scroll', mark, { passive: true }); mark();
+    }
+
     const heroRow = document.createElement('div');
     heroRow.className = 'hero-row';
     const careerCard = document.createElement('div');
     careerCard.className = 'career-card';
     heroRow.appendChild(careerCard);
-    hero.appendChild(heroRow);
+    careerSec.appendChild(heroRow);
     renderCareerLine(careerCard, rows);
     renderCareerLine(careerCard, allPoRows.filter(r => r.SLUG === slug), 'Career · playoffs');
     renderAccolades(careerCard, slug, rows[0].RINGS, playerAwards, seasonLeaders);
@@ -3237,16 +3410,16 @@
     toggleBar.appendChild(btnSeason);
     toggleBar.appendChild(btnGameLog);
     toggleBar.appendChild(btnSplits);
-    content.appendChild(toggleBar);
+    statsSec.appendChild(toggleBar);
 
     // sections container
     const sections = document.createElement('div');
-    content.appendChild(sections);
+    statsSec.appendChild(sections);
     const careerTotalsEl = document.createElement('div');
-    content.appendChild(careerTotalsEl);
+    careerSec.appendChild(careerTotalsEl);
     renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, allPoRows.length ? allPoRows : null);
     const insightsEl = document.createElement('div');
-    content.appendChild(insightsEl);
+    careerSec.appendChild(insightsEl);
     renderInsights(insightsEl, slug);
 
     let bySeasonMode = false;
@@ -3451,8 +3624,7 @@
     let gameLogFetch = null;
     function loadGameLog() {
       if (gameLogRows !== null || gameLogFetch) return;
-      gameLogFetch = fetch(`/api/players/${slug}/gamelog`)
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      gameLogFetch = gameLogPromise
         .then(data => { gameLogRows = data; })
         .catch(() => { gameLogRows = []; })
         .then(() => rebuildSections());
