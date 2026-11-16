@@ -246,4 +246,11 @@ if n != len(pending):
 cpath.write_text(text)
 subprocess.run(['git', 'add', 'changelog.json'])
 
+# Keep changelog.json to the newest releases: past 300 entries, the oldest move
+# to changelog-archive.json (a text cut, never a re-serialization), leaving 150.
+archive = Path('build/archive_changelog.py')
+if archive.exists():
+    subprocess.run(['python3', str(archive)], check=True)
+    subprocess.run(['git', 'add', 'changelog.json', 'changelog-archive.json'])
+
 sys.exit(0)

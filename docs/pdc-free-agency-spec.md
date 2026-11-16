@@ -232,7 +232,7 @@ another 30 days.
 
 A static HTML shell served at any URL is world-readable. So:
 
-- `pdc/index.html` ships **no league data**. It is a shell + JS.
+- `committees/pdc/index.html` ships **no league data**. It is a shell + JS.
 - Every byte of committee data arrives from a role-gated endpoint. A stranger
   loading the URL gets the shell, one 401/403, and the "Forbidden — go back to
   nbn.today" screen.
@@ -1296,7 +1296,7 @@ Four things the build settled:
 
 ### 8.2 Dashboard — FAC member view
 
-**Built — Phase 5 for the read side, Phase 8 for the ballot.** `pdc/index.html`
+**Built — Phase 5 for the read side, Phase 8 for the ballot.** `committees/pdc/index.html`
 is one self-contained page: a queue sorted by urgency, the player review view,
 the head's board controls, the 1,000-ball widget and per-player finalize. Two
 invariants the page holds and must keep holding:

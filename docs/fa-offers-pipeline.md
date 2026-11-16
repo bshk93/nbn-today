@@ -229,7 +229,7 @@ would technically choke on them:
   since a player could in principle sign through some other path while an
   unrelated round on him was still mid-flight.
 
-On `pdc/index.html`, a player who 404s from `review` falls through to a
+On `committees/pdc/index.html`, a player who 404s from `review` falls through to a
 dedicated read-only history panel instead of the live review UI — no ballot
 inputs, no agent/head controls, just what was offered and what was decided.
 Since a resigned player has no row on the board or queue (both are built off
