@@ -1655,7 +1655,24 @@ const _panelObserver = new IntersectionObserver(entries => entries.forEach(e => 
   _panelObserver.unobserve(e.target);
   revealPanel(e.target.id.slice(4));
 }), { rootMargin: '600px 0px' });
-document.querySelectorAll('.tab-panel').forEach(p => { if (p.id !== 'tab-overview') _panelObserver.observe(p); });
+// Watch the panels only once the page above them has its content: until the
+// season grid and the roster table are drawn, every panel sits within reach of
+// the top, and watching then would load all of them (the whole schedule, the
+// franchise history) on every visit.
+const _watchQueue = [];
+let _watching = false;
+function watchPanel(el) { if (_watching) _panelObserver.observe(el); else _watchQueue.push(el); }
+function startWatching() {
+  if (_watching) return;
+  _watching = true; _layoutGate.disconnect(); clearTimeout(_layoutFallback);
+  _watchQueue.splice(0).forEach(el => _panelObserver.observe(el));
+}
+const _layoutGate = new MutationObserver(() => {
+  if (document.querySelector('#season-grid > *') && document.querySelector('#tab-overview table')) requestAnimationFrame(startWatching);
+});
+_layoutGate.observe(document.querySelector('.page'), { childList: true, subtree: true });
+const _layoutFallback = setTimeout(startWatching, 10000);
+document.querySelectorAll('.tab-panel').forEach(p => { if (p.id !== 'tab-overview') watchPanel(p); });
 // A fetch's text in Promise.allSettled's result shape, for the deferred loads.
 const settledText = url => fetch(url).then(r => { if (!r.ok) throw r; return r.text(); })
   .then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
@@ -5571,7 +5588,7 @@ function renderOfferSheetBanner(offers) {
 const _etDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 const _shortDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 const _ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
-const _logoSrc = t => `/logos/md/logo-${String(t).toLowerCase()}.webp`;
+const _logoSrc = t => `/logos/sm/logo-${String(t).toLowerCase()}.webp`;
 const _headshot = slug => `/api/players/${encodeURIComponent(slug)}/headshot`;
 
 function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, calendar, biosData, currentOvr }) {
@@ -9675,7 +9692,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // that we know who is looking, and open it if the hash asked for it.
   if (canViewCoachingSettings(abbr)) {
     document.getElementById('tab-coaching').hidden = false;
-    _panelObserver.observe(document.getElementById('tab-coaching'));
+    watchPanel(document.getElementById('tab-coaching'));
     if (location.hash === '#coaching') goToSection('coaching');
   }
 
