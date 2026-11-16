@@ -524,6 +524,9 @@
     .pl-nav a:hover { color: var(--text-primary); }
     .pl-nav a.on { color: var(--text-primary); border-bottom-color: var(--team-accent, var(--accent)); }
     .pl-section { scroll-margin-top: 3.5rem; margin-bottom: var(--space-6, 3rem); }
+    /* The tiles sit between This season and Stats: close under the one, a full gap before the other. */
+    #season { margin-bottom: var(--space-4); }
+    #content > .hero-tiles { margin-bottom: var(--space-6, 3rem); }
     .pl-h { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); text-transform: uppercase; line-height: 1; margin: 0 0 var(--space-4); display: flex; align-items: baseline; gap: var(--space-3); }
     .pl-h small { font-size: var(--text-sm); color: var(--text-muted); letter-spacing: 0.06em; }
     .sn-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 0.9fr); gap: var(--space-3); }
@@ -3344,8 +3347,8 @@
 
     // Under the tiles, two cards side by side: the career line with the
     // accolades, and the archetype radar.
-    // The page under the hero: a bar of in-page links, then This season,
-    // Stats and Career as sections (renderSeasonNow, the tables, the cards).
+    // The page under the bio line: a bar of in-page links, then This season,
+    // the tiles, Stats and Career (renderSeasonNow, the tables, the cards).
     const gameLogPromise = fetch(`/api/players/${slug}/gamelog`)
       .then(r => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => []);
     const plNav = document.createElement('nav');
@@ -3362,6 +3365,9 @@
     const statsSec = mkSection('stats', 'Stats');
     const careerSec = mkSection('career', 'Career');
     const hasSeason = renderSeasonNow(seasonSec, rows, gameLogPromise);
+    // This season leads; the OVR / HOF / contract / history / health tiles
+    // follow it, out of the hero so the section bar above stays sticky.
+    seasonSec.after(tiles);
     if (!hasSeason) seasonSec.remove();
     [hasSeason && ['season', 'This season'], ['stats', 'Stats'], ['career', 'Career']].filter(Boolean).forEach(([id, label]) => {
       const a = document.createElement('a'); a.href = '#' + id; a.textContent = label; a.dataset.sec = id;
