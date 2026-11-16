@@ -12,7 +12,8 @@ changes. Both checkouts point here with:
 Note that setting `core.hooksPath` replaces the hooks directory wholesale, so
 any other hook has to live here too rather than in `.git/hooks`.
 
-- Run build/smoke_test.py; abort the commit if a page reads a column or file
+- Run build/smoke_test.py (skipped, with a notice, where the data directory
+  doesn't exist); abort the commit if a page reads a column or file
   that no longer exists, or if the rulebook's 🔒/👁 enforcement badges have
   drifted from what nbn-api's validators actually check
   (build/check_rulebook_badges.py --fix rewrites them). Bypass with
@@ -78,11 +79,21 @@ any other hook has to live here too rather than in `.git/hooks`.
   entries used to leave the second "pending" forever; five entries were stuck
   that way before this was fixed.
 """
-import json, shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 from pathlib import Path
 
+# The two checks that read the data directory (smoke_test.py and the
+# achievement inputs) can only run where it exists: on the box. A checkout
+# anywhere else (a cloud session, a laptop) skips them, loudly, rather than
+# failing every commit or pushing people to --no-verify past the whole hook.
+DATA_DIR = Path(os.environ.get('NBS_DATA_DIR', '/var/lib/nothing-but-stats'))
+HAVE_DATA = (DATA_DIR / 'derived').is_dir()
+if not HAVE_DATA:
+    print(f'pre-commit: no data directory at {DATA_DIR}, so the data-contract smoke test '
+          'and the achievement-inputs check are SKIPPED. They run on the box.')
+
 smoke = Path('build/smoke_test.py')
-if smoke.exists():
+if smoke.exists() and HAVE_DATA:
     result = subprocess.run(['python3', str(smoke), '--quiet'])
     if result.returncode != 0:
         print('\nCommit aborted: the data contract is broken (see FAIL lines above).')
@@ -212,7 +223,7 @@ if injury_test.exists() and shutil.which('node'):
         sys.exit(1)
 
 ach_inputs = Path('build/test_achievement_inputs.js')
-if ach_inputs.exists() and shutil.which('node'):
+if ach_inputs.exists() and shutil.which('node') and HAVE_DATA:
     result = subprocess.run(['node', str(ach_inputs)], capture_output=True, text=True)
     if result.returncode != 0:
         print(result.stdout)
