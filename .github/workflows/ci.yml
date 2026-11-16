@@ -29,6 +29,7 @@ jobs:
         run: python3 build/check_design_drift.py
       - name: Build and box score tests
         run: |
+          pip install -q openpyxl   # build/poopoo.py reads the league sheet
           python3 build/test_build_sh.py
           python3 build/test_validate_boxscore.py
           python3 build/test_parse_night_reread.py
