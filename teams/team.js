@@ -5639,7 +5639,7 @@ function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, cale
     <div class="lbl">Next game</div>
     <div class="match">${next.home_team === abbr ? 'vs' : '@'} <img src="${_logoSrc(nextOpp)}" alt=""> ${esc(nextOpp)}</div>
     <div class="when">${_shortDay(next.date)}${next.time_et ? ' · ' + esc(next.time_et) : ''}${next.arena ? ' · ' + esc(next.arena) : ''}</div>
-    <div class="go">Game preview →</div></a>`;
+    <div class="go">Game preview</div></a>`;
   document.getElementById('season-title').innerHTML = `${esc(season)} Season <small>${res.length} game${res.length === 1 ? '' : 's'}</small>`;
 
   // Season dashboard.
@@ -5681,13 +5681,13 @@ function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, cale
     : '<div class="status">No game left on the schedule</div>';
   const injured = (home.injuries || {}).players || [];
   grid.innerHTML = `
-    <div class="tn-card span-7"><h3>Form · last ${last10.length}<a href="#schedule" data-goto="schedule">Full schedule →</a></h3>
+    <div class="tn-card span-7"><h3>Form · last ${last10.length}<a href="#schedule" data-goto="schedule">Full schedule</a></h3>
       ${last10.length ? `<div class="tn-form">${bars}</div><div class="tn-form-axis">${axis}</div>` : '<div class="status">No games yet</div>'}
       <div class="tn-form-sum"><span>Home <b>${rec(res.filter(r => r.home))}</b></span><span>Road <b>${rec(res.filter(r => !r.home))}</b></span>
         <span>Scoring <b>${esc(me.PPG || '—')}</b> · allowing <b>${esc(me.OPPG || '—')}</b></span></div></div>
-    <div class="tn-card span-5"><h3>${esc(conf || '')} standings<a href="/standings/">All →</a></h3><table class="tn-stand"><tbody>${stand}</tbody></table></div>
+    <div class="tn-card span-5"><h3>${esc(conf || '')} standings<a href="/standings/">All</a></h3><table class="tn-stand"><tbody>${stand}</tbody></table></div>
     <div class="tn-card span-5"><h3>Team leaders · per game</h3><div class="tn-leaders">${leaders || '<div class="status">No games yet</div>'}</div></div>
-    <div class="tn-card span-7"><h3>${nextOpp ? `Next: ${next.home_team === abbr ? 'vs' : '@'} ${esc(nextOpp)} · projected starters` : 'Next game'}${next ? `<a href="${previewHref}">Preview →</a>` : ''}</h3>${fives}</div>
+    <div class="tn-card span-7"><h3>${nextOpp ? `Next: ${next.home_team === abbr ? 'vs' : '@'} ${esc(nextOpp)} · projected starters` : 'Next game'}${next ? `<a href="${previewHref}">Preview</a>` : ''}</h3>${fives}</div>
     ${injured.length ? `<div class="tn-card span-12"><h3>Injuries</h3><ul class="tn-inj">${injured.map(p => `<li><a href="/players/?p=${p.slug}">${esc(pname(p.slug))}</a>
       <span>${esc(p.status)}${p.injury ? ' · ' + esc(p.injury) : ''}${p.duration ? ' · ' + esc(p.duration) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
   grid.querySelectorAll('[data-goto]').forEach(a => a.onclick = e => { e.preventDefault(); goToSection(a.dataset.goto, true); });
