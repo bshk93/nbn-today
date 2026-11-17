@@ -28,13 +28,17 @@ const state = {
   me: null,             // { name, roles } or null
   members: null,        // every member name, for resolving what an author types
   order: null,          // the ballot being edited, local until submitted
-  rosters: {},          // ABBR -> augmented roster rows, fetched on demand
+  rosters: null,        // ABBR -> [slug], every roster in one fetch
   bios: null,
   ovr: null,
-  records: null,        // ABBR -> "48-34, East-3" from the latest season on file
+  details: {},          // ABBR -> GET /api/home/team/{abbr}, fetched on demand
+  summary: null,        // ABBR -> this season at a glance (loadSummary)
+  injuries: null,       // ABBR -> [injury rows]
   openDrawers: new Set(),  // ABBRs whose roster drawers are expanded — a set,
                            // because ranking is comparing, and two rosters side
                            // by side is the whole reason the drawer exists
+  openContext: new Set(),  // the same, for the blurb board and consensus rows
+  flash: null,          // ABBR just moved, briefly highlighted so the eye can find it
   editingBlurb: null,   // ABBR whose blurb textarea is open
 };
 
@@ -434,13 +438,24 @@ function setBallotStatus(text, cls) {
 function renderBallot(host) {
   initOrder();
   const mine = state.article.ballots?.[state.me?.name] || {};
+  const hasSeed = isFullOrder(state.article.seed_order);
   host.innerHTML = `
     <div class="panel">
       <div class="panel-title">Your ballot</div>
-      <div class="panel-note">Drag a team, or use ▲▼, to rank all 30 from best to worst.
-        Click teams to open their rosters — as many at once as you want to compare.
-        Your order saves itself as you go, so you can pick this up on another device —
-        it only counts once you submit. Other voters can't see it while voting is open.</div>
+      <div class="panel-note">Rank all 30 from best to worst: drag a team by its handle, tap its
+        number to type a new rank, or use ▲▼. Tap a team to open its roster, last five games
+        and injuries — open as many as you want to compare. Your order saves as you go, so you
+        can finish on another device; it only counts once you submit, and nobody else sees it
+        while voting is open.</div>
+      <div class="ballot-tools">
+        <span class="tools-label">Start from</span>
+        ${hasSeed ? `<button class="btn-secondary btn-tiny" onclick="startFrom('last')">Last edition</button>` : ''}
+        <button class="btn-secondary btn-tiny" data-needs-summary onclick="startFrom('standings')" ${state.summary ? '' : 'disabled'}>Standings</button>
+        <button class="btn-secondary btn-tiny" data-needs-summary onclick="startFrom('model')" ${state.summary ? '' : 'disabled'}
+          title="The playoff-odds model's team rating, the same one the homepage card ranks by">Model rating</button>
+        <span class="tools-sep"></span>
+        <button class="btn-secondary btn-tiny" onclick="toggleAllDrawers()" id="toggle-all">${state.openDrawers.size ? 'Close all' : 'Open all'}</button>
+      </div>
     </div>
     <div class="ballot-list" id="ballot-list"></div>
     <div class="sticky-save">
@@ -452,64 +467,176 @@ function renderBallot(host) {
 
 function drawBallotRows() {
   const list = $('ballot-list');
+  if (!list) return;
   list.innerHTML = state.order.map((abbr, i) => `
-    <div class="brow" draggable="true" data-abbr="${abbr}" data-i="${i}">
-      <div class="brow-rank">${i + 1}</div>
-      <div class="brow-team" onclick="toggleDrawer('${abbr}')">
+    <div class="brow${state.flash === abbr ? ' moved' : ''}${state.openDrawers.has(abbr) ? ' open' : ''}" data-abbr="${abbr}" data-i="${i}">
+      <span class="brow-grip" title="Drag to move" aria-hidden="true">⋮⋮</span>
+      <button class="brow-rank" onclick="editRank(${i})" title="Type a new rank">${i + 1}</button>
+      <div class="brow-team" onclick="toggleDrawer('${abbr}')" role="button" tabindex="0"
+           aria-expanded="${state.openDrawers.has(abbr)}">
         ${logo(abbr)}
         <span class="brow-name">${escHtml(TEAMS[abbr])}</span>
         <span class="brow-abbr">${abbr}</span>
       </div>
+      <div class="brow-stats" data-sum="${abbr}" data-variant="row">${summaryHtml(abbr, 'row')}</div>
       <div class="brow-btns">
-        <button onclick="move(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Up">▲</button>
-        <button onclick="move(${i}, 1)" ${i === 29 ? 'disabled' : ''} title="Down">▼</button>
+        <button onclick="move(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="Up" aria-label="Move up">▲</button>
+        <button onclick="move(${i}, 1)" ${i === 29 ? 'disabled' : ''} title="Down" aria-label="Move down">▼</button>
       </div>
     </div>
-    ${state.openDrawers.has(abbr) ? `<div class="roster-drawer" id="drawer-${abbr}">Loading roster…</div>` : ''}
+    ${state.openDrawers.has(abbr) ? `<div class="roster-drawer" id="drawer-${abbr}">Loading…</div>` : ''}
   `).join('');
+  state.flash = null;
   wireDrag(list);
-  state.openDrawers.forEach(abbr => fillDrawer(abbr));
+  list.querySelectorAll('.brow-team').forEach(el => el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+  }));
+  state.openDrawers.forEach(abbr => fillDrawer(abbr, $(`drawer-${abbr}`)));
+  const t = $('toggle-all');
+  if (t) t.textContent = state.openDrawers.size ? 'Close all' : 'Open all';
 }
 
-function move(i, delta) {
-  const j = i + delta;
-  if (j < 0 || j >= state.order.length) return;
-  [state.order[i], state.order[j]] = [state.order[j], state.order[i]];
+function moveTo(from, to) {
+  to = Math.max(0, Math.min(state.order.length - 1, to));
+  if (from === to) return;
+  const [moved] = state.order.splice(from, 1);
+  state.order.splice(to, 0, moved);
+  state.flash = moved;
   saveDraft();
   drawBallotRows();
 }
 
+function move(i, delta) { moveTo(i, i + delta); }
+
+// Typing a rank is the phone's answer to a long drag: moving a team from 24th
+// to 6th is eighteen ▲ taps, or one number.
+function editRank(i) {
+  const row = document.querySelector(`.brow[data-i="${i}"]`);
+  const btn = row?.querySelector('.brow-rank');
+  if (!btn) return;
+  const input = document.createElement('input');
+  input.type = 'number'; input.min = 1; input.max = 30; input.inputMode = 'numeric';
+  input.className = 'brow-rank-input'; input.value = i + 1;
+  input.setAttribute('aria-label', `New rank for ${TEAMS[state.order[i]]}`);
+  btn.replaceWith(input);
+  input.focus(); input.select();
+  let done = false;
+  const finish = apply => {
+    if (done) return;
+    done = true;
+    const n = parseInt(input.value, 10);
+    if (apply && n >= 1 && n <= 30 && n !== i + 1) moveTo(i, n - 1);
+    else drawBallotRows();
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    if (e.key === 'Escape') finish(false);
+  });
+  input.addEventListener('blur', () => finish(true));
+}
+
+// A starting point, so nobody has to drag thirty rows to say "roughly the
+// standings". It replaces the working order, so ask first if there is one.
+function startFrom(kind) {
+  let next = null;
+  if (kind === 'last') next = state.article.seed_order?.slice();
+  else if (state.summary) {
+    const S = state.summary;
+    const pct = t => (S[t]?.w + S[t]?.l) ? S[t].w / (S[t].w + S[t].l) : 0;
+    next = ABBRS.slice().sort(kind === 'standings'
+      ? (a, b) => pct(b) - pct(a) || (S[b]?.diff ?? 0) - (S[a]?.diff ?? 0) || a.localeCompare(b)
+      : (a, b) => (S[b]?.rating ?? -99) - (S[a]?.rating ?? -99) || a.localeCompare(b));
+  }
+  if (!isFullOrder(next)) return;
+  if (next.join() === state.order.join()) return;
+  const label = { last: 'last edition\'s finish', standings: 'the current standings', model: 'the model rating' }[kind];
+  if (!confirm(`Reorder your ballot to ${label}?\n\nThis replaces the order you have now.`)) return;
+  state.order = next;
+  saveDraft();
+  drawBallotRows();
+}
+
+// Pointer events rather than HTML5 drag-and-drop, which never fires on a
+// touch screen — that left a phone with nothing but ▲▼. The handle starts a
+// drag at once (touch or mouse); a mouse can also drag from anywhere on the
+// row once it has moved a few pixels, so a plain click still opens the roster.
+let drag = null;
+let suppressClickUntil = 0;
+document.addEventListener('click', e => {
+  if (Date.now() < suppressClickUntil) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+
 function wireDrag(list) {
-  let fromIdx = null;
   list.querySelectorAll('.brow').forEach(row => {
-    row.addEventListener('dragstart', e => {
-      fromIdx = Number(row.dataset.i);
-      row.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      // Firefox won't start a drag without payload, even one nothing reads.
-      e.dataTransfer.setData('text/plain', row.dataset.abbr);
-    });
-    row.addEventListener('dragend', () => {
-      row.classList.remove('dragging');
-      list.querySelectorAll('.drop-target').forEach(r => r.classList.remove('drop-target'));
-    });
-    row.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      row.classList.add('drop-target');
-    });
-    row.addEventListener('dragleave', () => row.classList.remove('drop-target'));
-    row.addEventListener('drop', e => {
-      e.preventDefault();
-      const toIdx = Number(row.dataset.i);
-      if (fromIdx === null || fromIdx === toIdx) return;
-      const [moved] = state.order.splice(fromIdx, 1);
-      state.order.splice(toIdx, 0, moved);
-      fromIdx = null;
-      saveDraft();
-      drawBallotRows();
+    row.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || drag) return;
+      const onGrip = !!e.target.closest('.brow-grip');
+      if (!onGrip && (e.pointerType !== 'mouse' || e.target.closest('button, input, a'))) return;
+      drag = { row, list, startY: e.clientY, y: e.clientY, active: false, raf: 0 };
+      if (onGrip) { e.preventDefault(); beginDrag(); }
+      document.addEventListener('pointermove', onDragMove);
+      document.addEventListener('pointerup', endDrag);
+      document.addEventListener('pointercancel', endDrag);
     });
   });
+}
+
+function beginDrag() {
+  drag.active = true;
+  drag.before = drag.row.dataset.abbr;
+  drag.row.classList.add('dragging');
+  document.body.classList.add('is-dragging');
+  // The dragged team's own drawer would be left behind at the old spot.
+  const dr = $(`drawer-${drag.row.dataset.abbr}`);
+  if (dr) dr.style.display = 'none';
+  const tick = () => {
+    if (!drag?.active) return;
+    const edge = 70;
+    if (drag.y < edge) { window.scrollBy(0, -Math.ceil((edge - drag.y) / 5)); placeDragged(); }
+    else if (drag.y > innerHeight - edge) { window.scrollBy(0, Math.ceil((drag.y - innerHeight + edge) / 5)); placeDragged(); }
+    drag.raf = requestAnimationFrame(tick);
+  };
+  drag.raf = requestAnimationFrame(tick);
+}
+
+function onDragMove(e) {
+  if (!drag) return;
+  drag.y = e.clientY;
+  if (!drag.active) {
+    if (Math.abs(e.clientY - drag.startY) < 5) return;
+    beginDrag();
+  }
+  e.preventDefault();
+  placeDragged();
+}
+
+function placeDragged() {
+  const { row, list, y } = drag;
+  const others = [...list.querySelectorAll('.brow')].filter(r => r !== row);
+  const target = others.find(r => { const b = r.getBoundingClientRect(); return y < b.top + b.height / 2; });
+  if (target) { if (row.nextElementSibling !== target) list.insertBefore(row, target); }
+  else if (list.lastElementChild !== row) list.appendChild(row);
+}
+
+function endDrag() {
+  document.removeEventListener('pointermove', onDragMove);
+  document.removeEventListener('pointerup', endDrag);
+  document.removeEventListener('pointercancel', endDrag);
+  const d = drag;
+  drag = null;
+  if (!d) return;
+  cancelAnimationFrame(d.raf);
+  document.body.classList.remove('is-dragging');
+  if (!d.active) return;
+  // The click that ends a mouse drag would otherwise toggle the roster.
+  suppressClickUntil = Date.now() + 250;
+  const next = [...d.list.querySelectorAll('.brow')].map(r => r.dataset.abbr);
+  if (next.join() !== state.order.join()) {
+    state.order = next;
+    state.flash = d.before;
+    saveDraft();
+  }
+  drawBallotRows();
 }
 
 async function submitBallot() {
@@ -529,86 +656,220 @@ async function submitBallot() {
   }
 }
 
-// ── roster drawer ────────────────────────────────────────────────────────────
+// ── team context: the season line and the drawer ────────────────────────────
+// The same drawer opens from a ballot row, a blurb-board or consensus row, and
+// sits beside an open blurb editor: whoever is ranking or writing about a team
+// wants the same few things in front of them.
 
 function toggleDrawer(abbr) {
   if (!state.openDrawers.delete(abbr)) state.openDrawers.add(abbr);
   drawBallotRows();
 }
 
-// Bios and OVR are one fetch each for the whole league; rosters are per team and
-// only pulled for teams somebody actually opens.
-async function loadRoster(abbr) {
-  if (state.rosters[abbr]) return state.rosters[abbr];
-  if (!state.bios) {
-    const [bios, ovr] = await Promise.all([
-      fetch('/api/players').then(r => r.ok ? r.json() : {}),
-      fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
-    ]);
-    state.bios = bios; state.ovr = ovr;
-  }
-  const text = await fetch(`/data/${abbr.toLowerCase()}-roster.csv`).then(r => r.ok ? r.text() : null);
-  if (!text) { state.rosters[abbr] = []; return []; }
-  const rows = parseCSV(text).map(r => {
-    const slug = r.SLUG || '';
-    const bio = state.bios[slug] || {};
-    return {
-      slug,
-      name: bio.name || slug,
-      pos: (bio.pos || []).join('/'),
-      _posList: bio.pos || [],           // what computeStartingFive reads
-      OVR: state.ovr[slug] ?? '',
-      type: bio.type || '',
-    };
-  }).filter(p => p.type !== 'dead');
-  state.rosters[abbr] = rows;
-  return rows;
+function toggleAllDrawers() {
+  if (state.openDrawers.size) state.openDrawers.clear();
+  else state.order.forEach(t => state.openDrawers.add(t));
+  drawBallotRows();
 }
 
-async function fillDrawer(abbr) {
-  const host = $(`drawer-${abbr}`);
-  if (!host) return;
-  let rows;
-  try { rows = await loadRoster(abbr); } catch { host.textContent = 'Could not load this roster.'; return; }
-  if (!host.isConnected) return;         // the drawer was closed while fetching
-  if (!rows.length) { host.textContent = 'No roster on file.'; return; }
-
-  const five = (typeof computeStartingFive === 'function') ? computeStartingFive(rows) : [];
-  const starters = new Set(five.filter(Boolean).map(p => p.slug));
-  const sorted = rows.slice().sort((a, b) => (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0));
-  const lineup = five.map((p, i) => p ? `${DEPTH_SLOTS[i]} ${escHtml(p.name)}` : `${DEPTH_SLOTS[i]} —`).join(' · ');
-
-  host.innerHTML = `
-    <div class="drawer-head">
-      <span><strong>${escHtml(TEAMS[abbr])}</strong>${state.records?.[abbr] ? ` · ${escHtml(state.records[abbr])}` : ''}</span>
-      <span>${escHtml(lineup)}</span>
-    </div>
-    <table>
-      <thead><tr><th>Player</th><th>Pos</th><th style="text-align:right">OVR</th></tr></thead>
-      <tbody>${sorted.map(p => `
-        <tr class="${starters.has(p.slug) ? 'starter' : ''}">
-          <td>${escHtml(p.name)}</td><td>${escHtml(p.pos)}</td><td class="num">${escHtml(p.OVR)}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
-}
-
-// Last season on file, per team — context while ranking, and it costs one CSV.
-async function loadRecords() {
+// This season at a glance, for all 30 teams in three league-wide fetches: the
+// playoff-odds run (record, rating, odds), the standings file (seed, net
+// rating) and the season's game index (last 10 and streak). Context only —
+// every view works without it and fills in when it lands.
+async function loadSummary() {
   try {
-    const text = await fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : null);
-    if (!text) return;
-    const latest = {};
-    parseCSV(text).forEach(r => {
-      const team = r.TEAM || r.ABBR;
-      if (!team) return;
-      if (!latest[team] || (r.SEASON || '') > (latest[team].SEASON || '')) latest[team] = r;
+    const odds = await fetch('/api/playoff-odds').then(r => r.ok ? r.json() : null);
+    const season = odds?.season;
+    const [standRes, gamesRes, injRes] = await Promise.allSettled([
+      fetch('/standings/standings-history.csv').then(r => r.ok ? r.text() : null),
+      season ? fetch(`/api/boxscores/games?season=${encodeURIComponent(season)}`).then(r => r.ok ? r.json() : []) : [],
+      fetch('/api/injuries').then(r => r.ok ? r.json() : null),
+    ]);
+    const stand = {};
+    if (standRes.status === 'fulfilled' && standRes.value) {
+      NBN.parseCSV(standRes.value).forEach(r => { if (r.SEASON === season && r.TEAM) stand[r.TEAM] = r; });
+    }
+    const games = gamesRes.status === 'fulfilled' ? (gamesRes.value || []) : [];
+    const ratingRank = {};
+    (odds?.teams || []).slice().sort((a, b) => b.rating - a.rating).forEach((t, i) => { ratingRank[t.team] = i + 1; });
+    const seed = state.article.seed_order;
+    const lastRank = isFullOrder(seed) ? Object.fromEntries(seed.map((t, i) => [t, i + 1])) : {};
+    const S = {};
+    ABBRS.forEach(t => {
+      const o = (odds?.teams || []).find(x => x.team === t) || {};
+      const st = stand[t] || {};
+      const f = formOf(games, t);
+      S[t] = {
+        w: o.w ?? (st.W !== undefined ? +st.W : null), l: o.l ?? (st.L !== undefined ? +st.L : null),
+        seed: st.SEED || '', diff: st.DIFF !== undefined && st.DIFF !== '' ? +st.DIFF : null,
+        rating: o.rating ?? null, ratingRank: ratingRank[t] || null,
+        playoffs: o.playoffs ?? null, title: o.title ?? null,
+        l10: f?.l10 || '', streak: f?.streak || '', last: lastRank[t] || null,
+      };
     });
-    state.records = {};
-    Object.entries(latest).forEach(([team, r]) => {
-      state.records[team] = `${r.SEASON} · ${r.W}-${r.L}${r.SEED ? ` · ${r.SEED}` : ''}`;
-    });
-  } catch { /* context only — the ballot works without it */ }
+    state.summary = S;
+    state.injuries = {};
+    if (injRes.status === 'fulfilled' && injRes.value) {
+      (injRes.value.players || []).forEach(p => { (state.injuries[p.team] ||= []).push(p); });
+    }
+    fillSummaries();
+  } catch { /* context only */ }
+}
+
+// Last 10 and streak, regular season, newest first. Same reading as
+// PowerRank.form on the homepage card.
+function formOf(games, team) {
+  const mine = games.filter(g => g && g.gametype !== 'PLAYOFF'
+      && (g.home_team === team || g.away_team === team) && g.home_score !== g.away_score)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (!mine.length) return null;
+  const won = mine.map(g => (g.home_team === team) === (g.home_score > g.away_score));
+  let n = 1;
+  while (n < won.length && won[n] === won[0]) n++;
+  const ten = won.slice(0, 10), w = ten.filter(Boolean).length;
+  return { streak: (won[0] ? 'W' : 'L') + n, l10: `${w}-${ten.length - w}` };
+}
+
+const fmtDiff = d => d == null || isNaN(d) ? '' : `${d > 0 ? '+' : ''}${d.toFixed(1)}`;
+const seedShort = s => (s || '').replace(/^(East|West)-/, (m, c) => c[0]);
+
+// `row` is the ballot's columns; `line` is one compact line under a team name.
+function summaryHtml(abbr, variant) {
+  const s = state.summary?.[abbr];
+  if (!s) return '';
+  const rec = s.w != null ? `${s.w}-${s.l}` : '';
+  const diffCls = s.diff > 0 ? 'pos' : s.diff < 0 ? 'neg' : '';
+  const strkCls = s.streak.startsWith('W') ? 'pos' : s.streak.startsWith('L') ? 'neg' : '';
+  if (variant === 'row') {
+    return `<span class="st st-rec" title="Record">${rec}</span>`
+      + `<span class="st st-seed" title="Seed">${escHtml(seedShort(s.seed))}</span>`
+      + `<span class="st st-l10" title="Last 10">${s.l10 ? `<em>L10</em> ${s.l10}` : ''}</span>`
+      + `<span class="st st-strk ${strkCls}" title="Streak">${s.streak}</span>`
+      + `<span class="st st-diff ${diffCls}" title="Point differential per game">${fmtDiff(s.diff)}</span>`
+      + `<span class="st st-last" title="Rank in the last edition">${s.last ? `<em>was</em> ${s.last}` : ''}</span>`;
+  }
+  return [rec && `${rec}${s.seed ? ` (${escHtml(seedShort(s.seed))})` : ''}`,
+    s.l10 && `L10 ${s.l10}`,
+    s.streak && `<span class="${strkCls}">${s.streak}</span>`,
+    s.diff != null && `<span class="${diffCls}">${fmtDiff(s.diff)}</span>`].filter(Boolean).join(' · ');
+}
+
+function fillSummaries() {
+  document.querySelectorAll('[data-sum]').forEach(el => {
+    el.innerHTML = summaryHtml(el.dataset.sum, el.dataset.variant);
+  });
+  document.querySelectorAll('[data-needs-summary]').forEach(b => { b.disabled = !state.summary; });
+  // Drawers opened before the summary landed can now show their header.
+  document.querySelectorAll('.roster-drawer[data-team]').forEach(el => fillDrawer(el.dataset.team, el));
+}
+
+// One team page's worth of season data (results, saved five, per-player
+// averages). Fetched one at a time — "Open all" asks for 30, and the box is
+// small — and kept for the visit.
+let detailQueue = Promise.resolve();
+function loadDetail(abbr) {
+  if (state.details[abbr]) return state.details[abbr];
+  state.details[abbr] = detailQueue = detailQueue.catch(() => {}).then(() =>
+    fetch(`/api/home/team/${abbr}`).then(r => r.ok ? r.json() : null));
+  return state.details[abbr];
+}
+
+async function loadRosters() {
+  if (!state.rosters) {
+    state.rosters = (async () => {
+      const [rosters, bios, ovr] = await Promise.all([
+        fetch('/api/rosters/slugs').then(r => r.ok ? r.json() : {}),
+        fetch('/api/players').then(r => r.ok ? r.json() : {}),
+        fetch('/api/ovr/current').then(r => r.ok ? r.json() : {}),
+      ]);
+      state.bios = bios; state.ovr = ovr;
+      return rosters;
+    })();
+  }
+  return state.rosters;
+}
+
+function ageOf(dob) {
+  if (!dob) return '';
+  const d = new Date(dob);
+  if (isNaN(d)) return '';
+  const now = new Date();
+  let a = now.getFullYear() - d.getFullYear();
+  if (now < new Date(now.getFullYear(), d.getMonth(), d.getDate())) a--;
+  return a;
+}
+
+const playerName = raw => (typeof nbnPlayerName === 'function' ? nbnPlayerName(raw) : raw);
+
+async function fillDrawer(abbr, host) {
+  if (!host) return;
+  host.dataset.team = abbr;
+  let rosters, detail;
+  try {
+    [rosters, detail] = await Promise.all([loadRosters(), loadDetail(abbr).catch(() => null)]);
+  } catch { host.textContent = 'Could not load this team.'; return; }
+  if (!host.isConnected) return;         // closed while fetching
+
+  const lines = detail?.lines || {};
+  const rows = (rosters[abbr] || []).map(slug => {
+    const bio = state.bios[slug] || {};
+    return { slug, name: playerName(bio.name || slug), pos: bio.pos || [], _posList: bio.pos || [],
+             OVR: state.ovr[slug] ?? '', age: ageOf(bio.dob), type: bio.type || '', line: lines[slug] };
+  }).filter(p => p.type !== 'dead' && p.type !== 'draft-rights');
+
+  // The team's saved five when it has one, else the best legal five.
+  let five = (detail?.five?.players || []).map(p => p.slug);
+  if (!five.length && typeof computeStartingFive === 'function') {
+    five = computeStartingFive(rows).filter(Boolean).map(p => p.slug);
+  }
+  const starterIdx = Object.fromEntries(five.map((s, i) => [s, i]));
+  const mins = p => p.line?.min ?? -1;
+  rows.sort((a, b) => {
+    const sa = starterIdx[a.slug], sb = starterIdx[b.slug];
+    if (sa !== undefined || sb !== undefined) return (sa ?? 99) - (sb ?? 99);
+    return mins(b) - mins(a) || (parseFloat(b.OVR) || 0) - (parseFloat(a.OVR) || 0);
+  });
+
+  const s = state.summary?.[abbr];
+  const kpis = s ? [
+    ['Record', s.w != null ? `${s.w}-${s.l}` : '–', s.seed ? s.seed.replace('-', ' ') : ''],
+    ['Last 10', s.l10 || '–', s.streak ? `streak ${s.streak}` : ''],
+    ['Net', fmtDiff(s.diff) || '–', 'pts / game'],
+    ['Model', s.ratingRank ? `#${s.ratingRank}` : '–', s.rating != null ? `rating ${s.rating > 0 ? '+' : ''}${s.rating}` : ''],
+    ['Playoffs', s.playoffs != null ? `${Math.round(s.playoffs * 100)}%` : '–', s.title != null ? `title ${(s.title * 100).toFixed(1)}%` : ''],
+  ] : [];
+
+  const results = (detail?.results || []).filter(g => g.home_score !== g.away_score).slice(0, 5).map(g => {
+    const home = g.home_team === abbr;
+    const us = home ? g.home_score : g.away_score, them = home ? g.away_score : g.home_score;
+    const opp = home ? g.away_team : g.home_team;
+    const won = us > them;
+    return `<span class="res ${won ? 'pos' : 'neg'}" title="${escHtml(g.date)}"><b>${won ? 'W' : 'L'}</b> ${us}-${them} ${home ? 'vs' : '@'} ${opp}</span>`;
+  }).join('');
+
+  const inj = (state.injuries?.[abbr] || []).map(p =>
+    `<span class="inj"><b>${escHtml(p.name || p.slug)}</b> ${escHtml(p.status || '')}${p.injury ? ` · ${escHtml(p.injury)}` : ''}${p.duration ? ` (${escHtml(p.duration)})` : ''}</span>`).join('');
+
+  const f1 = v => v == null ? '' : Number(v).toFixed(1);
+  host.innerHTML = `
+    ${kpis.length ? `<div class="dr-kpis">${kpis.map(([k, v, sub]) =>
+      `<div class="dr-kpi"><span class="k">${k}</span><span class="v">${v}</span><span class="s">${sub}</span></div>`).join('')}</div>` : ''}
+    ${results ? `<div class="dr-line"><span class="dr-lbl">Last 5</span>${results}</div>` : ''}
+    ${inj ? `<div class="dr-line"><span class="dr-lbl">Injured</span>${inj}</div>` : ''}
+    ${rows.length ? `<table>
+      <thead><tr><th></th><th>Player</th><th>Pos</th><th class="num">OVR</th><th class="num wide">Age</th>
+        <th class="num wide">MIN</th><th class="num">PTS</th><th class="num">REB</th><th class="num">AST</th></tr></thead>
+      <tbody>${rows.map(p => {
+        const si = starterIdx[p.slug];
+        return `<tr class="${si !== undefined ? 'starter' : ''}">
+          <td class="slot">${si !== undefined ? DEPTH_SLOTS[si] || '' : ''}</td>
+          <td class="pname"><a href="/players/?p=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener">${escHtml(p.name)}</a>${p.type === 'two-way' ? ' <span class="tw">2W</span>' : ''}</td>
+          <td>${escHtml(p.pos.join('/'))}</td><td class="num">${escHtml(p.OVR)}</td><td class="num wide">${p.age}</td>
+          <td class="num wide">${f1(p.line?.min)}</td><td class="num">${f1(p.line?.pts)}</td>
+          <td class="num">${f1(p.line?.reb)}</td><td class="num">${f1(p.line?.ast)}</td>
+        </tr>`; }).join('')}
+      </tbody></table>` : '<div class="empty">No roster on file.</div>'}
+    <div class="dr-foot"><a href="/teams/${abbr}/" target="_blank" rel="noopener">${escHtml(TEAMS[abbr])} team page ↗</a></div>`;
 }
 
 // ── consensus and blurbs ─────────────────────────────────────────────────────
@@ -634,6 +895,7 @@ function renderBlurbBoard(host) {
   wrap.id = 'blurb-board';
   wrap.innerHTML = blurbBoardInner();
   host.appendChild(wrap);
+  fillContexts();
 }
 
 function blurbBoardInner() {
@@ -641,18 +903,62 @@ function blurbBoardInner() {
     <div class="panel">
       <div class="panel-title">Blurbs</div>
       <div class="panel-note">Claim a team and write it whenever you like — you don't have to
-        wait for voting to close.</div>
+        wait for voting to close. Tap a team for its roster and recent games.</div>
+      ${myClaimsHtml()}
     </div>
     <table class="ctable">
       <thead><tr><th>Team</th><th>Blurb</th></tr></thead>
       <tbody>${Object.keys(TEAMS).sort().map(team => {
         const b = state.article.blurbs?.[team] || {};
         return `<tr>
-          <td><div class="team-cell">${logo(team)}<span>${escHtml(TEAMS[team])}</span></div></td>
+          <td class="team-td">${teamCell(team)}</td>
           <td>${renderBlurbCell(team, b)}</td>
-        </tr>${blurbEditorRow(team, b, 2)}`;
+        </tr>${contextRow(team, b, 2)}${blurbEditorRow(team, b, 2)}`;
       }).join('')}</tbody>
     </table>`;
+}
+
+// The teams this viewer has claimed, as jump links — with thirty rows, finding
+// your own two is otherwise a scroll-and-squint.
+function myClaimsHtml() {
+  const me = state.me?.name;
+  if (!me) return '';
+  const mine = Object.entries(state.article.blurbs || {}).filter(([, b]) => b.claimed_by === me)
+    .map(([t, b]) => [t, b]).sort(([a], [b]) => a.localeCompare(b));
+  if (!mine.length) return '';
+  return `<div class="my-claims"><span class="tools-label">Your teams</span>${mine.map(([t, b]) =>
+    `<button class="claim-chip${b.body ? ' done' : ''}" onclick="editBlurb('${t}')" title="${b.body ? 'Written — tap to edit' : 'Not written yet'}">`
+    + `${logo(t)}${t}${b.body ? ' <i class="ui-icon ui-icon--check" aria-hidden="true"></i>' : ''}</button>`).join('')}</div>`;
+}
+
+function teamCell(team, extra = '') {
+  return `<div class="team-cell team-toggle" onclick="toggleContext('${team}')" role="button" tabindex="0"
+      aria-expanded="${state.openContext.has(team)}" title="Roster and recent games">
+    ${logo(team)}<div class="team-txt"><span class="team-nm">${escHtml(TEAMS[team])}</span>
+    <span class="team-sub" data-sum="${team}" data-variant="line">${summaryHtml(team, 'line')}</span>${extra}</div>
+  </div>`;
+}
+
+// The open blurb editor carries its own copy of the team context, so the
+// standalone row is skipped for that team rather than shown twice.
+function contextRow(team, b, cols) {
+  if (!state.openContext.has(team)) return '';
+  if (state.editingBlurb === team && canWriteBlurb(b)) return '';
+  return `<tr class="ctx-row"><td colspan="${cols}"><div class="roster-drawer" data-ctx="${team}">Loading…</div></td></tr>`;
+}
+
+function toggleContext(team) {
+  if (!state.openContext.delete(team)) state.openContext.add(team);
+  redrawBlurbs();
+}
+
+document.addEventListener('keydown', e => {
+  const t = e.target.closest?.('.team-toggle');
+  if (t && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); t.click(); }
+});
+
+function fillContexts() {
+  document.querySelectorAll('.roster-drawer[data-ctx]').forEach(el => fillDrawer(el.dataset.ctx, el));
 }
 
 // Opening or closing a blurb editor redraws only the blurbs. During voting the
@@ -661,7 +967,7 @@ function blurbBoardInner() {
 // panel in the `blurbs` phase, where the cells live in the consensus table.
 function redrawBlurbs() {
   const board = document.getElementById('blurb-board');
-  if (board) board.innerHTML = blurbBoardInner();
+  if (board) { board.innerHTML = blurbBoardInner(); fillContexts(); }
   else renderMain(state.article.phase);
 }
 
@@ -677,29 +983,33 @@ function renderConsensus(host) {
       <div class="panel-title">Consensus · ${rows[0].votes} ballot${rows[0].votes === 1 ? '' : 's'}</div>
       <div class="panel-note">Average rank across every submitted ballot. Teams level on
         the average share a rank (T) — nobody sets the order by hand.
-        ${isVoter() || isEditor() ? 'Claim a team to write its blurb.' : ''}</div>
+        ${isVoter() || isEditor() ? 'Claim a team to write its blurb. ' : ''}Tap a team for its roster and recent games.</div>
+      ${myClaimsHtml()}
     </div>
-    <table class="ctable">
+    <table class="ctable ctable-consensus">
       <thead><tr>
-        <th style="text-align:right">#</th><th></th><th>Team</th>
-        <th style="text-align:right">Avg</th><th style="text-align:right">Hi/Lo</th>
-        <th style="text-align:right">1st</th><th>Blurb</th>
+        <th style="text-align:right">#</th><th class="c-move"></th><th>Team</th>
+        <th class="c-wide" style="text-align:right">Avg</th><th class="c-wide" style="text-align:right">Hi/Lo</th>
+        <th class="c-wide" style="text-align:right">1st</th><th>Blurb</th>
       </tr></thead>
       <tbody>${rows.map(r => renderConsensusRow(r)).join('')}</tbody>
     </table>`;
+  fillContexts();
 }
 
 function renderConsensusRow(r) {
   const b = state.article.blurbs?.[r.team] || {};
+  // On a phone the three number columns fold into a line under the team.
+  const narrow = `<span class="c-narrow">${moveCell(r)} avg ${r.avg.toFixed(2)} · ${r.hi}–${r.lo}${r.firsts ? ` · ${r.firsts}× 1st` : ''}</span>`;
   return `<tr>
     <td class="rank">${r.tied ? 'T-' : ''}${r.rank}</td>
-    <td style="text-align:right">${moveCell(r)}</td>
-    <td><div class="team-cell">${logo(r.team)}<span>${escHtml(TEAMS[r.team])}</span></div></td>
-    <td class="num">${r.avg.toFixed(2)}</td>
-    <td class="num">${r.hi}–${r.lo}</td>
-    <td class="num">${r.firsts || ''}</td>
+    <td class="c-move" style="text-align:right">${moveCell(r)}</td>
+    <td class="team-td">${teamCell(r.team, narrow)}</td>
+    <td class="num c-wide">${r.avg.toFixed(2)}</td>
+    <td class="num c-wide">${r.hi}–${r.lo}</td>
+    <td class="num c-wide">${r.firsts || ''}</td>
     <td>${renderBlurbCell(r.team, b)}</td>
-  </tr>${blurbEditorRow(r.team, b, 7)}`;
+  </tr>${contextRow(r.team, b, 7)}${blurbEditorRow(r.team, b, 7)}`;
 }
 
 function canWriteBlurb(b) { return b.claimed_by === state.me?.name || isEditor(); }
@@ -726,9 +1036,13 @@ function blurbEditorRow(team, b, cols) {
   const mine = b.claimed_by === state.me?.name;
   return `<tr class="blurb-edit-row"><td colspan="${cols}">
     <div class="blurb-box">
-      <div class="blurb-edit-head">${logo(team)}<span>${escHtml(TEAMS[team])}</span></div>
-      <textarea id="blurb-input-${team}" maxlength="${MAX_BLURB_LEN}" oninput="updateBlurbCount('${team}')"
-        placeholder="What's the read on ${escHtml(TEAMS[team])}?">${escHtml(b.body || '')}</textarea>
+      <div class="blurb-edit-head">${logo(team)}<span>${escHtml(TEAMS[team])}</span>
+        <span class="team-sub" data-sum="${team}" data-variant="line">${summaryHtml(team, 'line')}</span></div>
+      <div class="blurb-grid">
+        <textarea id="blurb-input-${team}" maxlength="${MAX_BLURB_LEN}" oninput="updateBlurbCount('${team}')"
+          placeholder="What's the read on ${escHtml(TEAMS[team])}?">${escHtml(b.body || '')}</textarea>
+        <div class="roster-drawer blurb-ctx" data-ctx="${team}">Loading…</div>
+      </div>
       <div class="blurb-meta">
         <button class="btn-primary btn-tiny" onclick="saveBlurb('${team}')">Save</button>
         <button class="btn-secondary btn-tiny" onclick="cancelBlurb()">Cancel</button>
@@ -795,6 +1109,7 @@ function cancelBlurb() { state.editingBlurb = null; redrawBlurbs(); }
 // Opening the editor pushes it a row below the team, which on a phone can be
 // off the bottom of the screen — put the caret in it and bring it into view.
 function focusBlurbEditor(team) {
+  fillContexts();
   const el = $(`blurb-input-${team}`);
   if (!el) return;
   el.focus({ preventScroll: true });
@@ -858,7 +1173,7 @@ async function init() {
     location.replace(`/news/view/?id=${state.id}`);
     return;
   }
-  loadRecords();          // background; the ballot doesn't wait on it
+  loadSummary();          // background; every view fills in when it lands
   render();
 }
 
