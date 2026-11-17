@@ -181,11 +181,11 @@ RTG/DIFF columns get heat-map coloring via inline `td.style` (hue 0–120 mapped
 
 ## Team page layout
 
-One long page, not tabs (redesigned 2026-11). Top to bottom:
+The hero, then six tabs (redesigned 2026-11; one long page at first, switched to tabs the next day because it ran past 20,000px). Top to bottom:
 
 - **Hero** (`header.tn-hero`): the team-colour band with name, franchise facts (`renderHeaderFacts`), this season's record, seed, streak and point diff, and the next-game card. Prev/next arrows and Share sit here too; phones drop the arrows. Behind it, faded, is the team's secondary mark from `logos/secondary/` (where each came from is in `sources.json` beside them), never the primary logo already shown on the left. The `#tn-wm` SVG filter turns it into a white tint weighted by the mark's own light and dark, so a navy mark still shows on a navy band.
-- **Sticky section bar** (`nav#tn-nav`): Season, Roster, Cap & Picks, Schedule, History, Front Office. Each link is an in-page anchor, and the bar highlights whichever section is on screen.
-- **Owner panel** (`details#owner-panel`): only for a member whose roles or `owner_of` name this team. It shows what's coming up (option deadline, trade deadline, draft), what's waiting on you (offer sheets, team options, extension-eligible players, trading block count) and tool links. It's open by default on desktop and collapsed on phones.
+- **Tab bar** (`nav#tn-nav`): Season, Roster, Cap & Picks, Schedule, History, Front Office. One section (`section.tn-section`) shows at a time; `showSection` hides the others and marks the link. Season shows on load.
+- **Owner panel** (`details#owner-panel`): only for a member whose roles or `owner_of` name this team. It shows what's coming up (option deadline, trade deadline, draft), what's waiting on you (offer sheets, team options, extension-eligible players, trading block count) and tool links. It's open by default on desktop and collapsed on phones, and shows on the Season tab only.
 - **Season** (`#season-grid`): last-10 form bars, conference standings ±3, team leaders, both projected fives for the next game, and injuries.
 - **Roster**: five starter cards, then the full roster table with What If, edit mode and the Moves menu. On phones the table collapses to two lines per player (name, then position · OVR · age, then contract and stats).
 - **Cap & Picks**: the cap bar (cap, 1st and 2nd apron markers), Cap Health, exceptions, trade exceptions and picks.
@@ -193,9 +193,9 @@ One long page, not tabs (redesigned 2026-11). Top to bottom:
 
 Everything above the roster table is drawn by `renderSeasonTop` from a single `GET /api/home/team/{abbr}` call, which starts before the page's main fetch.
 
-The panels below the fold are `.tab-panel`s and still load lazily. An IntersectionObserver calls `revealPanel` when a panel comes within 600px of the screen, and `whenTabShown(tab, fn)` queues work until then.
+A section's `.tab-panel`s load the first time the section opens (`showSection` calls `revealPanel`; `whenTabShown(tab, fn)` queues work until then), so a visit that never opens History never fetches its data.
 
-Old tab hashes still land in the right place: `#franchise`, `#coaching`, `#schedule`, `#draft` and `#irl` go through `goToSection`. It reveals the panel, then `holdSection` keeps the target pinned while sections above it fill in, until the reader scrolls or 8 seconds pass.
+Hashes open the tab that holds them: `#roster`, `#cap`, `#schedule`, `#history`, `#office`, and the old tab names `#franchise`, `#alltime`, `#draft`, `#coaching`, `#irl`. A section's first panel opens the tab from its top; a panel further in (`#draft`) scrolls to itself, and `holdSection` keeps it in place while the rows above it fill in.
 
 ## Team page edit mode
 
