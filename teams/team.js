@@ -705,6 +705,11 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-owner li { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--text-secondary); }
   .tn-owner li .when { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .tn-owner.tn-off { display: none; }
+  /* History's sub-tabs: one group of its sections at a time (showSub). */
+  .tn-subnav { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin: 0 0 var(--space-5); }
+  .tn-subnav::-webkit-scrollbar { display: none; }
+  .tn-subnav button { white-space: nowrap; }
+  #history section[data-sub].sub-off { display: none !important; }
   .tn-owner li.none { color: var(--text-muted); }
   .tn-owner li a { color: var(--text-primary); text-decoration: none; }
   .tn-owner li a:hover { color: var(--accent-light); text-decoration: underline; }
@@ -1590,42 +1595,45 @@ document.body.innerHTML = `
 
     <section class="tn-section" id="history" hidden>
       <h2 class="tn-h2">History</h2>
+      <div class="ui-segmented tn-subnav" id="history-subnav" role="group" aria-label="History">
+        <button type="button" data-sub="franchise">Franchise</button><button type="button" data-sub="season-stats">Season Stats</button><button type="button" data-sub="alltime">All-Time</button><button type="button" data-sub="records">Records</button><button type="button" data-sub="draft">Draft</button><button type="button" data-sub="rivalries">Rivalries</button><button type="button" data-sub="staff">Staff</button>
+      </div>
       <div class="tab-panel" id="tab-franchise">
-      <section id="identity-section" style="display:none">
+      <section id="identity-section" data-sub="franchise" style="display:none">
         <h2 class="section-title">Team Identity</h2>
         <div id="identity-wrap"></div>
       </section>
-      <section>
+      <section data-sub="franchise">
         <h2 class="section-title">Season History</h2>
         <div class="timeline" id="timeline-wrap"></div>
         <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
       </section>
-      <section id="rivals-section" style="display:none">
+      <section id="rivals-section" data-sub="rivalries" style="display:none">
         <h2 class="section-title">Rivalries</h2>
         <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
         <div class="rivals-cards" id="rivals-cards"></div>
         <div class="ui-table-wrap table-wrap" id="rivals-wrap"></div>
       </section>
-      <section id="personnel-section" style="display:none">
+      <section id="personnel-section" data-sub="staff" style="display:none">
         <h2 class="section-title">Franchise Personnel</h2>
         <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
       </section>
-      <section id="frontoffice-section" style="display:none">
+      <section id="frontoffice-section" data-sub="staff" style="display:none">
         <h2 class="section-title"><a class="ui-title-link" href="/finances/?team=${abbr}">Front Office</a></h2>
         <div class="fo-strip" id="frontoffice-wrap"></div>
       </section>
-      <section id="retired-section" style="display:none">
+      <section id="retired-section" data-sub="franchise" style="display:none">
         <h2 class="section-title">Retired Numbers</h2>
         <div class="retired-banners" id="retired-banners"></div>
       </section>
       </div>
       <div class="tab-panel" id="tab-alltime">
-      <section>
+      <section data-sub="alltime">
         <h2 class="section-title">All-Time Top Players</h2>
         <p class="section-sub">Regular season · ranked by total Game Score</p>
         <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
       </section>
-      <section>
+      <section data-sub="records">
         <h2 class="section-title"><a class="ui-title-link" href="/stats/highs/?team=${abbr}">Franchise Records</a></h2>
         <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
         <div id="records-wrap"><div class="status">Loading…</div></div>
@@ -1633,13 +1641,13 @@ document.body.innerHTML = `
       </section>
       </div>
       <div class="tab-panel" id="tab-draft">
-      <section>
+      <section data-sub="draft">
         <h2 class="section-title">Draft History</h2>
         <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
       </section>
       </div>
       <div class="tab-panel" id="tab-history">
-      <section>
+      <section data-sub="season-stats">
         <h2 class="section-title">Season Stats</h2>
         <div class="hist-controls" id="hist-controls"></div>
         <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
@@ -1740,8 +1748,29 @@ function showSection(sec) {
   document.getElementById('owner-panel')?.classList.toggle('tn-off', sec.id !== 'season');
   sec.querySelectorAll('.tab-panel').forEach(p => { if (!p.hidden) revealPanel(p.id.slice(4)); });
 }
+// History's sub-tabs (Franchise, Season Stats, All-Time, Records, Draft,
+// Rivalries, Staff): each shows the History sections tagged with its name.
+// All of History's data still loads when the History tab first opens.
+function showSub(name) {
+  const subnav = document.getElementById('history-subnav');
+  if (!subnav.querySelector(`[data-sub="${name}"]`)) name = 'franchise';
+  subnav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sub === name)));
+  document.querySelectorAll('#history section[data-sub]').forEach(sec => sec.classList.toggle('sub-off', sec.dataset.sub !== name));
+}
 function goToSection(name, smooth) {
-  const el = document.getElementById('tab-' + name) || document.getElementById(name);
+  // A sub-tab name (#draft, #alltime, #franchise, #rivalries, ...) opens
+  // History on that sub-tab.
+  if (document.querySelector(`#history-subnav [data-sub="${name}"]`)) {
+    showSection(document.getElementById('history'));
+    showSub(name);
+    const nav = document.getElementById('tn-nav');
+    if (scrollY > nav.offsetTop) scrollTo({ top: nav.offsetTop, behavior: 'auto' });
+    return true;
+  }
+  // A tab name names its section; checked first, because #history is also
+  // the old Season Stats panel's name (tab-history).
+  const own = document.getElementById(name);
+  const el = own && own.classList.contains('tn-section') ? own : (document.getElementById('tab-' + name) || own);
   const sec = el && el.closest('.tn-section');
   if (!sec || (el !== sec && el.hidden)) return false;
   showSection(sec);
@@ -1778,6 +1807,11 @@ document.querySelectorAll('#tn-nav a').forEach(a => a.addEventListener('click', 
   history.replaceState(null, '', name === 'season' ? location.pathname + location.search : '#' + name);
 }));
 document.querySelector('#tn-nav a[href="#season"]')?.classList.add('on');
+showSub('franchise');
+document.querySelectorAll('#history-subnav button').forEach(b => b.addEventListener('click', () => {
+  showSub(b.dataset.sub);
+  history.replaceState(null, '', '#' + b.dataset.sub);
+}));
 // A hash link decides where the page sits, not the browser's memory of the last visit.
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
