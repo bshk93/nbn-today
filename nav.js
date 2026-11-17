@@ -563,9 +563,6 @@ function _initNav() {
 // open tenure gets only Betting. Signed out, the card stays hidden and no
 // request is made for it (no token, no /api/me). Rides on the profile's
 // /api/me and the your-team lookup, both cached, so it costs nothing extra.
-// Logos drawn in white, which vanish on the usual white disc (checked over
-// logos/sm, 2026-11-17: only UTA's).
-const _QK_LIGHT_LOGOS = new Set(['UTA']);
 function _mountQuickLinks() {
   const card = document.getElementById('dash-quick');
   if (!card || card.dataset.done) return;
@@ -582,14 +579,14 @@ function _mountQuickLinks() {
     let html = '<div class="qk-head"><span class="qk-kicker">Quick Links</span></div>';
     if (team) {
       card.dataset.team = team;   // css/team-colors.css: --team-primary / --team-accent
-      const lc = team.toLowerCase();
+      const lc = team.toLowerCase();   // logos/md: drawn for a white disc (sm's UTA is white)
       // The team's secondary mark, faded into the top right and tinted white
       // (#qk-wm), as the team page's header does with the same files.
       html += `<a class="qk-team" href="/teams/${team}/">`
         + '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="qk-wm" color-interpolation-filters="sRGB">'
         + '<feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -0.138 -0.465 -0.047 1 0"/></filter></svg>'
         + `<img class="qk-team-wm" src="/logos/secondary/logo-${lc}.webp" alt="" onerror="this.remove()">`
-        + `<span class="qk-team-logo${_QK_LIGHT_LOGOS.has(team) ? ' qk-team-logo--light' : ''}"><img src="/logos/sm/logo-${lc}.webp" alt=""></span>`
+        + `<span class="qk-team-logo"><img src="/logos/md/logo-${lc}.webp" alt=""></span>`
         + `<span class="qk-team-text"><span class="qk-team-k">Your team</span>`
         + `<span class="qk-team-name">${_escSearch(TEAM_LIST[team])}</span></span></a>`;
     }
