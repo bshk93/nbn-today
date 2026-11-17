@@ -1039,7 +1039,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-team:hover b { color: var(--link); }
   .sched-team img { width: 22px; height: 22px; object-fit: contain; }
   .sched-team b { font-weight: 600; }
-  .sched-abbr { display: none; }   /* phones: the abbreviation; wider screens: the full name */
+  .sched-abbr { display: none; }   /* phones: the abbreviation; wider screens: the nickname */
   .sched-badge { line-height: 1.4; }
   .sched-badge-cup { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
   .sched-badge-po { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
@@ -1926,7 +1926,7 @@ async function renderSchedule(allGames, season) {
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
       <td class="sched-date">${fmtDay(g.date)}${i === nextIdx ? '<span class="sched-next-tag">Next</span>' : ''}</td>
       <td class="sched-opp"><span class="sched-opp-in"><span class="sched-ha">${home ? 'vs' : '@'}</span><a href="/teams/${opp}/" class="sched-team">
-        <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b class="sched-full">${TEAMS[opp] || opp}</b><b class="sched-abbr">${opp}</b></a>${po}${cup}${stream}</span></td>
+        <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b class="sched-full">${teamNick(opp)}</b><b class="sched-abbr">${opp}</b></a>${po}${cup}${stream}</span></td>
       <td class="sched-result">${res}</td>
       <td class="right sched-rec">${g.recAfter || ''}</td>
     </tr>`;
@@ -1996,6 +1996,13 @@ function playerNameCell(td, slug, rawName) {
   return top;
 }
 const fmt1 = v => (v === '' || v == null || isNaN(+v) ? '—' : (+v).toFixed(1));
+
+// A team by its nickname: "Wizards", "Trail Blazers", "76ers". What tables
+// show on wider screens; phones show the abbreviation.
+const teamNick = t => {
+  const name = TEAMS[t] || t;
+  return /Trail Blazers$/.test(name) ? 'Trail Blazers' : name.split(' ').pop();
+};
 
 function fmtSigned(v, decimals = 1) {
   const n = parseFloat(v);
@@ -3887,7 +3894,11 @@ function teamMarks(text, p, teamAbbr) {
   let or = false;
   String(text).split(/(\b[A-Z]{3}\b)/).forEach(part => {
     if (TEAMS[part]) {
-      const s = mark(part); s.appendChild(document.createTextNode(part));
+      // Nickname where there's room, abbreviation on phones (as the schedule).
+      const s = mark(part);
+      const full = document.createElement('span'); full.className = 'sched-full'; full.textContent = teamNick(part);
+      const ab = document.createElement('span'); ab.className = 'sched-abbr'; ab.textContent = part;
+      s.append(full, ab);
       if (or) { const o = document.createElement('span'); o.className = 'pick-or'; o.textContent = 'or'; s.prepend(o); or = false; }
       frag.appendChild(s);
     } else if (part.trim() === '|' || part.trim() === '/') or = true;
@@ -4282,7 +4293,7 @@ function renderRivalries(allGames) {
       const logo = t => `<img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="">`;
       const card = (label, team, main, sub) => team ? `<a class="rival-card" href="/teams/${team}/" data-team="${team}">`
         + `<span class="rival-label">${label}</span>`
-        + `<span class="rival-team">${logo(team)}${TEAMS[team] || team}</span>`
+        + `<span class="rival-team">${logo(team)}${teamNick(team)}</span>`
         + `<span class="rival-main">${main}</span><span class="rival-sub">${sub}</span></a>` : '';
       const game = m => `${m.us}–${m.them} ${m.po ? 'in the playoffs, ' : ''}${fmtDay(m.date)}`;
       cards.innerHTML = [
@@ -4306,7 +4317,7 @@ function renderRivalries(allGames) {
       wrap.innerHTML = '';
       wrap.appendChild(buildTable(COLS, rows, 'G', -1, (td, col, r) => {
         if (col.key === 'opp') {
-          td.innerHTML = `<a class="rival-opp" href="/teams/${r.opp}/">${logo(r.opp)}<b class="sched-full">${TEAMS[r.opp] || r.opp}</b><b class="sched-abbr">${r.opp}</b></a>`;
+          td.innerHTML = `<a class="rival-opp" href="/teams/${r.opp}/">${logo(r.opp)}<b class="sched-full">${teamNick(r.opp)}</b><b class="sched-abbr">${r.opp}</b></a>`;
         } else if (col.key === 'wl') td.textContent = `${r.W}–${r.L}`;
         else if (col.key === 'PCT') td.textContent = fmtPct(r.PCT);
         else if (col.key === 'AVG') {
