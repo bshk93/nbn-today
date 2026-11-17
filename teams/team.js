@@ -1033,6 +1033,7 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-team:hover b { color: var(--link); }
   .sched-team img { width: 22px; height: 22px; object-fit: contain; }
   .sched-team b { font-weight: 600; }
+  .sched-abbr { display: none; }   /* phones: the abbreviation; wider screens: the full name */
   .sched-badge { line-height: 1.4; }
   .sched-badge-cup { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
   .sched-badge-po { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
@@ -1056,7 +1057,8 @@ const coachingConfigReady = new Promise(resolve => {
     .sched-next-tag { display: block; margin: 0.1rem 0 0; }
     .sched-opp-in { gap: 0.4rem; }
     .sched-team { gap: 0.35rem; }
-    .sched-preview, .sched-rec { display: none; }
+    .sched-preview, .sched-rec, .sched-full { display: none; }
+    .sched-abbr { display: inline; }
     .sched-table th.sched-res-h, .sched-table td.sched-result { width: auto; }
     .sched-res { gap: 0.4rem; }
   }
@@ -1916,7 +1918,7 @@ async function renderSchedule(allGames, season) {
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
       <td class="sched-date">${fmtDay(g.date)}${i === nextIdx ? '<span class="sched-next-tag">Next</span>' : ''}</td>
       <td class="sched-opp"><span class="sched-opp-in"><span class="sched-ha">${home ? 'vs' : '@'}</span><a href="/teams/${opp}/" class="sched-team">
-        <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b>${opp}</b></a>${po}${cup}${stream}</span></td>
+        <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b class="sched-full">${TEAMS[opp] || opp}</b><b class="sched-abbr">${opp}</b></a>${po}${cup}${stream}</span></td>
       <td class="sched-result">${res}</td>
       <td class="right sched-rec">${g.recAfter || ''}</td>
     </tr>`;
