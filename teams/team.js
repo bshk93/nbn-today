@@ -882,14 +882,37 @@ const coachingConfigReady = new Promise(resolve => {
     font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em;
     color: var(--text-muted); width: 2.5rem;
   }
-  .picks-acquired td   { color: var(--link); }
-  .picks-traded td     { color: var(--text-muted); font-style: italic; }
-  .picks-uncertain td  { color: var(--warning); font-style: italic; }
-  .picks-legacy td     { color: var(--danger); font-style: italic; }
-  .picks-legacy td.pick-frozen { color: var(--text-secondary); font-style: normal; }
-  .picks-table td.pick-year { font-weight: 700; font-size: var(--text-base); color: var(--text-primary); font-style: normal; }
-  .picks-table tr.pick-year-start td { border-top: 2px solid var(--border); }
-  .picks-table .pick-round { font-style: normal; }
+  /* Draft Picks, set like the roster: left-aligned, a logo with every team,
+     the year once per group, restrictions as badges, no italics. Colour
+     still says what kind of pick a row is (the legend under the table). */
+  .picks-table thead th { cursor: default; }
+  .picks-table td { padding: 0.6rem 1rem; vertical-align: middle; color: var(--text-secondary); }
+  .picks-table td.pick-year { width: 5rem; font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); color: var(--text-primary); }
+  .picks-table td.pick-rnd { width: 5rem; }
+  .picks-table tr.pick-year-start td { border-top: 1px solid var(--border); }
+  .pick-tm { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; color: var(--text-primary); }
+  .pick-tm img { width: 20px; height: 20px; object-fit: contain; }
+  .pick-or { margin-right: 0.1rem; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pick-tm { vertical-align: middle; white-space: nowrap; }
+  .pick-tm + .pick-tm { margin-left: 0.75rem; }
+  .picks-acquired .pick-tm { color: var(--link); }
+  .picks-traded td, .picks-traded .pick-tm { color: var(--text-muted); }
+  .picks-traded .pick-tm img { opacity: 0.6; }
+  .picks-uncertain .pick-tm, .picks-uncertain td { color: var(--warning); }
+  .picks-legacy .pick-tm, .picks-legacy td { color: var(--danger); }
+  .picks-legacy td.pick-frozen { color: var(--text-secondary); }
+  .pick-flag { font-weight: 700; letter-spacing: 0.04em; cursor: help; }
+  .pick-flag-inline { display: none; }
+  @media (max-width: 640px) {
+    .picks-table td, .picks-table th { padding: 0.5rem 0.45rem; }
+    .picks-table td.pick-year, .picks-table td.pick-rnd { width: auto; }
+    .picks-table td.pick-team { white-space: normal; line-height: 1.8; }
+    .pick-tm + .pick-tm { margin-left: 0; display: flex; }
+    .picks-table .pick-frozen { display: none; }
+    .pick-flag-inline { display: table; margin-top: 0.35rem; }
+  }
+  .pick-flag-warn { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 50%, transparent); }
+  .pick-flag-bad { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
   .picks-legend {
     display: flex;
     flex-wrap: wrap;
@@ -1000,23 +1023,44 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-stat { display: flex; flex-direction: column; gap: 0.1rem; }
   .sched-stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
   .sched-stat b { font-size: var(--text-md); color: var(--text-primary); font-variant-numeric: tabular-nums; }
-  .sched-month { font-size: var(--text-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
-  .sched-table td { padding: 0.45rem 1rem; }
-  .sched-table .sched-date { width: 7.5rem; }
-  /* The team, the Playoffs or Cup tag and the stream mark share one centred row, so
-     the mark lines up with the name rather than the text baseline. */
-  .sched-opp-team { display: inline-flex; align-items: center; vertical-align: middle; }
-  .sched-opp a { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.35rem; font-weight: 600; color: var(--text-primary); }
-  .sched-opp img { width: 18px; height: 18px; object-fit: contain; }
-  .sched-res { font-variant-numeric: tabular-nums; color: var(--text-primary) !important; }
-  .sched-w { color: var(--success); font-weight: 700; }
-  .sched-l { color: var(--danger); font-weight: 700; }
-  .sched-up { color: var(--link) !important; }
-  .sched-rec { width: 4rem; }
-  .sched-tag { margin-left: 0.35rem; font-size: var(--text-xs); }
-  .sched-tag-stream { display: inline-flex; font-size: var(--text-base); color: var(--accent-light); }
-  .sched-tag-po { color: var(--danger); font-weight: 600; }
-  .sched-tag-cup { color: var(--gold); font-weight: 600; }
+  .sched-table thead th { cursor: default; }
+  .sched-table td { padding: 0.55rem 1rem; vertical-align: middle; }
+  .sched-table .sched-date { width: 9rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .sched-next-tag { margin-left: 0.5rem; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-light); }
+  .sched-opp-in { display: inline-flex; align-items: center; gap: 0.6rem; }
+  .sched-ha { width: 1.25rem; color: var(--text-muted); font-size: var(--text-sm); }
+  .sched-team { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-primary); text-decoration: none; }
+  .sched-team:hover b { color: var(--link); }
+  .sched-team img { width: 22px; height: 22px; object-fit: contain; }
+  .sched-team b { font-weight: 600; }
+  .sched-team-name { color: var(--text-muted); font-size: var(--text-sm); }
+  .sched-badge { line-height: 1.4; }
+  .sched-badge-cup { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+  .sched-badge-po { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+  .sched-stream { display: inline-flex; color: var(--accent-light); }
+  .sched-table th.sched-res-h, .sched-table td.sched-result { width: 13rem; }
+  .sched-res { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--text-primary); text-decoration: none; font-variant-numeric: tabular-nums; }
+  .sched-res:hover .sched-score { color: var(--link); }
+  .sched-wl { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; border-radius: var(--radius-sm);
+    font-size: var(--text-xs); font-weight: 700; }
+  .sched-wl.w { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+  .sched-wl.l { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+  .sched-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .sched-preview { margin-left: 0.75rem; font-size: var(--text-sm); color: var(--link); text-decoration: none; }
+  .sched-preview:hover { text-decoration: underline; }
+  .sched-rec { width: 5rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {
+    .sched-table td, .sched-table th { padding: 0.5rem 0.45rem; }
+    .sched-table .sched-date { width: 3.6rem; white-space: normal; line-height: 1.25; }
+    .sched-md { white-space: nowrap; }
+    .sched-dow { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+    .sched-next-tag { display: block; margin: 0.1rem 0 0; }
+    .sched-opp-in { gap: 0.4rem; }
+    .sched-team { gap: 0.35rem; }
+    .sched-team-name, .sched-preview, .sched-rec { display: none; }
+    .sched-table th.sched-res-h, .sched-table td.sched-result { width: auto; }
+    .sched-res { gap: 0.4rem; }
+  }
   tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
   .rival-card {
@@ -1356,7 +1400,11 @@ const coachingConfigReady = new Promise(resolve => {
   .roster-header-row .section-title { margin-bottom: 0; }
   /* The mode switch is the shared .ui-segmented. */
   .mode-tabs { flex: none; }
-  .hist-controls { margin-bottom: 1.5rem; }
+  .hist-controls { margin-bottom: 1rem; }
+  /* Season Stats (buildHistoricalRoster): set like the roster's Stats view. */
+  .season-stats-table td { padding: 0.55rem 1rem; vertical-align: middle; }
+  .season-stats-table td.right { font-variant-numeric: tabular-nums; }
+  .season-stats-table .roster-name-top a { font-weight: 600; }
   .hist-controls select {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1579,7 +1627,7 @@ document.body.innerHTML = `
       </div>
       <div class="tab-panel" id="tab-history">
       <section>
-        <h2 class="section-title">Historical Rosters</h2>
+        <h2 class="section-title">Season Stats</h2>
         <div class="hist-controls" id="hist-controls"></div>
         <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
       </section>
@@ -1834,7 +1882,8 @@ async function renderSchedule(allGames, season) {
     stat('Streak', `${form[form.length - 1] ? 'W' : 'L'}${streak}`),
   ].join('') : '';
 
-  const fmtDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const fmtDay = d => { const t = new Date(d + 'T12:00:00Z'); const o = { timeZone: 'UTC' };
+    return `<span class="sched-dow">${t.toLocaleDateString('en-US', { ...o, weekday: 'short' })}</span> <span class="sched-md">${t.toLocaleDateString('en-US', { ...o, month: 'short', day: 'numeric' })}</span>`; };
   const fmtMonth = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
   const fmtTime = t => {
     const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
@@ -1843,33 +1892,34 @@ async function renderSchedule(allGames, season) {
   const boxHref = r => `/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}`;
   const previewHref = g => `/preview/?away=${g.away_team}&home=${g.home_team}&date=${g.date}`;
 
-  let html = '', month = '';
+  // One table, like the roster: a header row, then each month as a band
+  // (the roster's Bench / Two-way rows), then a row per game.
   const nextIdx = rows.findIndex(g => !g.result);
+  let html = `<div class="ui-table-wrap table-wrap"><table class="sched-table"><thead><tr>
+    <th class="sched-date">Date</th><th>Opponent</th><th class="sched-res-h">Result</th><th class="right sched-rec">Record</th>
+    </tr></thead><tbody>`;
+  let month = '';
   rows.forEach((g, i) => {
     const m = fmtMonth(g.date);
-    if (m !== month) {
-      if (month) html += '</tbody></table></div>';
-      month = m;
-      html += `<h3 class="sched-month">${m}</h3><div class="ui-table-wrap table-wrap"><table class="sched-table"><tbody>`;
-    }
+    if (m !== month) { month = m; html += `<tr class="subheader"><td colspan="4">${m}</td></tr>`; }
     const { home, opp } = side(g);
-    const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
-    const cup = g.note === 'NBA Cup' ? ' <span class="sched-tag sched-tag-cup" title="NBA Cup group game">Cup</span>' : '';
-    const stream = g.stream ? ' <span class="sched-tag sched-tag-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
+    const po = g.result?.gametype === 'PLAYOFF' ? '<span class="ui-badge sched-badge sched-badge-po">Playoffs</span>' : '';
+    const cup = g.note === 'NBA Cup' ? '<span class="ui-badge sched-badge sched-badge-cup" title="NBA Cup group game">Cup</span>' : '';
+    const stream = g.stream ? '<span class="sched-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
     let res;
     if (g.result) {
       const [us, them] = ours(g.result);
       const w = won(g.result);
-      res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="${w ? 'sched-w' : 'sched-l'}">${w ? 'W' : 'L'}</span> ${us}–${them}</a>`;
+      res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="sched-wl ${w ? 'w' : 'l'}">${w ? 'W' : 'L'}</span><span class="sched-score">${us}–${them}</span></a>`;
     } else {
-      res = `<a href="${previewHref(g)}" class="sched-res sched-up">${fmtTime(g.time_et) || 'Preview'} ›</a>`;
+      res = `<span class="sched-time">${fmtTime(g.time_et) || 'Time to be set'}</span><a class="sched-preview" href="${previewHref(g)}">Preview</a>`;
     }
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
-      <td class="muted sched-date">${fmtDay(g.date)}</td>
-      <td class="sched-opp"><span class="muted">${home ? 'vs' : '@'}</span>
-        <span class="sched-opp-team"><a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${cup}${stream}</span></td>
-      <td class="right">${res}</td>
-      <td class="right muted sched-rec">${g.recAfter || ''}</td>
+      <td class="sched-date">${fmtDay(g.date)}${i === nextIdx ? '<span class="sched-next-tag">Next</span>' : ''}</td>
+      <td class="sched-opp"><span class="sched-opp-in"><span class="sched-ha">${home ? 'vs' : '@'}</span><a href="/teams/${opp}/" class="sched-team">
+        <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b>${opp}</b><span class="sched-team-name">${TEAMS[opp] || ''}</span></a>${po}${cup}${stream}</span></td>
+      <td class="sched-result">${res}</td>
+      <td class="right sched-rec">${g.recAfter || ''}</td>
     </tr>`;
   });
   html += '</tbody></table></div>';
@@ -3775,11 +3825,43 @@ function ownerCell(p) {
   return p.owner === '?' ? '?' : p.owner.split('|').join(' | ');
 }
 
+// A pick's Pick / Held by text with each team as its small logo and
+// abbreviation, the way the schedule draws an opponent. "Own" gets this
+// team's logo; separators ("/", "|") read as "or".
+function teamMarks(text, p, teamAbbr) {
+  const frag = document.createDocumentFragment();
+  const mark = t => {
+    const s = document.createElement('span');
+    s.className = 'pick-tm';
+    const img = document.createElement('img');
+    img.src = `/logos/sm/logo-${t.toLowerCase()}.webp`; img.alt = ''; img.loading = 'lazy';
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+    s.appendChild(img);
+    return s;
+  };
+  if (text === 'Own') {
+    const s = mark(teamAbbr); s.appendChild(document.createTextNode('Own')); frag.appendChild(s);
+    return frag;
+  }
+  // "or" travels with the team after it, so a wrapped chain reads
+  // "MIL / or ORL / or WAS" rather than leaving "or" at the end of a line.
+  let or = false;
+  String(text).split(/(\b[A-Z]{3}\b)/).forEach(part => {
+    if (TEAMS[part]) {
+      const s = mark(part); s.appendChild(document.createTextNode(part));
+      if (or) { const o = document.createElement('span'); o.className = 'pick-or'; o.textContent = 'or'; s.prepend(o); or = false; }
+      frag.appendChild(s);
+    } else if (part.trim() === '|' || part.trim() === '/') or = true;
+    else if (part.trim()) frag.appendChild(document.createTextNode(part));
+  });
+  return frag;
+}
+
 const PICK_KIND_DISPLAY = {
   own:       { cls: null },
   uncertain: { cls: 'picks-uncertain' },
   acquired:  { cls: 'picks-acquired' },
-  traded:    { cls: 'picks-traded',   ownerCell: p => `to ${p.owner}` },
+  traded:    { cls: 'picks-traded' },
   // A `legacy` pick is a real historical deal too tangled to model
   // structurally — its flat owner/orig look exactly like a plain settled
   // pick (single team, nothing flagged), but the real terms live only in
@@ -3836,13 +3918,13 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     : (p._kind !== 'traded' && stepienLocked.has(`${p.round}:${p.year}:${p.orig}`) ? 'STEPIEN' : ''));
   const COLS = [
     { key: 'year',   label: 'Year',       cls: 'pick-year' },
-    { key: 'round',  label: 'Rnd',        cls: 'center' },
-    { key: 'orig',   label: 'Orig',       cls: 'muted center', value: p => origCell(p, teamAbbr) },
-    { key: 'owner',  label: 'Owner',      cls: 'muted center', value: p => (PICK_KIND_DISPLAY[p._kind].ownerCell || ownerCell)(p) },
+    { key: 'round',  label: 'Round',      cls: 'pick-rnd' },
+    { key: 'orig',   label: 'Pick',       cls: 'pick-team', value: p => origCell(p, teamAbbr) },
+    { key: 'owner',  label: 'Held by',    cls: 'pick-team', value: p => (PICK_KIND_DISPLAY[p._kind].ownerCell || ownerCell)(p) },
     { key: 'prot',   label: 'Protection', cls: 'muted', optional: true,
       value: p => p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p) },
     { key: 'swap',   label: 'Swap',       cls: 'muted', optional: true, value: p => formatSwapLeaves(p) },
-    { key: 'frozen', label: 'Frozen',     cls: 'muted pick-frozen', optional: true, value: frozenLabel },
+    { key: 'frozen', label: 'Restriction', cls: 'pick-frozen', optional: true, value: frozenLabel },
     { key: 'notes',  label: 'Notes',      cls: 'muted', optional: true, value: p => cleanNotes(p) },
   ];
   const shown = [...rows, ...traded];
@@ -3855,8 +3937,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   cols.forEach(col => {
     const th = document.createElement('th');
     th.textContent = col.label;
-    if (col.cls.includes('center')) th.classList.add('center');
-    if (col.key !== 'year' && col.key !== 'round') th.classList.add('muted');
+    if (col.key === 'frozen') th.className = 'pick-frozen';
     hr.appendChild(th);
   });
 
@@ -3883,6 +3964,20 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
         pill.className = 'ui-badge pick-round' + (p.round === 1 ? ' ui-badge--accent' : '');
         pill.textContent = p.round === 1 ? '1st' : '2nd';
         cell.appendChild(pill);
+      } else if (col.key === 'orig' || col.key === 'owner') {
+        cell.appendChild(teamMarks(col.value(p), p, teamAbbr));
+      } else if (col.key === 'frozen') {
+        const kind = col.value(p);
+        if (kind) {
+          const b = document.createElement('span');
+          b.className = 'ui-badge pick-flag ' + (kind === 'STEPIEN' ? 'pick-flag-warn' : 'pick-flag-bad');
+          b.textContent = kind === 'STEPIEN' ? 'Stepien' : kind === 'FROZEN' ? 'Frozen' : 'Legacy';
+          cell.appendChild(b);
+          // Phones drop the Restriction column; the badge rides under Held by.
+          const inline = b.cloneNode(true);
+          inline.classList.add('pick-flag-inline');
+          if (td.owner) td.owner.appendChild(inline);
+        }
       } else {
         cell.textContent = col.value(p);
       }
@@ -3894,18 +3989,12 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     const frozenTd = td.frozen;
     const kind = frozenLabel(p);
     if (frozenTd && kind === 'LEGACY') {
-      frozenTd.style.color = 'var(--danger)';
-      frozenTd.style.fontWeight = '700';
       attachTooltip(frozenTd, 'This pick predates the site\'s conveyance model and '
         + 'isn’t tracked automatically — the real terms are whatever Notes says. '
         + 'Frozen from re-trade until manually converted to real structure.');
     } else if (frozenTd && kind === 'FROZEN') {
-      frozenTd.style.color = 'var(--danger)';
-      frozenTd.style.fontWeight = '700';
       if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
     } else if (frozenTd && kind === 'STEPIEN') {
-      frozenTd.style.color = 'var(--danger-alt)';
-      frozenTd.style.fontWeight = '700';
       attachTooltip(frozenTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
         + 'now would leave a two-year gap with no first-round pick, violating the Stepien Rule (§ 7.2).');
     }
@@ -3958,8 +4047,10 @@ const SEASON_COLS = [
     display: r => `${r.W}–${r.L}` },
   { key: 'PCT',            label: 'W%',      cls: 'right muted', sortField: 'PCT',           defaultDir: -1,
     display: r => fmtPct(r.PCT) },
-  { key: 'PPG',            label: 'PPG',     cls: 'right',       sortField: 'PPG',           defaultDir: -1 },
-  { key: 'OPPG',           label: 'OPPG',    cls: 'right',       sortField: 'OPPG',          defaultDir:  1 },
+  { key: 'PPG',            label: 'PPG',     cls: 'right',       sortField: 'PPG',           defaultDir: -1,
+    display: r => fmtNum1(r.PPG) },
+  { key: 'OPPG',           label: 'OPPG',    cls: 'right',       sortField: 'OPPG',          defaultDir:  1,
+    display: r => fmtNum1(r.OPPG) },
   { key: 'DIFF',           label: '+/−',     cls: 'right',       sortField: 'DIFF',          defaultDir: -1,
     display: r => fmtSigned(r.DIFF) },
   { key: 'SEED',           label: 'Seed',    cls: 'right',       sortField: 'SEED_NUM',      defaultDir:  1,
@@ -9608,33 +9699,55 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     };
   });
 
+  // The roster table's look: the player as headshot and "First Last", the
+  // same stat labels as its Stats view, every figure to one decimal.
   const HIST_COLS = [
-    { key: 'PLAYER',  label: 'Player',  cls: 'bold',        sortField: 'PLAYER',  defaultDir:  1 },
+    { key: 'PLAYER',  label: 'Player',  cls: '',            sortField: 'PLAYER',  defaultDir:  1 },
     { key: 'G',       label: 'G',       cls: 'right',       sortField: 'G',       defaultDir: -1 },
-    { key: '_mpg',    label: 'MPG',     cls: 'right muted', sortField: '_mpg',    defaultDir: -1 },
-    { key: '_ppg',    label: 'PPG',     cls: 'right',       sortField: '_ppg',    defaultDir: -1 },
-    { key: '_rpg',    label: 'RPG',     cls: 'right',       sortField: '_rpg',    defaultDir: -1 },
-    { key: '_apg',    label: 'APG',     cls: 'right',       sortField: '_apg',    defaultDir: -1 },
-    { key: '_spg',    label: 'SPG',     cls: 'right muted', sortField: '_spg',    defaultDir: -1 },
-    { key: '_bpg',    label: 'BPG',     cls: 'right muted', sortField: '_bpg',    defaultDir: -1 },
-    { key: '_3pmpg',  label: '3PM/G',   cls: 'right muted', sortField: '_3pmpg',  defaultDir: -1 },
-    { key: '_gmscpg', label: 'GMSC/G',  cls: 'right',       sortField: '_gmscpg', defaultDir: -1 },
+    { key: '_mpg',    label: 'MIN',     cls: 'right muted', sortField: '_mpg',    defaultDir: -1 },
+    { key: '_ppg',    label: 'PTS',     cls: 'right',       sortField: '_ppg',    defaultDir: -1 },
+    { key: '_rpg',    label: 'REB',     cls: 'right',       sortField: '_rpg',    defaultDir: -1 },
+    { key: '_apg',    label: 'AST',     cls: 'right',       sortField: '_apg',    defaultDir: -1 },
+    { key: '_spg',    label: 'STL',     cls: 'right muted', sortField: '_spg',    defaultDir: -1 },
+    { key: '_bpg',    label: 'BLK',     cls: 'right muted', sortField: '_bpg',    defaultDir: -1 },
+    { key: '_3pmpg',  label: '3PM',     cls: 'right muted', sortField: '_3pmpg',  defaultDir: -1 },
+    { key: '_gmscpg', label: 'GMSC',    cls: 'right',       sortField: '_gmscpg', defaultDir: -1 },
   ];
 
-  return buildTable(HIST_COLS, augmented, '_gmscpg', -1, (td, col, row) => {
+  const table = buildTable(HIST_COLS, augmented, '_gmscpg', -1, (td, col, row) => {
     if (col.key === 'PLAYER') {
+      const top = document.createElement('span');
+      top.className = 'roster-name-top';
+      const avatar = document.createElement('span');
+      avatar.className = 'roster-avatar';
+      if (row.SLUG) {
+        const img = document.createElement('img');
+        img.src = `/api/players/${encodeURIComponent(row.SLUG)}/headshot`; img.alt = ''; img.loading = 'lazy';
+        img.onerror = () => { avatar.classList.add('roster-avatar-empty', 'ui-icon--person'); img.remove(); };
+        avatar.appendChild(img);
+      } else {
+        avatar.classList.add('roster-avatar-empty', 'ui-icon--person');
+      }
+      top.appendChild(avatar);
+      const name = nbnPlayerName(row.PLAYER || '') || '—';
       if (row.SLUG) {
         const a = document.createElement('a');
         a.href = `/players/?p=${row.SLUG}`;
-        a.textContent = row.PLAYER;
-        td.appendChild(a);
+        a.textContent = name;
+        top.appendChild(a);
       } else {
-        td.textContent = row.PLAYER || '—';
+        top.appendChild(document.createTextNode(name));
       }
+      td.appendChild(top);
+    } else if (col.key === 'G') {
+      td.textContent = row.G ?? '—';
     } else {
-      td.textContent = row[col.key] ?? '—';
+      const v = row[col.key];
+      td.textContent = v == null || v === '' ? '—' : Number(v).toFixed(1);
     }
   });
+  table.classList.add('season-stats-table');
+  return table;
 }
 
 (async () => {
