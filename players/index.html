@@ -1471,6 +1471,14 @@
 
     function rebuildBody() {
       const sorted = [...rows].sort((a, b) => {
+        // By season, either way round, a season's playoffs stay under its
+        // regular season: 24-25, then 24-25 Playoffs, then 23-24.
+        if (sortField === 'SEASON') {
+          const sa = parseFloat(a.SEASON) || 0, sb = parseFloat(b.SEASON) || 0;
+          if (sa !== sb) return (sa - sb) * sortDir;
+          const pa = isPlayoffRow(a) ? 1 : 0, pb = isPlayoffRow(b) ? 1 : 0;
+          if (pa !== pb) return pa - pb;
+        }
         const va = sortVal(a, sortField);
         const vb = sortVal(b, sortField);
         if (va < vb) return sortDir === 1 ? -1 : 1;
