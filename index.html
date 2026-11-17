@@ -1734,7 +1734,7 @@
             + `<button type="button" data-view="next">${esc(nextLabel)}</button></div>`
             + '<div class="slate-pane" data-view="last" hidden>'
             + `<div class="slate-head"><a href="/boxscores/?date=${encodeURIComponent(night.date)}">`
-            + `${esc(shortDate(night.date))} · ${plural(night.games.length, 'game')} ›</a></div>`
+            + `${esc(shortDate(night.date))} · ${plural(night.games.length, 'game')}</a></div>`
             + '<div class="slate-games">' + past.map(pastTile).join('') + '</div></div>');
           const show = k => {
             card.querySelectorAll('.slate-pane').forEach(p => { p.hidden = p.dataset.view !== k; });

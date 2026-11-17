@@ -71,7 +71,7 @@ METRICS = {
     # preview →", "All ›"). The design system's rule is a word with no glyph
     # (docs/design-system.md, "Linked heading"). Icon-only controls, like the
     # prev/next chevrons on a band, carry no words and aren't counted.
-    'link_glyph': re.compile(r'\w\s*(?:[→›»↗➜➔]|&rarr;|&rsaquo;|&raquo;)\s*</(?:a|button)>'),
+    'link_glyph': re.compile(r'[\w})\]]\s*(?:[→›»↗➜➔]|&rarr;|&rsaquo;|&raquo;)\s*</(?:a|button)>'),
 }
 
 

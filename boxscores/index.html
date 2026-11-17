@@ -355,7 +355,7 @@
       section.className = "team-section";
 
       const shotLinks = teamShots.map((sh, i) =>
-        `<a class="shot-link" href="${esc(sh.url)}" target="_blank" rel="noopener" title="The box score screenshot this was entered from (kept 14 days)">${teamShots.length > 1 ? `Screenshot ${i + 1}` : 'Screenshot'} ↗</a>`).join('');
+        `<a class="shot-link" href="${esc(sh.url)}" target="_blank" rel="noopener" title="The box score screenshot this was entered from (kept 14 days)">${teamShots.length > 1 ? `Screenshot ${i + 1}` : 'Screenshot'}</a>`).join('');
       section.innerHTML = `<div class="team-label">
         <img src="/logos/sm/logo-${team.toLowerCase()}.webp" alt="" onerror="this.style.display='none'">
         ${esc(TEAM_NAMES[team] || team)} <span class="ha">${side}</span>${shotLinks}
