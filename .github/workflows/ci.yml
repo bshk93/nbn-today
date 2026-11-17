@@ -3,9 +3,18 @@
 # and so only runs on the box. Nothing here writes anywhere.
 name: ci
 
+# Pushes to main, and pull requests. Not every branch push: the render job
+# loads pages from the live site, and a branch with an open PR would run it
+# twice per push, on a box with one core.
 on:
   push:
+    branches: [main]
   pull_request:
+
+# A newer push to the same PR replaces the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   checks:
