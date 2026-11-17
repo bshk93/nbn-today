@@ -154,7 +154,11 @@
     
         
     /* section headings */
-    .toggle-bar { margin-bottom: var(--space-4); }   /* the view switch (By Team / By Season / …) */
+    /* The view switch (By Team / By Season / Game Log / Splits), full width
+       like the team page's History sub-tabs (.tn-subnav). */
+    .toggle-bar { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin-bottom: var(--space-5); }
+    .toggle-bar::-webkit-scrollbar { display: none; }
+    .toggle-bar button { white-space: nowrap; }
 
     /* Same as .ui-section-title (css/components.css); kept as its own class
        because the page builds these in a dozen places. */
@@ -164,6 +168,23 @@
       color: var(--text-primary);
       margin: var(--space-6) 0 var(--space-3);
     }
+    .section-heading.has-sub { margin-bottom: 0.25rem; }
+    .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 0.75rem; }
+    /* A tab's first table sits right under the tab's heading or view switch. */
+    .pl-section .pl-h + * > .section-heading:first-child,
+    .toggle-bar + div > .section-heading:first-child,
+    .toggle-bar + div > .splits-head:first-child .section-heading { margin-top: 0; }
+    /* Stats and Career tables set like the team page's: body-size type and
+       room around each figure. The season column stays put on a phone. */
+    :is(#stats, #career) .ui-table { font-size: var(--text-base); }
+    :is(#stats, #career) .ui-table :is(th, td) { padding: 0.6rem 0.85rem; }
+    /* Career Totals has a rank under every figure: less room each side, so
+       all ten columns fit. */
+    @media (max-width: 640px) { :is(#stats, #career) .ui-table :is(th, td) { padding: 0.5rem 0.6rem; } }
+    #career .ui-table.ct-table { font-size: var(--text-sm); }
+    #career .ui-table.ct-table :is(th, td) { padding: 0.6rem 0.5rem; }
+    .pl-person { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .pl-person img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top center; background: var(--bg-subtle); }
 
     /* table wrapper */
     
@@ -190,15 +211,12 @@
     .ct-rank { display: block; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); }
     .ct-rank a { color: inherit; text-decoration: none; }
     .ct-rank a:hover { text-decoration: underline; }
-    .ct-rank .ct-active { opacity: 0.8; }
+    .ct-rank .ct-active { display: block; opacity: 0.8; }
     .ct-top10 .ct-rank { color: var(--gold); font-weight: 700; }
     .ct-top50 .ct-rank { color: var(--accent-light); }
-    .ct-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
     .career-row td { font-weight: 600; color: var(--text-primary); }
-    /* Playoff rows sit in the same tables as the regular season, so they
-       carry a gold tint and edge to stand apart. */
-    .po-row td { background: color-mix(in srgb, var(--gold) 7%, transparent); }
-    .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
+    /* Playoff rows sit in the same tables as the regular season, marked by
+       the PO badge on the season (and Career Playoffs by its name). */
     .career-row + .career-row { border-top: none !important; }
 
     /* Headline tiles (OVR, Hall of Fame, Contract, History, Health): the same card, label,
@@ -513,7 +531,95 @@
     /* The top of a player page: the bio line and the tiles across the full
        width, then the career card and the archetype radar side by side, the
        same height, so neither hangs beside empty space. */
-    .player-hero { margin-bottom: var(--space-5); }
+    /* The section bar and This season (renderSeasonNow): a sticky row of
+       in-page links, then this season's line, last ten games and next game. */
+    /* The hero, as on the team page (.tn-hero in teams/team.js): the band
+       with the team's secondary mark faded behind, the bio line and this
+       season's numbers under the name, and the next game at the right. */
+    .ui-header.pl-hero { position: relative; overflow: hidden; }
+    .ui-header.pl-hero[data-team] { padding: var(--space-5) var(--space-6, 1.75rem); }
+    .pl-watermark { position: absolute; right: 360px; top: 50%; transform: translateY(-50%); height: calc(100% - 2rem); width: auto; max-width: 26%;
+      object-fit: contain; opacity: 0.13; filter: url(#pl-wm); pointer-events: none; }
+    .pl-hero .header-main { position: relative; z-index: 1; align-items: center; }
+    .pl-hero .header-text { flex: 1; min-width: 0; }
+    .pl-hero-bio .bio-line { margin: var(--space-2) 0 0; }
+    .pl-hero[data-team] .pl-hero-bio .bio-line { color: rgba(255, 255, 255, 0.75); }
+    .pl-hero[data-team] .pl-hero-bio .bio-sep { color: rgba(255, 255, 255, 0.45); }
+    .pl-hero-line { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-6, 2rem); margin-top: var(--space-4); align-items: baseline; }
+    .pl-hero-line:empty { display: none; }
+    .pl-hero-line .big { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--text-2xl) * 1.5); line-height: 0.9; font-variant-numeric: tabular-nums; }
+    .pl-hero-line .big span { font-size: var(--text-md); letter-spacing: 0.06em; margin-left: 0.35rem; opacity: 0.75; }
+    .pl-hero-line .stat { display: flex; flex-direction: column; }
+    .pl-hero-line .stat b { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pl-hero-line .stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; margin-top: 0.15rem; }
+    .pl-hero[data-team] .pl-hero-line { color: white; }
+    .pl-hero-side { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-3); flex: none; }
+    .pl-hero .pl-hero-side .player-actions { margin-left: 0; }
+    .pl-next { display: block; background: rgba(0, 0, 0, 0.34); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: var(--radius);
+      padding: 0.9rem 1rem; min-width: 230px; max-width: 280px; color: white; text-decoration: none; }
+    .pl-next[hidden] { display: none; }
+    .pl-next:hover { background: rgba(0, 0, 0, 0.4); text-decoration: none; }
+    .pl-next .lbl { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+    .pl-next .match { display: flex; align-items: center; gap: 0.6rem; margin: 0.4rem 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }
+    .pl-next .match img { width: 34px; height: 34px; }
+    .pl-next .when, .pl-next .vs { font-size: var(--text-sm); opacity: 0.85; }
+    .pl-next .vs { margin-top: 0.3rem; }
+    .pl-next .go { font-size: var(--text-sm); margin-top: 0.4rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255, 255, 255, 0.45); }
+    /* One bar of tabs, as on the team page (.tn-nav): the profile's three
+       sections, then the sub-pages after a rule. */
+    .pl-nav { position: sticky; top: 0; z-index: 20; display: flex; align-items: stretch; gap: 0.25rem; overflow-x: auto; scrollbar-width: none;
+      background: var(--bg-page, var(--bg)); border-bottom: 1px solid var(--border); margin: 0 0 1.25rem; }
+    .pl-nav::-webkit-scrollbar { display: none; }
+    .pl-nav a { font-family: var(--font-display); font-weight: 600; font-size: var(--text-md); letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--text-muted); text-decoration: none; padding: 0.7rem 0.8rem; border-bottom: 3px solid transparent; white-space: nowrap; }
+    .pl-nav a:hover { color: var(--text-primary); text-decoration: none; }
+    .pl-nav a.on { color: var(--text-primary); border-bottom-color: var(--team-chart, var(--team-accent, var(--accent))); }
+    .pl-nav-sep { flex: none; width: 1px; background: var(--border); margin: 0.6rem 0.4rem; }
+    .pl-nav a.pl-nav-page { font-weight: 500; }
+    .pl-section { scroll-margin-top: 3.5rem; margin-bottom: var(--space-6, 3rem); }
+    #season { margin-bottom: var(--space-4); }
+    .pl-team { display: inline-flex; align-items: center; gap: 0.4rem; color: inherit; text-decoration: none; }
+    .pl-team:hover { color: var(--text-primary); }
+    .pl-team img { width: 18px; height: 18px; object-fit: contain; }
+    #overview > .hero-tiles { margin-bottom: var(--space-4); }
+    @media (max-width: 760px) {
+      .pl-watermark { right: -1rem; max-width: 45%; }
+      .pl-hero .header-main { flex-wrap: wrap; }
+      .pl-hero-side { flex-basis: 100%; align-items: stretch; margin-left: 0; }
+      .pl-next { max-width: none; }
+      .pl-hero-line { gap: var(--space-2) var(--space-5); }
+      .pl-hero-line .big { flex-basis: 100%; }
+    }
+    .pl-h { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); text-transform: uppercase; line-height: 1; margin: 0 0 var(--space-4); display: flex; align-items: baseline; gap: var(--space-3); }
+    .pl-h small { font-size: var(--text-sm); color: var(--text-muted); letter-spacing: 0.06em; }
+    .sn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--space-3); }
+    .sn-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); min-width: 0; }
+    .sn-card .hd { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3); }
+    .sn-card .hd a { color: var(--text-muted); text-decoration: none; letter-spacing: 0.02em; text-transform: none; font-weight: 600; }
+    .sn-card .hd a:hover { color: var(--text-primary); }
+    .sn-line { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+    .sn-line .big { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: 1; font-variant-numeric: tabular-nums; }
+    .sn-line .lbl { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .sn-line .rk { font-size: var(--text-xs); color: var(--text-secondary); margin-top: 2px; }
+    .sn-line .rk b { color: var(--accent-light); }
+    .sn-shoot { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); color: var(--text-secondary); }
+    .sn-shoot b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .sn-bars { display: flex; align-items: flex-end; gap: 4px; height: 110px; }
+    .sn-bars a { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; text-decoration: none; min-width: 0; }
+    .sn-bars .v { font-size: var(--text-xs); font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+    .sn-bars .b { width: 100%; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: var(--success-light); }
+    .sn-bars .l .b { background: var(--danger-light); }
+    .sn-bars a:hover .b { opacity: 0.8; }
+    .sn-axis { display: flex; gap: 4px; margin-top: var(--space-1); }
+    .sn-axis i { font-style: normal; }
+    .sn-axis span { flex: 1; text-align: center; font-size: var(--text-xs); color: var(--text-dim, var(--text-muted)); white-space: nowrap; overflow: hidden; min-width: 0; }
+    .sn-sum { margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-secondary); }
+    .sn-sum b { color: var(--text-primary); }
+    @media (max-width: 900px) { .sn-grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 640px) {
+      .pl-nav { gap: var(--space-4); }
+      .sn-axis .at { display: none; }
+    }
     .hero-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-3); align-items: stretch; }
     .career-card {
       display: flex; flex-direction: column; gap: var(--space-3);
@@ -990,10 +1096,7 @@
         const streaks = (data.streaks || []).filter(s => s.length > 1);
 
         if (feats.length || streaks.length) {
-          const h2 = document.createElement('h2');
-          h2.className = 'section-heading';
-          h2.textContent = 'Feats & Streaks';
-          container.appendChild(h2);
+          sectionHead(container, 'Feats & Streaks', 'Career feats, his longest runs, and where each ranks all-time');
           const grid = document.createElement('div');
           grid.className = 'ins-grid';
           container.appendChild(grid);
@@ -1028,42 +1131,40 @@
 
         const mates = data.teammates || [];
         if (mates.length) {
-          const h2 = document.createElement('h2');
-          h2.className = 'section-heading';
-          h2.textContent = 'Most Games Together';
-          container.appendChild(h2);
+          sectionHead(container, 'Most Games Together', 'Games both played for the same team, playoffs included, and the team’s record in them');
           const { wrap, body } = table([['Teammate', ''], ['Games', 'right'], ['Record', 'right'], ['Win %', 'right']]);
           mates.slice(0, 10).forEach(t => {
             const tr = body.insertRow();
+            // Headshot and name, as the team page's player tables set them.
             const a = document.createElement('a');
+            a.className = 'pl-person';
             a.href = `/players/?p=${encodeURIComponent(t.slug)}`;
-            a.textContent = typeof nbnPlayerName === 'function' ? nbnPlayerName(t.player) : t.player;
+            const img = document.createElement('img');
+            img.src = `/api/players/${encodeURIComponent(t.slug)}/headshot`; img.alt = ''; img.loading = 'lazy';
+            img.onerror = function () { this.style.visibility = 'hidden'; };
+            a.appendChild(img);
+            a.appendChild(document.createTextNode(typeof nbnPlayerName === 'function' ? nbnPlayerName(t.player) : t.player));
             cell(tr).appendChild(a);
             cell(tr, t.games.toLocaleString(), 'right');
             cell(tr, `${t.w}–${t.l}`, 'right');
             cell(tr, (t.w / Math.max(1, t.games)).toFixed(3).replace(/^0/, ''), 'right');
           });
           container.appendChild(wrap);
-          const note = document.createElement('div');
-          note.className = 'ins-note';
-          note.textContent = 'Games both played for the same team, playoffs included, and the team’s record in them.';
-          container.appendChild(note);
         }
       })
       .catch(() => {});
   }
 
   function renderCareerTotals(container, slug, regRows, poRows) {
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = 'Career Totals';
-    container.appendChild(h2);
+    sectionHead(container, 'Career Totals', teamMap[slug]
+      ? 'Under each total, his rank among every NBN player, then among players on a roster today'
+      : 'Under each total, his rank among every NBN player');
 
     const wrap = document.createElement('div');
     wrap.className = 'ui-table-wrap';
     container.appendChild(wrap);
     const table = document.createElement('table');
-    table.className = 'ui-table';
+    table.className = 'ui-table ui-table--sticky-first ct-table';
     wrap.appendChild(table);
 
     const hr = table.createTHead().insertRow();
@@ -1106,7 +1207,7 @@
           const act = careerRank(totals, slug, s.key, isActive);
           const a = document.createElement('span');
           a.className = 'ct-active';
-          a.textContent = ` · ${fmtRank(act)} act`;
+          a.textContent = `${fmtRank(act)} act`;
           a.title = `${fmtRank(act)} among active players`;
           rk.appendChild(a);
         }
@@ -1114,15 +1215,9 @@
       });
     }
 
-    addRow('Regular Season', regRows);
+    addRow('Regular', regRows);
     if (poRows) addRow('Playoffs', poRows);
 
-    const note = document.createElement('div');
-    note.className = 'ct-note';
-    note.textContent = isActive(slug)
-      ? 'Rank among every NBN player, then among players on a roster today.'
-      : 'Rank among every NBN player.';
-    container.appendChild(note);
   }
 
   // ── Season leaders ───────────────────────────────────────────────────────────
@@ -1165,32 +1260,44 @@
   const R = 'right';
 
   const SEASON_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir:  1, iconSlot: true },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
     // Games started — known only from 26-27, when box score commits began
     // recording the entered starting five (GET /api/game-starters/counts).
     { key: 'GS',     label: 'GS',     sortField: 'GS',      defaultDir: -1, cls: R, display: r => r.GS ?? '—' },
-    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
-    { key: 'PPG',    label: 'PPG',    sortField: 'PTS',     defaultDir: -1, cls: R, display: pg('PTS') },
-    { key: 'RPG',    label: 'RPG',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
-    { key: 'APG',    label: 'APG',    sortField: 'AST',     defaultDir: -1, cls: R, display: pg('AST') },
-    { key: 'SPG',    label: 'SPG',    sortField: 'STL',     defaultDir: -1, cls: R, display: pg('STL') },
-    { key: 'BPG',    label: 'BPG',    sortField: 'BLK',     defaultDir: -1, cls: R, display: pg('BLK') },
-    { key: 'TOPG',   label: 'TOPG',   sortField: 'TOV',     defaultDir:  1, cls: R, display: pg('TOV') },
-    { key: 'PFPG',   label: 'PFPG',   sortField: 'PF',      defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
+    { key: 'PPG',    label: 'PTS',    sortField: 'PTS',     defaultDir: -1, cls: 'right strong', display: pg('PTS') },
+    { key: 'RPG',    label: 'REB',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
+    { key: 'APG',    label: 'AST',    sortField: 'AST',     defaultDir: -1, cls: R, display: pg('AST') },
+    { key: 'SPG',    label: 'STL',    sortField: 'STL',     defaultDir: -1, cls: R, display: pg('STL') },
+    { key: 'BPG',    label: 'BLK',    sortField: 'BLK',     defaultDir: -1, cls: R, display: pg('BLK') },
+    { key: 'TOPG',   label: 'TOV',    sortField: 'TOV',     defaultDir:  1, cls: R, display: pg('TOV') },
+    { key: 'PFPG',   label: 'PF',     sortField: 'PF',      defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: '3PMPG',  label: '3PM',    sortField: '3PM',     defaultDir: -1, cls: R, display: pg('3PM') },
     { key: 'FG',     label: 'FG%',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pct('FGM','FGA') },
     { key: '3P',     label: '3P%',    sortField: '3PM',     defaultDir: -1, cls: R, display: pct('3PM','3PA') },
     { key: 'FT',     label: 'FT%',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pct('FTM','FTA') },
-    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts },
     { key: 'GMSC',   label: 'GMSC',   sortField: 'GMSC',    defaultDir: -1, cls: R, display: pg('GMSC') },
+  ];
+
+  // Makes and attempts a game, by kind of shot, beside the percentages.
+  const SHOOT_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
     { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pg('FGM') },
     { key: 'FGAPG',  label: 'FGA',    sortField: 'FGA',     defaultDir: -1, cls: R, display: pg('FGA') },
+    { key: 'FG',     label: 'FG%',    sortField: 'FGM',     defaultDir: -1, cls: 'right strong', display: pct('FGM','FGA') },
     { key: '3PMPG',  label: '3PM',    sortField: '3PM',     defaultDir: -1, cls: R, display: pg('3PM') },
     { key: '3PAPG',  label: '3PA',    sortField: '3PA',     defaultDir: -1, cls: R, display: pg('3PA') },
+    { key: '3P',     label: '3P%',    sortField: '3PM',     defaultDir: -1, cls: 'right strong', display: pct('3PM','3PA') },
     { key: 'FTMPG',  label: 'FTM',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pg('FTM') },
     { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',     defaultDir: -1, cls: R, display: pg('FTA') },
+    { key: 'FT',     label: 'FT%',    sortField: 'FTM',     defaultDir: -1, cls: 'right strong', display: pct('FTM','FTA') },
+    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts,
+      title: 'True shooting: points per shot, counting threes and free throws' },
   ];
 
   const ratePct = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f] * 100).toFixed(1) + '%';
@@ -1199,11 +1306,11 @@
   const signed1 = f => r => r[f] === '' || r[f] == null ? '—' : ((+r[f] > 0 ? '+' : '') + (+r[f]).toFixed(1));
   const VALUE_HELP = AdvancedStats.VALUE_HELP;
   const ADV_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir:  1, iconSlot: true },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
-    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
+    { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
     { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts,
       title: 'True shooting: points per shot, counting threes and free throws' },
     { key: 'EFG_P',  label: 'eFG%',   sortField: 'EFG_P',   defaultDir: -1, cls: R, display: ratePct('EFG_P'),
@@ -1218,16 +1325,24 @@
     { key: 'TRB_P',  label: 'TRB%',   sortField: 'TRB_P',   defaultDir: -1, cls: R, display: ratePct('TRB_P'), title: AdvancedStats.HELP.trb },
     { key: 'STL_P',  label: 'STL%',   sortField: 'STL_P',   defaultDir: -1, cls: R, display: ratePct('STL_P'), title: AdvancedStats.HELP.stl },
     { key: 'BLK_P',  label: 'BLK%',   sortField: 'BLK_P',   defaultDir: -1, cls: R, display: ratePct('BLK_P'), title: AdvancedStats.HELP.blk },
+  ];
+
+  // What his season was worth: win shares, box plus/minus and VORP.
+  const VALUE_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
+    { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
     { key: 'WS_V',   label: 'WS',     sortField: 'WS_V',    defaultDir: -1, cls: R, display: num1('WS_V'),    title: VALUE_HELP.ws },
     { key: 'WS48',   label: 'WS/48',  sortField: 'WS48',    defaultDir: -1, cls: R, display: rate3('WS48'),   title: VALUE_HELP.ws48 },
     { key: 'OBPM_V', label: 'OBPM',   sortField: 'OBPM_V',  defaultDir: -1, cls: R, display: signed1('OBPM_V'), title: VALUE_HELP.obpm },
     { key: 'DBPM_V', label: 'DBPM',   sortField: 'DBPM_V',  defaultDir: -1, cls: R, display: signed1('DBPM_V'), title: VALUE_HELP.dbpm },
-    { key: 'BPM_V',  label: 'BPM',    sortField: 'BPM_V',   defaultDir: -1, cls: R, display: signed1('BPM_V'), title: VALUE_HELP.bpm },
+    { key: 'BPM_V',  label: 'BPM',    sortField: 'BPM_V',   defaultDir: -1, cls: 'right strong', display: signed1('BPM_V'), title: VALUE_HELP.bpm },
     { key: 'VORP_V', label: 'VORP',   sortField: 'VORP_V',  defaultDir: -1, cls: R, display: num1('VORP_V'),  title: VALUE_HELP.vorp },
   ];
 
   const HIGHS_COLS = [
-    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir:  1, iconSlot: true },
+    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir: -1, iconSlot: true },
     { key: 'TEAM',      label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
     { key: 'G',         label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
     { key: 'HIGH_P',    label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
@@ -1303,11 +1418,23 @@
     container.appendChild(card);
   }
 
-  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
+  // A table's heading and its one line of explanation, as the team page sets
+  // them (.section-title / .section-sub there).
+  function sectionHead(container, title, sub) {
     const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
+    h2.className = 'section-heading' + (sub ? ' has-sub' : '');
     h2.textContent = title;
     container.appendChild(h2);
+    if (sub) {
+      const p = document.createElement('p');
+      p.className = 'section-sub';
+      p.textContent = sub;
+      container.appendChild(p);
+    }
+  }
+
+  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn, sub) {
+    sectionHead(container, title, sub);
 
     const wrap = document.createElement('div');
     wrap.className = 'ui-table-wrap';
@@ -1316,7 +1443,7 @@
     let sortField = defaultSortField || cols[0].sortField;
     let sortDir = (cols.find(c => c.sortField === sortField) || cols[0]).defaultDir ?? -1;
 
-    const table = document.createElement('table'); table.className = 'ui-table';
+    const table = document.createElement('table'); table.className = 'ui-table ui-table--sticky-first pl-table';
     const thead = table.createTHead();
     const hr = thead.insertRow();
     const thEls = [];
@@ -1358,7 +1485,19 @@
       cols.forEach(col => {
         const td = tr.insertCell();
         if (col.cls) td.className = col.cls;
-        td.textContent = col.display ? col.display(row) : (row[col.key] ?? '');
+        const text = col.display ? col.display(row) : (row[col.key] ?? '');
+        if (col.key === 'SEASON' && !isCareer && isPlayoffRow(row)) {
+          // "24-25 PO": the season, and a badge for its playoffs.
+          td.textContent = String(text).replace(' Playoffs', '');
+          const b = document.createElement('span');
+          b.className = 'po-badge'; b.textContent = 'PO'; b.title = 'Playoffs';
+          td.appendChild(b);
+        } else if (col.key === 'TEAM' && /^[A-Z]{3}$/.test(text)) {
+          // The team's mark and abbreviation, linked, as the roster tables set it.
+          td.innerHTML = `<a class="pl-team" href="/teams/${text}/"><img src="/logos/sm/logo-${text.toLowerCase()}.webp" alt="" onerror="this.remove()">${text}</a>`;
+        } else {
+          td.textContent = text;
+        }
         if (!isCareer && leaderCheck && leaderCheck(row, col)) {
           td.classList.add('league-leader');
         }
@@ -1377,6 +1516,14 @@
 
     function rebuildBody() {
       const sorted = [...rows].sort((a, b) => {
+        // By season, either way round, a season's playoffs stay under its
+        // regular season: 24-25, then 24-25 Playoffs, then 23-24.
+        if (sortField === 'SEASON') {
+          const sa = parseFloat(a.SEASON) || 0, sb = parseFloat(b.SEASON) || 0;
+          if (sa !== sb) return (sa - sb) * sortDir;
+          const pa = isPlayoffRow(a) ? 1 : 0, pb = isPlayoffRow(b) ? 1 : 0;
+          if (pa !== pb) return pa - pb;
+        }
         const va = sortVal(a, sortField);
         const vb = sortVal(b, sortField);
         if (va < vb) return sortDir === 1 ? -1 : 1;
@@ -3125,6 +3272,122 @@
 
   // ── Render: player profile ────────────────────────────────────────────────────
 
+  // This season, at the top of a current player's page: the season line with
+  // where it ranks, the last ten games, and the next game with the man he's
+  // likely to line up against. False when he has no games this season.
+  function renderSeasonNow(sec, rows, gameLogPromise) {
+    const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+    const seasonKey = r => parseFloat(r.SEASON) || 0;
+    const cur = allPlayerSeasons.reduce((m, r) => (seasonKey(r) > seasonKey({ SEASON: m }) ? r.SEASON : m), '');
+    const mine = rows.filter(r => r.SEASON === cur && +r.G > 0);
+    if (!cur || !mine.length) return false;
+    const sum = (list, k) => list.reduce((t, r) => t + (+r[k] || 0), 0);
+    const tot = k => sum(mine, k);
+    const g = tot('G');
+    const per = k => tot(k) / g;
+    // Rank among players with at least half the most games anyone has played.
+    const bySlug = {};
+    allPlayerSeasons.filter(r => r.SEASON === cur).forEach(r => {
+      const t = bySlug[r.SLUG] ||= { G: 0, PTS: 0, REB: 0, AST: 0 };
+      ['G', 'PTS', 'REB', 'AST'].forEach(k => { t[k] += +r[k] || 0; });
+    });
+    const pool = Object.values(bySlug);
+    const floor = Math.ceil(Math.max(0, ...pool.map(t => t.G)) / 2);
+    const qualified = pool.filter(t => t.G >= floor);
+    const rank = k => g >= floor ? 1 + qualified.filter(t => t[k] / t.G > per(k) + 1e-9).length : null;
+    const pct = (m, a) => (tot(a) ? (tot(m) / tot(a) * 100).toFixed(1) + '%' : '—');
+    const ts = tot('FGA') + 0.44 * tot('FTA') ? (tot('PTS') / (2 * (tot('FGA') + 0.44 * tot('FTA'))) * 100).toFixed(1) + '%' : '—';
+    const stat = (k, label) => {
+      const r = rank(k);
+      return `<div><div class="big">${per(k).toFixed(1)}</div><div class="lbl">${label}</div>` +
+        `<div class="rk">${r ? `<b>${ordinal(r)}</b> in the NBN` : `${g} of ${floor} games to rank`}</div></div>`;
+    };
+    const teams = [...new Set(mine.map(r => r.TEAM))].reverse().join(' to ');   // rows run newest first: 'IND to WAS'
+    sec.innerHTML = `<h2 class="pl-h">${NBN.esc(cur)} season <small>${g} games · ${NBN.esc(teams)}</small></h2>
+      <div class="sn-grid">
+        <div class="sn-card"><div class="hd"><span>Per game</span></div>
+          <div class="sn-line">${stat('PTS', 'Points')}${stat('REB', 'Rebounds')}${stat('AST', 'Assists')}</div>
+          <div class="sn-shoot"><span>FG <b>${pct('FGM', 'FGA')}</b></span><span>3P <b>${pct('3PM', '3PA')}</b></span><span>FT <b>${pct('FTM', 'FTA')}</b></span><span>TS <b>${ts}</b></span><span><b>${(tot('MIN') / g).toFixed(1)}</b> min</span></div>
+        </div>
+        <div class="sn-card" id="sn-form"><div class="hd"><span>Last 10 games · points</span><a href="#stats" data-gamelog="1">Game log</a></div><div class="status">Loading games…</div></div>
+      </div>`;
+    // The hero's season line (the big numbers, like the team page's record).
+    const line = document.getElementById('pl-hero-line');
+    if (line) line.innerHTML = `<div class="big">${per('PTS').toFixed(1)}<span>PPG</span></div>` +
+      [[per('REB').toFixed(1), 'RPG'], [per('AST').toFixed(1), 'APG'], [ts, 'TS%'], [String(g), 'Games']]
+        .map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    sec.querySelector('[data-gamelog]').addEventListener('click', openGameLog);
+
+    gameLogPromise.then(log => {
+      const el = document.getElementById('sn-form');
+      const games = (log || []).filter(x => x.season === cur).slice(0, 10).reverse();
+      if (!games.length) { el.querySelector('.status').textContent = 'No box scores yet'; return; }
+      const top = Math.max(30, ...games.map(x => x.pts));
+      // The log writes an away opponent as "@MIL".
+      const opp = x => String(x.opp || '').replace(/^@/, '');
+      const box = x => `/boxscores/?date=${x.date}&game=${x.home ? opp(x) : x.team}-${x.home ? x.team : opp(x)}`;
+      const bars = games.map(x => `<a class="${x.wl === 'W' ? 'w' : 'l'}" href="${box(x)}" title="${NBN.esc(`${x.date} ${x.home ? 'vs' : '@'} ${opp(x)}: ${x.pts} pts, ${x.reb} reb, ${x.ast} ast · ${x.wl} ${x.team_pts}-${x.opp_pts}`)}">` +
+        `<span class="v">${x.pts}</span><span class="b" style="height:${Math.max(4, x.pts / top * 85)}%"></span></a>`).join('');
+      const axis = games.map(x => `<span>${x.home ? '' : '<i class="at">@</i>'}${NBN.esc(opp(x))}</span>`).join('');
+      const avg = games.reduce((t, x) => t + x.pts, 0) / games.length;
+      const w = games.filter(x => x.wl === 'W').length;
+      el.innerHTML = el.querySelector('.hd').outerHTML + `<div class="sn-bars">${bars}</div><div class="sn-axis">${axis}</div>
+        <div class="sn-sum"><b>${avg.toFixed(1)}</b> points a game over these ${games.length} (season ${per('PTS').toFixed(1)}) · team <b>${w}–${games.length - w}</b>, green a win</div>`;
+      el.querySelector('[data-gamelog]').addEventListener('click', openGameLog);
+    });
+
+    return true;
+  }
+
+  // One section at a time, like the team page's tabs. Switching from further
+  // down starts the new one at its top.
+  function showPlSection(id) {
+    const nav = document.getElementById('pl-nav');
+    if (!nav) return;
+    document.querySelectorAll('#content > .pl-section').forEach(sec => { sec.hidden = sec.id !== id; });
+    nav.querySelectorAll('a[data-sec]').forEach(a => a.classList.toggle('on', a.dataset.sec === id));
+    if (nav.getBoundingClientRect().top < 0) scrollTo({ top: nav.offsetTop, behavior: 'auto' });
+  }
+
+  // The Game log links: open Stats on its Game Log view.
+  function openGameLog(e) {
+    if (e) e.preventDefault();
+    showPlSection('stats');
+    const btn = [...document.querySelectorAll('.toggle-btn')].find(b => b.textContent === 'Game Log');
+    if (btn) btn.click();
+  }
+
+  // The hero's next-game card, like the team page's: the opponent, the day,
+  // who he is projected to face, and the game preview. Nothing for a player
+  // with no team or no games left.
+  function renderHeroNext(nextEl) {
+    const abbr = (teamMap[slug] || '').toUpperCase();
+    if (!abbr || !nextEl) return;
+    fetch(`/api/home/team/${abbr}`).then(r => (r.ok ? r.json() : null)).catch(() => null).then(home => {
+      if (!home) return;
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const played = new Set((home.results || []).map(r => `${r.date}|${r.away_team}|${r.home_team}`));
+      const next = (home.games || []).filter(x => x.date >= today && !played.has(`${x.date}|${x.away_team}|${x.home_team}`))
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
+      if (!next) return;
+      const isHome = next.home_team === abbr, opp = isHome ? next.away_team : next.home_team;
+      const day = new Date(next.date + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+      const myFive = ((home.five || {}).players || []);
+      const theirFive = (((home.opponent || {}).five || {}).players || []);
+      const k = myFive.findIndex(p => p.slug === slug);
+      const them = k >= 0 ? theirFive[k] : null;
+      const slot = ['PG', 'SG', 'SF', 'PF', 'C'][k];
+      nextEl.hidden = false;
+      nextEl.href = `/preview/?away=${next.away_team}&home=${next.home_team}&date=${next.date}`;
+      nextEl.innerHTML = `<div class="lbl">Next game</div>
+        <div class="match">${isHome ? 'vs' : '@'} <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt=""> ${NBN.esc(opp)}</div>
+        <div class="when">${day}${next.arena ? ' · ' + NBN.esc(next.arena) : ''}</div>
+        ${them ? `<div class="vs">Projected at ${slot} against <b>${NBN.esc(nbnPlayerName(them.name))}</b> (${them.ovr ?? '—'})</div>`
+              : k < 0 && myFive.length ? '<div class="vs">Projected off the bench</div>' : ''}
+        <div class="go">Game preview</div>`;
+    });
+  }
+
   function renderPlayer(playerName, rows, playerAwards, seasonLeaders, allPoRows, hofRows) {
     rows = [...rows].sort((a, b) => {
       const sa = parseFloat(a.SEASON) || 0;
@@ -3160,20 +3423,43 @@
 
     const content = document.getElementById('content');
     content.innerHTML = '';
+    // The header is the team page's hero (the pl-hero CSS): the bio line and
+    // this season's numbers under the name, the team's secondary mark faded
+    // behind, and the next game at the right.
+    const header = document.querySelector('.ui-header');
+    header.classList.add('pl-hero');
+    const headerText = header.querySelector('.header-text');
+    const bioEl = document.createElement('div');
+    bioEl.className = 'pl-hero-bio';
+    headerText.appendChild(bioEl);
+    renderBioLine(bioEl, mergedRow);
+    const heroLine = document.createElement('div');
+    heroLine.className = 'pl-hero-line'; heroLine.id = 'pl-hero-line';
+    headerText.appendChild(heroLine);
+    const curTeam = !bio.retired && teamMap[slug];
+    if (curTeam) {
+      header.insertAdjacentHTML('afterbegin',
+        `<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="pl-wm" color-interpolation-filters="sRGB">` +
+        `<feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -0.138 -0.465 -0.047 1 0"/></filter></svg>` +
+        `<img class="pl-watermark" src="/logos/secondary/logo-${curTeam.toLowerCase()}.webp" alt="" onerror="this.remove()">`);
+    }
+    const side = document.createElement('div');
+    side.className = 'pl-hero-side';
+    const actions = header.querySelector('.player-actions');
+    if (actions) side.appendChild(actions);
+    const nextCard = document.createElement('a');
+    nextCard.className = 'pl-next'; nextCard.hidden = true;
+    side.appendChild(nextCard);
+    header.querySelector('.header-main').appendChild(side);
+    if (curTeam) renderHeroNext(nextCard);
+    // The profile's own strip (Profile, 2K Ratings, ...) joins the section
+    // bar below, so the page has one row of tabs.
+    document.getElementById('players-tabs').style.display = 'none';
 
-    const hero = document.createElement('div');
-    hero.className = 'player-hero';
-    const info = document.createElement('div');
-    hero.appendChild(info);
-    content.appendChild(hero);
-
-    // bio line
-    renderBioLine(info, mergedRow);
     // OVR, Hall of Fame, Contract, History and Health as a row of tiles, then
     // the accolades. All but HOF link to the sub-page with the detail.
     const tiles = document.createElement('div');
     tiles.className = 'hero-tiles';
-    info.appendChild(tiles);
     renderOvrTile(tiles, slug);
     renderHofLine(tiles, rows[0].PLAYER, hofRows);
     renderContractTile(tiles, bio, slug);
@@ -3199,18 +3485,64 @@
         },
         () => { bioFormEl.remove(); bioFormEl = null; editBioBtn.textContent = 'Edit Bio'; }
       );
-      content.insertBefore(bioFormEl, hero.nextSibling);
+      content.insertBefore(bioFormEl, content.firstChild);
       editBioBtn.textContent = 'Close';
     });
 
     // Under the tiles, two cards side by side: the career line with the
     // accolades, and the archetype radar.
+    // The page under the bio line: a bar of in-page links, then This season,
+    // the tiles, Stats and Career (renderSeasonNow, the tables, the cards).
+    const gameLogPromise = fetch(`/api/players/${slug}/gamelog`)
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); }).catch(() => []);
+    const plNav = document.createElement('nav');
+    plNav.className = 'pl-nav'; plNav.id = 'pl-nav'; plNav.setAttribute('aria-label', 'Sections');
+    content.appendChild(plNav);
+    const mkSection = (id, title) => {
+      const sec = document.createElement('section');
+      sec.className = 'pl-section'; sec.id = id;
+      if (title) { const h = document.createElement('h2'); h.className = 'pl-h'; h.textContent = title; sec.appendChild(h); }
+      content.appendChild(sec);
+      return sec;
+    };
+    // Three tabs, like the team page's: Overview (this season, the tiles,
+    // the career card and radar), Stats (the tables and game log) and Career
+    // (totals, feats, teammates). Then the sub-pages, which are their own pages.
+    const overviewSec = mkSection('overview', '');
+    const seasonSec = document.createElement('div');
+    seasonSec.id = 'season';
+    overviewSec.appendChild(seasonSec);
+    const statsSec = mkSection('stats', 'Stats');
+    const careerSec = mkSection('career', 'Career');
+    const hasSeason = renderSeasonNow(seasonSec, rows, gameLogPromise);
+    if (!hasSeason) { seasonSec.remove(); heroLine.remove(); }
+    overviewSec.appendChild(tiles);
+    [['overview', 'Overview'], ['stats', 'Stats'], ['career', 'Career']].forEach(([id, label]) => {
+      const a = document.createElement('a'); a.href = '#' + id; a.textContent = label; a.dataset.sec = id;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        showPlSection(id);
+        history.replaceState(null, '', id === 'overview' ? location.pathname + location.search : '#' + id);
+      });
+      plNav.appendChild(a);
+    });
+    {
+      const h = location.hash.slice(1);
+      showPlSection(h === 'stats' || h === 'career' ? h : 'overview');
+    }
+    const navSep = document.createElement('span'); navSep.className = 'pl-nav-sep'; navSep.setAttribute('aria-hidden', 'true');
+    plNav.appendChild(navSep);
+    PlayerSubpage.PAGES.filter(pg => pg.key !== 'profile').forEach(pg => {
+      const a = document.createElement('a'); a.href = PlayerSubpage.href(pg.key, slug); a.textContent = pg.label; a.className = 'pl-nav-page';
+      plNav.appendChild(a);
+    });
+
     const heroRow = document.createElement('div');
     heroRow.className = 'hero-row';
     const careerCard = document.createElement('div');
     careerCard.className = 'career-card';
     heroRow.appendChild(careerCard);
-    hero.appendChild(heroRow);
+    overviewSec.appendChild(heroRow);
     renderCareerLine(careerCard, rows);
     renderCareerLine(careerCard, allPoRows.filter(r => r.SLUG === slug), 'Career · playoffs');
     renderAccolades(careerCard, slug, rows[0].RINGS, playerAwards, seasonLeaders);
@@ -3237,16 +3569,16 @@
     toggleBar.appendChild(btnSeason);
     toggleBar.appendChild(btnGameLog);
     toggleBar.appendChild(btnSplits);
-    content.appendChild(toggleBar);
+    statsSec.appendChild(toggleBar);
 
     // sections container
     const sections = document.createElement('div');
-    content.appendChild(sections);
+    statsSec.appendChild(sections);
     const careerTotalsEl = document.createElement('div');
-    content.appendChild(careerTotalsEl);
+    careerSec.appendChild(careerTotalsEl);
     renderCareerTotals(careerTotalsEl, slug, allPlayerSeasons, allPoRows.length ? allPoRows : null);
     const insightsEl = document.createElement('div');
-    content.appendChild(insightsEl);
+    careerSec.appendChild(insightsEl);
     renderInsights(insightsEl, slug);
 
     let bySeasonMode = false;
@@ -3419,13 +3751,21 @@
       const careerLines = build => po.length
         ? [build(reg), { ...build(po), SEASON: 'Career Playoffs' }]
         : build(reg);
-      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn);
+      const each = bySeasonMode ? 'one row a season' : 'one row a team each season';
+      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn,
+        `Per game · ${each}, playoffs marked PO · gold led the NBN that season`);
+      buildSection(sections, 'Shooting', displayRows, SHOOT_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn,
+        'Makes and attempts per game, by kind of shot');
       // Only once player-advanced.csv has loaded: without it every rate
       // but the shooting ones would read "—".
       if (advContext.size) {
-        buildSection(sections, 'Advanced', displayRows, ADV_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn);
+        buildSection(sections, 'Advanced', displayRows, ADV_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn,
+          'Rates · hover a column for what it measures');
+        buildSection(sections, 'Value', displayRows, VALUE_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn,
+          'Win shares, box plus/minus and value over replacement · hover a column for what it measures');
       }
-      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn);
+      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn,
+        'His best single game in each category, each season');
     }
 
     function setStatsMode() {
@@ -3451,8 +3791,7 @@
     let gameLogFetch = null;
     function loadGameLog() {
       if (gameLogRows !== null || gameLogFetch) return;
-      gameLogFetch = fetch(`/api/players/${slug}/gamelog`)
-        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      gameLogFetch = gameLogPromise
         .then(data => { gameLogRows = data; })
         .catch(() => { gameLogRows = []; })
         .then(() => rebuildSections());
