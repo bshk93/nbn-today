@@ -1812,8 +1812,9 @@ function mountIrlFeed() {
 // index the page already loads (/api/boxscores/games), the rest from the
 // league schedule (/api/schedule). A past season has no schedule file, so it
 // shows results only. Built the first time the tab opens.
-let _teamGamesResolve;
-const teamGamesReady = new Promise(r => { _teamGamesResolve = r; });
+// The schedule's games, started as the page loads and shared with the main
+// fetch below, so the schedule waits on this one request, not on all ~24.
+const teamGamesReady = fetch(`/api/boxscores/games?team=${abbr}`).then(r => (r.ok ? r.json() : [])).catch(() => []);
 let _schedMounted = false;
 let _schedSeasonGames = {};   // season -> schedule rows (fetched on demand)
 
@@ -9799,7 +9800,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/picks').then(r => r.ok ? r.json() : []),
     fetch('/api/members/public').then(r => r.ok ? r.json() : []),
-    fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
+    teamGamesReady,
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
     fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
@@ -9898,7 +9899,6 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
   }
 
-  _teamGamesResolve(allGames);
   buildPersonnelSection(membersData, allGames);
   whenTabShown('franchise', () => renderRivalries(allGames));
   renderHeaderFacts(seasonRows, membersData);
