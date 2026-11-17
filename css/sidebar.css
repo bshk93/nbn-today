@@ -285,9 +285,8 @@ a.sb-top-link[aria-current="page"] { background: var(--bg-hover); color: var(--t
   /* A nav holding nothing but the menu button, the phone brand (both hidden
      here) and an empty action row — the homepage's — would still leave its
      bottom margin as a blank band at the top of the page. Pages with a
-     breadcrumb keep theirs, and so does any page once a signed-in member's
-     quick links are in it. A new phone-only child must join this list. */
-  html[data-sidebar] .nav:not(:has(> :not(.nav-menu-btn, .nav-brand, .nav-actions))):not(:has(.nav-quick)) { display: none; }
+     breadcrumb keep theirs. A new phone-only child must join this list. */
+  html[data-sidebar] .nav:not(:has(> :not(.nav-menu-btn, .nav-brand, .nav-actions))) { display: none; }
 }
 
 .sb-scrim { display: none; }

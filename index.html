@@ -62,6 +62,16 @@
 
     .dash-card { min-width: 0; }
 
+    /* Quick Links (nav.js _mountQuickLinks): one row per link, icon then name. */
+    .dash-quick-link {
+      display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0;
+      color: var(--text-secondary); text-decoration: none; font-size: var(--text-sm);
+      border-bottom: 1px solid var(--border);
+    }
+    .dash-quick-link:last-child { border-bottom: 0; }
+    .dash-quick-link:hover { color: var(--text-primary); }
+    .dash-quick-link .ni { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+
     /* Band 1 — your team, as a team hub: a band in the team's own colours
        (primary fill, accent stripe under it, so a near-black primary still
        reads on the dark theme), then the numbers as labelled blocks, then
@@ -536,7 +546,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
+        grid-template-areas: "live" "hero" "team" "quick" "slate" "streamvod" "boxvod" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-stream-vod { grid-area: streamvod; }
@@ -544,6 +554,7 @@
       :root #dash-feed      { grid-area: feed; }
       :root #dash-tweets    { grid-area: tweets; }
       :root #dash-injuries  { grid-area: injuries; }
+      :root #dash-quick     { grid-area: quick; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
@@ -1220,6 +1231,10 @@
 
     <!-- Sidebar: tonight's games, then the races and lists. -->
     <div class="dash-side">
+      <!-- Signed-in members only: Coaching Settings, their team, Betting (nav.js
+           _mountQuickLinks). Signed out it stays hidden. data-mine-off: these
+           are your team by definition, so my-team.js leaves them untinted. -->
+      <div class="dash-card" id="dash-quick" data-mine-off hidden></div>
       <div class="dash-card" id="dash-slate">
         <div class="dash-card-title" id="dash-slate-title">Next Up</div>
         <div class="dash-skel" style="width:80%"></div>

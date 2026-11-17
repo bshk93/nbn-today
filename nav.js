@@ -555,39 +555,33 @@ function _initNav() {
     if (!_sidebarEnabled()) actions.appendChild(_buildInboxButton());
     nav.appendChild(actions);
   }
-  _mountQuickLinks(nav.querySelector('.nav-actions'));
 }
 
 // ── Quick links ──────────────────────────────────────────────────────────────
-// Top right of every page, for a signed-in member only: their team's Coaching
-// tab, their team page, and Betting. A member with no open tenure gets only
-// Betting. A signed-out visitor gets no section at all, and no request is made
-// for it (no token, no /api/me). Rides on the profile's /api/me and the
-// your-team lookup, both cached, so it costs nothing extra once either ran.
-function _mountQuickLinks(actions) {
-  if (!actions || actions.querySelector('.nav-quick') || actions.hasAttribute('data-quick-pending')) return;
+// The homepage's Quick Links card (#dash-quick), for a signed-in member only:
+// their team's Coaching tab, their team page, and Betting. A member with no
+// open tenure gets only Betting. Signed out, the card stays hidden and no
+// request is made for it (no token, no /api/me). Rides on the profile's
+// /api/me and the your-team lookup, both cached, so it costs nothing extra.
+function _mountQuickLinks() {
+  const card = document.getElementById('dash-quick');
+  if (!card || card.dataset.done) return;
+  card.dataset.done = '1';
   let token = null;
   try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
   if (!token) return;
-  actions.setAttribute('data-quick-pending', '');
   _fetchMe().then(me => (me && me.name ? _fetchMyTeam().then(team => ({ team })) : null)).then(res => {
-    actions.removeAttribute('data-quick-pending');
-    if (!res || actions.querySelector('.nav-quick')) return;
+    if (!res) return;
     const team = res.team && TEAM_LIST[res.team] ? res.team : null;
     const links = [
-      team && { href: `/teams/${team}/#coaching`, icon: 'clipboard-list', label: 'Coaching', title: 'Coaching settings' },
-      team && { href: `/teams/${team}/`, icon: 'basketball', label: team, title: TEAM_LIST[team] },
-      { href: '/bet/', icon: 'dice', label: 'Betting', title: 'Betting — bets, Pick\'em, futures' },
+      team && { href: `/teams/${team}/#coaching`, icon: 'clipboard-list', label: 'Coaching Settings' },
+      team && { href: `/teams/${team}/`, icon: 'basketball', label: TEAM_LIST[team] },
+      { href: '/bet/', icon: 'dice', label: 'Betting' },
     ].filter(Boolean);
-    const box = document.createElement('div');
-    box.className = 'nav-quick';
-    box.setAttribute('role', 'navigation');
-    box.setAttribute('aria-label', 'Quick links');
-    box.setAttribute('data-mine-off', '');   // my-team.js: these are your team by definition
-    box.innerHTML = '<span class="nav-quick-label">Quick links</span>' + links.map(l =>
-      `<a class="nav-quick-link" href="${l.href}" title="${_escSearch(l.title)}">${_navIcon(l.icon)}<span>${_escSearch(l.label)}</span></a>`).join('');
-    actions.prepend(box);
-  }).catch(() => actions.removeAttribute('data-quick-pending'));
+    card.innerHTML = '<div class="dash-card-title">Quick Links</div>' + links.map(l =>
+      `<a class="dash-quick-link" href="${l.href}">${_navIcon(l.icon)}<span>${_escSearch(l.label)}</span></a>`).join('');
+    card.hidden = false;
+  }).catch(() => {});
 }
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
@@ -2396,6 +2390,7 @@ async function nbnShare({ title, text, url } = {}, btn) {
 function _initChrome() {
   _buildSidebar();
   _initNav();
+  _mountQuickLinks();
   _fetchProfile(); // keeps the unlocked-theme cache fresh, sidebar or not
 }
 
