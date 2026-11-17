@@ -1045,8 +1045,7 @@ const coachingConfigReady = new Promise(resolve => {
     font-size: var(--text-xs); font-weight: 700; }
   .sched-wl.w { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
   .sched-wl.l { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
-  .sched-time { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-  .sched-preview { margin-left: 0.75rem; font-size: var(--text-sm); color: var(--link); text-decoration: none; }
+  .sched-preview { font-size: var(--text-sm); color: var(--link); text-decoration: none; }
   .sched-preview:hover { text-decoration: underline; }
   .sched-rec { width: 5rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
   @media (max-width: 640px) {
@@ -1057,7 +1056,7 @@ const coachingConfigReady = new Promise(resolve => {
     .sched-next-tag { display: block; margin: 0.1rem 0 0; }
     .sched-opp-in { gap: 0.4rem; }
     .sched-team { gap: 0.35rem; }
-    .sched-preview, .sched-rec, .sched-full { display: none; }
+    .sched-rec, .sched-full { display: none; }
     .sched-abbr { display: inline; }
     .sched-table th.sched-res-h, .sched-table td.sched-result { width: auto; }
     .sched-res { gap: 0.4rem; }
@@ -1886,10 +1885,6 @@ async function renderSchedule(allGames, season) {
   const fmtDay = d => { const t = new Date(d + 'T12:00:00Z'); const o = { timeZone: 'UTC' };
     return `<span class="sched-dow">${t.toLocaleDateString('en-US', { ...o, weekday: 'short' })}</span> <span class="sched-md">${t.toLocaleDateString('en-US', { ...o, month: 'short', day: 'numeric' })}</span>`; };
   const fmtMonth = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  const fmtTime = t => {
-    const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
-    return m ? `${m[1]}:${m[2]} ${m[3] === 'p' ? 'PM' : 'AM'} ET` : '';
-  };
   const boxHref = r => `/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}`;
   const previewHref = g => `/preview/?away=${g.away_team}&home=${g.home_team}&date=${g.date}`;
 
@@ -1913,7 +1908,7 @@ async function renderSchedule(allGames, season) {
       const w = won(g.result);
       res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="sched-wl ${w ? 'w' : 'l'}">${w ? 'W' : 'L'}</span><span class="sched-score">${us}–${them}</span></a>`;
     } else {
-      res = `<span class="sched-time">${fmtTime(g.time_et) || 'Time to be set'}</span><a class="sched-preview" href="${previewHref(g)}">Preview</a>`;
+      res = `<a class="sched-preview" href="${previewHref(g)}">Preview</a>`;
     }
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
       <td class="sched-date">${fmtDay(g.date)}${i === nextIdx ? '<span class="sched-next-tag">Next</span>' : ''}</td>
@@ -5730,7 +5725,7 @@ function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, cale
   if (next) document.getElementById('hero-next').innerHTML = `<a class="tn-next" href="${previewHref}">
     <div class="lbl">Next game</div>
     <div class="match">${next.home_team === abbr ? 'vs' : '@'} <img src="${_logoSrc(nextOpp)}" alt=""> ${esc(nextOpp)}</div>
-    <div class="when">${_shortDay(next.date)}${next.time_et ? ' · ' + esc(next.time_et) : ''}${next.arena ? ' · ' + esc(next.arena) : ''}</div>
+    <div class="when">${_shortDay(next.date)}${next.arena ? ' · ' + esc(next.arena) : ''}</div>
     <div class="go">Game preview</div></a>`;
   document.getElementById('season-title').innerHTML = `${esc(season)} Season <small>${res.length} game${res.length === 1 ? '' : 's'}</small>`;
 
