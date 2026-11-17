@@ -189,7 +189,8 @@ The hero, then six tabs (redesigned 2026-11; one long page at first, switched to
 - **Season** (`#season-grid`): last-10 form bars, conference standings ±3, team leaders, both projected fives for the next game, and injuries.
 - **Roster**: five starter cards, then the full roster table with What If, edit mode and the Moves menu. On phones the table collapses to two lines per player (name, then position · OVR · age, then contract and stats).
 - **Cap & Picks**: the cap bar (cap, 1st and 2nd apron markers), Cap Health, exceptions, trade exceptions and picks.
-- **Schedule, History** (franchise, all-time, draft, season log) and **Front Office** (coaching settings for the team's own front office, then the IRL feed).
+- **Schedule**, **History** and **Front Office** (coaching settings for the team's own front office, then the IRL feed).
+- **History's sub-tabs** (`#history-subnav`, `showSub`): Franchise (identity, season history, retired numbers), Season Stats, All-Time, Records, Draft, Rivalries, Staff (personnel and the front-office ledger strip). Each History `<section>` carries the `data-sub` it belongs to; all of History's data still loads when the tab first opens. A sub-tab's name is its hash (`#draft`, `#alltime`, `#franchise`, `#rivalries`, ...).
 
 Everything above the roster table is drawn by `renderSeasonTop` from a single `GET /api/home/team/{abbr}` call, which starts before the page's main fetch.
 
