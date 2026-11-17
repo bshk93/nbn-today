@@ -668,7 +668,7 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
    reads smaller than Inter at the same size, so titles go up a step. The
    :root prefix is for weight, not scope: these have to beat the page-level
    rules they replace (e.g. .profile-name), which load later. */
-:root :is(.ui-title, .team-header h1, .profile-name) {
+:root :is(.ui-title, .profile-name) {
   font-family: var(--font-display);
   font-size: var(--text-2xl);
   font-weight: 700;
@@ -684,78 +684,20 @@ button.ui-chip:focus-visible { outline: 2px solid var(--accent); outline-offset:
 }
 :root .team-score { font-size: var(--text-lg); }
 @media (max-width: 600px) {
-  :root :is(.ui-title, .team-header h1, .profile-name) { font-size: var(--text-xl); }
+  :root :is(.ui-title, .profile-name) { font-size: var(--text-xl); }
 }
 
 /* ── Team pages in team colours ─────────────────────────────────────────── */
 /* team.js sets <html data-team="CLE">, and css/team-colors.css maps that to
-   --team-primary / --team-accent. The header becomes a band in the team's
-   primary with an accent stripe; the logo sits on a light disc, because
-   several logos disappear on their own colour (Chicago's red bull on red). */
-:root[data-team] .team-header-nav {
-  justify-content: space-between;
-  gap: var(--space-4);
-  /* Same box as a player's band (§ Player pages): one height, padding and
-     image size, so moving from a team to its player the header doesn't jump. */
-  min-height: var(--band-height);
-  padding: var(--space-4) var(--space-5);
-  margin-bottom: var(--space-5);
-  border-radius: var(--radius);
-  background: var(--team-primary);
-  border-bottom: 5px solid var(--team-accent);
-}
-:root[data-team] .team-header {
-  flex-direction: row;
-  gap: var(--space-5);
-  flex: 1;
-  justify-content: flex-start;
-}
-:root[data-team] .team-header img {
-  width: var(--band-image); height: var(--band-image);
-  padding: 10px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
-}
-:root[data-team] .team-header h1 {
-  color: white;
-  text-align: left;
-  font-size: var(--text-2xl);
-}
-/* The name and its one line of franchise facts (renderHeaderFacts). */
-.team-header-facts:empty { display: none; }
-:root[data-team] .team-header-facts {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-5);
-  margin-top: var(--space-2);
-  font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600;
-  letter-spacing: 0.05em; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.8);
-}
-/* A figure and its label: "256–237 ALL-TIME", "3 PLAYOFF TRIPS IN 7 SEASONS". */
-:root[data-team] .team-header-facts .thf b { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.01em; color: white; }
-:root[data-team] .team-header-facts .thf-owner { flex-basis: 100%; order: -1; color: rgba(255, 255, 255, 0.7); }
-:root[data-team] .team-nav-btn {
-  color: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.35);
-}
-:root[data-team] .team-nav-btn:hover { color: white; border-color: white; background: rgba(255, 255, 255, 0.1); }
+   --team-primary / --team-accent. The team page's own hero (.tn-hero) is
+   styled in team.js; only what other pages share stays here. */
 :root[data-team] .ui-tab.active { border-bottom-color: var(--team-accent); }
 @media (max-width: 600px) {
-  :root[data-team] .team-header-nav { padding: var(--space-4) var(--space-3); gap: var(--space-2); }
-  :root[data-team] .team-header { gap: var(--space-3); }
-  /* On a phone both bands are just the name and its facts, left-aligned: no
-     logo or headshot, no Share (the browser's own share does that), no
-     prev/next arrows (they cost a fifth of the width and forced names onto
-     two lines; the sidebar's Teams panel does the same job). */
-  :root[data-team] .team-header-nav { min-height: 0; padding: var(--space-4); }
-  :root[data-team] :is(.team-nav-btn, .team-header img, .team-share-btn),
+  /* On a phone the player band is just the name and its facts: no prev/next
+     arrows (they cost a fifth of the width) and no Share (the browser's own
+     share does that). */
   .ui-header[data-team] :is(.player-nav-btn, .player-share) { display: none; }
-  :root[data-team] .team-header { display: block; }
-  :root[data-team] .team-header-facts { gap: 0 var(--space-3); }
-  :root[data-team] .team-header-facts .thf b { font-size: var(--text-md); }
   .ui-header[data-team] .header-main { align-items: flex-start; }
-
-  :root[data-team] .team-header h1 { font-size: var(--text-xl); }
-  :root[data-team] .team-header-facts { font-size: var(--text-xs); }
 }
 
 /* ── Player pages in team colours ───────────────────────────────────────── */

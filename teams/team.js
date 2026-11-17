@@ -9,6 +9,7 @@
 //   namesReady                   resolves once /names.js has loaded
 //   lineupReady                  resolves once /teams/lineup.js has loaded
 //   contractReady                resolves once /contract.js has loaded
+//   nbnDataReady                 resolves once /nbn-data.js (NBN.*) has loaded
 //   capHealthReady               resolves once /cap-health.js has loaded
 //   coachingConfigReady          resolves once /coaching-config.js has loaded
 //   radarReady                   resolves once /radar.js has loaded
@@ -189,6 +190,16 @@ const contractReady = new Promise(resolve => {
   document.head.appendChild(_ct);
 });
 
+// NBN — /nbn-data.js's shared helpers (NBN.esc, NBN.TEAMS, ...). Team shells
+// load only team.js, so it is pulled in here like contract.js.
+const nbnDataReady = new Promise(resolve => {
+  const _nd = document.createElement('script');
+  _nd.src = '/nbn-data.js';
+  _nd.onload = resolve;
+  _nd.onerror = () => { console.error('/nbn-data.js failed to load'); resolve(); };
+  document.head.appendChild(_nd);
+});
+
 // CapHealth — the standing rules (§ 1.3/1.4 cap and aprons, § 2.1/2.1a/2.2
 // roster limits). Soft dependency: if it fails to load the
 // Cap Health card stays hidden and the rest of the page is unaffected, which is
@@ -240,34 +251,6 @@ const coachingConfigReady = new Promise(resolve => {
      then grows proportionally (75% of viewport) up to a 1600px ceiling
      for wide/ultrawide monitors. */
   .page { max-width: var(--page-width-wide); margin: 0 auto; }
-  .team-header-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-  .team-nav-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 2.5rem; height: 2.5rem; border-radius: 50%;
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text-muted); font-size: var(--text-lg); cursor: pointer;
-    text-decoration: none; flex-shrink: 0; line-height: 1;
-  }
-  .team-share-btn { margin-top: 0.5rem; padding: 0.25rem 0.6rem; border-radius: var(--radius-sm); background: transparent; border: 1px solid var(--border); color: var(--text-muted); font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; }
-  .team-share-btn:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-  /* On the team-colour band (components.css § Team pages): light on colour. */
-  :root[data-team] .team-share-btn { align-self: center; margin-top: 0; margin-left: auto; color: rgba(255,255,255,0.9); border-color: rgba(255,255,255,0.45); }
-  :root[data-team] .team-share-btn:hover { color: white; border-color: white; }
-  .team-nav-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
-  .team-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-  }
-  .team-header img { width: 140px; height: 140px; object-fit: contain; }
-  .team-header h1 { font-size: var(--text-xl); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; text-align: center; }
   section { margin-bottom: 3rem; }
   .section-title { font-size: var(--text-md); font-weight: 600; margin-bottom: 0.25rem; }
   .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem; }
@@ -566,7 +549,197 @@ const coachingConfigReady = new Promise(resolve => {
     .ts-sum-stats { gap: 1rem; }
     .ts-sec-hint { display: none; }
   }
+  /* Overview roster on a phone: slot and name only, with position, OVR, age,
+     contract and stat line as two lines under the name (.roster-sub). */
+  .roster-sub { display: none; }
+  @media (max-width: 640px) {
+    #roster-wrap table.roster-mode-depth th:nth-child(n+3),
+    #roster-wrap table.roster-mode-depth td:nth-child(n+3) { display: none; }
+    #roster-wrap table.roster-mode-depth td { white-space: normal; }
+    #roster-wrap table.roster-mode-depth td.whatif-actions-cell,
+    #roster-wrap table.roster-mode-depth th:last-child:empty { display: table-cell; }
+    .roster-sub { display: flex; flex-direction: column; gap: 0.1rem; margin-top: 0.25rem; padding-left: 2.2rem; }
+    .roster-sub-facts { font-size: var(--text-sm); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+    .roster-sub-deal { font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  }
+  @media (max-width: 640px) {
+    #roster-wrap table.roster-mode-depth .roster-name-top { flex-wrap: wrap; row-gap: 0.25rem; }
+  }
+  /* ── Redesign (2026-11): hero, sticky section bar, season dashboard ── */
+  .tn { --tp: var(--team-primary); --ta: var(--team-accent); --tc: var(--team-chart, var(--tp)); }
+  /* Flat team band with the accent stripe, like every team header: the
+     design system has no gradients (docs/design-system.md). */
+  .tn-hero { position: relative; overflow: hidden; border-radius: var(--radius); color: white;
+    background: var(--tp);
+    padding: 1.6rem 1.75rem 1.5rem; margin-bottom: 1rem; display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: end; }
+  .tn-hero::after { content: ''; position: absolute; inset: auto 0 0 0; height: 4px; background: var(--ta); }
+  /* The team's secondary mark, not the logo already on the left
+     (logos/secondary/, sources.json). #tn-wm tints it white by its own
+     light and dark, so every mark reads on every band colour. */
+  .tn-watermark { position: absolute; right: 330px; top: 50%; transform: translateY(-50%); height: calc(100% - 2rem); width: auto; max-width: 26%;
+    object-fit: contain; object-position: center; opacity: 0.13; filter: url(#tn-wm); pointer-events: none; }
+  .tn-hero-main, .tn-hero-side { position: relative; z-index: 1; min-width: 0; }
+  .tn-hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
+  .tn-name-row { display: flex; align-items: center; gap: 1rem; }
+  .tn-arrow { color: white; opacity: 0.6; font-size: var(--text-xl); line-height: 1; text-decoration: none; padding: 0 0.15rem; }
+  .tn-arrow:hover { opacity: 1; }
+  .tn-logo { width: 64px; height: 64px; border-radius: 50%; background: white; padding: 6px; flex: none; }
+  .tn-name { font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); line-height: 1; text-transform: uppercase; letter-spacing: 0.01em; margin: 0; color: white; }
+  /* The name's one line of franchise facts (renderHeaderFacts): "251–255 ALL-TIME". */
+  .tn-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-5); margin-top: 0.3rem;
+    font-family: var(--font-display); font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.85); }
+  .tn-facts:empty { display: none; }
+  .tn-facts .thf b { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.01em; color: white; }
+  .tn-facts .thf-owner { flex-basis: 100%; order: -1; color: rgba(255,255,255,0.7); }
+  .tn-record { display: flex; flex-wrap: wrap; gap: 0.25rem 2rem; margin-top: 1.25rem; align-items: baseline; }
+  .tn-record:empty { display: none; }
+  .tn-record .big { font-family: var(--font-display); font-weight: 700; font-size: calc(var(--text-2xl) * 1.5); line-height: 0.9; font-variant-numeric: tabular-nums; }
+  .tn-record .stat { display: flex; flex-direction: column; }
+  .tn-record .stat b { font-family: var(--font-display); font-size: var(--text-lg); line-height: 1; font-weight: 700; }
+  .tn-record .stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; margin-top: 0.15rem; }
+  .tn-share { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius-sm);
+    font: inherit; font-size: var(--text-sm); padding: 0.25rem 0.7rem; cursor: pointer; }
+  .tn-share:hover { background: rgba(255,255,255,0.12); }
+  .tn-next { display: block; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
+    padding: 0.9rem 1rem; min-width: 230px; color: white; text-decoration: none; }
+  .tn-next:hover { background: rgba(0,0,0,0.4); }
+  .tn-next .lbl { font-size: var(--text-xs); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .tn-next .match { display: flex; align-items: center; gap: 0.6rem; margin: 0.4rem 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); }
+  .tn-next .match img { width: 34px; height: 34px; }
+  .tn-next .when { font-size: var(--text-sm); opacity: 0.85; }
+  /* White, not the accent: several teams' accent is close to their band (Chicago's red on red). */
+  .tn-next .go { font-size: var(--text-sm); margin-top: 0.4rem; color: white; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: rgba(255,255,255,0.45); }
+  .tn-nav { position: sticky; top: 0; z-index: 20; background: var(--bg-page); display: flex; gap: 0.25rem; overflow-x: auto;
+    border-bottom: 1px solid var(--border); margin: 0 0 1.25rem; scrollbar-width: none; }
+  .tn-nav a { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: var(--text-md);
+    color: var(--text-muted); text-decoration: none; padding: 0.7rem 0.8rem; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .tn-nav a.on, .tn-nav a:hover { color: var(--text-primary); border-bottom-color: var(--tc); }
+  .tn-section { scroll-margin-top: 3.5rem; margin-bottom: 2.5rem; }
+  .tn-section .tab-panel { scroll-margin-top: 3.5rem; }
+  .tn-h2 { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; font-size: var(--text-xl);
+    margin: 0 0 0.85rem; display: flex; align-items: baseline; gap: 0.75rem; }
+  .tn-h2 small { font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; }
+  .tn-grid { display: grid; gap: 1rem; grid-template-columns: repeat(12, 1fr); }
+  .tn-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; min-width: 0; }
+  .tn-card h3 { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); font-weight: 700;
+    margin: 0 0 0.75rem; display: flex; justify-content: space-between; gap: 1rem; }
+  .tn-card h3 a { color: var(--text-muted); text-decoration: none; font-weight: 600; letter-spacing: 0.04em; text-transform: none; white-space: nowrap; }
+  .tn-card h3 a:hover { color: var(--text-primary); }
+  .span-5 { grid-column: span 5; } .span-7 { grid-column: span 7; } .span-12 { grid-column: span 12; }
+  @media (max-width: 900px) { .tn-grid > * { grid-column: span 12; } }
+  .tn-form { display: flex; align-items: center; gap: 4px; height: 120px; }
+  .tn-form a { flex: 1; display: flex; flex-direction: column; height: 100%; text-decoration: none; }
+  .tn-form .half { height: 50%; display: flex; } .tn-form .half.top { align-items: flex-end; } .tn-form .half.bot { align-items: flex-start; }
+  .tn-form .bar { width: 100%; border-radius: var(--radius-sm); }
+  .tn-form .w { background: var(--success-light); } .tn-form .l { background: var(--danger-light); }
+  .tn-form-axis { display: flex; gap: 4px; margin-top: 0.4rem; }
+  .tn-form-axis span { flex: 1; text-align: center; font-size: var(--text-xs); color: var(--text-dim); overflow: hidden; white-space: nowrap; }
+  .tn-form-axis i { font-style: normal; }
+  .tn-form-sum { display: flex; gap: 0.5rem 1.5rem; margin-top: 0.9rem; font-size: var(--text-sm); color: var(--text-secondary); flex-wrap: wrap; }
+  .tn-form-sum b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .tn-stand { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; white-space: normal; }
+  .tn-stand td { padding: 0.32rem 0.25rem; color: var(--text-secondary); }
+  .tn-stand td.r { text-align: right; } .tn-stand td.seed { width: 1.5rem; color: var(--text-dim); }
+  .tn-stand tr.me td { color: var(--text-primary); font-weight: 700; background: color-mix(in srgb, var(--tc) 18%, transparent); }
+  .tn-stand tr.cut td { border-bottom: 1px dashed var(--border); }
+  .tn-stand tbody tr { border: 0; } .tn-stand tbody tr:hover { background: none; }
+  .tn-stand img { width: 18px; height: 18px; vertical-align: -4px; margin-right: 0.4rem; }
+  .tn-stand a { color: inherit; text-decoration: none; }
+  .tn-leaders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .tn-leader { text-align: center; text-decoration: none; color: inherit; }
+  .tn-leader img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--bg-subtle); border: 2px solid var(--tc); }
+  .tn-leader .v { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; line-height: 1; margin-top: 0.35rem; }
+  .tn-leader .k { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+  .tn-leader .n { font-size: var(--text-sm); margin-top: 0.2rem; color: var(--text-secondary); }
+  .tn-fives { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.25rem 0.75rem; font-size: var(--text-sm); }
+  .tn-fives .hd { font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); }
+  .tn-fives .r { text-align: right; }
+  .tn-fives .pos { color: var(--text-dim); text-align: center; font-size: var(--text-xs); font-weight: 700; align-self: center; }
+  .tn-fives .p { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tn-fives .p b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .tn-fives .p.edge b { color: var(--success-light); }
+  .tn-inj { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--text-sm); }
+  .tn-inj li { display: flex; justify-content: space-between; gap: 1rem; color: var(--text-muted); }
+  .tn-inj a { color: var(--text-primary); text-decoration: none; }
+  .tn-starters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+  .tn-starters:empty { display: none; }
+  @media (max-width: 900px) { .tn-starters { grid-template-columns: 1fr; } }
+  .tn-pc { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+    text-decoration: none; color: inherit; display: flex; flex-direction: column; }
+  .tn-pc:hover { border-color: var(--tc); }
+  .tn-pc .top { position: relative; height: 112px; background: var(--tp); border-bottom: 3px solid var(--ta); }
+  .tn-pc .top img { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); height: 104px; width: 104px; object-fit: cover; border-radius: 50% 50% 0 0; }
+  .tn-pc .slot { position: absolute; top: 0.5rem; left: 0.6rem; font-family: var(--font-display); font-weight: 700; color: white; opacity: 0.85; }
+  .tn-pc .ovr { position: absolute; top: 0.45rem; right: 0.55rem; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: white;
+    background: rgba(0,0,0,0.35); border-radius: var(--radius-sm); padding: 0 0.4rem; }
+  .tn-pc .body { padding: 0.65rem 0.75rem 0.75rem; }
+  .tn-pc .nm { font-weight: 700; font-size: var(--text-base); line-height: 1.2; }
+  .tn-pc .sub { font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.1rem; }
+  .tn-pc .line { display: flex; justify-content: space-between; margin-top: 0.55rem; font-variant-numeric: tabular-nums; }
+  .tn-pc .line div { text-align: center; } .tn-pc .line b { display: block; font-size: var(--text-md); }
+  .tn-pc .line span { font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.08em; }
+  .tn-pc .deal { font-size: var(--text-sm); color: var(--text-secondary); margin-top: 0.55rem; padding-top: 0.5rem; border-top: 1px solid var(--border-subtle); }
+  @media (max-width: 900px) {
+    .tn-pc { flex-direction: row; } .tn-pc .top { width: 96px; height: auto; min-height: 96px; flex: none; }
+    .tn-pc .top img { height: 84px; width: 84px; } .tn-pc .body { flex: 1; }
+  }
+  #cap-card { margin-bottom: 1.25rem; }
+  .tn-capbar { position: relative; height: 34px; background: var(--bg-subtle); border-radius: var(--radius-sm); margin: 2.2rem 0 2.6rem; }
+  .tn-capbar .fill { position: absolute; inset: 0 auto 0 0; background: var(--tc); border-radius: var(--radius-sm); }
+  .tn-capbar .mk { position: absolute; top: -8px; bottom: -8px; width: 2px; background: var(--text-secondary); }
+  .tn-capbar .mk span { position: absolute; left: 50%; transform: translateX(-50%); font-size: var(--text-xs); white-space: nowrap; color: var(--text-muted); }
+  .tn-capbar .mk.up span { top: -1.45rem; } .tn-capbar .mk.down span { bottom: -1.45rem; }
+  .tn-capbar .mk span b { color: var(--text-secondary); font-weight: 600; }
+  .tn-caplegend { display: none; }
+  .tn-capfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; }
+  .tn-capfacts b { display: block; font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tn-capfacts span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+  .tn-owner { margin-bottom: 1.5rem; border-color: color-mix(in srgb, var(--tc) 60%, var(--border)); background: color-mix(in srgb, var(--tc) 8%, var(--bg-card)); }
+  .tn-owner[hidden] { display: none; }
+  .tn-owner summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+  .tn-owner summary::-webkit-details-marker { display: none; }
+  .tn-owner .os-title { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-primary); font-weight: 700; }
+  .tn-owner .os-brief { font-size: var(--text-sm); color: var(--text-secondary); }
+  .tn-owner .os-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem 1.5rem; margin-top: 0.9rem; }
+  .tn-owner ul { list-style: none; padding: 0; margin: 0; font-size: var(--text-sm); display: flex; flex-direction: column; gap: 0.3rem; }
+  .tn-owner li { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--text-secondary); }
+  .tn-owner li .when { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tn-owner.tn-off { display: none; }
+  /* History's sub-tabs: one group of its sections at a time (showSub). */
+  .tn-subnav { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin: 0 0 var(--space-5); }
+  .tn-subnav::-webkit-scrollbar { display: none; }
+  .tn-subnav button { white-space: nowrap; }
+  #history section[data-sub].sub-off { display: none !important; }
+  #office [data-osub].sub-off { display: none !important; }
+  .tn-owner li.none { color: var(--text-muted); }
+  .tn-owner li a { color: var(--text-primary); text-decoration: none; }
+  .tn-owner li a:hover { color: var(--accent-light); text-decoration: underline; }
+  .tn-owner .lbl { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 0.35rem; }
+  .tn-owner .tools { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  @media (max-width: 640px) {
+    .tn-hero { grid-template-columns: 1fr; padding: 1.25rem 1.1rem 1.1rem; }
+    .tn-hero-side { align-items: stretch; } .tn-share { align-self: flex-end; }
+    .tn-record { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; gap: 0.5rem 1.5rem; }
+    .tn-record .big { grid-column: 1 / -1; }
+    .tn-form-axis .at { display: none; }
+    .tn-facts { gap: 0 var(--space-3); font-size: var(--text-xs); } .tn-facts .thf b { font-size: var(--text-md); }
+    .tn-name { font-size: var(--text-xl); } .tn-logo { width: 48px; height: 48px; } .tn-arrow { display: none; }
+    .tn-record .big { font-size: var(--text-2xl); } .tn-next { min-width: 0; }
+    .tn-watermark { top: 1rem; transform: none; height: 170px; max-width: 62%; right: -12px; object-position: right center; }
+    .tn-capbar { margin: 1rem 0; } .tn-capbar .mk span { display: none; }
+    .tn-caplegend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: var(--text-xs); color: var(--text-muted); margin: -0.25rem 0 1rem; }
+    .tn-caplegend b { color: var(--text-secondary); font-weight: 600; }
+  }
   .status { text-align: center; padding: 3rem; color: var(--text-muted); font-size: var(--text-base); }
+  .rec-card a { color: var(--text-primary); text-decoration: none; }
+  .rec-card a:hover { color: var(--link); }
+  .alltime-capped tbody tr:nth-child(n+26) { display: none; }
+  .alltime-more { margin-top: 0.75rem; }
+  .draft-rights { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-secondary); font-size: var(--text-sm); }
+  .draft-rights img { width: 18px; height: 18px; object-fit: contain; }
+  .draft-rights b { color: var(--text-primary); font-weight: 600; }
+  .rival-opp b { font-weight: 600; }
+  .personnel-name a { font-weight: 600; }
   .rec-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .rec-card {
     background: var(--bg-card); border: 1px solid var(--border);
@@ -613,13 +786,10 @@ const coachingConfigReady = new Promise(resolve => {
   tbody tr { border-bottom: 1px solid var(--border-subtle); transition: background 0.1s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--bg-hover); }
-  tr.personnel-active td { background: var(--success-bg); }
-  tr.personnel-active:hover td { background: var(--success-bg-hover); }
-  tr.personnel-former { opacity: 0.45; }
-  tr.personnel-former:hover { opacity: 0.8; }
+  tr.personnel-former td { color: var(--text-muted); }
+  tr.personnel-former a { color: var(--text-secondary); }
   tr.personnel-divider td { padding: 0.2rem 1rem; font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); background: var(--bg-page); border-top: 1px solid var(--border-subtle); }
-  .cur-role { color: var(--success-light); }
-  .cur-since { color: var(--success-light); }
+  .cur-role, .cur-since { color: var(--text-primary); }
   td { padding: 0.65rem 1rem; color: var(--text-secondary); }
   #roster-wrap table th:nth-child(2), #roster-wrap table td:nth-child(2),
   #roster-wrap table th:nth-child(3), #roster-wrap table td:nth-child(3),
@@ -725,14 +895,37 @@ const coachingConfigReady = new Promise(resolve => {
     font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em;
     color: var(--text-muted); width: 2.5rem;
   }
-  .picks-acquired td   { color: var(--link); }
-  .picks-traded td     { color: var(--text-muted); font-style: italic; }
-  .picks-uncertain td  { color: var(--warning); font-style: italic; }
-  .picks-legacy td     { color: var(--danger); font-style: italic; }
-  .picks-legacy td.pick-frozen { color: var(--text-secondary); font-style: normal; }
-  .picks-table td.pick-year { font-weight: 700; font-size: var(--text-base); color: var(--text-primary); font-style: normal; }
-  .picks-table tr.pick-year-start td { border-top: 2px solid var(--border); }
-  .picks-table .pick-round { font-style: normal; }
+  /* Draft Picks, set like the roster: left-aligned, a logo with every team,
+     the year once per group, restrictions as badges, no italics. Colour
+     still says what kind of pick a row is (the legend under the table). */
+  .picks-table thead th { cursor: default; }
+  .picks-table td { padding: 0.6rem 1rem; vertical-align: middle; color: var(--text-secondary); }
+  .picks-table td.pick-year { width: 5rem; font-family: var(--font-display); font-weight: 700; font-size: var(--text-md); color: var(--text-primary); }
+  .picks-table td.pick-rnd { width: 5rem; }
+  .picks-table tr.pick-year-start td { border-top: 1px solid var(--border); }
+  .pick-tm { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 600; color: var(--text-primary); }
+  .pick-tm img { width: 20px; height: 20px; object-fit: contain; }
+  .pick-or { margin-right: 0.1rem; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pick-tm { vertical-align: middle; white-space: nowrap; }
+  .pick-tm + .pick-tm { margin-left: 0.75rem; }
+  .picks-acquired .pick-tm { color: var(--link); }
+  .picks-traded td, .picks-traded .pick-tm { color: var(--text-muted); }
+  .picks-traded .pick-tm img { opacity: 0.6; }
+  .picks-uncertain .pick-tm, .picks-uncertain td { color: var(--warning); }
+  .picks-legacy .pick-tm, .picks-legacy td { color: var(--danger); }
+  .picks-legacy td.pick-frozen { color: var(--text-secondary); }
+  .pick-flag { font-weight: 700; letter-spacing: 0.04em; cursor: help; }
+  .pick-flag-inline { display: none; }
+  @media (max-width: 640px) {
+    .picks-table td, .picks-table th { padding: 0.5rem 0.45rem; }
+    .picks-table td.pick-year, .picks-table td.pick-rnd { width: auto; }
+    .picks-table td.pick-team { white-space: normal; line-height: 1.8; }
+    .pick-tm + .pick-tm { margin-left: 0; display: flex; }
+    .picks-table .pick-frozen { display: none; }
+    .pick-flag-inline { display: table; margin-top: 0.35rem; }
+  }
+  .pick-flag-warn { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 50%, transparent); }
+  .pick-flag-bad { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
   .picks-legend {
     display: flex;
     flex-wrap: wrap;
@@ -843,23 +1036,44 @@ const coachingConfigReady = new Promise(resolve => {
   .sched-stat { display: flex; flex-direction: column; gap: 0.1rem; }
   .sched-stat span { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
   .sched-stat b { font-size: var(--text-md); color: var(--text-primary); font-variant-numeric: tabular-nums; }
-  .sched-month { font-size: var(--text-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 1.25rem 0 0.4rem; }
-  .sched-table td { padding: 0.45rem 1rem; }
-  .sched-table .sched-date { width: 7.5rem; }
-  /* The team, the Playoffs or Cup tag and the stream mark share one centred row, so
-     the mark lines up with the name rather than the text baseline. */
-  .sched-opp-team { display: inline-flex; align-items: center; vertical-align: middle; }
-  .sched-opp a { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.35rem; font-weight: 600; color: var(--text-primary); }
-  .sched-opp img { width: 18px; height: 18px; object-fit: contain; }
-  .sched-res { font-variant-numeric: tabular-nums; color: var(--text-primary) !important; }
-  .sched-w { color: var(--success); font-weight: 700; }
-  .sched-l { color: var(--danger); font-weight: 700; }
-  .sched-up { color: var(--link) !important; }
-  .sched-rec { width: 4rem; }
-  .sched-tag { margin-left: 0.35rem; font-size: var(--text-xs); }
-  .sched-tag-stream { display: inline-flex; font-size: var(--text-base); color: var(--accent-light); }
-  .sched-tag-po { color: var(--danger); font-weight: 600; }
-  .sched-tag-cup { color: var(--gold); font-weight: 600; }
+  .sched-table thead th { cursor: default; }
+  .sched-table td { padding: 0.55rem 1rem; vertical-align: middle; }
+  .sched-table .sched-date { width: 9rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .sched-next-tag { margin-left: 0.5rem; font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-light); }
+  .sched-opp-in { display: inline-flex; align-items: center; gap: 0.6rem; }
+  .sched-ha { width: 1.25rem; color: var(--text-muted); font-size: var(--text-sm); }
+  .sched-team { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-primary); text-decoration: none; }
+  .sched-team:hover b { color: var(--link); }
+  .sched-team img { width: 22px; height: 22px; object-fit: contain; }
+  .sched-team b { font-weight: 600; }
+  .sched-abbr { display: none; }   /* phones: the abbreviation; wider screens: the nickname */
+  .sched-badge { line-height: 1.4; }
+  .sched-badge-cup { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+  .sched-badge-po { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+  .sched-stream { display: inline-flex; color: var(--accent-light); }
+  .sched-table th.sched-res-h, .sched-table td.sched-result { width: 13rem; }
+  .sched-res { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--text-primary); text-decoration: none; font-variant-numeric: tabular-nums; }
+  .sched-res:hover .sched-score { color: var(--link); }
+  .sched-wl { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; border-radius: var(--radius-sm);
+    font-size: var(--text-xs); font-weight: 700; }
+  .sched-wl.w { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+  .sched-wl.l { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+  .sched-preview { font-size: var(--text-sm); color: var(--link); text-decoration: none; }
+  .sched-preview:hover { text-decoration: underline; }
+  .sched-rec { width: 5rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  @media (max-width: 640px) {
+    .sched-table td, .sched-table th { padding: 0.5rem 0.45rem; }
+    .sched-table .sched-date { width: 3.6rem; white-space: normal; line-height: 1.25; }
+    .sched-md { white-space: nowrap; }
+    .sched-dow { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+    .sched-next-tag { display: block; margin: 0.1rem 0 0; }
+    .sched-opp-in { gap: 0.4rem; }
+    .sched-team { gap: 0.35rem; }
+    .sched-rec, .sched-full { display: none; }
+    .sched-abbr { display: inline; }
+    .sched-table th.sched-res-h, .sched-table td.sched-result { width: auto; }
+    .sched-res { gap: 0.4rem; }
+  }
   tr.sched-next { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   .rivals-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
   .rival-card {
@@ -1021,7 +1235,7 @@ const coachingConfigReady = new Promise(resolve => {
     background: var(--bg-hover); border: 1px solid var(--border); border-radius: 50%;
     color: var(--text-muted); cursor: pointer;
   }
-  .identity-season { display: flex; align-items: center; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+  .identity-season { display: flex; align-items: center; justify-content: flex-start; gap: 3rem; flex-wrap: wrap; }
   .identity-players-col { min-width: 15rem; }
   .identity-players-title { font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem; }
   .identity-players { list-style: none; margin: 0; padding: 0; counter-reset: ip; }
@@ -1033,6 +1247,12 @@ const coachingConfigReady = new Promise(resolve => {
   .identity-players .ip-name a:hover { color: var(--accent-light); }
   .identity-players .ip-line { grid-column: 2; font-size: var(--text-xs); color: var(--text-muted); font-variant-numeric: tabular-nums; }
   .identity-players .ip-g { grid-column: 3; grid-row: 1; font-size: var(--text-xs); color: var(--text-dim); }
+  /* Team Identity starts at the page's left edge like every other section;
+     the radar component centres itself elsewhere (components.css). */
+  #identity-wrap .ui-radar { align-items: flex-start; }
+  #identity-wrap .ui-radar > .ui-segmented { justify-content: flex-start; }
+  /* Record figures in the page's text colour, like the roster's numbers. */
+  .rec-card .rec-top .val { color: var(--text-primary); }
   .move-btn:hover { border-color: var(--text-dim); color: var(--text-primary); }
   .move-menu {
     position: fixed; z-index: 1001; min-width: 220px;
@@ -1199,7 +1419,11 @@ const coachingConfigReady = new Promise(resolve => {
   .roster-header-row .section-title { margin-bottom: 0; }
   /* The mode switch is the shared .ui-segmented. */
   .mode-tabs { flex: none; }
-  .hist-controls { margin-bottom: 1.5rem; }
+  .hist-controls { margin-bottom: 1rem; }
+  /* Season Stats (buildHistoricalRoster): set like the roster's Stats view. */
+  .season-stats-table td { padding: 0.55rem 1rem; vertical-align: middle; }
+  .season-stats-table td.right { font-variant-numeric: tabular-nums; }
+  .season-stats-table .roster-name-top a { font-weight: 600; }
   .hist-controls select {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -1252,36 +1476,53 @@ function attachTooltip(el, textOrFn) {
 }
 
 document.body.innerHTML = `
-  <div class="page ui-page">
+  <div class="page ui-page ui-page--wide tn" data-team="${abbr}">
     <nav class="nav"><a href="/teams">← Teams</a></nav>
-    <div class="team-header-nav">
-      ${prevAbbr ? `<a class="team-nav-btn" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
-      <div class="team-header">
-        <img src="/logos/md/logo-${slug}.webp" alt="${name} logo" onerror="this.onerror=null;this.src='/logos/logo-${slug}.png'">
-        <div class="team-header-text">
-          <h1>${name}</h1>
-          <div class="team-header-facts" id="team-header-facts"></div>
+    <!-- One scrolling page (2026-11 redesign): hero, the season, then every
+         section the old tabs held, reached from the sticky bar. Each old tab's
+         panel keeps its id (tab-franchise, ...) so its lazy loading and its
+         #hash links still work; a panel loads when it nears the screen. -->
+    <header class="tn-hero">
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="tn-wm" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -0.138 -0.465 -0.047 1 0"/></filter></svg>
+      <img class="tn-watermark" src="/logos/secondary/logo-${abbr.toLowerCase()}.webp" alt="" onerror="this.remove()">
+      <div class="tn-hero-main">
+        <div class="tn-name-row">
+          ${prevAbbr ? `<a class="tn-arrow" href="/teams/${prevAbbr}/" title="${TEAMS[prevAbbr]}" aria-label="Previous team">‹</a>` : ''}
+          <img class="tn-logo" src="/logos/md/logo-${slug}.webp" alt="${name} logo" onerror="this.onerror=null;this.src='/logos/logo-${slug}.png'">
+          <div class="tn-name-text">
+            <h1 class="tn-name">${name}</h1>
+            <div class="tn-facts" id="team-header-facts"></div>
+          </div>
+          ${nextAbbr ? `<a class="tn-arrow" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
         </div>
-        <button type="button" class="team-share-btn" id="team-share-btn" title="Share this team">Share</button>
+        <div class="tn-record" id="hero-record"></div>
       </div>
-      ${nextAbbr ? `<a class="team-nav-btn" href="/teams/${nextAbbr}/" title="${TEAMS[nextAbbr]}" aria-label="Next team">›</a>` : ''}
-    </div>
-    <div class="tabs ui-tabs" role="tablist">
-      <button class="tab ui-tab active" data-tab="overview">Roster</button>
-      <button class="tab ui-tab" data-tab="schedule">Schedule</button>
-      <button class="tab ui-tab" data-tab="coaching" hidden>Coaching</button>
-      <button class="tab ui-tab" data-tab="franchise">Franchise</button>
-      <button class="tab ui-tab" data-tab="draft">Draft History</button>
-      <button class="tab ui-tab" data-tab="alltime">All-Time Players</button>
-      <button class="tab ui-tab" data-tab="history">Historical Rosters</button>
-      <button class="tab ui-tab" data-tab="irl">IRL</button>
-    </div>
-    <div class="tab-panel" id="tab-overview">
+      <div class="tn-hero-side">
+        <button type="button" class="tn-share" id="team-share-btn" title="Share this team">Share</button>
+        <div id="hero-next"></div>
+      </div>
+    </header>
+    <nav class="tn-nav" id="tn-nav" aria-label="Sections">
+      <a href="#season" class="on">Season</a><a href="#roster">Roster</a><a href="#cap">Cap &amp; Picks</a>
+      <a href="#schedule">Schedule</a><a href="#history">History</a><a href="#office">Front Office</a>
+    </nav>
+    <details class="tn-card tn-owner" id="owner-panel" hidden></details>
+
+    <section class="tn-section" id="season">
+      <h2 class="tn-h2" id="season-title">Season</h2>
+      <div class="tn-grid" id="season-grid"><div class="status">Loading…</div></div>
+    </section>
+
+    <section class="tn-section" id="roster" hidden>
+      <h2 class="tn-h2" id="roster-head">Roster</h2>
+      <div class="tn-starters" id="starter-cards"></div>
+      <div class="tab-panel" id="tab-overview">
       <div id="offer-sheet-banner" style="display:none"></div>
       <div id="trade-request-banner" style="display:none"></div>
       <section>
         <div class="roster-header-row">
-          <h2 class="section-title" id="roster-title">Roster</h2>
+          <h2 class="section-title" id="roster-title">Full roster</h2>
           <div class="mode-tabs ui-segmented" role="group" id="roster-mode-tabs">
             <button class="mode-tab active" data-mode="depth" type="button">Overview</button>
             <button class="mode-tab" data-mode="contracts" type="button">Contracts</button>
@@ -1313,6 +1554,12 @@ document.body.innerHTML = `
           </div>
         </div>
       </section>
+      </div>
+    </section>
+
+    <section class="tn-section" id="cap" hidden>
+      <h2 class="tn-h2">Cap &amp; Picks</h2>
+      <div class="tn-card" id="cap-card" hidden></div>
       <section id="cap-health-section" style="display:none">
         <h2 class="section-title">Cap Health</h2>
         <div id="cap-health-wrap" class="ch-card"></div>
@@ -1329,8 +1576,10 @@ document.body.innerHTML = `
         <h2 class="section-title" id="picks-title">Draft Picks</h2>
         <div class="ui-table-wrap table-wrap" id="picks-wrap"><div class="status">Loading…</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-schedule">
+    </section>
+
+    <section class="tn-section" id="schedule" hidden>
+      <div class="tab-panel" id="tab-schedule">
       <section>
         <div class="sched-head">
           <h2 class="section-title">Schedule</h2>
@@ -1342,8 +1591,77 @@ document.body.innerHTML = `
         <div class="sched-summary" id="sched-summary"></div>
         <div id="sched-wrap"><div class="status">Loading…</div></div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-coaching">
+      </div>
+    </section>
+
+    <section class="tn-section" id="history" hidden>
+      <h2 class="tn-h2">History</h2>
+      <div class="ui-segmented tn-subnav" id="history-subnav" role="group" aria-label="History">
+        <button type="button" data-sub="franchise">Franchise</button><button type="button" data-sub="season-stats">Season Stats</button><button type="button" data-sub="alltime">All-Time</button><button type="button" data-sub="records">Records</button><button type="button" data-sub="draft">Draft</button><button type="button" data-sub="rivalries">Rivalries</button><button type="button" data-sub="staff">Staff</button>
+      </div>
+      <div class="tab-panel" id="tab-franchise">
+      <section id="identity-section" data-sub="franchise" style="display:none">
+        <h2 class="section-title">Team Identity</h2>
+        <div id="identity-wrap"></div>
+      </section>
+      <section data-sub="franchise">
+        <h2 class="section-title">Season History</h2>
+        <div class="timeline" id="timeline-wrap"></div>
+        <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section id="rivals-section" data-sub="rivalries" style="display:none">
+        <h2 class="section-title">Rivalries</h2>
+        <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
+        <div class="rivals-cards" id="rivals-cards"></div>
+        <div class="ui-table-wrap table-wrap" id="rivals-wrap"></div>
+      </section>
+      <section id="personnel-section" data-sub="staff" style="display:none">
+        <h2 class="section-title">Franchise Personnel</h2>
+        <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
+      </section>
+      <section id="frontoffice-section" data-sub="staff" style="display:none">
+        <h2 class="section-title"><a class="ui-title-link" href="/finances/?team=${abbr}">Front Office</a></h2>
+        <div class="fo-strip" id="frontoffice-wrap"></div>
+      </section>
+      <section id="retired-section" data-sub="franchise" style="display:none">
+        <h2 class="section-title">Retired Numbers</h2>
+        <div class="retired-banners" id="retired-banners"></div>
+      </section>
+      </div>
+      <div class="tab-panel" id="tab-alltime">
+      <section data-sub="alltime">
+        <h2 class="section-title">All-Time Top Players</h2>
+        <p class="section-sub">Regular season · ranked by total Game Score</p>
+        <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
+      </section>
+      <section data-sub="records">
+        <h2 class="section-title"><a class="ui-title-link" href="/stats/highs/?team=${abbr}">Franchise Records</a></h2>
+        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
+        <div id="records-wrap"><div class="status">Loading…</div></div>
+        <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
+      </section>
+      </div>
+      <div class="tab-panel" id="tab-draft">
+      <section data-sub="draft">
+        <h2 class="section-title">Draft History</h2>
+        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
+      </section>
+      </div>
+      <div class="tab-panel" id="tab-history">
+      <section data-sub="season-stats">
+        <h2 class="section-title">Season Stats</h2>
+        <div class="hist-controls" id="hist-controls"></div>
+        <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
+      </section>
+      </div>
+    </section>
+
+    <section class="tn-section" id="office" hidden>
+      <h2 class="tn-h2">Front Office</h2>
+      <div class="ui-segmented tn-subnav" id="office-subnav" role="group" aria-label="Front Office" hidden>
+        <button type="button" data-osub="coaching">Coaching</button><button type="button" data-osub="irl">IRL</button>
+      </div>
+      <div class="tab-panel" id="tab-coaching" data-osub="coaching" hidden>
       <section>
         <h2 class="section-title">Settings</h2>
         <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
@@ -1371,63 +1689,13 @@ document.body.innerHTML = `
           </div>
         </div>
       </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-franchise">
-      <section id="identity-section" style="display:none">
-        <h2 class="section-title">Team Identity</h2>
-        <div id="identity-wrap"></div>
+      </div>
+      <section data-osub="irl">
+        <h2 class="section-title">IRL</h2>
+        <p class="section-sub">This roster's real NBA games and injury news, kept apart from NBN's own stats.</p>
+        <div class="tab-panel" id="tab-irl"></div>
       </section>
-      <section>
-        <h2 class="section-title">Season History</h2>
-        <div class="timeline" id="timeline-wrap"></div>
-        <div class="ui-table-wrap table-wrap" id="seasons-wrap"><div class="status">Loading…</div></div>
-      </section>
-      <section id="rivals-section" style="display:none">
-        <h2 class="section-title">Rivalries</h2>
-        <p class="section-sub">Every opponent, all-time · regular season and playoffs</p>
-        <div class="rivals-cards" id="rivals-cards"></div>
-        <div class="ui-table-wrap table-wrap" id="rivals-wrap"></div>
-      </section>
-      <section id="personnel-section" style="display:none">
-        <h2 class="section-title">Franchise Personnel</h2>
-        <div class="ui-table-wrap table-wrap" id="personnel-wrap"></div>
-      </section>
-      <section id="frontoffice-section" style="display:none">
-        <h2 class="section-title"><a class="ui-title-link" href="/finances/?team=${abbr}">Front Office</a></h2>
-        <div class="fo-strip" id="frontoffice-wrap"></div>
-      </section>
-      <section id="retired-section" style="display:none">
-        <h2 class="section-title">Retired Numbers</h2>
-        <div class="retired-banners" id="retired-banners"></div>
-      </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-draft">
-      <section>
-        <h2 class="section-title">Draft History</h2>
-        <div class="ui-table-wrap table-wrap" id="drafted-wrap"><div class="status">Loading…</div></div>
-      </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-alltime">
-      <section>
-        <h2 class="section-title">All-Time Top Players</h2>
-        <p class="section-sub">Regular season · ranked by total Game Score</p>
-        <div class="ui-table-wrap table-wrap" id="players-wrap"><div class="status">Loading…</div></div>
-      </section>
-      <section>
-        <h2 class="section-title"><a class="ui-title-link" href="/stats/highs/?team=${abbr}">Franchise Records</a></h2>
-        <p class="section-sub">Best single games, best seasons, in franchise history · regular season and playoffs</p>
-        <div id="records-wrap"><div class="status">Loading…</div></div>
-        <div id="season-records-wrap" style="margin-top:1.5rem"><div class="status">Loading…</div></div>
-      </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-history">
-      <section>
-        <h2 class="section-title">Historical Rosters</h2>
-        <div class="hist-controls" id="hist-controls"></div>
-        <div id="hist-roster-wrap"><div class="status">Select a season to view stats</div></div>
-      </section>
-    </div>
-    <div class="tab-panel hidden" id="tab-irl"></div>
+    </section>
   </div>
 `;
 
@@ -1444,46 +1712,127 @@ document.head.appendChild(_badgeScript);
 document.getElementById('team-share-btn').onclick = e =>
   window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
 
-// Work for a tab other than Roster runs the first time that tab is shown, so
-// a visit that never opens it doesn't fetch that tab's data or build its
-// tables while the roster is loading. If the tab is already showing (a
-// #franchise link), it runs straight away.
+// Work for a section runs the first time its section opens, so a visit that
+// never opens History doesn't fetch its data or build its tables. The panels
+// keep the old tab names (tab-franchise -> 'franchise'), and so does this.
 const _tabFirstShow = {};
+const _revealed = new Set(['overview']);
 function whenTabShown(tab, fn) {
-  const panel = document.getElementById('tab-' + tab);
-  if (panel && !panel.classList.contains('hidden')) { fn(); return; }
+  if (_revealed.has(tab)) { fn(); return; }
   (_tabFirstShow[tab] ||= []).push(fn);
+}
+function revealPanel(tab) {
+  if (_revealed.has(tab)) return;
+  _revealed.add(tab);
+  const queued = _tabFirstShow[tab];
+  if (queued) { delete _tabFirstShow[tab]; queued.forEach(fn => fn()); }
+  if (tab === 'irl') mountIrlFeed();
+  if (tab === 'schedule') mountSchedule();
+}
+// A panel shown after the page loads (Coaching, once the viewer turns out to
+// be on this team's staff) loads at once if its section is open; otherwise
+// it loads with the section (showSection).
+function watchPanel(el) {
+  const sec = el.closest('.tn-section');
+  if (sec && !sec.hidden && !el.hidden) revealPanel(el.id.slice(4));
 }
 // A fetch's text in Promise.allSettled's result shape, for the deferred loads.
 const settledText = url => fetch(url).then(r => { if (!r.ok) throw r; return r.text(); })
   .then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
 
-// The open tab is kept in the URL hash (#coaching), so the reload after a save
-// lands back on the tab the save was made from, and a tab can be linked to.
-function showTab(btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-  btn.classList.add('active');
-  document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-  const queued = _tabFirstShow[btn.dataset.tab];
-  if (queued) { delete _tabFirstShow[btn.dataset.tab]; queued.forEach(fn => fn()); }
-  if (btn.dataset.tab === 'irl') mountIrlFeed();
-  if (btn.dataset.tab === 'schedule') mountSchedule();
+// The bar under the header switches sections, one at a time, like tabs:
+// Season, Roster, Cap & Picks, Schedule, History, Front Office. A section's
+// panels load the first time it opens. Old tab links (#franchise, #coaching,
+// #draft, ...) open the section that holds them and scroll to the panel; a
+// coaching save reloads to #coaching, so it comes back where it was made.
+function showSection(sec) {
+  document.querySelectorAll('.tn-section').forEach(s => { s.hidden = s !== sec; });
+  document.querySelectorAll('#tn-nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + sec.id));
+  // The owner's front-office panel belongs with the season overview.
+  document.getElementById('owner-panel')?.classList.toggle('tn-off', sec.id !== 'season');
+  sec.querySelectorAll('.tab-panel').forEach(p => { if (!p.hidden) revealPanel(p.id.slice(4)); });
 }
-// A tab switch is a history entry, so Back returns to the last tab instead of
-// leaving the page.
-document.querySelectorAll('.tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    showTab(btn);
-    const url = btn.dataset.tab === 'overview' ? location.pathname + location.search : '#' + btn.dataset.tab;
-    if (new URL(url, location.href).href !== location.href) history.pushState(null, '', url);
-  });
-});
-window.addEventListener('popstate', () => {
-  const tab = document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1) || 'overview')}"]:not([hidden])`)
-    || document.querySelector('.tab[data-tab="overview"]');
-  if (tab) showTab(tab);
-});
+// History's sub-tabs (Franchise, Season Stats, All-Time, Records, Draft,
+// Rivalries, Staff): each shows the History sections tagged with its name.
+// All of History's data still loads when the History tab first opens.
+function showSub(name) {
+  const subnav = document.getElementById('history-subnav');
+  if (!subnav.querySelector(`[data-sub="${name}"]`)) name = 'franchise';
+  subnav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sub === name)));
+  document.querySelectorAll('#history section[data-sub]').forEach(sec => sec.classList.toggle('sub-off', sec.dataset.sub !== name));
+}
+// Front Office's sub-tabs, Coaching and IRL. A visitor sees only IRL, so the
+// bar shows only once Coaching does (the team's own staff).
+function showOfficeSub(name) {
+  const coaching = !document.getElementById('tab-coaching').hidden;
+  if (!coaching) name = 'irl';
+  document.getElementById('office-subnav').hidden = !coaching;
+  document.querySelectorAll('#office-subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.osub === name)));
+  document.querySelectorAll('#office [data-osub]:not(button)').forEach(el => el.classList.toggle('sub-off', el.dataset.osub !== name));
+}
+function goToSection(name, smooth) {
+  // A sub-tab name (#draft, #alltime, #franchise, #rivalries, ...) opens
+  // History on that sub-tab.
+  if (document.querySelector(`#history-subnav [data-sub="${name}"]`)) {
+    showSection(document.getElementById('history'));
+    showSub(name);
+    const nav = document.getElementById('tn-nav');
+    if (scrollY > nav.offsetTop) scrollTo({ top: nav.offsetTop, behavior: 'auto' });
+    return true;
+  }
+  // A tab name names its section; checked first, because #history is also
+  // the old Season Stats panel's name (tab-history).
+  const own = document.getElementById(name);
+  const el = own && own.classList.contains('tn-section') ? own : (document.getElementById('tab-' + name) || own);
+  const sec = el && el.closest('.tn-section');
+  if (!sec || (el !== sec && el.hidden)) return false;
+  showSection(sec);
+  if (name === 'coaching' || name === 'irl') { showOfficeSub(name); }
+  const nav = document.getElementById('tn-nav');
+  // A section's first panel (#schedule, #franchise) opens the tab from its
+  // top; only a panel further in (#draft, #coaching) scrolls to itself.
+  if (el !== sec && sec.querySelector('.tab-panel:not([hidden])') !== el) {
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    holdSection(el);
+  } else if (nav.getBoundingClientRect().top < 0 || scrollY > nav.offsetTop) {
+    // Switching sections from further down: start the new one at its top.
+    scrollTo({ top: nav.offsetTop, behavior: 'auto' });
+  }
+  return true;
+}
+// A panel further down its section can be pushed down as the rows above it
+// fill in after the jump. Keep it pinned while it settles, until the reader
+// scrolls on their own or 8 seconds pass.
+let _holdStop = null;
+function holdSection(el) {
+  if (_holdStop) _holdStop();
+  const ro = new ResizeObserver(() => { if (Math.abs(el.getBoundingClientRect().top - _holdTop) > 4) el.scrollIntoView({ block: 'start' }); });
+  const _holdTop = parseFloat(getComputedStyle(el).scrollMarginTop) || 0;
+  const stop = () => { ro.disconnect(); clearTimeout(t); ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(e => removeEventListener(e, stop)); _holdStop = null; };
+  const t = setTimeout(stop, 8000);
+  ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(e => addEventListener(e, stop, { passive: true }));
+  ro.observe(document.body);
+  _holdStop = stop;
+}
+document.querySelectorAll('#tn-nav a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const name = a.getAttribute('href').slice(1);
+  goToSection(name);
+  history.replaceState(null, '', name === 'season' ? location.pathname + location.search : '#' + name);
+}));
+document.querySelector('#tn-nav a[href="#season"]')?.classList.add('on');
+showSub('franchise');
+showOfficeSub('irl');
+document.querySelectorAll('#office-subnav button').forEach(b => b.addEventListener('click', () => {
+  showOfficeSub(b.dataset.osub);
+  history.replaceState(null, '', '#' + b.dataset.osub);
+}));
+document.querySelectorAll('#history-subnav button').forEach(b => b.addEventListener('click', () => {
+  showSub(b.dataset.sub);
+  history.replaceState(null, '', '#' + b.dataset.sub);
+}));
+// A hash link decides where the page sits, not the browser's memory of the last visit.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 // IRL tab — this roster's real-world NBA game logs and injury news, from ESPN
 // via /api/irl (/irl-feed.js, shared with /nbnfl). Kept apart from every NBN
@@ -1509,8 +1858,9 @@ function mountIrlFeed() {
 // index the page already loads (/api/boxscores/games), the rest from the
 // league schedule (/api/schedule). A past season has no schedule file, so it
 // shows results only. Built the first time the tab opens.
-let _teamGamesResolve;
-const teamGamesReady = new Promise(r => { _teamGamesResolve = r; });
+// The schedule's games, started as the page loads and shared with the main
+// fetch below, so the schedule waits on this one request, not on all ~24.
+const teamGamesReady = fetch(`/api/boxscores/games?team=${abbr}`).then(r => (r.ok ? r.json() : [])).catch(() => []);
 let _schedMounted = false;
 let _schedSeasonGames = {};   // season -> schedule rows (fetched on demand)
 
@@ -1591,54 +1941,49 @@ async function renderSchedule(allGames, season) {
     stat('Streak', `${form[form.length - 1] ? 'W' : 'L'}${streak}`),
   ].join('') : '';
 
-  const fmtDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const fmtDay = d => { const t = new Date(d + 'T12:00:00Z'); const o = { timeZone: 'UTC' };
+    return `<span class="sched-dow">${t.toLocaleDateString('en-US', { ...o, weekday: 'short' })}</span> <span class="sched-md">${t.toLocaleDateString('en-US', { ...o, month: 'short', day: 'numeric' })}</span>`; };
   const fmtMonth = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  const fmtTime = t => {
-    const m = /^(\d{1,2}):(\d{2})([ap])$/.exec(t || '');
-    return m ? `${m[1]}:${m[2]} ${m[3] === 'p' ? 'PM' : 'AM'} ET` : '';
-  };
   const boxHref = r => `/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}`;
   const previewHref = g => `/preview/?away=${g.away_team}&home=${g.home_team}&date=${g.date}`;
 
-  let html = '', month = '';
+  // One table, like the roster: a header row, then each month as a band
+  // (the roster's Bench / Two-way rows), then a row per game.
   const nextIdx = rows.findIndex(g => !g.result);
+  let html = `<div class="ui-table-wrap table-wrap"><table class="sched-table"><thead><tr>
+    <th class="sched-date">Date</th><th>Opponent</th><th class="sched-res-h">Result</th><th class="right sched-rec">Record</th>
+    </tr></thead><tbody>`;
+  let month = '';
   rows.forEach((g, i) => {
     const m = fmtMonth(g.date);
-    if (m !== month) {
-      if (month) html += '</tbody></table></div>';
-      month = m;
-      html += `<h3 class="sched-month">${m}</h3><div class="ui-table-wrap table-wrap"><table class="sched-table"><tbody>`;
-    }
+    if (m !== month) { month = m; html += `<tr class="subheader"><td colspan="4">${m}</td></tr>`; }
     const { home, opp } = side(g);
-    const po = g.result?.gametype === 'PLAYOFF' ? ' <span class="sched-tag sched-tag-po">Playoffs</span>' : '';
-    const cup = g.note === 'NBA Cup' ? ' <span class="sched-tag sched-tag-cup" title="NBA Cup group game">Cup</span>' : '';
-    const stream = g.stream ? ' <span class="sched-tag sched-tag-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
+    const po = g.result?.gametype === 'PLAYOFF' ? '<span class="ui-badge sched-badge sched-badge-po">Playoffs</span>' : '';
+    const cup = g.note === 'NBA Cup' ? '<span class="ui-badge sched-badge sched-badge-cup" title="NBA Cup group game">Cup</span>' : '';
+    const stream = g.stream ? '<span class="sched-stream" title="Streamed"><i class="ui-icon ui-icon--stream" aria-hidden="true"></i></span>' : '';
     let res;
     if (g.result) {
       const [us, them] = ours(g.result);
       const w = won(g.result);
-      res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="${w ? 'sched-w' : 'sched-l'}">${w ? 'W' : 'L'}</span> ${us}–${them}</a>`;
+      res = `<a href="${boxHref(g.result)}" class="sched-res"><span class="sched-wl ${w ? 'w' : 'l'}">${w ? 'W' : 'L'}</span><span class="sched-score">${us}–${them}</span></a>`;
     } else {
-      res = `<a href="${previewHref(g)}" class="sched-res sched-up">${fmtTime(g.time_et) || 'Preview'} ›</a>`;
+      res = `<a class="sched-preview" href="${previewHref(g)}">Preview</a>`;
     }
     html += `<tr class="${i === nextIdx ? 'sched-next' : ''}${g.result ? '' : ' sched-future'}">
-      <td class="muted sched-date">${fmtDay(g.date)}</td>
-      <td class="sched-opp"><span class="muted">${home ? 'vs' : '@'}</span>
-        <span class="sched-opp-team"><a href="/teams/${opp}/"><img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'">${opp}</a>${po}${cup}${stream}</span></td>
-      <td class="right">${res}</td>
-      <td class="right muted sched-rec">${g.recAfter || ''}</td>
+      <td class="sched-date">${fmtDay(g.date)}${i === nextIdx ? '<span class="sched-next-tag">Next</span>' : ''}</td>
+      <td class="sched-opp"><span class="sched-opp-in"><span class="sched-ha">${home ? 'vs' : '@'}</span><a href="/teams/${opp}/" class="sched-team">
+        <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><b class="sched-full">${teamNick(opp)}</b><b class="sched-abbr">${opp}</b></a>${po}${cup}${stream}</span></td>
+      <td class="sched-result">${res}</td>
+      <td class="right sched-rec">${g.recAfter || ''}</td>
     </tr>`;
   });
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
 }
 
-// Open the tab named in the hash. After mountIrlFeed's state is declared, so
-// #irl doesn't hit it before initialisation.
-{
-  const initialTab = location.hash && document.querySelector(`.tab[data-tab="${CSS.escape(location.hash.slice(1))}"]:not([hidden])`);
-  if (initialTab) showTab(initialTab);
-}
+// Land on the section named in the hash once the page has laid out. After
+// mountIrlFeed's state is declared, so #irl doesn't hit it before initialisation.
+if (location.hash.length > 1) requestAnimationFrame(() => goToSection(location.hash.slice(1)));
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
@@ -1665,8 +2010,45 @@ function parseLine(line) {
 
 function fmtPct(v) {
   const n = parseFloat(v);
-  return isNaN(n) ? '—' : n.toFixed(3);
+  return isNaN(n) ? '—' : n.toFixed(3).replace(/^0(?=\.)/, '');   // .439, 1.000
 }
+
+// The roster's player cell: headshot and "First Last", linked to the player.
+// Season Stats, All-Time Top Players and Draft History all draw names this way.
+function playerNameCell(td, slug, rawName) {
+  const top = document.createElement('span');
+  top.className = 'roster-name-top';
+  const avatar = document.createElement('span');
+  avatar.className = 'roster-avatar';
+  if (slug) {
+    const img = document.createElement('img');
+    img.src = `/api/players/${encodeURIComponent(slug)}/headshot`; img.alt = ''; img.loading = 'lazy';
+    img.onerror = () => { avatar.classList.add('roster-avatar-empty', 'ui-icon--person'); img.remove(); };
+    avatar.appendChild(img);
+  } else {
+    avatar.classList.add('roster-avatar-empty', 'ui-icon--person');
+  }
+  top.appendChild(avatar);
+  const name = nbnPlayerName(rawName || '') || '—';
+  if (slug) {
+    const a = document.createElement('a');
+    a.href = `/players/?p=${encodeURIComponent(slug)}`;
+    a.textContent = name;
+    top.appendChild(a);
+  } else {
+    top.appendChild(document.createTextNode(name));
+  }
+  td.appendChild(top);
+  return top;
+}
+const fmt1 = v => (v === '' || v == null || isNaN(+v) ? '—' : (+v).toFixed(1));
+
+// A team by its nickname: "Wizards", "Trail Blazers", "76ers". What tables
+// show on wider screens; phones show the abbreviation.
+const teamNick = t => {
+  const name = TEAMS[t] || t;
+  return /Trail Blazers$/.test(name) ? 'Trail Blazers' : name.split(' ').pop();
+};
 
 function fmtSigned(v, decimals = 1) {
   const n = parseFloat(v);
@@ -2960,6 +3342,7 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
   const groupOf = row => (mode === 'depth' ? row._group : row._type);
 
   const table = document.createElement('table');
+  table.classList.add(`roster-mode-${mode}`);
   const thead = table.createTHead();
   const hr = thead.insertRow();
   cols.forEach(col => {
@@ -3106,6 +3489,28 @@ function buildRosterTable(rows, biosData, capLevels, currentOvr = {}, deadCapRow
         if (row._injury) topRow.appendChild(injuryBadge(row._injury, 'roster-injury'));
 
         cell.appendChild(topRow);
+
+        // Overview on a phone: the other columns don't fit, so the row reads
+        // as two lines under the name instead: position, OVR and age, then
+        // the contract and the per-game line. Hidden above 640px, where the
+        // columns show.
+        if (mode === 'depth' && row.SLUG) {
+          const sub = document.createElement('span');
+          sub.className = 'roster-sub';
+          const ovr = parseFloat(row.OVR);
+          const facts = document.createElement('span');
+          facts.className = 'roster-sub-facts';
+          facts.textContent = [row._pos !== '—' ? row._pos : '', isNaN(ovr) ? '' : `${ovr} OVR`, row._age ? `${row._age} yrs` : '']
+            .filter(Boolean).join(' · ');
+          const deal = document.createElement('span');
+          deal.className = 'roster-sub-deal';
+          const sl = row._statLine;
+          deal.textContent = [summarizeContract({ salaries: row._salaries, cap_holds: row._cap_holds }, curYr),
+            sl ? `${sl.pts.toFixed(1)} pts · ${sl.reb.toFixed(1)} reb · ${sl.ast.toFixed(1)} ast` : '']
+            .filter(Boolean).join(' · ');
+          sub.append(facts, deal);
+          cell.appendChild(sub);
+        }
 
         td.appendChild(cell);
         if (row._notes) {
@@ -3512,11 +3917,47 @@ function ownerCell(p) {
   return p.owner === '?' ? '?' : p.owner.split('|').join(' | ');
 }
 
+// A pick's Pick / Held by text with each team as its small logo and
+// abbreviation, the way the schedule draws an opponent. "Own" gets this
+// team's logo; separators ("/", "|") read as "or".
+function teamMarks(text, p, teamAbbr) {
+  const frag = document.createDocumentFragment();
+  const mark = t => {
+    const s = document.createElement('span');
+    s.className = 'pick-tm';
+    const img = document.createElement('img');
+    img.src = `/logos/sm/logo-${t.toLowerCase()}.webp`; img.alt = ''; img.loading = 'lazy';
+    img.onerror = () => { img.style.visibility = 'hidden'; };
+    s.appendChild(img);
+    return s;
+  };
+  if (text === 'Own') {
+    const s = mark(teamAbbr); s.appendChild(document.createTextNode('Own')); frag.appendChild(s);
+    return frag;
+  }
+  // "or" travels with the team after it, so a wrapped chain reads
+  // "MIL / or ORL / or WAS" rather than leaving "or" at the end of a line.
+  let or = false;
+  String(text).split(/(\b[A-Z]{3}\b)/).forEach(part => {
+    if (TEAMS[part]) {
+      // Nickname where there's room, abbreviation on phones (as the schedule).
+      const s = mark(part);
+      const full = document.createElement('span'); full.className = 'sched-full'; full.textContent = teamNick(part);
+      const ab = document.createElement('span'); ab.className = 'sched-abbr'; ab.textContent = part;
+      s.append(full, ab);
+      if (or) { const o = document.createElement('span'); o.className = 'pick-or'; o.textContent = 'or'; s.prepend(o); or = false; }
+      frag.appendChild(s);
+    } else if (part.trim() === '|' || part.trim() === '/') or = true;
+    else if (part.trim()) frag.appendChild(document.createTextNode(part));
+  });
+  return frag;
+}
+
 const PICK_KIND_DISPLAY = {
   own:       { cls: null },
   uncertain: { cls: 'picks-uncertain' },
   acquired:  { cls: 'picks-acquired' },
-  traded:    { cls: 'picks-traded',   ownerCell: p => `to ${p.owner}` },
+  traded:    { cls: 'picks-traded' },
   // A `legacy` pick is a real historical deal too tangled to model
   // structurally — its flat owner/orig look exactly like a plain settled
   // pick (single team, nothing flagged), but the real terms live only in
@@ -3573,13 +4014,13 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     : (p._kind !== 'traded' && stepienLocked.has(`${p.round}:${p.year}:${p.orig}`) ? 'STEPIEN' : ''));
   const COLS = [
     { key: 'year',   label: 'Year',       cls: 'pick-year' },
-    { key: 'round',  label: 'Rnd',        cls: 'center' },
-    { key: 'orig',   label: 'Orig',       cls: 'muted center', value: p => origCell(p, teamAbbr) },
-    { key: 'owner',  label: 'Owner',      cls: 'muted center', value: p => (PICK_KIND_DISPLAY[p._kind].ownerCell || ownerCell)(p) },
+    { key: 'round',  label: 'Round',      cls: 'pick-rnd' },
+    { key: 'orig',   label: 'Pick',       cls: 'pick-team', value: p => origCell(p, teamAbbr) },
+    { key: 'owner',  label: 'Held by',    cls: 'pick-team', value: p => (PICK_KIND_DISPLAY[p._kind].ownerCell || ownerCell)(p) },
     { key: 'prot',   label: 'Protection', cls: 'muted', optional: true,
       value: p => p.protected != null ? `Top-${p.protected}` : formatProtectedLeaves(p) },
     { key: 'swap',   label: 'Swap',       cls: 'muted', optional: true, value: p => formatSwapLeaves(p) },
-    { key: 'frozen', label: 'Frozen',     cls: 'muted pick-frozen', optional: true, value: frozenLabel },
+    { key: 'frozen', label: 'Restriction', cls: 'pick-frozen', optional: true, value: frozenLabel },
     { key: 'notes',  label: 'Notes',      cls: 'muted', optional: true, value: p => cleanNotes(p) },
   ];
   const shown = [...rows, ...traded];
@@ -3592,8 +4033,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
   cols.forEach(col => {
     const th = document.createElement('th');
     th.textContent = col.label;
-    if (col.cls.includes('center')) th.classList.add('center');
-    if (col.key !== 'year' && col.key !== 'round') th.classList.add('muted');
+    if (col.key === 'frozen') th.className = 'pick-frozen';
     hr.appendChild(th);
   });
 
@@ -3620,6 +4060,20 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
         pill.className = 'ui-badge pick-round' + (p.round === 1 ? ' ui-badge--accent' : '');
         pill.textContent = p.round === 1 ? '1st' : '2nd';
         cell.appendChild(pill);
+      } else if (col.key === 'orig' || col.key === 'owner') {
+        cell.appendChild(teamMarks(col.value(p), p, teamAbbr));
+      } else if (col.key === 'frozen') {
+        const kind = col.value(p);
+        if (kind) {
+          const b = document.createElement('span');
+          b.className = 'ui-badge pick-flag ' + (kind === 'STEPIEN' ? 'pick-flag-warn' : 'pick-flag-bad');
+          b.textContent = kind === 'STEPIEN' ? 'Stepien' : kind === 'FROZEN' ? 'Frozen' : 'Legacy';
+          cell.appendChild(b);
+          // Phones drop the Restriction column; the badge rides under Held by.
+          const inline = b.cloneNode(true);
+          inline.classList.add('pick-flag-inline');
+          if (td.owner) td.owner.appendChild(inline);
+        }
       } else {
         cell.textContent = col.value(p);
       }
@@ -3631,18 +4085,12 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     const frozenTd = td.frozen;
     const kind = frozenLabel(p);
     if (frozenTd && kind === 'LEGACY') {
-      frozenTd.style.color = 'var(--danger)';
-      frozenTd.style.fontWeight = '700';
       attachTooltip(frozenTd, 'This pick predates the site\'s conveyance model and '
         + 'isn’t tracked automatically — the real terms are whatever Notes says. '
         + 'Frozen from re-trade until manually converted to real structure.');
     } else if (frozenTd && kind === 'FROZEN') {
-      frozenTd.style.color = 'var(--danger)';
-      frozenTd.style.fontWeight = '700';
       if (p.frozen_reason) attachTooltip(frozenTd, p.frozen_reason);
     } else if (frozenTd && kind === 'STEPIEN') {
-      frozenTd.style.color = 'var(--danger-alt)';
-      frozenTd.style.fontWeight = '700';
       attachTooltip(frozenTd, `${teamAbbr}'s only first-round pick for ${p.year} — trading it away right `
         + 'now would leave a two-year gap with no first-round pick, violating the Stepien Rule (§ 7.2).');
     }
@@ -3690,13 +4138,15 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
 }
 
 const SEASON_COLS = [
-  { key: 'SEASON',         label: 'Season',  cls: 'bold',        sortField: 'SEASON',        defaultDir:  1 },
+  { key: 'SEASON',         label: 'Season',  cls: 'bold',        sortField: 'SEASON',        defaultDir: -1 },
   { key: 'wl',             label: 'W–L',     cls: 'right',       sortField: 'PCT',           defaultDir: -1,
     display: r => `${r.W}–${r.L}` },
   { key: 'PCT',            label: 'W%',      cls: 'right muted', sortField: 'PCT',           defaultDir: -1,
     display: r => fmtPct(r.PCT) },
-  { key: 'PPG',            label: 'PPG',     cls: 'right',       sortField: 'PPG',           defaultDir: -1 },
-  { key: 'OPPG',           label: 'OPPG',    cls: 'right',       sortField: 'OPPG',          defaultDir:  1 },
+  { key: 'PPG',            label: 'PPG',     cls: 'right',       sortField: 'PPG',           defaultDir: -1,
+    display: r => fmtNum1(r.PPG) },
+  { key: 'OPPG',           label: 'OPPG',    cls: 'right',       sortField: 'OPPG',          defaultDir:  1,
+    display: r => fmtNum1(r.OPPG) },
   { key: 'DIFF',           label: '+/−',     cls: 'right',       sortField: 'DIFF',          defaultDir: -1,
     display: r => fmtSigned(r.DIFF) },
   { key: 'SEED',           label: 'Seed',    cls: 'right',       sortField: 'SEED_NUM',      defaultDir:  1,
@@ -3721,16 +4171,16 @@ const SEASON_COLS = [
 ];
 
 const PLAYER_COLS = [
-  { key: 'PLAYER',   label: 'Player',  cls: 'bold',        sortField: 'PLAYER',   defaultDir:  1 },
-  { key: 'GP',       label: 'GP',      cls: 'right',       sortField: 'GP',       defaultDir: -1 },
-  { key: 'GMSC_TOT', label: 'GMSC',    cls: 'right',       sortField: 'GMSC_TOT', defaultDir: -1 },
+  { key: 'PLAYER',   label: 'Player',  cls: '',            sortField: 'PLAYER',   defaultDir:  1 },
+  { key: 'GP',       label: 'G',       cls: 'right',       sortField: 'GP',       defaultDir: -1 },
+  { key: 'GMSC_TOT', label: 'GMSC',    cls: 'right',       sortField: 'GMSC_TOT', defaultDir: -1, title: 'Total Game Score with the team' },
   { key: 'GMSC_AVG', label: 'GMSC/G',  cls: 'right muted', sortField: 'GMSC_AVG', defaultDir: -1 },
-  { key: 'PPG',      label: 'PPG',     cls: 'right',       sortField: 'PPG',      defaultDir: -1 },
-  { key: 'RPG',      label: 'RPG',     cls: 'right',       sortField: 'RPG',      defaultDir: -1 },
-  { key: 'APG',      label: 'APG',     cls: 'right',       sortField: 'APG',      defaultDir: -1 },
-  { key: 'SPG',      label: 'SPG',     cls: 'right',       sortField: 'SPG',      defaultDir: -1 },
-  { key: 'BPG',      label: 'BPG',     cls: 'right',       sortField: 'BPG',      defaultDir: -1 },
-  { key: '3PMPG',    label: '3PM/G',   cls: 'right',       sortField: '3PMPG',    defaultDir: -1 },
+  { key: 'PPG',      label: 'PTS',     cls: 'right',       sortField: 'PPG',      defaultDir: -1 },
+  { key: 'RPG',      label: 'REB',     cls: 'right',       sortField: 'RPG',      defaultDir: -1 },
+  { key: 'APG',      label: 'AST',     cls: 'right',       sortField: 'APG',      defaultDir: -1 },
+  { key: 'SPG',      label: 'STL',     cls: 'right muted', sortField: 'SPG',      defaultDir: -1 },
+  { key: 'BPG',      label: 'BLK',     cls: 'right muted', sortField: 'BPG',      defaultDir: -1 },
+  { key: '3PMPG',    label: '3PM',     cls: 'right muted', sortField: '3PMPG',    defaultDir: -1 },
   { key: 'SEASONS',  label: 'Seasons', cls: 'muted',       sortField: 'SEASONS',  defaultDir:  1,
     display: r => formatSeasonsCell(r.SEASONS) },
 ];
@@ -3889,7 +4339,7 @@ function renderRivalries(allGames) {
       const logo = t => `<img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="">`;
       const card = (label, team, main, sub) => team ? `<a class="rival-card" href="/teams/${team}/" data-team="${team}">`
         + `<span class="rival-label">${label}</span>`
-        + `<span class="rival-team">${logo(team)}${TEAMS[team] || team}</span>`
+        + `<span class="rival-team">${logo(team)}${teamNick(team)}</span>`
         + `<span class="rival-main">${main}</span><span class="rival-sub">${sub}</span></a>` : '';
       const game = m => `${m.us}–${m.them} ${m.po ? 'in the playoffs, ' : ''}${fmtDay(m.date)}`;
       cards.innerHTML = [
@@ -3902,7 +4352,7 @@ function renderRivalries(allGames) {
       ].join('');
 
       const COLS = [
-        { key: 'opp', label: 'Opponent', cls: 'bold', sortField: 'opp', defaultDir: 1 },
+        { key: 'opp', label: 'Opponent', cls: '', sortField: 'opp', defaultDir: 1 },
         { key: 'G', label: 'G', cls: 'right', sortField: 'G', defaultDir: -1 },
         { key: 'wl', label: 'W–L', cls: 'right', sortField: 'PCT', defaultDir: -1 },
         { key: 'PCT', label: 'W%', cls: 'right muted', sortField: 'PCT', defaultDir: -1 },
@@ -3913,7 +4363,7 @@ function renderRivalries(allGames) {
       wrap.innerHTML = '';
       wrap.appendChild(buildTable(COLS, rows, 'G', -1, (td, col, r) => {
         if (col.key === 'opp') {
-          td.innerHTML = `<a class="rival-opp" href="/teams/${r.opp}/">${logo(r.opp)}${r.opp}</a>`;
+          td.innerHTML = `<a class="rival-opp" href="/teams/${r.opp}/">${logo(r.opp)}<b class="sched-full">${teamNick(r.opp)}</b><b class="sched-abbr">${r.opp}</b></a>`;
         } else if (col.key === 'wl') td.textContent = `${r.W}–${r.L}`;
         else if (col.key === 'PCT') td.textContent = fmtPct(r.PCT);
         else if (col.key === 'AVG') {
@@ -4028,21 +4478,23 @@ function buildPersonnelSection(members, allGames) {
   });
 
   const tbody = table.createTBody();
-  let shownDivider = false;
+  // Current and Former as bands, like the roster's Bench and Two-way rows.
+  let band = null;
   rows.forEach(row => {
-    if (!row.active && !shownDivider) {
-      shownDivider = true;
+    const want = row.active ? 'Current' : 'Former';
+    if (want !== band) {
+      band = want;
       const divTr = tbody.insertRow();
-      divTr.className = 'personnel-divider';
+      divTr.className = 'subheader';
       const divTd = divTr.insertCell();
       divTd.colSpan = 6;
-      divTd.textContent = 'Former';
+      divTd.textContent = want;
     }
 
     const tr = tbody.insertRow();
     tr.className = row.active ? 'personnel-active' : 'personnel-former';
 
-    const tdN = tr.insertCell(); tdN.className = 'bold';
+    const tdN = tr.insertCell(); tdN.className = 'personnel-name';
     const nameLink = document.createElement('a');
     nameLink.href = `/members/${encodeURIComponent(row.name)}/`;
     nameLink.textContent = row.name;
@@ -4114,18 +4566,20 @@ function computeCurrentSlugSet(rosterRows) {
 function makePlayerRenderCell(currentSlugs) {
   return function(td, col, row) {
     if (col.key === 'PLAYER') {
-      const a = document.createElement('a');
-      a.href = `/players/?p=${playerSlug(row.PLAYER)}`;
-      a.textContent = row.PLAYER;
-      td.appendChild(a);
-      if (currentSlugs.has(playerSlug(row.PLAYER))) {
+      const slug = row.SLUG || playerSlug(row.PLAYER);
+      const top = playerNameCell(td, slug, row.PLAYER);
+      if (currentSlugs.has(slug)) {
         const dot = document.createElement('span');
         dot.className = 'on-roster-dot';
         attachTooltip(dot, 'Currently on roster');
-        td.appendChild(dot);
+        top.appendChild(dot);
       }
+    } else if (col.display) {
+      td.textContent = col.display(row);
+    } else if (col.key === 'GP') {
+      td.textContent = row.GP ?? '—';
     } else {
-      td.textContent = col.display ? col.display(row) : (row[col.key] ?? '—');
+      td.textContent = fmt1(row[col.key]);
     }
   };
 }
@@ -5324,6 +5778,188 @@ function renderOfferSheetBanner(offers) {
 // Only the team's own front office sees it: GET /api/trade-requests answers
 // the parties and the committee, nobody else. Decided requests drop off here
 // and stay in the TRC page's history. Each links to its own trade page.
+// ── The top of the page: hero record, next game, owner panel, season ───────
+// Everything here comes from GET /api/home/team/{abbr} (the homepage team
+// card's one request) plus the bios and OVRs the page already loaded. The
+// cap figures are cap history's, computed by the API's own helpers, so this
+// does no cap math.
+const _etDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+const _shortDay = d => new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+const _ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 - 20) % 10] || ['th', 'st', 'nd', 'rd'][n % 100] || 'th');
+const _logoSrc = t => `/logos/sm/logo-${String(t).toLowerCase()}.webp`;
+const _headshot = slug => `/api/players/${encodeURIComponent(slug)}/headshot`;
+
+function renderSeasonTop(home, { openOffers, poextEligible, myBlockEntries, calendar, biosData, currentOvr }) {
+  const esc = NBN.esc;
+  const grid = document.getElementById('season-grid');
+  if (!home) { grid.innerHTML = '<div class="status">Couldn’t load this season.</div>'; return; }
+  const today = _etDate.format(new Date());
+  const season = home.season;
+  const lines = home.lines || {};
+  const bios = biosData || {};
+  const pname = s => nbnPlayerName((bios[s] || {}).name || s);
+  const money = n => compactContractMoney(n || 0);
+
+  // Results, from this team's side.
+  const res = (home.results || []).slice().sort((a, b) => a.date.localeCompare(b.date)).map(r => {
+    const h = r.home_team === abbr, us = h ? r.home_score : r.away_score, them = h ? r.away_score : r.home_score;
+    return { ...r, home: h, us, them, opp: h ? r.away_team : r.home_team, won: us > them, margin: us - them };
+  });
+  const standings = (home.standings || []).filter(r => r.SEASON === season);
+  const me = standings.find(r => r.TEAM === abbr) || {};
+  const [conf, seed] = String(me.SEED || '').split('-');
+  let streak = '';
+  if (res.length) {
+    const last = res[res.length - 1].won; let n = 0;
+    for (let i = res.length - 1; i >= 0 && res[i].won === last; i--) n++;
+    streak = (last ? 'W' : 'L') + n;
+  }
+  const played = new Set(res.map(r => `${r.date}|${r.away_team}|${r.home_team}`));
+  const next = (home.games || []).filter(g => g.date >= today && !played.has(`${g.date}|${g.away_team}|${g.home_team}`))
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const nextOpp = next ? (next.home_team === abbr ? next.away_team : next.home_team) : null;
+  const previewHref = next ? `/preview/?away=${next.away_team}&home=${next.home_team}&date=${next.date}` : '';
+
+  // Hero: this season's record and the next game.
+  document.getElementById('hero-record').innerHTML = (me.W != null ? `
+    <span class="big">${esc(me.W)}–${esc(me.L)}</span>
+    ${seed ? `<span class="stat"><b>${_ordinal(+seed)}</b><span>in the ${esc(conf)}</span></span>` : ''}
+    ${streak ? `<span class="stat"><b>${streak}</b><span>streak</span></span>` : ''}
+    ${me.DIFF ? `<span class="stat"><b>${+me.DIFF > 0 ? '+' : ''}${esc(me.DIFF)}</b><span>point diff</span></span>` : ''}` : '');
+  if (next) document.getElementById('hero-next').innerHTML = `<a class="tn-next" href="${previewHref}">
+    <div class="lbl">Next game</div>
+    <div class="match">${next.home_team === abbr ? 'vs' : '@'} <img src="${_logoSrc(nextOpp)}" alt=""> ${esc(nextOpp)}</div>
+    <div class="when">${_shortDay(next.date)}${next.arena ? ' · ' + esc(next.arena) : ''}</div>
+    <div class="go">Game preview</div></a>`;
+  document.getElementById('season-title').innerHTML = `${esc(season)} Season <small>${res.length} game${res.length === 1 ? '' : 's'}</small>`;
+
+  // Season dashboard.
+  const last10 = res.slice(-10);
+  const maxM = Math.max(10, ...last10.map(r => Math.abs(r.margin)));
+  const bars = last10.map(r => {
+    const bar = `<div class="bar ${r.won ? 'w' : 'l'}" style="height:${Math.max(6, Math.round(Math.abs(r.margin) / maxM * 100))}%"></div>`;
+    return `<a href="/boxscores/?date=${r.date}&game=${r.away_team}-${r.home_team}" title="${r.won ? 'W' : 'L'} ${r.us}–${r.them} ${r.home ? 'vs' : '@'} ${r.opp}, ${_shortDay(r.date)}">
+      <div class="half top">${r.won ? bar : ''}</div><div class="half bot">${r.won ? '' : bar}</div></a>`;
+  }).join('');
+  const axis = last10.map(r => `<span title="${r.home ? 'vs' : 'at'} ${r.opp}">${r.home ? '' : '<i class="at">@</i>'}${r.opp}</span>`).join('');
+  const rec = arr => `${arr.filter(r => r.won).length}–${arr.filter(r => !r.won).length}`;
+  const confRows = standings.filter(r => String(r.SEED).startsWith(conf + '-')).sort((a, b) => +a.SEED_NUM - +b.SEED_NUM);
+  const at = confRows.findIndex(r => r.TEAM === abbr);
+  const from = Math.max(0, Math.min(at - 3, confRows.length - 7));
+  const leader = confRows[0] || {};
+  const gb = r => { const v = ((+leader.W - +r.W) + (+r.L - +leader.L)) / 2; return v ? String(v) : '—'; };
+  const stand = confRows.slice(from, from + 7).map(r => `<tr class="${r.TEAM === abbr ? 'me' : ''}${+r.SEED_NUM === 6 || +r.SEED_NUM === 10 ? ' cut' : ''}">
+    <td class="r seed">${esc(r.SEED_NUM)}</td><td><a href="/teams/${r.TEAM}/"><img src="${_logoSrc(r.TEAM)}" alt="">${esc(r.TEAM)}</a></td>
+    <td class="r">${esc(r.W)}–${esc(r.L)}</td><td class="r">${gb(r)}</td></tr>`).join('');
+  const withGames = Object.keys(lines).filter(s => lines[s] && lines[s].gp);
+  const top = k => withGames.slice().sort((a, b) => lines[b][k] - lines[a][k])[0];
+  const leaders = [['pts', 'Points'], ['reb', 'Rebounds'], ['ast', 'Assists']].map(([k, label]) => {
+    const s = top(k); if (!s) return '';
+    return `<a class="tn-leader" href="/players/?p=${s}"><img src="${_headshot(s)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="v">${lines[s][k].toFixed(1)}</div><div class="k">${label}</div><div class="n">${esc(pname(s))}</div></a>`;
+  }).join('');
+  const myFive = (home.five || {}).players || [];
+  const opp = home.opponent || {};
+  const theirFive = (opp.five || {}).players || [];
+  const fiveCell = (p, other, side) => {
+    if (!p) return `<div class="p ${side}">—</div>`;
+    const edge = other && p.ovr > other.ovr ? ' edge' : '';
+    const n = esc(nbnPlayerName(p.name));
+    return `<div class="p ${side}${edge}">${side === 'r' ? `<b>${p.ovr ?? '—'}</b> ${n}` : `${n} <b>${p.ovr ?? '—'}</b>`}</div>`;
+  };
+  const fives = nextOpp ? `<div class="tn-fives"><div class="hd">${abbr}</div><div></div><div class="hd r">${esc(opp.team || nextOpp)}</div>
+    ${DEPTH_SLOTS.map((pos, k) => fiveCell(myFive[k], theirFive[k], 'l') + `<div class="pos">${pos}</div>` + fiveCell(theirFive[k], myFive[k], 'r')).join('')}</div>`
+    : '<div class="status">No game left on the schedule</div>';
+  const injured = (home.injuries || {}).players || [];
+  grid.innerHTML = `
+    <div class="tn-card span-7"><h3>Form · last ${last10.length}<a href="#schedule" data-goto="schedule">Full schedule</a></h3>
+      ${last10.length ? `<div class="tn-form">${bars}</div><div class="tn-form-axis">${axis}</div>` : '<div class="status">No games yet</div>'}
+      <div class="tn-form-sum"><span>Home <b>${rec(res.filter(r => r.home))}</b></span><span>Road <b>${rec(res.filter(r => !r.home))}</b></span>
+        <span>Scoring <b>${esc(me.PPG || '—')}</b> · allowing <b>${esc(me.OPPG || '—')}</b></span></div></div>
+    <div class="tn-card span-5"><h3>${esc(conf || '')} standings<a href="/standings/">All</a></h3><table class="tn-stand"><tbody>${stand}</tbody></table></div>
+    <div class="tn-card span-5"><h3>Team leaders · per game</h3><div class="tn-leaders">${leaders || '<div class="status">No games yet</div>'}</div></div>
+    <div class="tn-card span-7"><h3>${nextOpp ? `Next: ${next.home_team === abbr ? 'vs' : '@'} ${esc(nextOpp)} · projected starters` : 'Next game'}${next ? `<a href="${previewHref}">Preview</a>` : ''}</h3>${fives}</div>
+    ${injured.length ? `<div class="tn-card span-12"><h3>Injuries</h3><ul class="tn-inj">${injured.map(p => `<li><a href="/players/?p=${p.slug}">${esc(pname(p.slug))}</a>
+      <span>${esc(p.status)}${p.injury ? ' · ' + esc(p.injury) : ''}${p.duration ? ' · ' + esc(p.duration) : ''}</span></li>`).join('')}</ul></div>` : ''}`;
+  grid.querySelectorAll('[data-goto]').forEach(a => a.onclick = e => { e.preventDefault(); goToSection(a.dataset.goto, true); });
+
+  // Starting five as cards, above the full roster table.
+  const age = dob => { if (!dob) return ''; const d = new Date(dob), n = new Date(); return n.getFullYear() - d.getFullYear() - ((n.getMonth() < d.getMonth() || (n.getMonth() === d.getMonth() && n.getDate() < d.getDate())) ? 1 : 0); };
+  document.getElementById('starter-cards').innerHTML = myFive.map((p, k) => {
+    if (!p) return '';
+    const b = bios[p.slug] || {}, l = lines[p.slug] || {};
+    const deal = summarizeContract({ salaries: b.salaries || {}, cap_holds: b.cap_holds || {} }, currentSeasonYr());
+    return `<a class="tn-pc" href="/players/?p=${p.slug}"><div class="top"><span class="slot">${DEPTH_SLOTS[k]}</span><span class="ovr">${currentOvr[p.slug] ?? p.ovr ?? '—'}</span>
+      <img src="${_headshot(p.slug)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'"></div>
+      <div class="body"><div class="nm">${esc(pname(p.slug))}</div><div class="sub">${esc((b.pos || p.pos || []).join(' · '))}${b.dob ? ` · ${age(b.dob)} yrs` : ''}</div>
+      <div class="line">${['pts', 'reb', 'ast'].map(k2 => `<div><b>${l.gp ? l[k2].toFixed(1) : '—'}</b><span>${k2.toUpperCase()}</span></div>`).join('')}</div>
+      ${deal ? `<div class="deal">${esc(deal)}</div>` : ''}</div></a>`;
+  }).join('');
+  const cap = home.cap || {};
+  document.getElementById('roster-head').innerHTML = `Roster <small>${cap.roster ?? '—'} players · ${cap.two_way ?? 0} two-way</small>`;
+
+  // Cap bar, above cap health and the picks table.
+  if (cap.salary != null) {
+    const scaleMax = Math.max(cap.salary || 0, cap.apron2 || 0) * 1.08 || 1;
+    const pct = v => (v / scaleMax * 100).toFixed(2) + '%';
+    const mk = (v, label, side) => v ? `<div class="mk ${side}" style="left:${pct(v)}"><span>${label} <b>${money(v)}</b></span></div>` : '';
+    const card = document.getElementById('cap-card');
+    card.innerHTML = `<h3>Team salary · ${esc(season)}</h3>
+      <div class="tn-capbar"><div class="fill" style="width:${pct(cap.salary)}"></div>${mk(cap.cap, 'Cap', 'up')}${mk(cap.apron1, '1st apron', 'down')}${mk(cap.apron2, '2nd apron', 'up')}</div>
+      <div class="tn-caplegend"><span>Cap <b>${money(cap.cap)}</b></span><span>1st apron <b>${money(cap.apron1)}</b></span><span>2nd apron <b>${money(cap.apron2)}</b></span></div>
+      <div class="tn-capfacts"><div><b>${money(cap.salary)}</b><span>Team salary</span></div>
+        <div><b>${cap.apron2 ? money(cap.apron2 - cap.salary) : '—'}</b><span>${cap.salary > cap.apron2 ? 'Over' : 'Under'} 2nd apron</span></div>
+        <div><b>${cap.roster ?? '—'} + ${cap.two_way ?? 0}</b><span>Roster + two-way</span></div>
+        <div><b>${cap.hard_cap ? (cap.hard_cap === 'second_apron' ? '2nd apron' : '1st apron') : 'None'}</b><span>Hard cap</span></div></div>`;
+    card.hidden = false;
+  }
+
+  // Owner panel: the team's own front office only. Open on desktop, one line
+  // on a phone.
+  const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
+  const panel = document.getElementById('owner-panel');
+  if (!mine) return;
+  // apron_position is null between the cap and the 1st apron (and when the
+  // snapshot has no thresholds), so read the band off the figures then.
+  const ex = cap.salary_ex_holds ?? cap.salary;
+  const where = { under_cap: 'under the cap', over_cap: 'over the cap', first_apron: 'over the 1st apron', second_apron: 'over the 2nd apron' }[cap.apron_position]
+    || (cap.apron2 && ex > cap.apron2 ? 'over the 2nd apron' : cap.apron1 && ex > cap.apron1 ? 'over the 1st apron'
+      : cap.cap && cap.salary > cap.cap ? 'over the cap' : cap.cap ? 'under the cap' : '');
+  const [y1, y2] = String(season).split('-').map(Number);
+  const nextSeason = `${String((y1 + 1) % 100).padStart(2, '0')}-${String((y2 + 1) % 100).padStart(2, '0')}`;
+  // home.lines is keyed by this roster's players.
+  const options = Object.keys(lines).filter(s => ((bios[s] || {}).cap_holds || {})[nextSeason] === 'TEAM_OPT');
+  const days = d => Math.round((Date.parse(d) - Date.parse(today)) / 864e5);
+  const dl = [['Team option deadline (rookie scale)', calendar.team_option_deadline], ['Trade deadline', calendar.trade_deadline],
+              ...(calendar.draft_days || []).map(d => ['Draft', d])]
+    .filter(([, d]) => d && d >= today).sort((a, b) => a[1].localeCompare(b[1])).slice(0, 3)
+    .map(([label, d]) => `<li><span>${label}</span><span class="when">${_shortDay(d)} · ${days(d) === 0 ? 'today' : days(d) === 1 ? 'tomorrow' : `${days(d)} days`}</span></li>`).join('');
+  const extensionCount = Object.values(poextEligible || {}).filter(e => e.eligible).length;
+  const waiting = [
+    openOffers.length ? `<li><a href="#offer-sheet-banner" data-goto="roster">${openOffers.length} offer sheet${openOffers.length === 1 ? '' : 's'} to answer</a></li>` : '',
+    options.length ? `<li><a href="#roster" data-goto="roster">${options.length} team option${options.length === 1 ? '' : 's'} for ${nextSeason}: ${options.map(s => esc(pname(s))).join(', ')}</a></li>` : '',
+    extensionCount ? `<li><a href="/extensions/">${extensionCount} player${extensionCount === 1 ? '' : 's'} eligible for an extension</a></li>` : '',
+    myBlockEntries.length ? `<li><a href="/tradeblock/">${myBlockEntries.length} on your trading block</a></li>` : '',
+  ].join('') || '<li class="none">Nothing waiting on you</li>';
+  panel.innerHTML = `<summary><span class="os-title">Your front office</span><span class="os-brief">${money(cap.salary)}${where ? ` · ${where}` : ''}</span></summary>
+    <div class="os-grid">
+      <div><div class="lbl">Coming up</div><ul>${dl || '<li class="none">No league deadline ahead this season</li>'}</ul></div>
+      <div><div class="lbl">Waiting on you</div><ul>${waiting}</ul></div>
+      <div><div class="lbl">Tools</div><div class="tools">
+        <button type="button" class="ui-btn ui-btn--sm" id="os-whatif">What If Mode</button>
+        <a class="ui-btn ui-btn--sm" href="/transaction-sim/?teams=${abbr}">Trade builder</a>
+        <a class="ui-btn ui-btn--sm" href="/free-agency/">Free agency</a>
+        <a class="ui-btn ui-btn--sm" href="/extensions/">Extensions</a></div></div>
+    </div>`;
+  panel.hidden = false;
+  if (matchMedia('(min-width: 641px)').matches) panel.open = true;
+  panel.querySelectorAll('[data-goto]').forEach(a => a.onclick = e => { e.preventDefault(); goToSection(a.dataset.goto, true); });
+  document.getElementById('os-whatif').onclick = () => {
+    goToSection('roster', true);
+    document.getElementById('whatif-enter-btn')?.click();
+  };
+}
+
 async function renderTradeRequestBanner(biosData) {
   const el = document.getElementById('trade-request-banner');
   const mine = AUTH_ROLES.includes(abbr.toLowerCase()) || AUTH_OWNER_OF.includes(abbr);
@@ -9163,33 +9799,33 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     };
   });
 
+  // The roster table's look: the player as headshot and "First Last", the
+  // same stat labels as its Stats view, every figure to one decimal.
   const HIST_COLS = [
-    { key: 'PLAYER',  label: 'Player',  cls: 'bold',        sortField: 'PLAYER',  defaultDir:  1 },
+    { key: 'PLAYER',  label: 'Player',  cls: '',            sortField: 'PLAYER',  defaultDir:  1 },
     { key: 'G',       label: 'G',       cls: 'right',       sortField: 'G',       defaultDir: -1 },
-    { key: '_mpg',    label: 'MPG',     cls: 'right muted', sortField: '_mpg',    defaultDir: -1 },
-    { key: '_ppg',    label: 'PPG',     cls: 'right',       sortField: '_ppg',    defaultDir: -1 },
-    { key: '_rpg',    label: 'RPG',     cls: 'right',       sortField: '_rpg',    defaultDir: -1 },
-    { key: '_apg',    label: 'APG',     cls: 'right',       sortField: '_apg',    defaultDir: -1 },
-    { key: '_spg',    label: 'SPG',     cls: 'right muted', sortField: '_spg',    defaultDir: -1 },
-    { key: '_bpg',    label: 'BPG',     cls: 'right muted', sortField: '_bpg',    defaultDir: -1 },
-    { key: '_3pmpg',  label: '3PM/G',   cls: 'right muted', sortField: '_3pmpg',  defaultDir: -1 },
-    { key: '_gmscpg', label: 'GMSC/G',  cls: 'right',       sortField: '_gmscpg', defaultDir: -1 },
+    { key: '_mpg',    label: 'MIN',     cls: 'right muted', sortField: '_mpg',    defaultDir: -1 },
+    { key: '_ppg',    label: 'PTS',     cls: 'right',       sortField: '_ppg',    defaultDir: -1 },
+    { key: '_rpg',    label: 'REB',     cls: 'right',       sortField: '_rpg',    defaultDir: -1 },
+    { key: '_apg',    label: 'AST',     cls: 'right',       sortField: '_apg',    defaultDir: -1 },
+    { key: '_spg',    label: 'STL',     cls: 'right muted', sortField: '_spg',    defaultDir: -1 },
+    { key: '_bpg',    label: 'BLK',     cls: 'right muted', sortField: '_bpg',    defaultDir: -1 },
+    { key: '_3pmpg',  label: '3PM',     cls: 'right muted', sortField: '_3pmpg',  defaultDir: -1 },
+    { key: '_gmscpg', label: 'GMSC',    cls: 'right',       sortField: '_gmscpg', defaultDir: -1 },
   ];
 
-  return buildTable(HIST_COLS, augmented, '_gmscpg', -1, (td, col, row) => {
+  const table = buildTable(HIST_COLS, augmented, '_gmscpg', -1, (td, col, row) => {
     if (col.key === 'PLAYER') {
-      if (row.SLUG) {
-        const a = document.createElement('a');
-        a.href = `/players/?p=${row.SLUG}`;
-        a.textContent = row.PLAYER;
-        td.appendChild(a);
-      } else {
-        td.textContent = row.PLAYER || '—';
-      }
+      playerNameCell(td, row.SLUG, row.PLAYER);
+    } else if (col.key === 'G') {
+      td.textContent = row.G ?? '—';
     } else {
-      td.textContent = row[col.key] ?? '—';
+      const v = row[col.key];
+      td.textContent = v == null || v === '' ? '—' : Number(v).toFixed(1);
     }
   });
+  table.classList.add('season-stats-table');
+  return table;
 }
 
 (async () => {
@@ -9200,6 +9836,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   attachCopyBtn('roster-title', 'roster-wrap');
   const picksWrap    = document.getElementById('picks-wrap');
   const draftedWrap  = document.getElementById('drafted-wrap');
+
+  // The strips under the header: this season at a glance, and the owner's
+  // front-office view. One request (the homepage team card's), started now so
+  // it runs alongside the roster's; nothing below waits for it.
+  const homeTeamPromise = fetch(`/api/home/team/${abbr}`).then(r => r.ok ? r.json() : null).catch(() => null);
 
   // Only what the Roster tab and the header need. The other tabs fetch their
   // own data the first time they're opened (whenTabShown).
@@ -9216,7 +9857,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     fetch(`/api/deadcap/${abbr}`).then(r => r.ok ? r.json() : []),
     fetch('/api/picks').then(r => r.ok ? r.json() : []),
     fetch('/api/members/public').then(r => r.ok ? r.json() : []),
-    fetch(`/api/boxscores/games?team=${abbr}`).then(r => r.ok ? r.json() : []),
+    teamGamesReady,
     fetch('/api/league-year').then(r => r.ok ? r.json() : null),
     fetch('/api/auth/me', { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} }).then(r => r.ok ? r.json() : null),
     fetch(`/api/trade-exceptions/${abbr}`).then(r => r.ok ? r.json() : []),
@@ -9253,9 +9894,10 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // The Coaching tab is private to the team. It starts hidden; show it now
   // that we know who is looking, and open it if the hash asked for it.
   if (canViewCoachingSettings(abbr)) {
-    const coachingTab = document.querySelector('.tab[data-tab="coaching"]');
-    coachingTab.hidden = false;
-    if (location.hash === '#coaching') showTab(coachingTab);
+    document.getElementById('tab-coaching').hidden = false;
+    showOfficeSub(location.hash === '#irl' ? 'irl' : 'coaching');
+    watchPanel(document.getElementById('tab-coaching'));
+    if (location.hash === '#coaching') goToSection('coaching');
   }
 
   // Signing in is the header's job (token-badge.js's Sign in button). This
@@ -9293,6 +9935,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   const openOffers = offersr.status === 'fulfilled' && Array.isArray(offersr.value) ? offersr.value : [];
   renderOfferSheetBanner(openOffers);
   renderTradeRequestBanner(biosData);
+  Promise.all([homeTeamPromise, nbnDataReady]).then(([home]) => renderSeasonTop(home, {
+    openOffers, poextEligible, myBlockEntries,
+    calendar: (lyr.status === 'fulfilled' && lyr.value?.calendar) || {},
+    biosData, currentOvr,
+  }));
   const currentRosterRowsParsed = rr.status === 'fulfilled' ? parseCSV(rr.value) : [];
   const currentSlugs = computeCurrentSlugSet(currentRosterRowsParsed);
 
@@ -9304,20 +9951,34 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       if (tadvr.status === 'fulfilled') joinTeamAdvanced(seasonRows, parseCSV(tadvr.value));
       seasonsWrap.innerHTML = '';
       buildTimeline(seasonRows);
-      seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
+      seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', -1, makeSeasonRenderCell(seasonRows)));
     });
   } else {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
   }
 
-  _teamGamesResolve(allGames);
   buildPersonnelSection(membersData, allGames);
   whenTabShown('franchise', () => renderRivalries(allGames));
   renderHeaderFacts(seasonRows, membersData);
 
   if (pr.status === 'fulfilled') {
     playersWrap.innerHTML = '';
-    playersWrap.appendChild(buildTable(PLAYER_COLS, parseCSV(pr.value), 'GMSC_TOT', -1, makePlayerRenderCell(currentSlugs)));
+    const allTime = buildTable(PLAYER_COLS, parseCSV(pr.value), 'GMSC_TOT', -1, makePlayerRenderCell(currentSlugs));
+    playersWrap.appendChild(allTime);
+    // The top 25 by default; the rest is one click away, and a re-sort keeps
+    // whichever choice is in force (the class is on the table, not the rows).
+    const total = allTime.querySelectorAll('tbody tr').length;
+    if (total > 25) {
+      allTime.classList.add('alltime-capped');
+      const more = document.createElement('button');
+      more.type = 'button'; more.className = 'ui-btn alltime-more';
+      more.textContent = `Show all ${total} players`;
+      more.onclick = () => {
+        const capped = allTime.classList.toggle('alltime-capped');
+        more.textContent = capped ? `Show all ${total} players` : 'Show the top 25';
+      };
+      playersWrap.after(more);
+    }
   } else {
     playersWrap.innerHTML = '<div class="status">Failed to load player data.</div>';
   }
@@ -9421,7 +10082,10 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     // Best team season: highest win% among seasons this team actually played
     // (guards the 0-0 row a season-in-progress or expansion year can leave in
     // {abbr}-seasons.csv), point differential as the tiebreak.
-    const playedSeasons = seasonRows.filter(r => (parseInt(r.W) || 0) + (parseInt(r.L) || 0) > 0);
+    // A season still being played isn't a candidate: 7-8 isn't a better
+    // season than a finished 36-46, whatever the percentages say.
+    const playedSeasons = seasonRows.filter(r => (parseInt(r.W) || 0) + (parseInt(r.L) || 0) > 0
+      && !(r.SEASON === currentSeasonYr() && !(r.PLAYOFF_RESULT || '').trim()));
     const bestSeasons = [...playedSeasons].sort((a, b) => {
       const pctDiff = (parseFloat(b.PCT) || 0) - (parseFloat(a.PCT) || 0);
       return pctDiff || ((parseFloat(b.DIFF) || 0) - (parseFloat(a.DIFF) || 0));
@@ -9431,7 +10095,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       if (!bestSeasons.length) return '';
       const [top, ...rest] = bestSeasons.slice(0, 3);
       const badges = r => `${r.FOTY === 'TRUE' ? ' <i class="ui-icon ui-icon--star rec-badge" aria-hidden="true"></i>' : ''}${r.COTY === 'TRUE' ? ' <i class="ui-icon ui-icon--medal rec-badge" aria-hidden="true"></i>' : ''}`;
-      const line = r => `${escAttr(r.W)}-${escAttr(r.L)} (${fmtPct(r.PCT)}) · ${escAttr(r.PLAYOFF_RESULT || '—')}${badges(r)}`;
+      const line = r => `${escAttr(r.W)}–${escAttr(r.L)} (${fmtPct(r.PCT)}) · ${escAttr(r.PLAYOFF_RESULT || '—')}${badges(r)}`;
       return `
         <div class="rec-card">
           <div class="rec-stat">Best Regular Season</div>
@@ -9556,7 +10220,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         const draftTeam = (bio.draft_team || '').toUpperCase();
         return {
           SLUG:        slug,
-          PLAYER:      displayNameFromBio(bio.name || '') || c.name || slug,
+          PLAYER:      bio.name || c.name || slug,
           YEAR:        parseInt(bio.draft_year) || 0,
           ROUND:       round,
           PICK:        pick ?? 0,
@@ -9580,47 +10244,43 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
           return draftTeam === abbr || (rightsHolder[slug] || '').toUpperCase() === abbr;
         })
         .map(([slug, bio]) => makeDraftRow(slug, bio));
-      draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
+      draftedRows.sort((a, b) => b.YEAR - a.YEAR || a.PICK - b.PICK);   // newest draft first
 
       const DRAFTED_COLS = [
-        { key: 'PLAYER',    label: 'Player',  cls: 'bold',        sortField: 'PLAYER',    defaultDir:  1 },
-        { key: 'YEAR',      label: 'Year',    cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
+        { key: 'PLAYER',    label: 'Player',  cls: '',            sortField: 'PLAYER',    defaultDir:  1 },
+        { key: 'YEAR',      label: 'Year',    cls: 'right',       sortField: 'YEAR',      defaultDir: -1 },
         { key: 'PICK_LABEL',label: 'Pick',    cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
-        { key: 'RIGHTS_TO', label: 'Rights',  cls: 'muted',       sortField: 'RIGHTS_TO', defaultDir:  1 },
-        { key: 'GP',        label: 'GP',      cls: 'right',       sortField: 'GP',        defaultDir: -1 },
+        { key: 'RIGHTS_TO', label: 'Rights',  cls: '',            sortField: 'RIGHTS_TO', defaultDir:  1 },
+        { key: 'GP',        label: 'G',       cls: 'right',       sortField: 'GP',        defaultDir: -1 },
         { key: 'GMSC_TOT',  label: 'GMSC',    cls: 'right',       sortField: 'GMSC_TOT',  defaultDir: -1 },
-        { key: 'PPG',       label: 'PPG',     cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
-        { key: 'RPG',       label: 'RPG',     cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
-        { key: 'APG',       label: 'APG',     cls: 'right',       sortField: 'APG',       defaultDir: -1 },
+        { key: 'PPG',       label: 'PTS',     cls: 'right',       sortField: 'PPG',       defaultDir: -1 },
+        { key: 'RPG',       label: 'REB',     cls: 'right',       sortField: 'RPG',       defaultDir: -1 },
+        { key: 'APG',       label: 'AST',     cls: 'right',       sortField: 'APG',       defaultDir: -1 },
       ];
       const renderDraftedCell = (td, col, row) => {
         if (col.key === 'PLAYER') {
-          const a = document.createElement('a');
-          a.href = `/players/?p=${row.SLUG}`;
-          a.textContent = row.PLAYER;
-          td.appendChild(a);
+          playerNameCell(td, row.SLUG, row.PLAYER);
         } else if (col.key === 'RIGHTS_TO') {
-          if (row.RIGHTS_TO) {
-            const arrow = document.createElement('span');
-            arrow.style.cssText = 'color:var(--link);font-style:italic';
-            arrow.textContent = `→ ${row.RIGHTS_TO}`;
-            attachTooltip(arrow, 'Draft rights traded away');
-            td.appendChild(arrow);
-          } else if (row.RIGHTS_FROM) {
-            const arrow = document.createElement('span');
-            arrow.style.cssText = 'color:var(--link);font-style:italic';
-            arrow.textContent = `← ${row.RIGHTS_FROM}`;
-            attachTooltip(arrow, 'Draft rights acquired from another team');
-            td.appendChild(arrow);
+          // Words and a logo, not an arrow: "Traded to DEN", "From DEN".
+          const t = row.RIGHTS_TO || row.RIGHTS_FROM;
+          if (t) {
+            const span = document.createElement('span');
+            span.className = 'draft-rights';
+            span.innerHTML = `${row.RIGHTS_TO ? 'Traded to' : 'From'} <img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="" onerror="this.style.visibility='hidden'"><b>${t}</b>`;
+            attachTooltip(span, row.RIGHTS_TO ? 'Draft rights traded away' : 'Draft rights acquired from another team');
+            td.appendChild(span);
           } else {
             td.textContent = '—';
           }
+        } else if (['GMSC_TOT', 'PPG', 'RPG', 'APG'].includes(col.key)) {
+          // A pick who never played shows dashes, not a row of zeros.
+          td.textContent = row.GP ? fmt1(row[col.key]) : '—';
         } else {
-          td.textContent = row[col.key] ?? '—';
+          td.textContent = row[col.key] || (col.key === 'GP' ? '0' : '—');
         }
       };
       if (draftedRows.length) {
-        draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', 1, renderDraftedCell));
+        draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', -1, renderDraftedCell));
       } else {
         draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
       }
