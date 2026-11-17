@@ -555,6 +555,39 @@ function _initNav() {
     if (!_sidebarEnabled()) actions.appendChild(_buildInboxButton());
     nav.appendChild(actions);
   }
+  _mountQuickLinks(nav.querySelector('.nav-actions'));
+}
+
+// ── Quick links ──────────────────────────────────────────────────────────────
+// Top right of every page, for a signed-in member only: their team's Coaching
+// tab, their team page, and Betting. A member with no open tenure gets only
+// Betting. A signed-out visitor gets no section at all, and no request is made
+// for it (no token, no /api/me). Rides on the profile's /api/me and the
+// your-team lookup, both cached, so it costs nothing extra once either ran.
+function _mountQuickLinks(actions) {
+  if (!actions || actions.querySelector('.nav-quick') || actions.hasAttribute('data-quick-pending')) return;
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  if (!token) return;
+  actions.setAttribute('data-quick-pending', '');
+  _fetchMe().then(me => (me && me.name ? _fetchMyTeam().then(team => ({ team })) : null)).then(res => {
+    actions.removeAttribute('data-quick-pending');
+    if (!res || actions.querySelector('.nav-quick')) return;
+    const team = res.team && TEAM_LIST[res.team] ? res.team : null;
+    const links = [
+      team && { href: `/teams/${team}/#coaching`, icon: 'clipboard-list', label: 'Coaching', title: 'Coaching settings' },
+      team && { href: `/teams/${team}/`, icon: 'basketball', label: team, title: TEAM_LIST[team] },
+      { href: '/bet/', icon: 'dice', label: 'Betting', title: 'Betting — bets, Pick\'em, futures' },
+    ].filter(Boolean);
+    const box = document.createElement('div');
+    box.className = 'nav-quick';
+    box.setAttribute('role', 'navigation');
+    box.setAttribute('aria-label', 'Quick links');
+    box.setAttribute('data-mine-off', '');   // my-team.js: these are your team by definition
+    box.innerHTML = '<span class="nav-quick-label">Quick links</span>' + links.map(l =>
+      `<a class="nav-quick-link" href="${l.href}" title="${_escSearch(l.title)}">${_navIcon(l.icon)}<span>${_escSearch(l.label)}</span></a>`).join('');
+    actions.prepend(box);
+  }).catch(() => actions.removeAttribute('data-quick-pending'));
 }
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
@@ -1849,6 +1882,7 @@ let _memberCache = null;   // [{ name, meta, current }] from /api/members/public
 let _activeIdx = -1;
 let _rolePages = [];       // ROLE_PAGES this member actually qualifies for
 let _rolesChecked = false; // asked once per page, whatever the answer
+let _myTeamPages = [];     // pages on this member's own team (Coaching), once known
 
 function openSearch(initialQuery) {
   if (!_searchOverlay) _buildSearchOverlay();
@@ -1860,7 +1894,7 @@ function openSearch(initialQuery) {
   // Both are lazy and fire only when someone actually opens the search overlay,
   // so nav.js still makes no request on an ordinary page load — which matters,
   // because it loads on every page of the site.
-  Promise.all([_loadPlayerData(), _loadMemberData(), _loadCommitteePages()]).then(() => _filter());
+  Promise.all([_loadPlayerData(), _loadMemberData(), _loadCommitteePages(), _loadMyTeamPages()]).then(() => _filter());
 }
 
 function closeSearch() {
@@ -1922,10 +1956,10 @@ function _filter() {
     return;
   }
 
-  const pageMatches = SITE_PAGES.concat(_rolePages)
+  const pageMatches = _myTeamPages.concat(SITE_PAGES, _rolePages)
     .filter(p => p.title.toLowerCase().includes(q) || (p.keywords || []).some(k => k.includes(q)))
     .slice(0, 6)
-    .map(p => ({ type: 'Page', icon: p.icon, title: p.title, meta: '', href: p.href }));
+    .map(p => ({ type: 'Page', icon: p.icon, title: p.title, meta: p.meta || '', href: p.href }));
 
   const teamMatches = Object.entries(TEAM_LIST)
     .filter(([abbr, name]) => name.toLowerCase().includes(q) || abbr.toLowerCase().includes(q))
@@ -2017,6 +2051,20 @@ async function _loadCommitteePages() {
   // The jump box works without this; it just won't list the committee pages.
   const roles = await _myRoles();
   _rolePages = ROLE_PAGES.filter(p => _qualifies(p, roles));
+}
+
+// Coaching (rotation, minutes, coaching settings) is a tab on your own team's
+// page, shown only to that team's staff, so it's a search result only for a
+// member with an open tenure, and it goes straight to their team's #coaching.
+// A signed-out visitor makes no request for it (_maybeSignedIn).
+let _myTeamChecked = false;
+async function _loadMyTeamPages() {
+  if (_myTeamChecked || !_maybeSignedIn()) return;
+  _myTeamChecked = true;
+  const team = await _fetchMyTeam();
+  if (!team || !TEAM_LIST[team]) return;
+  _myTeamPages = [{ title: 'Coaching', meta: team, icon: 'clipboard-list', href: `/teams/${team}/#coaching`,
+    keywords: ['coach', 'lineup', 'lineups', 'rotation', 'minutes', 'depth chart', 'starters', 'coaching settings'] }];
 }
 
 function _escSearch(s) {

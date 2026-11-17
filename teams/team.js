@@ -1984,6 +1984,10 @@ async function renderSchedule(allGames, season) {
 // Land on the section named in the hash once the page has laid out. After
 // mountIrlFeed's state is declared, so #irl doesn't hit it before initialisation.
 if (location.hash.length > 1) requestAnimationFrame(() => goToSection(location.hash.slice(1)));
+// A link to this same page with a new hash (search's Coaching result, from
+// your own team page) doesn't reload it, so follow the hash here too. The tab
+// bar writes its hash with replaceState, which doesn't fire this.
+addEventListener('hashchange', () => { if (location.hash.length > 1) goToSection(location.hash.slice(1), true); });
 
 function parseCSV(text) {
   const lines = text.trim().split('\n');
