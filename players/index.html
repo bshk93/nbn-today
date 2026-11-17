@@ -154,7 +154,11 @@
     
         
     /* section headings */
-    .toggle-bar { margin-bottom: var(--space-4); }   /* the view switch (By Team / By Season / …) */
+    /* The view switch (By Team / By Season / Game Log / Splits), full width
+       like the team page's History sub-tabs (.tn-subnav). */
+    .toggle-bar { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin-bottom: var(--space-5); }
+    .toggle-bar::-webkit-scrollbar { display: none; }
+    .toggle-bar button { white-space: nowrap; }
 
     /* Same as .ui-section-title (css/components.css); kept as its own class
        because the page builds these in a dozen places. */
@@ -164,6 +168,23 @@
       color: var(--text-primary);
       margin: var(--space-6) 0 var(--space-3);
     }
+    .section-heading.has-sub { margin-bottom: 0.25rem; }
+    .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 0.75rem; }
+    /* A tab's first table sits right under the tab's heading or view switch. */
+    .pl-section .pl-h + * > .section-heading:first-child,
+    .toggle-bar + div > .section-heading:first-child,
+    .toggle-bar + div > .splits-head:first-child .section-heading { margin-top: 0; }
+    /* Stats and Career tables set like the team page's: body-size type and
+       room around each figure. The season column stays put on a phone. */
+    :is(#stats, #career) .ui-table { font-size: var(--text-base); }
+    :is(#stats, #career) .ui-table :is(th, td) { padding: 0.6rem 0.85rem; }
+    /* Career Totals has a rank under every figure: less room each side, so
+       all ten columns fit. */
+    @media (max-width: 640px) { :is(#stats, #career) .ui-table :is(th, td) { padding: 0.5rem 0.6rem; } }
+    #career .ui-table.ct-table { font-size: var(--text-sm); }
+    #career .ui-table.ct-table :is(th, td) { padding: 0.6rem 0.5rem; }
+    .pl-person { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .pl-person img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top center; background: var(--bg-subtle); }
 
     /* table wrapper */
     
@@ -190,15 +211,12 @@
     .ct-rank { display: block; font-size: var(--text-xs); font-weight: 400; color: var(--text-muted); }
     .ct-rank a { color: inherit; text-decoration: none; }
     .ct-rank a:hover { text-decoration: underline; }
-    .ct-rank .ct-active { opacity: 0.8; }
+    .ct-rank .ct-active { display: block; opacity: 0.8; }
     .ct-top10 .ct-rank { color: var(--gold); font-weight: 700; }
     .ct-top50 .ct-rank { color: var(--accent-light); }
-    .ct-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); }
     .career-row td { font-weight: 600; color: var(--text-primary); }
-    /* Playoff rows sit in the same tables as the regular season, so they
-       carry a gold tint and edge to stand apart. */
-    .po-row td { background: color-mix(in srgb, var(--gold) 7%, transparent); }
-    .po-row td:first-child { box-shadow: inset 3px 0 0 var(--gold-dim); color: var(--gold); }
+    /* Playoff rows sit in the same tables as the regular season, marked by
+       the PO badge on the season (and Career Playoffs by its name). */
     .career-row + .career-row { border-top: none !important; }
 
     /* Headline tiles (OVR, Hall of Fame, Contract, History, Health): the same card, label,
@@ -1078,10 +1096,7 @@
         const streaks = (data.streaks || []).filter(s => s.length > 1);
 
         if (feats.length || streaks.length) {
-          const h2 = document.createElement('h2');
-          h2.className = 'section-heading';
-          h2.textContent = 'Feats & Streaks';
-          container.appendChild(h2);
+          sectionHead(container, 'Feats & Streaks', 'Career feats, his longest runs, and where each ranks all-time');
           const grid = document.createElement('div');
           grid.className = 'ins-grid';
           container.appendChild(grid);
@@ -1116,42 +1131,40 @@
 
         const mates = data.teammates || [];
         if (mates.length) {
-          const h2 = document.createElement('h2');
-          h2.className = 'section-heading';
-          h2.textContent = 'Most Games Together';
-          container.appendChild(h2);
+          sectionHead(container, 'Most Games Together', 'Games both played for the same team, playoffs included, and the team’s record in them');
           const { wrap, body } = table([['Teammate', ''], ['Games', 'right'], ['Record', 'right'], ['Win %', 'right']]);
           mates.slice(0, 10).forEach(t => {
             const tr = body.insertRow();
+            // Headshot and name, as the team page's player tables set them.
             const a = document.createElement('a');
+            a.className = 'pl-person';
             a.href = `/players/?p=${encodeURIComponent(t.slug)}`;
-            a.textContent = typeof nbnPlayerName === 'function' ? nbnPlayerName(t.player) : t.player;
+            const img = document.createElement('img');
+            img.src = `/api/players/${encodeURIComponent(t.slug)}/headshot`; img.alt = ''; img.loading = 'lazy';
+            img.onerror = function () { this.style.visibility = 'hidden'; };
+            a.appendChild(img);
+            a.appendChild(document.createTextNode(typeof nbnPlayerName === 'function' ? nbnPlayerName(t.player) : t.player));
             cell(tr).appendChild(a);
             cell(tr, t.games.toLocaleString(), 'right');
             cell(tr, `${t.w}–${t.l}`, 'right');
             cell(tr, (t.w / Math.max(1, t.games)).toFixed(3).replace(/^0/, ''), 'right');
           });
           container.appendChild(wrap);
-          const note = document.createElement('div');
-          note.className = 'ins-note';
-          note.textContent = 'Games both played for the same team, playoffs included, and the team’s record in them.';
-          container.appendChild(note);
         }
       })
       .catch(() => {});
   }
 
   function renderCareerTotals(container, slug, regRows, poRows) {
-    const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
-    h2.textContent = 'Career Totals';
-    container.appendChild(h2);
+    sectionHead(container, 'Career Totals', teamMap[slug]
+      ? 'Under each total, his rank among every NBN player, then among players on a roster today'
+      : 'Under each total, his rank among every NBN player');
 
     const wrap = document.createElement('div');
     wrap.className = 'ui-table-wrap';
     container.appendChild(wrap);
     const table = document.createElement('table');
-    table.className = 'ui-table';
+    table.className = 'ui-table ui-table--sticky-first ct-table';
     wrap.appendChild(table);
 
     const hr = table.createTHead().insertRow();
@@ -1194,7 +1207,7 @@
           const act = careerRank(totals, slug, s.key, isActive);
           const a = document.createElement('span');
           a.className = 'ct-active';
-          a.textContent = ` · ${fmtRank(act)} act`;
+          a.textContent = `${fmtRank(act)} act`;
           a.title = `${fmtRank(act)} among active players`;
           rk.appendChild(a);
         }
@@ -1202,15 +1215,9 @@
       });
     }
 
-    addRow('Regular Season', regRows);
+    addRow('Regular', regRows);
     if (poRows) addRow('Playoffs', poRows);
 
-    const note = document.createElement('div');
-    note.className = 'ct-note';
-    note.textContent = isActive(slug)
-      ? 'Rank among every NBN player, then among players on a roster today.'
-      : 'Rank among every NBN player.';
-    container.appendChild(note);
   }
 
   // ── Season leaders ───────────────────────────────────────────────────────────
@@ -1260,25 +1267,37 @@
     // Games started — known only from 26-27, when box score commits began
     // recording the entered starting five (GET /api/game-starters/counts).
     { key: 'GS',     label: 'GS',     sortField: 'GS',      defaultDir: -1, cls: R, display: r => r.GS ?? '—' },
-    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
-    { key: 'PPG',    label: 'PPG',    sortField: 'PTS',     defaultDir: -1, cls: R, display: pg('PTS') },
-    { key: 'RPG',    label: 'RPG',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
-    { key: 'APG',    label: 'APG',    sortField: 'AST',     defaultDir: -1, cls: R, display: pg('AST') },
-    { key: 'SPG',    label: 'SPG',    sortField: 'STL',     defaultDir: -1, cls: R, display: pg('STL') },
-    { key: 'BPG',    label: 'BPG',    sortField: 'BLK',     defaultDir: -1, cls: R, display: pg('BLK') },
-    { key: 'TOPG',   label: 'TOPG',   sortField: 'TOV',     defaultDir:  1, cls: R, display: pg('TOV') },
-    { key: 'PFPG',   label: 'PFPG',   sortField: 'PF',      defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
+    { key: 'PPG',    label: 'PTS',    sortField: 'PTS',     defaultDir: -1, cls: 'right strong', display: pg('PTS') },
+    { key: 'RPG',    label: 'REB',    sortField: 'REB',     defaultDir: -1, cls: R, display: pg('REB') },
+    { key: 'APG',    label: 'AST',    sortField: 'AST',     defaultDir: -1, cls: R, display: pg('AST') },
+    { key: 'SPG',    label: 'STL',    sortField: 'STL',     defaultDir: -1, cls: R, display: pg('STL') },
+    { key: 'BPG',    label: 'BLK',    sortField: 'BLK',     defaultDir: -1, cls: R, display: pg('BLK') },
+    { key: 'TOPG',   label: 'TOV',    sortField: 'TOV',     defaultDir:  1, cls: R, display: pg('TOV') },
+    { key: 'PFPG',   label: 'PF',     sortField: 'PF',      defaultDir:  1, cls: R, display: pg('PF')  },
+    { key: '3PMPG',  label: '3PM',    sortField: '3PM',     defaultDir: -1, cls: R, display: pg('3PM') },
     { key: 'FG',     label: 'FG%',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pct('FGM','FGA') },
     { key: '3P',     label: '3P%',    sortField: '3PM',     defaultDir: -1, cls: R, display: pct('3PM','3PA') },
     { key: 'FT',     label: 'FT%',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pct('FTM','FTA') },
-    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts },
     { key: 'GMSC',   label: 'GMSC',   sortField: 'GMSC',    defaultDir: -1, cls: R, display: pg('GMSC') },
+  ];
+
+  // Makes and attempts a game, by kind of shot, beside the percentages.
+  const SHOOT_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
     { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pg('FGM') },
     { key: 'FGAPG',  label: 'FGA',    sortField: 'FGA',     defaultDir: -1, cls: R, display: pg('FGA') },
+    { key: 'FG',     label: 'FG%',    sortField: 'FGM',     defaultDir: -1, cls: 'right strong', display: pct('FGM','FGA') },
     { key: '3PMPG',  label: '3PM',    sortField: '3PM',     defaultDir: -1, cls: R, display: pg('3PM') },
     { key: '3PAPG',  label: '3PA',    sortField: '3PA',     defaultDir: -1, cls: R, display: pg('3PA') },
+    { key: '3P',     label: '3P%',    sortField: '3PM',     defaultDir: -1, cls: 'right strong', display: pct('3PM','3PA') },
     { key: 'FTMPG',  label: 'FTM',    sortField: 'FTM',     defaultDir: -1, cls: R, display: pg('FTM') },
     { key: 'FTAPG',  label: 'FTA',    sortField: 'FTA',     defaultDir: -1, cls: R, display: pg('FTA') },
+    { key: 'FT',     label: 'FT%',    sortField: 'FTM',     defaultDir: -1, cls: 'right strong', display: pct('FTM','FTA') },
+    { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts,
+      title: 'True shooting: points per shot, counting threes and free throws' },
   ];
 
   const ratePct = f => r => r[f] === '' || r[f] == null ? '—' : (+r[f] * 100).toFixed(1) + '%';
@@ -1291,7 +1310,7 @@
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
-    { key: 'MPG',    label: 'MPG',    sortField: 'MIN',     defaultDir: -1, cls: R, display: pg('MIN') },
+    { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
     { key: 'TS',     label: 'TS%',    sortField: 'PTS',     defaultDir: -1, cls: R, display: ts,
       title: 'True shooting: points per shot, counting threes and free throws' },
     { key: 'EFG_P',  label: 'eFG%',   sortField: 'EFG_P',   defaultDir: -1, cls: R, display: ratePct('EFG_P'),
@@ -1306,11 +1325,19 @@
     { key: 'TRB_P',  label: 'TRB%',   sortField: 'TRB_P',   defaultDir: -1, cls: R, display: ratePct('TRB_P'), title: AdvancedStats.HELP.trb },
     { key: 'STL_P',  label: 'STL%',   sortField: 'STL_P',   defaultDir: -1, cls: R, display: ratePct('STL_P'), title: AdvancedStats.HELP.stl },
     { key: 'BLK_P',  label: 'BLK%',   sortField: 'BLK_P',   defaultDir: -1, cls: R, display: ratePct('BLK_P'), title: AdvancedStats.HELP.blk },
+  ];
+
+  // What his season was worth: win shares, box plus/minus and VORP.
+  const VALUE_COLS = [
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
+    { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
+    { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
     { key: 'WS_V',   label: 'WS',     sortField: 'WS_V',    defaultDir: -1, cls: R, display: num1('WS_V'),    title: VALUE_HELP.ws },
     { key: 'WS48',   label: 'WS/48',  sortField: 'WS48',    defaultDir: -1, cls: R, display: rate3('WS48'),   title: VALUE_HELP.ws48 },
     { key: 'OBPM_V', label: 'OBPM',   sortField: 'OBPM_V',  defaultDir: -1, cls: R, display: signed1('OBPM_V'), title: VALUE_HELP.obpm },
     { key: 'DBPM_V', label: 'DBPM',   sortField: 'DBPM_V',  defaultDir: -1, cls: R, display: signed1('DBPM_V'), title: VALUE_HELP.dbpm },
-    { key: 'BPM_V',  label: 'BPM',    sortField: 'BPM_V',   defaultDir: -1, cls: R, display: signed1('BPM_V'), title: VALUE_HELP.bpm },
+    { key: 'BPM_V',  label: 'BPM',    sortField: 'BPM_V',   defaultDir: -1, cls: 'right strong', display: signed1('BPM_V'), title: VALUE_HELP.bpm },
     { key: 'VORP_V', label: 'VORP',   sortField: 'VORP_V',  defaultDir: -1, cls: R, display: num1('VORP_V'),  title: VALUE_HELP.vorp },
   ];
 
@@ -1391,11 +1418,23 @@
     container.appendChild(card);
   }
 
-  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn) {
+  // A table's heading and its one line of explanation, as the team page sets
+  // them (.section-title / .section-sub there).
+  function sectionHead(container, title, sub) {
     const h2 = document.createElement('h2');
-    h2.className = 'section-heading';
+    h2.className = 'section-heading' + (sub ? ' has-sub' : '');
     h2.textContent = title;
     container.appendChild(h2);
+    if (sub) {
+      const p = document.createElement('p');
+      p.className = 'section-sub';
+      p.textContent = sub;
+      container.appendChild(p);
+    }
+  }
+
+  function buildSection(container, title, rows, cols, defaultSortField, tiebreakerField, careerRow, leaderCheck, iconFn, sub) {
+    sectionHead(container, title, sub);
 
     const wrap = document.createElement('div');
     wrap.className = 'ui-table-wrap';
@@ -1404,7 +1443,7 @@
     let sortField = defaultSortField || cols[0].sortField;
     let sortDir = (cols.find(c => c.sortField === sortField) || cols[0]).defaultDir ?? -1;
 
-    const table = document.createElement('table'); table.className = 'ui-table';
+    const table = document.createElement('table'); table.className = 'ui-table ui-table--sticky-first pl-table';
     const thead = table.createTHead();
     const hr = thead.insertRow();
     const thEls = [];
@@ -1447,7 +1486,13 @@
         const td = tr.insertCell();
         if (col.cls) td.className = col.cls;
         const text = col.display ? col.display(row) : (row[col.key] ?? '');
-        if (col.key === 'TEAM' && /^[A-Z]{3}$/.test(text)) {
+        if (col.key === 'SEASON' && !isCareer && isPlayoffRow(row)) {
+          // "24-25 PO": the season, and a badge for its playoffs.
+          td.textContent = String(text).replace(' Playoffs', '');
+          const b = document.createElement('span');
+          b.className = 'po-badge'; b.textContent = 'PO'; b.title = 'Playoffs';
+          td.appendChild(b);
+        } else if (col.key === 'TEAM' && /^[A-Z]{3}$/.test(text)) {
           // The team's mark and abbreviation, linked, as the roster tables set it.
           td.innerHTML = `<a class="pl-team" href="/teams/${text}/"><img src="/logos/sm/logo-${text.toLowerCase()}.webp" alt="" onerror="this.remove()">${text}</a>`;
         } else {
@@ -3467,8 +3512,8 @@
     const seasonSec = document.createElement('div');
     seasonSec.id = 'season';
     overviewSec.appendChild(seasonSec);
-    const statsSec = mkSection('stats', '');
-    const careerSec = mkSection('career', '');
+    const statsSec = mkSection('stats', 'Stats');
+    const careerSec = mkSection('career', 'Career');
     const hasSeason = renderSeasonNow(seasonSec, rows, gameLogPromise);
     if (!hasSeason) { seasonSec.remove(); heroLine.remove(); }
     overviewSec.appendChild(tiles);
@@ -3706,13 +3751,21 @@
       const careerLines = build => po.length
         ? [build(reg), { ...build(po), SEASON: 'Career Playoffs' }]
         : build(reg);
-      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn);
+      const each = bySeasonMode ? 'one row a season' : 'one row a team each season';
+      buildSection(sections, 'Season Stats', displayRows, SEASON_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), makeLeaderCheck(), iconFn,
+        `Per game · ${each}, playoffs marked PO · gold led the NBN that season`);
+      buildSection(sections, 'Shooting', displayRows, SHOOT_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn,
+        'Makes and attempts per game, by kind of shot');
       // Only once player-advanced.csv has loaded: without it every rate
       // but the shooting ones would read "—".
       if (advContext.size) {
-        buildSection(sections, 'Advanced', displayRows, ADV_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn);
+        buildSection(sections, 'Advanced', displayRows, ADV_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn,
+          'Rates · hover a column for what it measures');
+        buildSection(sections, 'Value', displayRows, VALUE_COLS, 'SEASON', 'LAST_DATE', careerLines(careerStatsRow), null, iconFn,
+          'Win shares, box plus/minus and value over replacement · hover a column for what it measures');
       }
-      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn);
+      buildSection(sections, 'Season Highs', displayRows, HIGHS_COLS, 'SEASON', 'LAST_DATE', careerLines(careerHighsRow), null, iconFn,
+        'His best single game in each category, each season');
     }
 
     function setStatsMode() {
