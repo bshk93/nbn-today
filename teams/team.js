@@ -914,17 +914,54 @@ const coachingConfigReady = new Promise(resolve => {
   .picks-uncertain .pick-tm, .picks-uncertain td { color: var(--warning); }
   .picks-legacy .pick-tm, .picks-legacy td { color: var(--danger); }
   .picks-legacy td.pick-frozen { color: var(--text-secondary); }
-  .pick-flag { font-weight: 700; letter-spacing: 0.04em; cursor: help; }
-  .pick-flag-inline { display: none; }
+  .pick-flag { font-weight: 600; cursor: help; }
+  /* Notes is prose: it wraps, so it can't push the team chains into each
+     other's room. A chain stays on one line where there's space. */
+  .picks-table td.pick-c-notes { white-space: normal; min-width: 12rem; max-width: 20rem; }
+  .picks-table td.pick-team { white-space: normal; min-width: 15rem; line-height: 1.9; }
+  .picks-table td.pick-c-swap { white-space: normal; min-width: 9rem; }
+  /* Phone: each pick is a block. The year, the round and any restriction on
+     one line; then Pick and Held by side by side, each labelled, their
+     chains wrapping; then Protection, Swap and Notes when a pick has them. */
   @media (max-width: 640px) {
-    .picks-table td, .picks-table th { padding: 0.5rem 0.45rem; }
-    .picks-table td.pick-year, .picks-table td.pick-rnd { width: auto; }
-    .picks-table td.pick-team { white-space: normal; line-height: 1.8; }
-    .pick-tm + .pick-tm { margin-left: 0; display: flex; }
-    .picks-table .pick-frozen { display: none; }
-    .pick-flag-inline { display: table; margin-top: 0.35rem; }
+    .picks-table thead { display: none; }
+    .picks-table, .picks-table tbody { display: block; }
+    .picks-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 1rem;
+      grid-template-areas: "head head" "pick owner" "prot prot" "swap swap" "notes notes"; padding: 0.8rem 0.25rem; }
+    .picks-table tr.subheader { display: block; padding: 0; }
+    .picks-table tr.pick-year-start td { border-top: 0; }
+    .picks-table tr.pick-year-start { border-top: 1px solid var(--border); }
+    .picks-table td { display: block; padding: 0; border: 0; }
+    .picks-table td:empty:not(.pick-year) { display: none; }
+    .picks-table td.pick-year { grid-area: head; width: auto; align-self: center; }
+    .picks-table td.pick-year:empty::before { content: attr(data-year); }
+    .picks-table td.pick-rnd { grid-area: head; width: auto; margin-left: 3.5rem; align-self: center; justify-self: start; }
+    .picks-table td.pick-frozen { grid-area: head; justify-self: end; align-self: center; }
+    .picks-table td.pick-c-orig { grid-area: pick; margin-top: 0.6rem; }
+    .picks-table td.pick-c-owner { grid-area: owner; margin-top: 0.6rem; }
+    .picks-table td.pick-c-prot { grid-area: prot; margin-top: 0.5rem; }
+    .picks-table td.pick-c-swap { grid-area: swap; margin-top: 0.5rem; }
+    .picks-table td.pick-c-notes { grid-area: notes; margin-top: 0.5rem; white-space: normal; }
+    .picks-table :is(.pick-c-orig, .pick-c-owner, .pick-c-prot, .pick-c-swap, .pick-c-notes)::before {
+      content: attr(data-label); display: block; margin-bottom: 0.1rem;
+      font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    .picks-table td.pick-team { white-space: normal; line-height: 1.7; }
+    .picks-table td.pick-c-notes { min-width: 0; max-width: none; }
+    .pick-tm + .pick-tm { margin-left: 0.55rem; }
+    /* A traded-away pick is always this team's own, so it is one line:
+       the year and round, then who holds it now. */
+    .picks-table tr.picks-traded { grid-template-areas: "head owner"; padding: 0.55rem 0.25rem; }
+    .picks-table tr.picks-traded td.pick-c-orig { display: none; }
+    .picks-table tr.picks-traded td.pick-c-owner { margin-top: 0; align-self: center; }
+    .picks-table tr.picks-traded td.pick-c-owner::before { display: inline; margin: 0 0.5rem 0 0; }
+    /* Likewise a pick still this team's own outright: the year, the round, "Own". */
+    .picks-table tr.picks-own { grid-template-areas: "head pick" "prot prot" "swap swap" "notes notes"; padding: 0.55rem 0.25rem; }
+    .picks-table tr.picks-own td.pick-c-owner { display: none; }
+    .picks-table tr.picks-own td.pick-c-orig { margin-top: 0; align-self: center; }
+    .picks-table tr.picks-own td.pick-c-orig::before { display: none; }
   }
-  .pick-flag-warn { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 50%, transparent); }
+  .pick-flag-lock { gap: 0.3rem; color: var(--text-secondary); }
+  .pick-flag-lock .ui-icon { font-size: 0.85em; color: var(--text-muted); }
   .pick-flag-bad { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
   .picks-legend {
     display: flex;
@@ -3954,7 +3991,7 @@ function teamMarks(text, p, teamAbbr) {
 }
 
 const PICK_KIND_DISPLAY = {
-  own:       { cls: null },
+  own:       { cls: 'picks-own' },
   uncertain: { cls: 'picks-uncertain' },
   acquired:  { cls: 'picks-acquired' },
   traded:    { cls: 'picks-traded' },
@@ -4052,9 +4089,14 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
     cols.forEach(col => {
       const cell = tr.insertCell();
       col.cls.split(' ').forEach(c => c && cell.classList.add(c));
+      cell.classList.add('pick-c-' + col.key);
+      // A phone lays each pick out as a block and labels each part (CSS).
+      cell.dataset.label = col.label;
       td[col.key] = cell;
       if (col.key === 'year') {
         cell.textContent = newYear ? String(p.year) : '';
+        // A phone shows the year on every pick, since each is its own block.
+        cell.dataset.year = p.year;
       } else if (col.key === 'round') {
         const pill = document.createElement('span');
         pill.className = 'ui-badge pick-round' + (p.round === 1 ? ' ui-badge--accent' : '');
@@ -4065,14 +4107,18 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
       } else if (col.key === 'frozen') {
         const kind = col.value(p);
         if (kind) {
+          // Stepien: a quiet lock, not an alarm. The pick is fine; it just
+          // can't be traded right now (§ 7.2, the tooltip says why).
           const b = document.createElement('span');
-          b.className = 'ui-badge pick-flag ' + (kind === 'STEPIEN' ? 'pick-flag-warn' : 'pick-flag-bad');
-          b.textContent = kind === 'STEPIEN' ? 'Stepien' : kind === 'FROZEN' ? 'Frozen' : 'Legacy';
+          b.className = 'ui-badge pick-flag ' + (kind === 'STEPIEN' ? 'pick-flag-lock' : 'pick-flag-bad');
+          if (kind === 'STEPIEN') {
+            const i = document.createElement('span');
+            i.className = 'ui-icon ui-icon--lock'; i.setAttribute('aria-hidden', 'true');
+            b.append(i, document.createTextNode('Stepien'));
+          } else {
+            b.textContent = kind === 'FROZEN' ? 'Frozen' : 'Legacy';
+          }
           cell.appendChild(b);
-          // Phones drop the Restriction column; the badge rides under Held by.
-          const inline = b.cloneNode(true);
-          inline.classList.add('pick-flag-inline');
-          if (td.owner) td.owner.appendChild(inline);
         }
       } else {
         cell.textContent = col.value(p);
