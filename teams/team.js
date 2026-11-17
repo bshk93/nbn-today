@@ -608,8 +608,7 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-coach[hidden] { display: none; }
   .tn-coach:hover { background: rgba(255,255,255,0.88); text-decoration: none; }
   .tn-coach .ui-icon { font-size: var(--text-xl); color: var(--tp); }
-  .tn-coach b { display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; }
-  .tn-coach small { display: block; font-size: var(--text-xs); color: color-mix(in srgb, black 65%, white); margin-top: 0.1rem; }
+  .tn-coach b { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; }
   .tn-next { display: block; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
     padding: 0.9rem 1rem; min-width: 230px; color: white; text-decoration: none; }
   .tn-next:hover { background: rgba(0,0,0,0.4); }
@@ -1553,7 +1552,7 @@ document.body.innerHTML = `
         <div id="hero-next"></div>
         <a class="tn-coach" id="hero-coach" href="#coaching" hidden>
           <span class="ui-icon ui-icon--gear" aria-hidden="true"></span>
-          <span><b>Coaching</b><small>Settings, rotation, streamer note</small></span>
+          <b>Coaching</b>
         </a>
       </div>
     </header>
