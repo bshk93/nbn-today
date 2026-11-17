@@ -601,12 +601,13 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-share { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius-sm);
     font: inherit; font-size: var(--text-sm); padding: 0.25rem 0.7rem; cursor: pointer; }
   .tn-share:hover { background: rgba(255,255,255,0.12); }
-  /* Coaching, for the team's own staff: a solid white button under the next
-     game, the one bright thing on the band. */
+  /* Coaching, for the team's own staff: a solid button under the next game,
+     the one bright thing on the band. Off-white, tinted toward the team's
+     colour, so it stands out without glaring. */
   .tn-coach { display: flex; align-items: center; gap: 0.75rem; min-width: 230px; padding: 0.75rem 1rem;
-    background: white; color: color-mix(in srgb, var(--tp) 25%, black); border-radius: var(--radius); text-decoration: none; }
+    background: color-mix(in srgb, var(--tp) 10%, white); color: color-mix(in srgb, var(--tp) 25%, black); border-radius: var(--radius); text-decoration: none; }
   .tn-coach[hidden] { display: none; }
-  .tn-coach:hover { background: rgba(255,255,255,0.88); text-decoration: none; }
+  .tn-coach:hover { background: color-mix(in srgb, var(--tp) 18%, white); text-decoration: none; }
   .tn-coach .ui-icon { font-size: var(--text-xl); color: var(--tp); }
   .tn-coach b { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; }
   .tn-next { display: block; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
