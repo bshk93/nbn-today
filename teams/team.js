@@ -579,7 +579,8 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-watermark { position: absolute; right: 330px; top: 50%; transform: translateY(-50%); height: calc(100% - 2rem); width: auto; max-width: 26%;
     object-fit: contain; object-position: center; opacity: 0.13; filter: url(#tn-wm); pointer-events: none; }
   .tn-hero-main, .tn-hero-side { position: relative; z-index: 1; min-width: 0; }
-  .tn-hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem; }
+  .tn-hero-side { display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .tn-hero-side .tn-share { align-self: flex-end; }
   .tn-name-row { display: flex; align-items: center; gap: 1rem; }
   .tn-arrow { color: white; opacity: 0.6; font-size: var(--text-xl); line-height: 1; text-decoration: none; padding: 0 0.15rem; }
   .tn-arrow:hover { opacity: 1; }
@@ -600,6 +601,15 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-share { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); border-radius: var(--radius-sm);
     font: inherit; font-size: var(--text-sm); padding: 0.25rem 0.7rem; cursor: pointer; }
   .tn-share:hover { background: rgba(255,255,255,0.12); }
+  /* Coaching, for the team's own staff: a solid white button under the next
+     game, the one bright thing on the band. */
+  .tn-coach { display: flex; align-items: center; gap: 0.75rem; min-width: 230px; padding: 0.75rem 1rem;
+    background: white; color: color-mix(in srgb, var(--tp) 25%, black); border-radius: var(--radius); text-decoration: none; }
+  .tn-coach[hidden] { display: none; }
+  .tn-coach:hover { background: rgba(255,255,255,0.88); text-decoration: none; }
+  .tn-coach .ui-icon { font-size: var(--text-xl); color: var(--tp); }
+  .tn-coach b { display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; }
+  .tn-coach small { display: block; font-size: var(--text-xs); color: color-mix(in srgb, black 65%, white); margin-top: 0.1rem; }
   .tn-next { display: block; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.18); border-radius: var(--radius);
     padding: 0.9rem 1rem; min-width: 230px; color: white; text-decoration: none; }
   .tn-next:hover { background: rgba(0,0,0,0.4); }
@@ -708,6 +718,9 @@ const coachingConfigReady = new Promise(resolve => {
   /* History's sub-tabs: one group of its sections at a time (showSub). */
   .tn-subnav { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin: 0 0 var(--space-5); }
   .tn-subnav::-webkit-scrollbar { display: none; }
+  /* display above beats the browser's own [hidden] rule: without this a visitor
+     saw Front Office's Coaching button, which only the team's staff should. */
+  .tn-subnav[hidden] { display: none; }
   .tn-subnav button { white-space: nowrap; }
   #history section[data-sub].sub-off { display: none !important; }
   #office [data-osub].sub-off { display: none !important; }
@@ -1538,6 +1551,10 @@ document.body.innerHTML = `
       <div class="tn-hero-side">
         <button type="button" class="tn-share" id="team-share-btn" title="Share this team">Share</button>
         <div id="hero-next"></div>
+        <a class="tn-coach" id="hero-coach" href="#coaching" hidden>
+          <span class="ui-icon ui-icon--gear" aria-hidden="true"></span>
+          <span><b>Coaching</b><small>Settings, rotation, streamer note</small></span>
+        </a>
       </div>
     </header>
     <nav class="tn-nav" id="tn-nav" aria-label="Sections">
@@ -9939,6 +9956,17 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
 
   // The Coaching tab is private to the team. It starts hidden; show it now
   // that we know who is looking, and open it if the hash asked for it.
+  // Your own team's staff get Coaching on the banner, under the next game:
+  // the thing they come to this page to do, a click from anywhere on it.
+  if (canEditTeamSettings(abbr)) {
+    const coach = document.getElementById('hero-coach');
+    coach.hidden = false;
+    coach.addEventListener('click', e => {
+      e.preventDefault();
+      goToSection('coaching');
+      history.replaceState(null, '', '#coaching');
+    });
+  }
   if (canViewCoachingSettings(abbr)) {
     document.getElementById('tab-coaching').hidden = false;
     showOfficeSub(location.hash === '#irl' ? 'irl' : 'coaching');
