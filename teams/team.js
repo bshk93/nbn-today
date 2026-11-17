@@ -708,6 +708,9 @@ const coachingConfigReady = new Promise(resolve => {
   /* History's sub-tabs: one group of its sections at a time (showSub). */
   .tn-subnav { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin: 0 0 var(--space-5); }
   .tn-subnav::-webkit-scrollbar { display: none; }
+  /* display above beats the browser's own [hidden] rule: without this a visitor
+     saw Front Office's Coaching button, which only the team's staff should. */
+  .tn-subnav[hidden] { display: none; }
   .tn-subnav button { white-space: nowrap; }
   #history section[data-sub].sub-off { display: none !important; }
   #office [data-osub].sub-off { display: none !important; }
