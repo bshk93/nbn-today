@@ -4080,7 +4080,7 @@ function buildPicksTable(picks, teamAbbr, allPicks = []) {
 }
 
 const SEASON_COLS = [
-  { key: 'SEASON',         label: 'Season',  cls: 'bold',        sortField: 'SEASON',        defaultDir:  1 },
+  { key: 'SEASON',         label: 'Season',  cls: 'bold',        sortField: 'SEASON',        defaultDir: -1 },
   { key: 'wl',             label: 'W–L',     cls: 'right',       sortField: 'PCT',           defaultDir: -1,
     display: r => `${r.W}–${r.L}` },
   { key: 'PCT',            label: 'W%',      cls: 'right muted', sortField: 'PCT',           defaultDir: -1,
@@ -9892,7 +9892,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
       if (tadvr.status === 'fulfilled') joinTeamAdvanced(seasonRows, parseCSV(tadvr.value));
       seasonsWrap.innerHTML = '';
       buildTimeline(seasonRows);
-      seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', 1, makeSeasonRenderCell(seasonRows)));
+      seasonsWrap.appendChild(buildTable(SEASON_COLS, seasonRows, 'SEASON', -1, makeSeasonRenderCell(seasonRows)));
     });
   } else {
     seasonsWrap.innerHTML = '<div class="status">Failed to load season data.</div>';
@@ -10186,11 +10186,11 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
           return draftTeam === abbr || (rightsHolder[slug] || '').toUpperCase() === abbr;
         })
         .map(([slug, bio]) => makeDraftRow(slug, bio));
-      draftedRows.sort((a, b) => a.YEAR - b.YEAR || a.PICK - b.PICK);
+      draftedRows.sort((a, b) => b.YEAR - a.YEAR || a.PICK - b.PICK);   // newest draft first
 
       const DRAFTED_COLS = [
         { key: 'PLAYER',    label: 'Player',  cls: '',            sortField: 'PLAYER',    defaultDir:  1 },
-        { key: 'YEAR',      label: 'Year',    cls: 'right',       sortField: 'YEAR',      defaultDir:  1 },
+        { key: 'YEAR',      label: 'Year',    cls: 'right',       sortField: 'YEAR',      defaultDir: -1 },
         { key: 'PICK_LABEL',label: 'Pick',    cls: 'right muted', sortField: 'PICK',      defaultDir:  1 },
         { key: 'RIGHTS_TO', label: 'Rights',  cls: '',            sortField: 'RIGHTS_TO', defaultDir:  1 },
         { key: 'GP',        label: 'G',       cls: 'right',       sortField: 'GP',        defaultDir: -1 },
@@ -10222,7 +10222,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
         }
       };
       if (draftedRows.length) {
-        draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', 1, renderDraftedCell));
+        draftedWrap.appendChild(buildTable(DRAFTED_COLS, draftedRows, 'YEAR', -1, renderDraftedCell));
       } else {
         draftedWrap.innerHTML = '<div class="status">No draft history found.</div>';
       }
