@@ -704,6 +704,7 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-owner ul { list-style: none; padding: 0; margin: 0; font-size: var(--text-sm); display: flex; flex-direction: column; gap: 0.3rem; }
   .tn-owner li { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--text-secondary); }
   .tn-owner li .when { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tn-owner.tn-off { display: none; }
   .tn-owner li.none { color: var(--text-muted); }
   .tn-owner li a { color: var(--text-primary); text-decoration: none; }
   .tn-owner li a:hover { color: var(--accent-light); text-decoration: underline; }
@@ -1507,7 +1508,7 @@ document.body.innerHTML = `
       <div class="tn-grid" id="season-grid"><div class="status">Loading…</div></div>
     </section>
 
-    <section class="tn-section" id="roster">
+    <section class="tn-section" id="roster" hidden>
       <h2 class="tn-h2" id="roster-head">Roster</h2>
       <div class="tn-starters" id="starter-cards"></div>
       <div class="tab-panel" id="tab-overview">
@@ -1550,7 +1551,7 @@ document.body.innerHTML = `
       </div>
     </section>
 
-    <section class="tn-section" id="cap">
+    <section class="tn-section" id="cap" hidden>
       <h2 class="tn-h2">Cap &amp; Picks</h2>
       <div class="tn-card" id="cap-card" hidden></div>
       <section id="cap-health-section" style="display:none">
@@ -1571,7 +1572,7 @@ document.body.innerHTML = `
       </section>
     </section>
 
-    <section class="tn-section" id="schedule">
+    <section class="tn-section" id="schedule" hidden>
       <div class="tab-panel" id="tab-schedule">
       <section>
         <div class="sched-head">
@@ -1587,7 +1588,7 @@ document.body.innerHTML = `
       </div>
     </section>
 
-    <section class="tn-section" id="history">
+    <section class="tn-section" id="history" hidden>
       <h2 class="tn-h2">History</h2>
       <div class="tab-panel" id="tab-franchise">
       <section id="identity-section" style="display:none">
@@ -1646,7 +1647,7 @@ document.body.innerHTML = `
       </div>
     </section>
 
-    <section class="tn-section" id="office">
+    <section class="tn-section" id="office" hidden>
       <h2 class="tn-h2">Front Office</h2>
       <div class="tab-panel" id="tab-coaching" hidden>
       <section>
@@ -1699,9 +1700,8 @@ document.head.appendChild(_badgeScript);
 document.getElementById('team-share-btn').onclick = e =>
   window.nbnShare && nbnShare({ title: document.title, url: `${location.origin}/teams/${abbr}/` }, e.currentTarget);
 
-// Work for a section below the first screen runs the first time its panel
-// nears the screen, so a visit that never scrolls there doesn't fetch that
-// section's data or build its tables while the roster is loading. The panels
+// Work for a section runs the first time its section opens, so a visit that
+// never opens History doesn't fetch its data or build its tables. The panels
 // keep the old tab names (tab-franchise -> 'franchise'), and so does this.
 const _tabFirstShow = {};
 const _revealed = new Set(['overview']);
@@ -1717,47 +1717,49 @@ function revealPanel(tab) {
   if (tab === 'irl') mountIrlFeed();
   if (tab === 'schedule') mountSchedule();
 }
-const _panelObserver = new IntersectionObserver(entries => entries.forEach(e => {
-  if (!e.isIntersecting) return;
-  _panelObserver.unobserve(e.target);
-  revealPanel(e.target.id.slice(4));
-}), { rootMargin: '600px 0px' });
-// Watch the panels only once the page above them has its content: until the
-// season grid and the roster table are drawn, every panel sits within reach of
-// the top, and watching then would load all of them (the whole schedule, the
-// franchise history) on every visit.
-const _watchQueue = [];
-let _watching = false;
-function watchPanel(el) { if (_watching) _panelObserver.observe(el); else _watchQueue.push(el); }
-function startWatching() {
-  if (_watching) return;
-  _watching = true; _layoutGate.disconnect(); clearTimeout(_layoutFallback);
-  _watchQueue.splice(0).forEach(el => _panelObserver.observe(el));
+// A panel shown after the page loads (Coaching, once the viewer turns out to
+// be on this team's staff) loads at once if its section is open; otherwise
+// it loads with the section (showSection).
+function watchPanel(el) {
+  const sec = el.closest('.tn-section');
+  if (sec && !sec.hidden && !el.hidden) revealPanel(el.id.slice(4));
 }
-const _layoutGate = new MutationObserver(() => {
-  if (document.querySelector('#season-grid > *') && document.querySelector('#tab-overview table')) requestAnimationFrame(startWatching);
-});
-_layoutGate.observe(document.querySelector('.page'), { childList: true, subtree: true });
-const _layoutFallback = setTimeout(startWatching, 10000);
-document.querySelectorAll('.tab-panel').forEach(p => { if (p.id !== 'tab-overview') watchPanel(p); });
 // A fetch's text in Promise.allSettled's result shape, for the deferred loads.
 const settledText = url => fetch(url).then(r => { if (!r.ok) throw r; return r.text(); })
   .then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }));
 
-// Old tab links (#franchise, #coaching, #schedule, ...) and the new section
-// links (#season, #cap, ...) both land on their place on the page. A coaching
-// save reloads to #coaching, so it comes back to the section it was made in.
+// The bar under the header switches sections, one at a time, like tabs:
+// Season, Roster, Cap & Picks, Schedule, History, Front Office. A section's
+// panels load the first time it opens. Old tab links (#franchise, #coaching,
+// #draft, ...) open the section that holds them and scroll to the panel; a
+// coaching save reloads to #coaching, so it comes back where it was made.
+function showSection(sec) {
+  document.querySelectorAll('.tn-section').forEach(s => { s.hidden = s !== sec; });
+  document.querySelectorAll('#tn-nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + sec.id));
+  // The owner's front-office panel belongs with the season overview.
+  document.getElementById('owner-panel')?.classList.toggle('tn-off', sec.id !== 'season');
+  sec.querySelectorAll('.tab-panel').forEach(p => { if (!p.hidden) revealPanel(p.id.slice(4)); });
+}
 function goToSection(name, smooth) {
   const el = document.getElementById('tab-' + name) || document.getElementById(name);
-  if (!el || el.hidden) return false;
-  if (el.id.startsWith('tab-')) revealPanel(name);
-  el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
-  holdSection(el);
+  const sec = el && el.closest('.tn-section');
+  if (!sec || (el !== sec && el.hidden)) return false;
+  showSection(sec);
+  const nav = document.getElementById('tn-nav');
+  // A section's first panel (#schedule, #franchise) opens the tab from its
+  // top; only a panel further in (#draft, #coaching) scrolls to itself.
+  if (el !== sec && sec.querySelector('.tab-panel:not([hidden])') !== el) {
+    el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    holdSection(el);
+  } else if (nav.getBoundingClientRect().top < 0 || scrollY > nav.offsetTop) {
+    // Switching sections from further down: start the new one at its top.
+    scrollTo({ top: nav.offsetTop, behavior: 'auto' });
+  }
   return true;
 }
-// Sections above the target fill in as their data arrives, which pushes the
-// target down after the jump. Keep it pinned while the page settles, until the
-// reader scrolls on their own or 8 seconds pass.
+// A panel further down its section can be pushed down as the rows above it
+// fill in after the jump. Keep it pinned while it settles, until the reader
+// scrolls on their own or 8 seconds pass.
 let _holdStop = null;
 function holdSection(el) {
   if (_holdStop) _holdStop();
@@ -1769,24 +1771,15 @@ function holdSection(el) {
   ro.observe(document.body);
   _holdStop = stop;
 }
-// The sticky bar follows the scroll.
-{
-  const links = [...document.querySelectorAll('#tn-nav a')];
-  const sections = links.map(a => document.getElementById(a.getAttribute('href').slice(1)));
-  const mark = () => {
-    const y = 90;
-    let on = sections[0];
-    for (const sec of sections) if (sec && !sec.hidden && sec.getBoundingClientRect().top <= y) on = sec;
-    links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + on.id));
-  };
-  addEventListener('scroll', mark, { passive: true });
-  links.forEach(a => a.addEventListener('click', e => {
-    e.preventDefault();
-    const name = a.getAttribute('href').slice(1);
-    goToSection(name, true);
-    history.replaceState(null, '', name === 'season' ? location.pathname + location.search : '#' + name);
-  }));
-}
+document.querySelectorAll('#tn-nav a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const name = a.getAttribute('href').slice(1);
+  goToSection(name);
+  history.replaceState(null, '', name === 'season' ? location.pathname + location.search : '#' + name);
+}));
+document.querySelector('#tn-nav a[href="#season"]')?.classList.add('on');
+// A hash link decides where the page sits, not the browser's memory of the last visit.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 // IRL tab — this roster's real-world NBA game logs and injury news, from ESPN
 // via /api/irl (/irl-feed.js, shared with /nbnfl). Kept apart from every NBN
