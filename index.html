@@ -62,6 +62,73 @@
 
     .dash-card { min-width: 0; }
 
+    /* Quick Links (nav.js _mountQuickLinks): a small hub in the member's own
+       team colours. The team banner on top (primary fill, accent stripe, logo
+       on a white disc, as the team band does), then a tile per tool. The card
+       carries data-team, so --team-primary/-accent come from team-colors.css;
+       without a team they fall back to the site accent. White is the only
+       literal colour, on the team fill, as the design system allows. */
+    :root #dash-quick.dash-card { --qk-a: var(--team-accent, var(--accent-light)); --qk-p: var(--team-primary, var(--bg-hover)); }
+    .qk-head { margin-bottom: var(--space-3); }
+    .qk-kicker {
+      font-family: var(--font-display); font-size: var(--text-md); font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-primary);
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .qk-kicker::before { content: ''; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--qk-a); outline: 3px solid color-mix(in srgb, var(--qk-a) 25%, transparent); }
+    .qk-team {
+      position: relative; overflow: hidden; display: flex; align-items: center; gap: var(--space-3);
+      padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
+      background: var(--qk-p);
+      border-bottom: 3px solid var(--qk-a); border-radius: var(--radius);
+      color: white; text-decoration: none;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    /* The team's secondary mark (logos/secondary/), faded into the top right
+       and tinted white by #qk-wm, so it reads on every band colour. */
+    .qk-team-wm {
+      position: absolute; right: -0.5rem; top: -0.75rem; height: 130%; width: auto; max-width: 45%;
+      object-fit: contain; object-position: right top; opacity: 0.16; filter: url(#qk-wm);
+      transform: rotate(-8deg); pointer-events: none;
+    }
+    :root .qk-team:hover, :root .qk-tile:hover { text-decoration: none; }
+    .qk-team:hover, .qk-team:focus-visible { transform: translateY(-2px); box-shadow: var(--shadow-overlay); }
+    .qk-team-logo {
+      position: relative; z-index: 1; flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+      background: white; outline: 3px solid color-mix(in srgb, white 25%, transparent);
+    }
+    .qk-team-logo img { width: 32px; height: 32px; object-fit: contain; }
+    .qk-team-text { display: flex; flex-direction: column; min-width: 0; position: relative; z-index: 1; }
+    .qk-team-k { font-family: var(--font-display); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+    .qk-team-name {
+      font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; line-height: 1;
+      letter-spacing: 0.02em; text-transform: uppercase; text-wrap: balance;
+    }
+
+    .qk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: var(--space-2); }
+    .qk-tile {
+      position: relative; display: grid; grid-template-areas: "icon" "title" "sub"; justify-items: start;
+      row-gap: 0.15rem; padding: var(--space-3); border-radius: var(--radius);
+      background: var(--bg-subtle); border: 1px solid var(--border);
+      color: var(--text-primary); text-decoration: none; overflow: hidden;
+      transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    }
+    .qk-tile::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--qk-a); transform: scaleX(0); transform-origin: left; transition: transform 0.22s ease; }
+    .qk-tile:hover, .qk-tile:focus-visible { transform: translateY(-2px); border-color: color-mix(in srgb, var(--qk-a) 55%, var(--border)); background: var(--bg-hover); }
+    .qk-tile:hover::before, .qk-tile:focus-visible::before { transform: scaleX(1); }
+    .qk-icon {
+      grid-area: icon; display: grid; place-items: center; width: 2.1rem; height: 2.1rem; margin-bottom: var(--space-2);
+      border-radius: var(--radius); background: color-mix(in srgb, var(--qk-a) 16%, transparent);
+    }
+    .qk-icon .ni { width: 1.2rem; height: 1.2rem; color: var(--qk-a); --ni-b: var(--qk-p); }
+    .qk-title { grid-area: title; font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+    .qk-sub { grid-area: sub; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .qk-bal { font-variant-numeric: tabular-nums; }
+    @media (prefers-reduced-motion: reduce) {
+      .qk-team, .qk-tile, .qk-tile::before { transition: none; }
+      .qk-team:hover, .qk-tile:hover { transform: none; }
+    }
+
     /* Band 1 — your team, as a team hub: a band in the team's own colours
        (primary fill, accent stripe under it, so a near-black primary still
        reads on the dark theme), then the numbers as labelled blocks, then
@@ -536,7 +603,7 @@
       :root .dash {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: none;
-        grid-template-areas: "live" "hero" "team" "slate" "streamvod" "boxvod" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
+        grid-template-areas: "live" "hero" "team" "quick" "slate" "streamvod" "boxvod" "standings" "leaders" "race" "rookies" "feed" "tweets" "injuries" "ranks" "milestones" "otd" "movers" "market";
       }
       :root .dash-main, :root .dash-side { display: contents; }
       :root #dash-stream-vod { grid-area: streamvod; }
@@ -544,6 +611,7 @@
       :root #dash-feed      { grid-area: feed; }
       :root #dash-tweets    { grid-area: tweets; }
       :root #dash-injuries  { grid-area: injuries; }
+      :root #dash-quick     { grid-area: quick; }
       :root #dash-slate     { grid-area: slate; }
       :root #dash-standings { grid-area: standings; }
       :root #dash-ranks     { grid-area: ranks; }
@@ -1220,6 +1288,10 @@
 
     <!-- Sidebar: tonight's games, then the races and lists. -->
     <div class="dash-side">
+      <!-- Signed-in members only: Coaching Settings, their team, Betting (nav.js
+           _mountQuickLinks). Signed out it stays hidden. data-mine-off: these
+           are your team by definition, so my-team.js leaves them untinted. -->
+      <div class="dash-card" id="dash-quick" data-mine-off hidden></div>
       <div class="dash-card" id="dash-slate">
         <div class="dash-card-title" id="dash-slate-title">Next Up</div>
         <div class="dash-skel" style="width:80%"></div>
@@ -3524,7 +3596,7 @@
       }
       const headHtml = `<div class="dash-team-band">`
         + `<a class="dash-team-id" href="/teams/${esc(abbr)}/">`
-        + `<span class="dash-team-logo"><img src="/logos/sm/logo-${esc(abbr)}.webp" alt=""></span>`
+        + `<span class="dash-team-logo"><img src="/logos/md/logo-${esc(abbr)}.webp" alt=""></span>`
         + `<div><div class="dash-team-name">${esc(teamName)}</div>`
         + `<div class="dash-team-rec">${recordHtml || '<span class="dash-team-meta">Your team</span>'}</div></div></a>`
         + `<div class="dash-team-right">${phaseHtml}${glance.join('')}`

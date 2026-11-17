@@ -557,6 +557,53 @@ function _initNav() {
   }
 }
 
+// ── Quick links ──────────────────────────────────────────────────────────────
+// The homepage's Quick Links card (#dash-quick), for a signed-in member only:
+// their team's Coaching tab, their team page, and Betting. A member with no
+// open tenure gets only Betting. Signed out, the card stays hidden and no
+// request is made for it (no token, no /api/me). Rides on the profile's
+// /api/me and the your-team lookup, both cached, so it costs nothing extra.
+function _mountQuickLinks() {
+  const card = document.getElementById('dash-quick');
+  if (!card || card.dataset.done) return;
+  card.dataset.done = '1';
+  let token = null;
+  try { token = localStorage.getItem('nbn_token'); } catch { /* private browsing */ }
+  if (!token) return;
+  _fetchMe().then(me => (me && me.name ? _fetchMyTeam().then(team => ({ team })) : null)).then(res => {
+    if (!res) return;
+    const team = res.team && TEAM_LIST[res.team] ? res.team : null;
+    const tile = (href, icon, title, sub, extra = '') =>
+      `<a class="qk-tile" href="${href}"${extra}><span class="qk-icon">${_navIcon(icon)}</span>`
+      + `<span class="qk-title">${title}</span><span class="qk-sub">${sub}</span></a>`;
+    let html = '<div class="qk-head"><span class="qk-kicker">Quick Links</span></div>';
+    if (team) {
+      card.dataset.team = team;   // css/team-colors.css: --team-primary / --team-accent
+      const lc = team.toLowerCase();   // logos/md: drawn for a white disc (sm's UTA is white)
+      // The team's secondary mark, faded into the top right and tinted white
+      // (#qk-wm), as the team page's header does with the same files.
+      html += `<a class="qk-team" href="/teams/${team}/">`
+        + '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="qk-wm" color-interpolation-filters="sRGB">'
+        + '<feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  -0.138 -0.465 -0.047 1 0"/></filter></svg>'
+        + `<img class="qk-team-wm" src="/logos/secondary/logo-${lc}.webp" alt="" onerror="this.remove()">`
+        + `<span class="qk-team-logo"><img src="/logos/md/logo-${lc}.webp" alt=""></span>`
+        + `<span class="qk-team-text"><span class="qk-team-k">Your team</span>`
+        + `<span class="qk-team-name">${_escSearch(TEAM_LIST[team])}</span></span></a>`;
+    }
+    html += '<div class="qk-grid">'
+      + (team ? tile(`/teams/${team}/#coaching`, 'clipboard-list', 'Coaching', 'Lineup & minutes') : '')
+      + tile('/bet/', 'dice', 'Betting', '<span class="qk-bal">Bets · Pick\'em · futures</span>', ' data-qk="bet"')
+      + '</div>';
+    card.innerHTML = html;
+    card.hidden = false;
+    // The Betting tile's line becomes the member's balance once it's in.
+    _fetchBalance().then(n => {
+      const el = card.querySelector('.qk-bal');
+      if (el && n != null) el.textContent = _fmtNby(n) + ' to play';
+    });
+  }).catch(() => {});
+}
+
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 //
 // The site's left-hand navigation, drawn from NAV_SECTIONS. Three states:
@@ -1849,6 +1896,7 @@ let _memberCache = null;   // [{ name, meta, current }] from /api/members/public
 let _activeIdx = -1;
 let _rolePages = [];       // ROLE_PAGES this member actually qualifies for
 let _rolesChecked = false; // asked once per page, whatever the answer
+let _myTeamPages = [];     // pages on this member's own team (Coaching), once known
 
 function openSearch(initialQuery) {
   if (!_searchOverlay) _buildSearchOverlay();
@@ -1860,7 +1908,7 @@ function openSearch(initialQuery) {
   // Both are lazy and fire only when someone actually opens the search overlay,
   // so nav.js still makes no request on an ordinary page load — which matters,
   // because it loads on every page of the site.
-  Promise.all([_loadPlayerData(), _loadMemberData(), _loadCommitteePages()]).then(() => _filter());
+  Promise.all([_loadPlayerData(), _loadMemberData(), _loadCommitteePages(), _loadMyTeamPages()]).then(() => _filter());
 }
 
 function closeSearch() {
@@ -1922,10 +1970,10 @@ function _filter() {
     return;
   }
 
-  const pageMatches = SITE_PAGES.concat(_rolePages)
+  const pageMatches = _myTeamPages.concat(SITE_PAGES, _rolePages)
     .filter(p => p.title.toLowerCase().includes(q) || (p.keywords || []).some(k => k.includes(q)))
     .slice(0, 6)
-    .map(p => ({ type: 'Page', icon: p.icon, title: p.title, meta: '', href: p.href }));
+    .map(p => ({ type: 'Page', icon: p.icon, title: p.title, meta: p.meta || '', href: p.href }));
 
   const teamMatches = Object.entries(TEAM_LIST)
     .filter(([abbr, name]) => name.toLowerCase().includes(q) || abbr.toLowerCase().includes(q))
@@ -2017,6 +2065,20 @@ async function _loadCommitteePages() {
   // The jump box works without this; it just won't list the committee pages.
   const roles = await _myRoles();
   _rolePages = ROLE_PAGES.filter(p => _qualifies(p, roles));
+}
+
+// Coaching (rotation, minutes, coaching settings) is a tab on your own team's
+// page, shown only to that team's staff, so it's a search result only for a
+// member with an open tenure, and it goes straight to their team's #coaching.
+// A signed-out visitor makes no request for it (_maybeSignedIn).
+let _myTeamChecked = false;
+async function _loadMyTeamPages() {
+  if (_myTeamChecked || !_maybeSignedIn()) return;
+  _myTeamChecked = true;
+  const team = await _fetchMyTeam();
+  if (!team || !TEAM_LIST[team]) return;
+  _myTeamPages = [{ title: 'Coaching', meta: team, icon: 'clipboard-list', href: `/teams/${team}/#coaching`,
+    keywords: ['coach', 'lineup', 'lineups', 'rotation', 'minutes', 'depth chart', 'starters', 'coaching settings'] }];
 }
 
 function _escSearch(s) {
@@ -2348,6 +2410,7 @@ async function nbnShare({ title, text, url } = {}, btn) {
 function _initChrome() {
   _buildSidebar();
   _initNav();
+  _mountQuickLinks();
   _fetchProfile(); // keeps the unlocked-theme cache fresh, sidebar or not
 }
 
