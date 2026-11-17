@@ -6,9 +6,14 @@
 //   IrlFeed.mount(container, { sport: 'nfl', roster: 'CIN' })   // nbnfl/index.html
 //   IrlFeed.mount(container, { sport: 'nba', roster: 'BOS' })   // teams/team.js
 //
-// Two views: a newest-first feed of one-line summaries (a player's columns
-// depend on their role, so a feed of sentences works where one table can't),
-// and one player's full log, a table per season with their own columns.
+// Views, picked from a switch above the content:
+//  - Overview (basketball only, and its default): one row per player, with
+//    their status, recent and season averages and last game. A football
+//    player's columns depend on their role, so football has no such table.
+//  - Game log: a newest-first feed of one-line summaries, filtered to the
+//    last 7 days, 30 days or the whole season.
+//  - Injuries: only the players with injury news.
+// Picking a player shows their full log, a table per season.
 (function () {
   const DAYS_PER_PAGE = 21;
   const TZ = 'America/New_York';   // US leagues date their games in Eastern time
@@ -19,7 +24,16 @@
   const CSS = `
     .irl-controls { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
     .irl-controls .ui-select { width: auto; max-width: 100%; }
-    .irl-updated { color: var(--text-muted); font-size: var(--text-xs); }
+    .irl-updated { color: var(--text-muted); font-size: var(--text-xs); margin-left: auto; }
+    .irl-views { flex-wrap: nowrap; }
+    .irl-views button { white-space: nowrap; }
+    .irl-ov td { vertical-align: middle; }
+    .irl-ov tbody tr { cursor: pointer; }
+    .irl-ov .irl-who-cell { display: flex; align-items: center; gap: var(--space-2); min-width: 12rem; }
+    .irl-ov .grp-start { border-left: 1px solid var(--border-subtle); }
+    .irl-ov th.grp { text-align: center; border-bottom: 1px solid var(--border-subtle); }
+    .irl-ov .last { color: var(--text-secondary); font-size: var(--text-sm); white-space: nowrap; }
+    .irl-ov .ok { color: var(--text-muted); font-size: var(--text-sm); }
 
     .irl-day { margin-bottom: var(--space-5); }
     .irl-day-head {
@@ -31,7 +45,7 @@
 
     .irl-item { border-bottom: 1px solid var(--border-subtle); }
     .irl-row {
-      display: grid; grid-template-columns: 2rem minmax(0, 13rem) minmax(0, 9rem) minmax(0, 1fr);
+      display: grid; grid-template-columns: 2rem minmax(0, 13rem) minmax(0, 12rem) minmax(0, 1fr);
       align-items: center; gap: var(--space-3);
       padding: var(--space-2) var(--space-1); cursor: pointer;
     }
@@ -183,13 +197,19 @@
     }
     root.innerHTML = `
       <div class="irl-controls">
+        <div class="ui-segmented irl-views" role="group" aria-label="View" data-irl="views"></div>
         <select class="ui-select" data-irl="player" aria-label="Player"></select>
+        <select class="ui-select" data-irl="range" aria-label="Dates">
+          <option value="7"${sport === 'nba' ? ' selected' : ''}>Last 7 days</option><option value="30"${sport === 'nba' ? '' : ' selected'}>Last 30 days</option><option value="0">Whole season</option>
+        </select>
         <span class="irl-updated" data-irl="updated"></span>
       </div>
       <div data-irl="content"><div class="ui-loading">Loading…</div></div>
       <p class="irl-source">Real-world stats and injury news from ESPN, refreshed hourly. Nothing here touches the league’s own stats.</p>`;
     const $ = k => root.querySelector(`[data-irl="${k}"]`);
-    const state = { data: null, player: '', days: DAYS_PER_PAGE, open: new Set() };
+    const VIEWS = sport === 'nba' ? [['overview', 'Overview'], ['feed', 'Game log'], ['injuries', 'Injuries']]
+                                  : [['feed', 'Game log'], ['injuries', 'Injuries']];
+    const state = { data: null, player: '', days: DAYS_PER_PAGE, open: new Set(), view: VIEWS[0][0], range: sport === 'nba' ? 7 : 30 };   // football is weekly
 
     // Players with a stat line, in position order. A lineman or long snapper
     // never has one; they stay in the roster file but not on the page.
@@ -245,8 +265,9 @@
     }
 
     function renderFeed() {
-      const items = feedItems();
-      if (!items.length) { $('content').innerHTML = `<div class="ui-empty">No games yet.</div>`; return; }
+      const since = state.range ? Date.now() - state.range * 864e5 : 0;
+      const items = feedItems().filter(it => !since || new Date(it.date).getTime() >= since);
+      if (!items.length) { $('content').innerHTML = `<div class="ui-empty">${state.range ? `No games in the last ${state.range} days.` : 'No games yet.'}</div>`; return; }
       const days = [];
       for (const it of items) {
         const k = dayKey(it.date);
@@ -290,9 +311,65 @@
       $('content').innerHTML = card + (seasons || `<div class="ui-empty">No games in the seasons kept here.</div>`);
     }
 
+    // Overview: a row per player, this season. Averages are worked out from
+    // the games kept here (ESPN's own season averages can cover more games
+    // than `max_games` keeps).
+    function renderOverview() {
+      const avg = (games, key) => games.length ? (games.reduce((t, g) => t + num(g.stats[key]), 0) / games.length).toFixed(1) : '—';
+      const fgPct = games => {
+        let m = 0, a = 0;
+        games.forEach(g => { const [x, y = 0] = pair(g.stats['fieldGoalsMade-fieldGoalsAttempted']); m += x; a += y; });
+        return a ? (m / a * 100).toFixed(1) : '—';
+      };
+      const rows = shown().map(p => {
+        const season = [...p.seasons].sort((a, b) => b.year - a.year)[0];
+        // Only games he played: the list also holds preseason dates and games
+        // he sat (no stat line), which would count as zeros.
+        const games = season ? season.games.filter(g => 'points' in g.stats).sort((a, b) => b.date.localeCompare(a.date)) : [];
+        const last5 = games.slice(0, 5), last = games[0];
+        const inj = p.bio.injury;
+        const status = inj ? `<span class="ui-badge ui-badge--danger" title="${esc(injuryText(inj))}">${esc(inj.abbr || 'Injury')}</span>`
+                           : `<span class="ok">Active</span>`;
+        return `<tr data-player="${esc(p.espn_id)}">
+          <td><div class="irl-who-cell">${who(p)}</div></td>
+          <td>${status}</td>
+          <td class="num">${games.length}</td>
+          <td class="num grp-start">${avg(last5, 'points')}</td><td class="num">${avg(last5, 'totalRebounds')}</td><td class="num">${avg(last5, 'assists')}</td>
+          <td class="num grp-start">${avg(games, 'points')}</td><td class="num">${avg(games, 'totalRebounds')}</td><td class="num">${avg(games, 'assists')}</td><td class="num">${fgPct(games)}</td>
+          <td class="grp-start last">${last ? `${esc(shortDateFmt.format(new Date(last.date)))} · ${gameCell(last)}` : '—'}</td>
+        </tr>`;
+      }).join('');
+      $('content').innerHTML = rows ? `<div class="ui-table-wrap"><table class="ui-table irl-ov">
+        <thead><tr><th colspan="3"></th><th class="grp grp-start" colspan="3">Last 5</th><th class="grp grp-start" colspan="4">Season</th><th class="grp-start"></th></tr>
+        <tr><th>Player</th><th>Status</th><th class="num">G</th>
+          <th class="num grp-start">PTS</th><th class="num">REB</th><th class="num">AST</th>
+          <th class="num grp-start">PTS</th><th class="num">REB</th><th class="num">AST</th><th class="num">FG%</th><th class="grp-start">Last game</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>` : `<div class="ui-empty">No games yet.</div>`;
+      $('content').querySelectorAll('tr[data-player]').forEach(tr => tr.addEventListener('click', () => {
+        state.player = tr.dataset.player; $('player').value = state.player; render();
+      }));
+    }
+
+    // Injuries: every player with injury news, newest first.
+    function renderInjuries() {
+      const items = shown().filter(p => p.bio.injury).map(p => ({ p, inj: p.bio.injury, id: `${p.espn_id}:inj` }))
+        .sort((a, b) => String(b.inj.date || '').localeCompare(String(a.inj.date || '')));
+      $('content').innerHTML = items.length ? items.map(injuryItem).join('') : `<div class="ui-empty">No one on this roster has injury news.</div>`;
+      $('content').querySelectorAll('.irl-row').forEach(row => row.addEventListener('click', () => {
+        const id = row.parentElement.dataset.id;
+        state.open.has(id) ? state.open.delete(id) : state.open.add(id);
+        renderInjuries();
+      }));
+    }
+
     function render() {
       const p = state.player && state.data.players.find(x => x.espn_id === state.player);
-      p ? renderPlayer(p) : renderFeed();
+      $('views').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(!p && b.dataset.view === state.view)));
+      $('range').hidden = !!p || state.view !== 'feed';
+      if (p) return renderPlayer(p);
+      if (state.view === 'overview') return renderOverview();
+      if (state.view === 'injuries') return renderInjuries();
+      renderFeed();
     }
 
     (async () => {
@@ -310,6 +387,12 @@
         state.player = e.target.value; state.days = DAYS_PER_PAGE; state.open.clear();
         render();
       });
+      $('views').innerHTML = VIEWS.map(([id, label]) => `<button type="button" data-view="${id}">${label}</button>`).join('');
+      $('views').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        state.view = b.dataset.view; state.player = ''; $('player').value = ''; state.days = DAYS_PER_PAGE; state.open.clear();
+        render();
+      }));
+      $('range').addEventListener('change', e => { state.range = +e.target.value; state.days = DAYS_PER_PAGE; render(); });
       $('updated').textContent = state.data.updated_at ? `Updated ${stampFmt.format(new Date(state.data.updated_at))}` : '';
       render();
     })();

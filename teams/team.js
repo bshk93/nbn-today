@@ -710,6 +710,7 @@ const coachingConfigReady = new Promise(resolve => {
   .tn-subnav::-webkit-scrollbar { display: none; }
   .tn-subnav button { white-space: nowrap; }
   #history section[data-sub].sub-off { display: none !important; }
+  #office [data-osub].sub-off { display: none !important; }
   .tn-owner li.none { color: var(--text-muted); }
   .tn-owner li a { color: var(--text-primary); text-decoration: none; }
   .tn-owner li a:hover { color: var(--accent-light); text-decoration: underline; }
@@ -1657,7 +1658,10 @@ document.body.innerHTML = `
 
     <section class="tn-section" id="office" hidden>
       <h2 class="tn-h2">Front Office</h2>
-      <div class="tab-panel" id="tab-coaching" hidden>
+      <div class="ui-segmented tn-subnav" id="office-subnav" role="group" aria-label="Front Office" hidden>
+        <button type="button" data-osub="coaching">Coaching</button><button type="button" data-osub="irl">IRL</button>
+      </div>
+      <div class="tab-panel" id="tab-coaching" data-osub="coaching" hidden>
       <section>
         <h2 class="section-title">Settings</h2>
         <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
@@ -1686,7 +1690,7 @@ document.body.innerHTML = `
         </div>
       </section>
       </div>
-      <section>
+      <section data-osub="irl">
         <h2 class="section-title">IRL</h2>
         <p class="section-sub">This roster's real NBA games and injury news, kept apart from NBN's own stats.</p>
         <div class="tab-panel" id="tab-irl"></div>
@@ -1757,6 +1761,15 @@ function showSub(name) {
   subnav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.sub === name)));
   document.querySelectorAll('#history section[data-sub]').forEach(sec => sec.classList.toggle('sub-off', sec.dataset.sub !== name));
 }
+// Front Office's sub-tabs, Coaching and IRL. A visitor sees only IRL, so the
+// bar shows only once Coaching does (the team's own staff).
+function showOfficeSub(name) {
+  const coaching = !document.getElementById('tab-coaching').hidden;
+  if (!coaching) name = 'irl';
+  document.getElementById('office-subnav').hidden = !coaching;
+  document.querySelectorAll('#office-subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.osub === name)));
+  document.querySelectorAll('#office [data-osub]:not(button)').forEach(el => el.classList.toggle('sub-off', el.dataset.osub !== name));
+}
 function goToSection(name, smooth) {
   // A sub-tab name (#draft, #alltime, #franchise, #rivalries, ...) opens
   // History on that sub-tab.
@@ -1774,6 +1787,7 @@ function goToSection(name, smooth) {
   const sec = el && el.closest('.tn-section');
   if (!sec || (el !== sec && el.hidden)) return false;
   showSection(sec);
+  if (name === 'coaching' || name === 'irl') { showOfficeSub(name); }
   const nav = document.getElementById('tn-nav');
   // A section's first panel (#schedule, #franchise) opens the tab from its
   // top; only a panel further in (#draft, #coaching) scrolls to itself.
@@ -1808,6 +1822,11 @@ document.querySelectorAll('#tn-nav a').forEach(a => a.addEventListener('click', 
 }));
 document.querySelector('#tn-nav a[href="#season"]')?.classList.add('on');
 showSub('franchise');
+showOfficeSub('irl');
+document.querySelectorAll('#office-subnav button').forEach(b => b.addEventListener('click', () => {
+  showOfficeSub(b.dataset.osub);
+  history.replaceState(null, '', '#' + b.dataset.osub);
+}));
 document.querySelectorAll('#history-subnav button').forEach(b => b.addEventListener('click', () => {
   showSub(b.dataset.sub);
   history.replaceState(null, '', '#' + b.dataset.sub);
@@ -9876,6 +9895,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
   // that we know who is looking, and open it if the hash asked for it.
   if (canViewCoachingSettings(abbr)) {
     document.getElementById('tab-coaching').hidden = false;
+    showOfficeSub(location.hash === '#irl' ? 'irl' : 'coaching');
     watchPanel(document.getElementById('tab-coaching'));
     if (location.hash === '#coaching') goToSection('coaching');
   }
