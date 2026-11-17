@@ -3259,7 +3259,7 @@
       const slot = ['PG', 'SG', 'SF', 'PF', 'C'][k];
       nextEl.innerHTML = `<div class="hd"><span>Next game</span></div>
         <div class="match">${isHome ? 'vs' : '@'} <img src="/logos/sm/logo-${opp.toLowerCase()}.webp" alt=""> ${NBN.esc(opp)}</div>
-        <div class="when">${day}${next.time_et ? ' · ' + NBN.esc(next.time_et) : ''}${next.arena ? ' · ' + NBN.esc(next.arena) : ''}</div>
+        <div class="when">${day}${next.arena ? ' · ' + NBN.esc(next.arena) : ''}</div>
         ${them ? `<div class="vs">Projected at ${slot}: <a href="/players/?p=${encodeURIComponent(them.slug)}"><b>${NBN.esc(nbnPlayerName(them.name))}</b></a> (${them.ovr ?? '—'})</div>`
               : k < 0 && myFive.length ? '<div class="vs">Projected off the bench</div>' : ''}
         <a class="go" href="/preview/?away=${next.away_team}&home=${next.home_team}&date=${next.date}">Game preview</a>`;
