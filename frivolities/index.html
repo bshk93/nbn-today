@@ -2093,7 +2093,7 @@
           const arrow = (inv) => inv ? ' ←' : ' →';
 
           chartEl.innerHTML = `
-            <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif" id="qf-svg">
+            <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="var(--font-sans)" id="qf-svg">
               <defs><clipPath id="quad-clip" clipPathUnits="userSpaceOnUse"><circle r="${R - 1}"/></clipPath></defs>
               <rect class="quad-bg" x="0" y="0" width="${W}" height="${H}" fill="var(--bg-card)"/>
               <text x="${box.l}" y="30" fill="var(--text-primary)" font-size="22" font-weight="800">${qEsc(cfg.title || `${xV.label} vs ${yV.label}`)}</text>

@@ -353,7 +353,7 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pos2.ts-pos2-illegal.ok { color: var(--gold); }
   .ts-pin-mark { margin-left: 0.35rem; color: var(--text-muted); }
   .ts-pos-wait { margin-left: 0.35rem; font-size: var(--text-xs); color: var(--gold); }
-  .ts-pos-2k { margin-left: 0.4rem; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
+  .ts-pos-2k { margin-left: 0.4rem; font-family: var(--font-sans); font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
   .ts-take2k { width: auto; margin-right: 0.15rem; }
 
   /* Read view minutes: a share-of-48 bar and the figure. */
