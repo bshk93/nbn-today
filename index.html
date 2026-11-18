@@ -517,6 +517,11 @@
       /* The body's own top padding is enough, at every width: the first row
          then sits where every other page's header does, not a band lower. */
       padding-top: 0;
+      /* No side padding of its own: the body's 1rem is the page margin, as on
+         every other page. Both together left the homepage 2rem in from each
+         edge, which cost a phone 32px of width. */
+      padding-left: 0;
+      padding-right: 0;
     }
 
     /* Ticker: the latest night's finals, its top performers, then the
