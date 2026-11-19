@@ -354,6 +354,8 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pin-mark { margin-left: 0.35rem; color: var(--text-muted); }
   .ts-pos-wait { margin-left: 0.35rem; font-size: var(--text-xs); color: var(--gold); }
   .ts-pos-2k { margin-left: 0.4rem; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
+  button.ts-pos-2k { padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: none; cursor: pointer; }
+  button.ts-pos-2k:hover { color: var(--text-primary); border-color: var(--text-muted); }
   .ts-take2k { width: auto; margin-right: 0.15rem; }
 
   /* Read view minutes: a share-of-48 bar and the figure. */
@@ -7204,10 +7206,19 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       }
       const twoKNow = twoKDiffers(bio, attributesData[row.SLUG]);
       if (twoKNow) {
-        const hint = document.createElement('span');
+        // 2K has re-rated him since his positions were set. He keeps his
+        // own until the team takes 2K's; an editor can do that in one tap.
+        const hint = document.createElement(canEdit ? 'button' : 'span');
         hint.className = 'ts-pos-2k';
-        hint.textContent = `2K: ${twoKLabel(twoKNow)}`;
-        hint.title = "2K lists him differently. He stays as he is unless you take 2K's in edit mode (Details)";
+        hint.textContent = `2K now: ${twoKLabel(twoKNow)}`;
+        if (canEdit) {
+          hint.type = 'button';
+          hint.textContent += ' · Use';
+          hint.title = "2K has changed his positions. Tap to take 2K's (you still Save)";
+          hint.addEventListener('click', () => withToken(() => renderEditView({ take2k: row.SLUG })));
+        } else {
+          hint.title = "2K has changed his positions. He keeps his own unless his team takes 2K's";
+        }
         posTd.appendChild(hint);
       }
       if (posWaiting(row.SLUG)) {
@@ -7245,7 +7256,9 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     }
   }
 
-  function renderEditView() {
+  // `opts.take2k`: a slug to open with 2K's positions already picked, on
+  // the Details view (the read view's "2K now" tag).
+  function renderEditView(opts = {}) {
     editing = coachingTab.editing.roster = true;
     const startMinutes = (coachingTab.record && coachingTab.record.minutes) || {};
     let minutesDirty = false;
@@ -8052,6 +8065,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       };
       secSel.addEventListener('change', () => { refreshSecNote(); syncPosText(); });
       if (take2k) take2k.addEventListener('change', () => { fillSecSel(secSel.value); refreshSecNote(); syncPosText(); });
+      if (take2k && opts.take2k === row.SLUG) {
+        take2k.value = '2k';
+        take2k.dispatchEvent(new Event('change'));
+      }
       posWrap.appendChild(secSel);
       // The pin: check this position before every game. With no secondary it
       // means "make sure 2K has none", since 2K can add one back.
@@ -8196,7 +8213,12 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       toolbar.append(toggle, tools);
       wrapEl.insertBefore(help, wrapEl.firstChild);
       wrapEl.insertBefore(toolbar, wrapEl.firstChild);
-      setView('lineup');
+      setView(opts.take2k ? 'details' : 'lineup');
+      if (opts.take2k) toggle.querySelectorAll('button').forEach(x => {
+        const sel = x.dataset.view === 'details';
+        x.classList.toggle('active', sel);
+        x.setAttribute('aria-pressed', String(sel));
+      });
     } else {
       wrapEl.insertBefore(help, wrapEl.firstChild);
       setView('details');
