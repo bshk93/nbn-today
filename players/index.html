@@ -1260,7 +1260,7 @@
   const R = 'right';
 
   const SEASON_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: 1, iconSlot: true },
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
@@ -1284,7 +1284,7 @@
 
   // Makes and attempts a game, by kind of shot, beside the percentages.
   const SHOOT_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: 1, iconSlot: true },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
     { key: 'FGMPG',  label: 'FGM',    sortField: 'FGM',     defaultDir: -1, cls: R, display: pg('FGM') },
@@ -1306,7 +1306,7 @@
   const signed1 = f => r => r[f] === '' || r[f] == null ? '—' : ((+r[f] > 0 ? '+' : '') + (+r[f]).toFixed(1));
   const VALUE_HELP = AdvancedStats.VALUE_HELP;
   const ADV_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: 1, iconSlot: true },
     { key: 'AGE',    label: 'Age',    sortField: 'AGE',     defaultDir: -1, cls: R },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
@@ -1329,7 +1329,7 @@
 
   // What his season was worth: win shares, box plus/minus and VORP.
   const VALUE_COLS = [
-    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: -1, iconSlot: true },
+    { key: 'SEASON', label: 'Season', sortField: 'SEASON',  defaultDir: 1, iconSlot: true },
     { key: 'TEAM',   label: 'Team',   sortField: 'TEAM',    defaultDir:  1, cls: 'muted' },
     { key: 'G',      label: 'G',      sortField: 'G',       defaultDir: -1, cls: R },
     { key: 'MPG',    label: 'MIN',    sortField: 'MIN',     defaultDir: -1, cls: 'right muted', display: pg('MIN') },
@@ -1342,7 +1342,7 @@
   ];
 
   const HIGHS_COLS = [
-    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir: -1, iconSlot: true },
+    { key: 'SEASON',    label: 'Season', sortField: 'SEASON',    defaultDir: 1, iconSlot: true },
     { key: 'TEAM',      label: 'Team',   sortField: 'TEAM',      defaultDir:  1, cls: 'muted' },
     { key: 'G',         label: 'G',      sortField: 'G',         defaultDir: -1, cls: R },
     { key: 'HIGH_P',    label: 'PTS',    sortField: 'HIGH_P',    defaultDir: -1, cls: R },
@@ -1517,7 +1517,7 @@
     function rebuildBody() {
       const sorted = [...rows].sort((a, b) => {
         // By season, either way round, a season's playoffs stay under its
-        // regular season: 24-25, then 24-25 Playoffs, then 23-24.
+        // regular season: 24-25, then 24-25 Playoffs, then 25-26.
         if (sortField === 'SEASON') {
           const sa = parseFloat(a.SEASON) || 0, sb = parseFloat(b.SEASON) || 0;
           if (sa !== sb) return (sa - sb) * sortDir;
