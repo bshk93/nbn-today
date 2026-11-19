@@ -354,9 +354,22 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-pin-mark { margin-left: 0.35rem; color: var(--text-muted); }
   .ts-pos-wait { margin-left: 0.35rem; font-size: var(--text-xs); color: var(--gold); }
   .ts-pos-2k { margin-left: 0.4rem; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 500; color: var(--text-muted); }
-  button.ts-pos-2k { padding: 0.1rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: none; cursor: pointer; }
+  button.ts-pos-2k { padding: 0.05rem 0.4rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; cursor: pointer; white-space: nowrap; }
   button.ts-pos-2k:hover { color: var(--text-primary); border-color: var(--text-muted); }
-  .ts-take2k { width: auto; margin-right: 0.15rem; }
+  .ts-pos-btn { display: inline-flex; align-items: center; gap: 0.15rem; padding: 0.3rem 0.55rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; color: var(--text-primary); font: inherit; cursor: pointer; white-space: nowrap; }
+  .ts-pos-btn:hover { border-color: var(--text-muted); }
+  .ts-pos-btn.ts-sec-illegal .ts-pos2 { color: var(--danger); font-weight: 700; }
+  .ts-pos-btn .ts-pos-2k { margin-left: 0.3rem; }
+  .pp-now { font-size: var(--text-sm); margin-bottom: 0.8rem; }
+  .pp-now b { font-family: var(--font-display); font-size: var(--text-base); }
+  .pp-block { margin-bottom: 0.9rem; }
+  .pp-block .ui-segmented { flex-wrap: wrap; }
+  .pp-label { font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.35rem; }
+  .pp-note { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 0.45rem; }
+  .pp-hint { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.35rem; }
+  .pp-pin { display: flex; gap: 0.5rem; align-items: flex-start; font-size: var(--text-sm); cursor: pointer; }
+  .pp-pin input { margin: 0.2rem 0 0; flex: none; }
+  .pp-pin small { display: block; font-size: var(--text-xs); color: var(--text-muted); }
 
   /* Read view minutes: a share-of-48 bar and the figure. */
   .ts-min { width: 9.5rem; text-align: right !important; white-space: nowrap; }
@@ -393,8 +406,6 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-input { height: 2rem; padding: 0 0.4rem; font-size: var(--text-sm); border-radius: var(--radius-sm); }
   .ts-num-input { width: 2.6rem; text-align: center; font-family: var(--font-display); font-size: var(--text-base); font-weight: 700; }
   .ts-pos-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
-  .ts-sec-select { width: auto; color: var(--text-secondary); font-family: inherit; }
-  .ts-sec-select.ts-sec-illegal { color: var(--danger); border-color: var(--danger); }
   .ts-min-edit { display: inline-flex; align-items: center; gap: 0.4rem; }
   .ts-stepper { display: inline-flex; align-items: stretch; height: 2rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-page); overflow: hidden; }
   .ts-stepper button { width: 1.75rem; border: none; background: none; color: var(--text-muted); font: inherit; font-size: var(--text-base); line-height: 1; cursor: pointer; padding: 0; }
@@ -405,22 +416,20 @@ const coachingConfigReady = new Promise(resolve => {
   .ts-stepper:focus-within { border-color: var(--accent); box-shadow: var(--focus-ring); }
   .ts-stepper input::-webkit-outer-spin-button, .ts-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .ts-min-edit:has(.ts-res input:checked) .ts-stepper { opacity: 0.35; }
-  /* RES and the pin are toggles drawn as square chips; the checkbox inside
+  /* RES is a toggle drawn as a square chip; the checkbox inside
      stays the control, for the keyboard and for the code that reads it. */
-  :is(.ts-res, .ts-pin) {
+  .ts-res {
     position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem;
     height: 2rem; min-width: 2rem; padding: 0 0.5rem;
     font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.06em;
     color: var(--text-dim); border: 1px solid var(--border); border-radius: var(--radius-sm);
     cursor: pointer; user-select: none;
   }
-  :is(.ts-res, .ts-pin):hover { color: var(--text-secondary); border-color: var(--text-muted); }
-  :is(.ts-res, .ts-pin) input { position: absolute; opacity: 0; pointer-events: none; }
+  .ts-res:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+  .ts-res input { position: absolute; opacity: 0; pointer-events: none; }
   .ts-res:has(input:checked) { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 12%, transparent); }
-  .ts-pin { padding: 0; }
-  .ts-pin:has(input:checked) { color: var(--accent-light); border-color: color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
-  :is(.ts-res, .ts-pin):has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
-  :is(.ts-res, .ts-pin):has(input:disabled) { opacity: 0.4; cursor: default; }
+  .ts-res:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ts-res:has(input:disabled) { opacity: 0.4; cursor: default; }
 
   /* Edit mode's two views of the same rows: Lineup (order and minutes) and
      Details (jersey, secondary, pin). One table, so nothing has to be kept
@@ -6768,6 +6777,109 @@ function secondaryIsLegal(bio, attrSnap, sec) {
   return !sec || sec === 'none' || secondaryPool(bio, attrSnap).includes(sec);
 }
 
+// The coaching tab's position panel for one player: keep his positions or
+// take 2K's, pick a secondary, and the streamer's pin. Works on a draft of
+// `pos` ({take2k, sec, pin}) and writes it back on Done; Save still sends.
+// `sec` is '' for the default secondary, 'none' to drop it, or a position.
+function openPositionPanel({ name, bio, attrSnap, twoKNow, rowPrimary, pos, onDone }) {
+  const draft = { ...pos };
+  const draftBio = () => (draft.take2k ? bioWith2K(bio, twoKNow) : bio);
+  const segBtn = (label, on, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.setAttribute('aria-pressed', String(on));
+    if (on) b.classList.add('active');
+    b.addEventListener('click', fn);
+    return b;
+  };
+  const describe = (primary, sec) => primary + (sec ? ` / ${sec}` : '');
+  openConfirmModal({
+    title: name,
+    sub: 'Positions',
+    confirmLabel: 'Done',
+    onConfirm: () => { Object.assign(pos, draft); onDone(); },
+    render(body) {
+      const draw = () => {
+        const primary = primaryPos(draftBio(), attrSnap);
+        const dflt = defaultSecondary(draftBio(), attrSnap);
+        const sec = draft.sec === 'none' ? null : (draft.sec || dflt);
+        body.replaceChildren();
+        const now = document.createElement('p');
+        now.className = 'pp-now';
+        now.innerHTML = `Plays as <b>${describe(primary, sec)}</b>`;
+        body.appendChild(now);
+
+        if (twoKNow) {
+          const box = document.createElement('div');
+          box.className = 'pp-block';
+          const p = document.createElement('p');
+          p.className = 'pp-note';
+          p.innerHTML = `2K now lists him as <b>${twoKLabel(twoKNow)}</b>. He stays as he is until you take 2K's.`;
+          const seg = document.createElement('div');
+          seg.className = 'ui-segmented';
+          seg.setAttribute('role', 'group');
+          const pick = take => () => {
+            draft.take2k = take;
+            // A secondary that is now his primary falls back to the default.
+            if (draft.sec === primaryPos(draftBio(), attrSnap)) draft.sec = '';
+            draw();
+          };
+          seg.append(segBtn(`Keep ${rowPrimary}`, !draft.take2k, pick(false)),
+                     segBtn(`Use 2K's (${twoKNow.primary})`, draft.take2k, pick(true)));
+          box.append(p, seg);
+          body.appendChild(box);
+        }
+
+        // § 2.3: one step from the primary, or a position 2K has listed for
+        // him. Anything else counts once the streamer OKs it.
+        const pool = secondaryPool(draftBio(), attrSnap);
+        const others = POSITION_ORDER.filter(x => x !== primary && !pool.includes(x));
+        const setSec = x => () => {
+          draft.sec = x === null ? (dflt ? 'none' : '') : (x === dflt ? '' : x);
+          draw();
+        };
+        const secBlock = (label, list, withNone, note) => {
+          const box = document.createElement('div');
+          box.className = 'pp-block';
+          const h = document.createElement('div');
+          h.className = 'pp-label';
+          h.textContent = label;
+          const seg = document.createElement('div');
+          seg.className = 'ui-segmented';
+          seg.setAttribute('role', 'group');
+          seg.setAttribute('aria-label', label);
+          list.forEach(x => seg.appendChild(segBtn(x, sec === x, setSec(x))));
+          if (withNone) seg.appendChild(segBtn('None', !sec, setSec(null)));
+          box.append(h, seg);
+          if (note) {
+            const n = document.createElement('p');
+            n.className = 'pp-hint';
+            n.textContent = note;
+            box.appendChild(n);
+          }
+          body.appendChild(box);
+        };
+        secBlock('Secondary', pool, true);
+        if (others.length) secBlock('Needs a streamer OK', others, false,
+          `Not one step from ${primary}, and 2K has never listed him there (§ 2.3). It counts once a streamer sets it in 2K.`);
+
+        const pinRow = document.createElement('label');
+        pinRow.className = 'pp-pin';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = draft.pin;
+        cb.addEventListener('change', () => { draft.pin = cb.checked; });
+        const t = document.createElement('span');
+        t.innerHTML = 'Streamer checks his positions before every game<small>2K resets positions when ratings update.</small>';
+        pinRow.append(cb, t);
+        body.appendChild(pinRow);
+      };
+      draw();
+    },
+  });
+}
+
 // § 2.3: a player keeps his positions until his team takes 2K's current
 // ones. 2K's listing when it differs from his, or null. Mirrors
 // differs_from_2k.
@@ -7196,28 +7308,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
           if (ok) sec.classList.add('ok');
         }
       }
-      if (posLocked(row.SLUG)) {
-        const pin = document.createElement('span');
-        pin.className = 'ts-pin-mark';
-        pin.classList.add('ui-icon', 'ui-icon--pin');
-        pin.title = secondary ? 'The streamer checks this position before every game'
-          : 'The streamer checks before every game that 2K gives him no secondary position';
-        posTd.appendChild(pin);
-      }
-      const twoKNow = twoKDiffers(bio, attributesData[row.SLUG]);
-      if (twoKNow) {
-        // 2K has re-rated him since his positions were set. He keeps his
-        // own until the team takes 2K's; an editor can do that in one tap.
+      // 2K has re-rated him since his positions were set. He keeps his own
+      // until the team takes 2K's, which the marker opens for an editor.
+      if (twoKDiffers(bio, attributesData[row.SLUG])) {
         const hint = document.createElement(canEdit ? 'button' : 'span');
         hint.className = 'ts-pos-2k';
-        hint.textContent = `2K now: ${twoKLabel(twoKNow)}`;
+        hint.textContent = '2K changed';
+        hint.title = "2K lists him differently now. He keeps his own positions unless his team takes 2K's";
         if (canEdit) {
           hint.type = 'button';
-          hint.textContent += ' · Use';
-          hint.title = "2K has changed his positions. Tap to take 2K's (you still Save)";
-          hint.addEventListener('click', () => withToken(() => renderEditView({ take2k: row.SLUG })));
-        } else {
-          hint.title = "2K has changed his positions. He keeps his own unless his team takes 2K's";
+          hint.addEventListener('click', () => withToken(() => renderEditView({ openPos: row.SLUG })));
         }
         posTd.appendChild(hint);
       }
@@ -7256,8 +7356,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     }
   }
 
-  // `opts.take2k`: a slug to open with 2K's positions already picked, on
-  // the Details view (the read view's "2K now" tag).
+  // `opts.openPos`: a slug whose position panel opens straight away, on
+  // the Details view (the read view's "2K changed" marker).
   function renderEditView(opts = {}) {
     editing = coachingTab.editing.roster = true;
     const startMinutes = (coachingTab.record && coachingTab.record.minutes) || {};
@@ -7999,52 +8099,25 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       posTd.className = 'ts-pos';
       const posWrap = document.createElement('span');
       posWrap.className = 'ts-pos-edit';
-      // § 2.3: he stays as he is, or his team takes 2K's current positions.
-      // The choice only shows when 2K lists him differently.
+      // One button per player shows his positions; tapping it opens a panel
+      // (openPositionPanel) for the three choices: take 2K's current
+      // positions (§ 2.3, offered only when 2K lists him differently), the
+      // secondary, and the pin. `pos` holds the row's choices; the objects
+      // below give Save and the § 2.3 note the same shape as before.
       const twoKNow = twoKDiffers(bio, attributesData[row.SLUG]);
-      let take2k = null;
-      const rowBio = () => (take2k && take2k.value === '2k' ? bioWith2K(bio, twoKNow) : bio);
+      const pos = { take2k: false, sec: secondaryPos, pin: posLocked(row.SLUG) };
+      const rowBio = () => (pos.take2k ? bioWith2K(bio, twoKNow) : bio);
       const curPrimary = () => primaryPos(rowBio(), attributesData[row.SLUG]);
       const curDefaultSec = () => defaultSecondary(rowBio(), attributesData[row.SLUG]);
       const rowPrimary = primaryPos(bio, attributesData[row.SLUG]);
-      if (twoKNow) {
-        take2k = document.createElement('select');
-        take2k.className = 'ts-input ts-take2k';
-        take2k.setAttribute('aria-label', 'Primary position');
-        take2k.title = "2K lists him differently. Keep him as he is, or take 2K's positions";
-        take2k.append(new Option(`${rowPrimary} (keep)`, ''), new Option(`${twoKNow.primary} (2K)`, '2k'));
-        posWrap.appendChild(take2k);
-      } else {
-        posWrap.appendChild(document.createTextNode(rowPrimary));
-      }
-      // Rulebook § 2.3: the secondary is one step either side of the primary,
-      // or any position 2K has listed for him. Any other position can still
-      // be picked, marked as an exception: one the streamer has to OK.
-      // Blank keeps the default secondary; 'none' removes it.
-      const secSel = document.createElement('select');
-      secSel.className = 'ts-input ts-sec-select';
-      secSel.setAttribute('aria-label', 'Secondary position');
-      const fillSecSel = keep => {
-        const primary = curPrimary();
-        const eligiblePos = secondaryPool(rowBio(), attributesData[row.SLUG]);
-        const otherPos = POSITION_ORDER.includes(primary)
-          ? POSITION_ORDER.filter(p => p !== primary && !eligiblePos.includes(p)) : [];
-        const dflt = curDefaultSec();
-        if (keep === dflt || keep === primary) keep = '';
-        secSel.replaceChildren();
-        [{ value: '', label: dflt ? `/ ${dflt} (2K)` : '/ – (2K)' },
-         ...(dflt ? [{ value: 'none', label: '/ none' }] : []),
-         ...eligiblePos.filter(p => p !== dflt).map(p => ({ value: p, label: `/ ${p}` })),
-         ...otherPos.map(p => ({ value: p, label: `/ ${p} · exception` }))].forEach(o => {
-          secSel.appendChild(new Option(o.label, o.value, false, o.value === keep));
-        });
-        // Keep a saved exception selectable even if the primary has moved.
-        if (keep && ![...secSel.options].some(o => o.value === keep)) {
-          secSel.appendChild(new Option(`/ ${keep} · exception`, keep, false, true));
-        }
-      };
-      fillSecSel(secondaryPos);
-      // Lineup view shows the positions as text; the select is on Details.
+      const posBtn = document.createElement('button');
+      posBtn.type = 'button';
+      posBtn.className = 'ts-pos-btn';
+      posBtn.dataset.slug = row.SLUG;
+      const take2k = twoKNow ? { get value() { return pos.take2k ? '2k' : ''; } } : null;
+      const secSel = { get value() { return pos.sec; }, classList: posBtn.classList };
+      const pinCheck = { get checked() { return pos.pin; } };
+      // Lineup view shows the positions as text; the button is on Details.
       const posText = document.createElement('span');
       posText.className = 'ts-pos-text';
       // On a phone the Pos column gives way, and this copy under the name
@@ -8052,38 +8125,32 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       const posSub = document.createElement('div');
       posSub.className = 'ts-pos-sub';
       tr.querySelector('.ts-name').appendChild(posSub);
-      const syncPosText = () => {
-        const sec = secSel.value === 'none' ? '' : (secSel.value || curDefaultSec());
-        posText.textContent = curPrimary();
+      const posLabel = () => {
+        const sec = pos.sec === 'none' ? '' : (pos.sec || curDefaultSec());
+        const f = document.createDocumentFragment();
+        f.append(curPrimary());
         if (sec) {
           const s2 = document.createElement('span');
           s2.className = 'ts-pos2';
           s2.textContent = ` / ${sec}`;
-          posText.appendChild(s2);
+          f.appendChild(s2);
         }
-        posSub.replaceChildren(...posText.cloneNode(true).childNodes);
+        return f;
       };
-      secSel.addEventListener('change', () => { refreshSecNote(); syncPosText(); });
-      if (take2k) take2k.addEventListener('change', () => { fillSecSel(secSel.value); refreshSecNote(); syncPosText(); });
-      if (take2k && opts.take2k === row.SLUG) {
-        take2k.value = '2k';
-        take2k.dispatchEvent(new Event('change'));
-      }
-      posWrap.appendChild(secSel);
-      // The pin: check this position before every game. With no secondary it
-      // means "make sure 2K has none", since 2K can add one back.
-      const pinLabel = document.createElement('label');
-      pinLabel.className = 'ts-pin';
-      pinLabel.title = 'Have the streamer check this position before every game';
-      const pinCheck = document.createElement('input');
-      pinCheck.type = 'checkbox';
-      pinCheck.checked = posLocked(row.SLUG);
-      pinCheck.setAttribute('aria-label', 'Check position before every game');
-      const pinIcon = document.createElement('span');
-      pinIcon.className = 'ui-icon ui-icon--pin';
-      pinIcon.setAttribute('aria-hidden', 'true');
-      pinLabel.append(pinCheck, pinIcon);
-      posWrap.appendChild(pinLabel);
+      const syncPosText = () => {
+        posText.replaceChildren(posLabel());
+        posSub.replaceChildren(posLabel());
+        posBtn.replaceChildren(posLabel());
+        if (pos.pin) posBtn.insertAdjacentHTML('beforeend', ' <i class="ui-icon ui-icon--pin ts-pin-mark" aria-hidden="true"></i>');
+        if (twoKNow && !pos.take2k) posBtn.insertAdjacentHTML('beforeend', ' <span class="ts-pos-2k">2K changed</span>');
+        posBtn.setAttribute('aria-label', `Positions for ${displayNameFromBio(bio.name || '') || row.SLUG}: ${posBtn.textContent.trim()}. Tap to change`);
+      };
+      posBtn.addEventListener('click', () => openPositionPanel({
+        name: displayNameFromBio(bio.name || '') || row.SLUG,
+        bio, attrSnap: attributesData[row.SLUG], twoKNow, rowPrimary, pos,
+        onDone: () => { refreshSecNote(); syncPosText(); },
+      }));
+      posWrap.appendChild(posBtn);
       syncPosText();
       posTd.append(posText, posWrap);
 
@@ -8170,7 +8237,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     // over the whole table.
     const HELP = {
       lineup: '<b>Drag</b> a player to reorder him (on a phone, press and hold first). Drop him <b>on a player</b> to swap the two, or <b>between rows</b> to slot him in. Players under Inactive are not in the game. <b>Swipe</b> a player\'s minutes left or right to change them.',
-      details: 'Primary positions come from 2K. <i class="ui-icon ui-icon--pin" aria-hidden="true"></i> has the streamer check a player\'s positions before every game, since 2K resets them when ratings update. A secondary more than one step from the primary (§ 2.3) counts once the streamer OKs it.',
+      details: '<b>Tap</b> a player\'s positions to change his secondary, take 2K\'s new positions, or have the streamer check them before every game.',
     };
     const help = document.createElement('p');
     help.className = 'ts-help';
@@ -8213,8 +8280,8 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       toolbar.append(toggle, tools);
       wrapEl.insertBefore(help, wrapEl.firstChild);
       wrapEl.insertBefore(toolbar, wrapEl.firstChild);
-      setView(opts.take2k ? 'details' : 'lineup');
-      if (opts.take2k) toggle.querySelectorAll('button').forEach(x => {
+      setView(opts.openPos ? 'details' : 'lineup');
+      if (opts.openPos) toggle.querySelectorAll('button').forEach(x => {
         const sel = x.dataset.view === 'details';
         x.classList.toggle('active', sel);
         x.setAttribute('aria-pressed', String(sel));
@@ -8224,6 +8291,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       setView('details');
     }
     refreshSecNote();
+    if (opts.openPos) {
+      const btn = [...table.querySelectorAll('.ts-pos-btn')].find(b => b.dataset.slug === opts.openPos);
+      if (btn) btn.click();
+    }
     secNote.classList.add('ts-only-details');
     twoWayNote.classList.add('ts-only-lineup');
     wrapEl.insertBefore(secNote, wrapEl.lastChild);
