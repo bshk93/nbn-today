@@ -1289,6 +1289,10 @@
         const holdLine = el('div', 'hold-row');
         holdLine.id = 'hold-amount-row';
         yrs.appendChild(holdLine);
+        // Filled in by paintProration, same source as the hold line.
+        const prorationLine = el('div', 'hold-row');
+        prorationLine.id = 'proration-row';
+        yrs.appendChild(prorationLine);
         cf.appendChild(yrs);
 
         // Minimum deals never reach this — § 3.12 prices every year off the
@@ -1562,7 +1566,26 @@
         if (seq !== validateSeq) return;
         renderValidation(panel, lastValidation);
         paintHold((lastValidation.fact_sheet || {}).trailing_hold);
+        paintProration(lastValidation.fact_sheet || {});
         gateSubmit();
+      }
+
+      // § 3.12: an in-season minimum's Year 1 is prorated on the day the deal
+      // is signed, not the day the offer is filed. The offer keeps the
+      // full-season figure; the API prorates it at signing. This says what
+      // that comes to if it were signed today, off the validator's figure.
+      function paintProration(f) {
+        const line = box.querySelector('#proration-row');
+        if (!line) return;
+        const p = f.minimum_proration;
+        if (F.method !== 'minimum' || F.type === 'two-way' || !p || !f.prorated_year1) {
+          line.textContent = '';
+          return;
+        }
+        line.textContent = `${p.season} is prorated on the day it's signed: `
+          + `$${f.prorated_year1.toLocaleString("en-US")} if signed today (${p.days} of ${p.of} days left)`;
+        line.title = 'In-season minimum deals pay only the regular-season days left (§ 3.12). '
+          + 'The signing day counts as a day left.';
       }
 
       // § 3.10's trailing hold, priced live as the deal is built. The figure is
