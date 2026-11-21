@@ -271,6 +271,11 @@
       { key: 'attributes', label: 'Attributes', defaultDir: -1, sortValue: e => Object.keys(e.attributes || {}).length },
     ];
 
+    // Special request: `updates` and admin only, so the column is added once
+    // /api/auth/me says the viewer is one, and its flags come from their own
+    // endpoint rather than the public list.
+    const SPECIAL_COL = { key: 'special', label: 'Special request', defaultDir: -1, sortValue: e => e.special ? 1 : 0 };
+
     function populateDateSelect() {
       const counts = new Map();
       allEntries.forEach(e => counts.set(e.date, (counts.get(e.date) || 0) + 1));
@@ -428,6 +433,38 @@
       return box;
     }
 
+    function specialTitle(entry) {
+      if (!entry.special) return 'Flag this change as a special request';
+      return `Flagged by ${entry.special.by} on ${(entry.special.at || '').slice(0, 10)}`;
+    }
+
+    function specialCell(entry) {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = !!entry.special;
+      box.title = specialTitle(entry);
+      box.setAttribute('aria-label', `${nbnPlayerName(entry.name)} special request`);
+      box.addEventListener('change', async () => {
+        const want = box.checked;
+        box.disabled = true;
+        try {
+          const r = await fetch('/api/ratings-changes/special', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('nbn_token')}` },
+            body: JSON.stringify({ slug: entry.slug, date: entry.date, special: want }),
+          });
+          if (!r.ok) throw new Error();
+          entry.special = (await r.json()).special;
+        } catch {
+          box.checked = !want;
+          alert('Could not save that flag. Try again.');
+        }
+        box.disabled = false;
+        box.title = specialTitle(entry);
+      });
+      return box;
+    }
+
     // One sortable table, reused for the real-changes section and the
     // not-yet-rated-stub section below it -- same columns, same row markup,
     // independent sort state and independent row set (split on ovr_stub).
@@ -492,6 +529,11 @@
           const updTd = tr.insertCell();
           updTd.className = 'updated-cell';
           updTd.appendChild(updatedCell(entry));
+          if (canUpdate) {
+            const spTd = tr.insertCell();
+            spTd.className = 'updated-cell';
+            spTd.appendChild(specialCell(entry));
+          }
 
           const nameTd = tr.insertCell();
           nameTd.className = 'player-name';
@@ -613,14 +655,19 @@
           .then(me => {
             const roles = (me && me.roles) || [];
             canUpdate = roles.includes('updates') || roles.includes('admin');
+            if (!canUpdate) return {};
+            COLS.splice(1, 0, SPECIAL_COL);
+            return fetch('/api/ratings-changes/special', { headers: { Authorization: `Bearer ${token}` } })
+              .then(r => r.ok ? r.json() : {});
           })
-          .catch(() => {})
-      : Promise.resolve();
+          .catch(() => ({}))
+      : Promise.resolve({});
 
-    Promise.all([fetch('/api/ratings-changes'), meReady]).then(([r]) => r)
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(data => {
+    Promise.all([fetch('/api/ratings-changes'), meReady])
+      .then(([r, special]) => { if (!r.ok) throw new Error(); return r.json().then(data => [data, special || {}]); })
+      .then(([data, special]) => {
         allEntries = data.entries || [];
+        allEntries.forEach(e => { e.special = special[`${e.slug}|${e.date}`] || null; });
         populateDateSelect();
         populateTeamSelect();
         mainSection.build();
