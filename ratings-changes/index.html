@@ -249,12 +249,23 @@
     let canUpdate = false;
     const NO_TEAM = '__fa__';
 
+    // nba_team arrives as an abbr; the column shows the nickname.
+    const NBA_NICKNAMES = {
+      ATL: 'Hawks', BKN: 'Nets', BOS: 'Celtics', CHA: 'Hornets', CHI: 'Bulls',
+      CLE: 'Cavaliers', DAL: 'Mavericks', DEN: 'Nuggets', DET: 'Pistons', GSW: 'Warriors',
+      HOU: 'Rockets', IND: 'Pacers', LAC: 'Clippers', LAL: 'Lakers', MEM: 'Grizzlies',
+      MIA: 'Heat', MIL: 'Bucks', MIN: 'Timberwolves', NOP: 'Pelicans', NYK: 'Knicks',
+      OKC: 'Thunder', ORL: 'Magic', PHI: '76ers', PHX: 'Suns', POR: 'Trail Blazers',
+      SAC: 'Kings', SAS: 'Spurs', TOR: 'Raptors', UTA: 'Jazz', WAS: 'Wizards',
+    };
+    const nbaTeamName = e => e.nba_team ? (NBA_NICKNAMES[e.nba_team] || e.nba_team) : '';
+
     const COLS = [
       { key: 'updated', label: 'Updated', defaultDir: 1, sortValue: e => e.updated ? 1 : 0 },
       { key: 'name',   label: 'Player', defaultDir: 1,  sortValue: e => e.name || '' },
       { key: 'ovr',    label: 'OVR',    defaultDir: -1, sortValue: e => e.ovr ? (e.ovr.new - e.ovr.old) : -Infinity },
       { key: 'team',   label: 'Team',   defaultDir: 1,  sortValue: e => e.team || '' },
-      { key: 'nba_team', label: 'NBA',  defaultDir: 1,  sortValue: e => e.nba_team || '' },
+      { key: 'nba_team', label: 'NBA',  defaultDir: 1,  sortValue: nbaTeamName },
       { key: 'position', label: 'Position', defaultDir: 1, sortValue: e => e.position ? (e.position.new || []).join('/') : '' },
       { key: 'badges', label: 'Badges', defaultDir: -1, sortValue: e => (e.badges_gained || []).length + (e.badges_lost || []).length + Object.keys(e.badges_retiered || {}).length },
       { key: 'attributes', label: 'Attributes', defaultDir: -1, sortValue: e => Object.keys(e.attributes || {}).length },
@@ -493,7 +504,7 @@
           tr.insertCell().appendChild(teamCell(entry));
           // The real team 2K lists him on. Plain text: it isn't an NBN team.
           // Null for 2K's free agents and for changes before 2026-11-21.
-          tr.insertCell().textContent = entry.nba_team || '—';
+          tr.insertCell().textContent = nbaTeamName(entry) || '—';
           tr.insertCell().appendChild(positionCell(entry));
           const badgesTd = tr.insertCell();
           badgesTd.className = 'badges-cell';
