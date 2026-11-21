@@ -66,11 +66,14 @@ Storage format:
   HOF/Legendary), and "team" (the roster abbr the player is on right now, or
   null if a free agent -- stamped at sync time from *-roster.csv rather than
   ever reconstructed later, since the transaction ledger has real backfill
-  gaps; GET /api/ratings-changes reads it straight off each snapshot). A new
+  gaps; GET /api/ratings-changes reads it straight off each snapshot), and
+  "nba_team" (the real NBA team 2K lists him on, as an abbr, or null for
+  2K's "Free Agency"; snapshots before 2026-11-21 don't have it). A new
   snapshot is only appended when the 2K OVR, any attribute, the position list
   or the badge set has changed since the player's last snapshot -- badge
   ORDER is ignored, since the API and the old scrape list the same badges in
-  different orders. A team change alone does not trigger a snapshot.
+  different orders. A team change alone (NBN or NBA) does not trigger a
+  snapshot.
 
 Writing:
   Dry run by default -- writes a preview JSON to SCRATCH_DIR, does not touch
@@ -152,6 +155,23 @@ POSITION_ORDER = ["PG", "SG", "SF", "PF", "C"]
 # uses ("Hall of Fame" for HOF). Mapped back so an unchanged badge stays
 # unchanged.
 TIER_LABELS = {"Hall of Fame": "HOF", "Legend": "Legendary"}
+
+# The feed's real-world team name -> abbr, stored as a snapshot's "nba_team".
+# "Free Agency" (and anything unknown, which is printed) stores null.
+NBA_TEAM_ABBR = {
+    "Atlanta Hawks": "ATL", "Boston Celtics": "BOS", "Brooklyn Nets": "BKN",
+    "Charlotte Hornets": "CHA", "Chicago Bulls": "CHI", "Cleveland Cavaliers": "CLE",
+    "Dallas Mavericks": "DAL", "Denver Nuggets": "DEN", "Detroit Pistons": "DET",
+    "Golden State Warriors": "GSW", "Houston Rockets": "HOU", "Indiana Pacers": "IND",
+    "Los Angeles Clippers": "LAC", "LA Clippers": "LAC", "Los Angeles Lakers": "LAL",
+    "Memphis Grizzlies": "MEM", "Miami Heat": "MIA", "Milwaukee Bucks": "MIL",
+    "Minnesota Timberwolves": "MIN", "New Orleans Pelicans": "NOP", "New York Knicks": "NYK",
+    "Oklahoma City Thunder": "OKC", "Orlando Magic": "ORL", "Philadelphia 76ers": "PHI",
+    "Phoenix Suns": "PHX", "Portland Trail Blazers": "POR", "Sacramento Kings": "SAC",
+    "San Antonio Spurs": "SAS", "Toronto Raptors": "TOR", "Utah Jazz": "UTA",
+    "Washington Wizards": "WAS",
+}
+FEED_FREE_AGENT_TEAM = "Free Agency"
 
 # camelCase API attribute -> the snake_case key snapshots have always used.
 # Anything not listed converts mechanically (threePointShot -> three_point_shot).
@@ -307,6 +327,18 @@ def page_slug(player):
     """The 2kratings page slug -- what source_slug has always stored."""
     url = (player.get("playerUrl") or "").rstrip("/")
     return url.rsplit("/", 1)[-1] if url else player.get("slug", "")
+
+
+def nba_team_abbr(player, unknown):
+    """The feed's team as an abbr, or None for a free agent / unknown name
+    (an unknown name is collected in `unknown` so the run prints it)."""
+    name = (player.get("team") or "").strip()
+    if not name or name == FEED_FREE_AGENT_TEAM:
+        return None
+    abbr = NBA_TEAM_ABBR.get(name)
+    if not abbr:
+        unknown.add(name)
+    return abbr
 
 
 def clean_positions(raw):
@@ -480,7 +512,7 @@ def main():
         targets = sorted(set(existing) | set(team_map) | fa)
     print(f"Looking up {len(targets)} players...")
 
-    results, unmatched, junk_positions = {}, [], []
+    results, unmatched, junk_positions, unknown_teams = {}, [], [], set()
     for slug in targets:
         if slug in MANUAL_SKIP:
             continue
@@ -507,6 +539,7 @@ def main():
             "2k_name": p.get("name"), "2k_ovr": p.get("overall"), "2k_pos": positions,
             "source_slug": page_slug(p), "match_method": via,
             "attributes": attrs, "badges": convert_badges(p.get("badges")), "team": team_map.get(slug),
+            "nba_team": nba_team_abbr(p, unknown_teams),
         }
 
     print(f"\nMatched {len(results)}/{len(targets)}.")
@@ -514,6 +547,8 @@ def main():
         print(f"\n{len(junk_positions)} invalid position value(s) dropped:")
         for slug, raw, kept in junk_positions:
             print(f"  {slug}: {raw} -> {kept}")
+    if unknown_teams:
+        print(f"\nUnknown NBA team name(s), stored as null: {sorted(unknown_teams)}")
     rostered_unmatched = sorted(s for s in unmatched if s in team_map)
     if unmatched:
         print(f"\n{len(unmatched)} not in the feed ({len(rostered_unmatched)} rostered):")
