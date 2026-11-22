@@ -770,6 +770,11 @@
     let nextId     = null;  // first unplayed game in the current view, set by render()
     let coachingSettings = {};  // team abbr -> record, from GET /api/coaching-settings
     let positionChecks = {};    // team abbr -> {items, ...}, from GET /api/position-checks
+    // Which View panels are open, so a save that redraws the lists (a
+    // position check, a note cleared) leaves them open. Coaching tab keys by
+    // team; My games by game and team, since a team can play twice.
+    const cdOpen = new Set();
+    const mineOpen = new Set();
     let coachingNotes = {};     // team abbr -> {text, updated_at, cleared_at, ...}, from GET /api/coaching-notes
     let startersReports = {};  // game key -> team -> {starters, reported_by, ...}, from GET /api/game-starters/reports
     let startersUnknown = [];  // played games with a team's five unknown, from GET /api/game-starters/unknown
@@ -1348,14 +1353,22 @@
       const viewBtn = document.createElement('button');
       viewBtn.className = 'cd-btn';
       viewBtn.textContent = 'View';
-      viewBtn.onclick = () => {
-        const showing = !detailRow.hidden;
-        if (showing) { detailRow.hidden = true; viewBtn.textContent = 'View'; return; }
+      const open = () => {
         renderSettingsView(detail, team);
         detailRow.hidden = false;
         viewBtn.textContent = 'Hide';
+        cdOpen.add(team);
       };
-      if (rec || positionItems(team).length || teamNote(team)) tdActions.appendChild(viewBtn);
+      viewBtn.onclick = () => {
+        if (detailRow.hidden) return open();
+        detailRow.hidden = true;
+        viewBtn.textContent = 'View';
+        cdOpen.delete(team);
+      };
+      if (rec || positionItems(team).length || teamNote(team)) {
+        tdActions.appendChild(viewBtn);
+        if (cdOpen.has(team)) open();
+      }
 
       if (work.length) {
         const enterBtn = document.createElement('button');
@@ -1725,13 +1738,21 @@
               const view = document.createElement('button');
               view.className = 'cd-btn';
               view.textContent = 'View';
-              view.onclick = () => {
-                if (!detail.hidden) { detail.hidden = true; view.textContent = 'View'; return; }
+              const key = `${g.id}|${team}`;
+              const open = () => {
                 renderSettingsView(detail, team);
                 detail.hidden = false;
                 view.textContent = 'Hide';
+                mineOpen.add(key);
+              };
+              view.onclick = () => {
+                if (detail.hidden) return open();
+                detail.hidden = true;
+                view.textContent = 'View';
+                mineOpen.delete(key);
               };
               acts.appendChild(view);
+              if (mineOpen.has(key)) open();
             }
             if (work.length) {
               const enter = document.createElement('button');
