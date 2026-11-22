@@ -47,6 +47,7 @@ const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { freshProfileDir } = require('./chrome-profile');
 
 const BASE = process.env.NBN_BASE || 'https://nbn.today';
 const NAV_TIMEOUT = 45000;
@@ -311,6 +312,7 @@ async function checkPage(browser, spec) {
   console.log(`frontend smoke — ${specs.length} page(s) against ${BASE}\n`);
   const browser = await puppeteer.launch({
     executablePath: findChrome(),
+    userDataDir: freshProfileDir('run'),
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
 
