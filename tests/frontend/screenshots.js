@@ -34,6 +34,7 @@ const puppeteer = require('puppeteer-core');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { freshProfileDir } = require('./chrome-profile');
 
 const PAGES = [
   ['home',        '/'],
@@ -108,6 +109,7 @@ function findChrome() {
 
   const browser = await puppeteer.launch({
     executablePath: findChrome(),
+    userDataDir: freshProfileDir('screenshots'),
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   });
   const overflow = [];
