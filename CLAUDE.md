@@ -270,6 +270,7 @@ Where to start for a change. Each row names the files and symbols to open; **the
 | Change the coaching-settings field/option schema, or the Coaching tab on team pages (which also holds the Roster Settings section — see above) | `coaching-config.js`, `nbn-api/routers/coaching_settings.py`, `docs/pages.md` |
 | Change the game preview page (form, head-to-head, projected starters, milestones for one game) | `preview/index.html`, `index.html`, `teams/lineup.js` |
 | Change the award race (`/awards/race`: the MVP / DPOY / ROTY / 6MOY / MIP formula ladders) | `award-race.js`, `tests/award-race.test.js`, `awards/race/index.html` |
+| Change the draft lottery page (`/lottery`: the 3-2-1 balls, odds by pick, the repeat-pick bars, the draw, who owns each pick) | `lottery/index.html`, `nbn-api/routers/picks_resolve.py`, `docs/task-lookup.md` |
 | Change the Front Office Ledger (fake franchise attendance, P&L and valuation) | `nbn-api/stats_build/finances.py`, `tests/test_finances.py`, `build.sh` |
 | Change the franchise share prices (the Market tab `/finances` opens on: fair value, its daily moves panel and Market Summary) | `finances/market.js`, `finances/daily-moves.js`, `finances/market-summary.js` |
 | Change who-started-each-game (the GS column on player pages, 6MOY) | `nbn-api/routers/game_starters.py`, `players/index.html` |

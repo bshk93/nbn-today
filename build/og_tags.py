@@ -54,6 +54,7 @@ PAGES = {
  '/awards/': (None, 'NBN award winners by season — MVP, DPOY, All-NBN teams and the rest of the ballot.'),
  '/recap/': (None, 'One NBN team’s season on a page: record, result, who carried them, the game of the season, the trades and the honours.'),
  '/awards/race/': (None, 'Who leads the MVP, DPOY, Rookie, Sixth Man and Most Improved races, by formula — and how often that formula has named the real winner.'),
+ '/lottery/': (None, "The draft lottery as the standings stand: each team's balls and odds for every pick under the 3-2-1 format, who owns each pick, and a button to run the draw."),
  '/about/': (None, 'About NBN — the members, the roles, the constitution, the rulebook and how to join.'),
  '/office/': (None, 'The NBN league office — proposals, suggestions, memos and league settings.'),
  '/media/': (None, 'NBN media — league news, NBNTV Classics, the NBNFL and the YouTube channel.'),

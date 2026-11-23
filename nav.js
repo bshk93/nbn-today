@@ -1723,6 +1723,7 @@ const NAV_SECTIONS = [
     { title: 'Calendar', href: '/calendar', icon: 'calendar' },
     { title: 'Standings & Playoffs', href: '/standings', icon: 'standings' },
     { title: 'Award Race', href: '/awards/race/', icon: 'flag' },
+    { title: 'Draft Lottery', href: '/lottery/', icon: 'dice', keywords: ['lottery odds', 'tank', 'tankathon', 'draft order'] },
     { title: 'Injuries', href: '/injuries/', icon: 'medical', keywords: ['injury report', 'hurt', 'out'] },
     { title: 'Season Stats', href: '/stats/seasons', icon: 'bar-chart' },
   ] },

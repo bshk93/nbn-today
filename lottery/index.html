@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- NBN:preload (build/head_preloads.py) -->
+  <link rel="preload" href="/css/theme.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/nav-chrome.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/fonts.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/dialogs.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/components.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/sidebar.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/team-colors.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/css/ui-icons.css" as="style" data-nbn-preload>
+  <link rel="preload" href="/fonts/InterVariable.subset.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
+  <link rel="preload" href="/fonts/BarlowCondensed-700-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
+  <link rel="preload" href="/fonts/BarlowCondensed-600-latin.woff2" as="font" type="font/woff2" crossorigin data-nbn-preload>
+  <!-- /NBN:preload -->
+  <script src="/theme-boot.js"></script>
+  <script src="/nbn-data.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/shared.css">
+  <title>NBN | Draft Lottery</title>
+  <!-- NBN:og -->
+  <meta name="description" content="The draft lottery as the standings stand: each team's balls and odds for every pick under the 3-2-1 format, who owns each pick, and a button to run the draw.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="NBN">
+  <meta property="og:title" content="NBN | Draft Lottery">
+  <meta property="og:description" content="The draft lottery as the standings stand: each team's balls and odds for every pick under the 3-2-1 format, who owns each pick, and a button to run the draw.">
+  <meta property="og:url" content="https://nbn.today/lottery/">
+  <meta property="og:image" content="https://nbn.today/og-default.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Nothing But Net — fantasy basketball GM simulation league">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0d0e11">
+  <link rel="icon" href="/icons/favicon.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <!-- /NBN:og -->
+  <style>
+    .lot-note { margin-bottom: var(--space-4); font-size: var(--text-sm); color: var(--text-muted); }
+    .lot-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+    .lot-loser { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); margin-bottom: var(--space-4); font-size: var(--text-sm); color: var(--text-muted); }
+    .lot-loser label { display: flex; align-items: center; gap: var(--space-2); }
+    .lot-section { margin-bottom: var(--space-6); }
+    .lot-team { display: flex; align-items: center; gap: var(--space-2); }
+    .lot-team img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+    .lot-team a { color: var(--text-primary); font-weight: 600; }
+    .lot-sub { font-size: var(--text-xs); color: var(--text-muted); }
+    .lot-pick { font-family: var(--font-display); font-size: var(--text-md); font-weight: 700; color: var(--text-primary); }
+    .lot-up { color: var(--success); font-weight: 600; }
+    .lot-down { color: var(--danger); font-weight: 600; }
+    .lot-cut td { border-top: 2px solid var(--border); }
+    .lot-odds td.num, .lot-odds th.num { padding-left: 0.4rem; padding-right: 0.4rem; min-width: 2.6rem; }
+    .lot-barred { color: var(--text-muted); text-decoration: line-through; }
+    .lot-how { font-size: var(--text-sm); color: var(--text-secondary); }
+    .lot-how li { margin-bottom: var(--space-1); }
+    tr.lot-new td { animation: lot-in 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 70ms); }
+    @keyframes lot-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { tr.lot-new td { animation: none; } }
+  </style>
+</head>
+<body>
+  <div class="page ui-page ui-page--wide">
+    <nav class="nav"></nav>
+    <header class="ui-header">
+      <h1 class="ui-title">Draft Lottery</h1>
+      <div class="ui-header-actions lot-controls">
+        <button class="ui-btn ui-btn--sm ui-btn--ghost" id="reset" hidden>Back to odds</button>
+        <button class="ui-btn ui-btn--sm ui-btn--primary" id="sim" disabled>Run the lottery</button>
+      </div>
+    </header>
+    <p class="lot-note" id="note"></p>
+    <div class="lot-loser" id="losers"></div>
+
+    <section class="lot-section">
+      <h2 class="ui-section-title" id="order-title">Draft order</h2>
+      <div class="ui-table-wrap"><table class="ui-table" id="order"><tbody><tr><td><div class="ui-loading">Loading…</div></td></tr></tbody></table></div>
+    </section>
+
+    <section class="lot-section">
+      <h2 class="ui-section-title">Odds by pick</h2>
+      <div class="ui-table-wrap"><table class="ui-table ui-table--dense ui-table--sticky-first lot-odds" id="odds"></table></div>
+    </section>
+
+    <section class="lot-section">
+      <h2 class="ui-section-title">How it works</h2>
+      <ul class="lot-how">
+        <li>NBN uses the NBA's lottery. From the 2027 draft that is the 3-2-1 format: 16 teams, 37 balls, and every one of the first 16 picks is drawn.</li>
+        <li>The ten teams that miss the play-in get 3 balls each, except the three worst records, which get 2. The 9 and 10 seeds get 2 each. The two 7-vs-8 play-in losers get 1 each, even if they go on to make the playoffs.</li>
+        <li>Each draw picks a team weighted by its balls, then takes that team's balls out.</li>
+        <li>A team's own pick can't be #1 two drafts running, or top 5 three drafts running, even when someone else owns it. If a barred team is drawn, it goes to the first slot it is allowed and that slot is drawn again.</li>
+        <li>Picks 17 to 30 go to the other 14 teams, worst record first.</li>
+        <li>Before the season ends, this uses today's standings and assumes the 8 seed loses the 7-vs-8 game. Ties are a coin flip in the real thing; here the weaker team by point differential goes first.</li>
+      </ul>
+    </section>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script>
+    // The 3-2-1 lottery (NBA, 2027–2029 drafts) on the live standings from
+    // GET /api/playoff-odds. Who holds each pick comes from
+    // POST /api/picks/resolve, which runs the conveyance model's own resolver
+    // on the order shown, so protections and swaps are never redone here.
+    const esc = NBN.esc;
+    const LOTTERY = 16;
+
+    // Top-5 picks (by original team) in drafts before /api/picks keeps
+    // history. Only MIN's 2025 #2 is confirmed; add the rest of 2025's top 5.
+    const PRIOR_TOP5 = { 2025: ['MIN'] };
+
+    const state = { teams: [], draft: 0, picks: [], losers: {}, result: null };
+
+    const logo = t => `<img src="/logos/sm/logo-${esc(t.toLowerCase())}.webp" alt="" onerror="this.style.visibility='hidden'">`;
+    const pctOf = t => (t.w + t.l ? t.w / (t.w + t.l) : 0.5);
+    // Worst first. Ties go to the weaker rating, then a stable letter order.
+    const worstFirst = (a, b) => pctOf(a) - pctOf(b) || a.rating - b.rating || a.team.localeCompare(b.team);
+
+    function seedConference(conf) {
+      return state.teams.filter(t => t.conf === conf).sort((a, b) => worstFirst(b, a));
+    }
+
+    // The 16 lottery teams, each {team, balls, seed}, in seed order, and the
+    // other 14 worst first.
+    function field() {
+      const out = [], rest = [], nonPI = [], nineTen = [], loser = [];
+      for (const conf of ['East', 'West']) {
+        const s = seedConference(conf);
+        const lost = state.losers[conf] || s[7]?.team;
+        s.forEach((t, i) => {
+          if (i >= 10) nonPI.push(t);
+          else if (i >= 8) nineTen.push(t);
+          else if ((i === 6 || i === 7) && t.team === lost) loser.push(t);
+          else rest.push(t);
+        });
+      }
+      nonPI.sort(worstFirst); nineTen.sort(worstFirst); loser.sort(worstFirst); rest.sort(worstFirst);
+      nonPI.forEach((t, i) => out.push({ ...t, balls: i < 3 ? 2 : 3 }));
+      nineTen.forEach(t => out.push({ ...t, balls: 2 }));
+      loser.forEach(t => out.push({ ...t, balls: 1 }));
+      out.forEach((t, i) => { t.seed = i + 1; });
+      return { lottery: out, rest };
+    }
+
+    // Original teams whose pick is barred from #1 / the top 5 this draft.
+    function restrictions() {
+      const top = {};
+      for (const p of state.picks) {
+        if (+p.round === 1 && p.pick && +p.pick <= 5) (top[p.year] ||= []).push({ orig: p.orig, pick: +p.pick });
+      }
+      const y1 = state.draft - 1, y2 = state.draft - 2;
+      const t5 = y => new Set([...(top[y] || []).map(x => x.orig), ...(PRIOR_TOP5[y] || [])]);
+      const noTop1 = new Set((top[y1] || []).filter(x => x.pick === 1).map(x => x.orig));
+      const a = t5(y1), b = t5(y2);
+      const noTop5 = new Set([...a].filter(t => b.has(t)));
+      return { noTop1, noTop5 };
+    }
+
+    const allowed = (team, slot, r) => !(slot === 0 && r.noTop1.has(team)) && !(slot < 5 && r.noTop5.has(team));
+
+    // One draw: slot index -> team.
+    function draw(lottery, r, rand = Math.random) {
+      const pool = lottery.map(t => ({ team: t.team, balls: t.balls }));
+      const slots = new Array(lottery.length).fill(null);
+      for (let s = 0; s < slots.length; s++) {
+        while (slots[s] === null && pool.length) {
+          const total = pool.reduce((n, t) => n + t.balls, 0);
+          let x = rand() * total, k = 0;
+          while (x >= pool[k].balls && k < pool.length - 1) x -= pool[k++].balls;
+          const t = pool.splice(k, 1)[0].team;
+          if (allowed(t, s, r)) { slots[s] = t; break; }
+          const to = slots.findIndex((v, j) => j > s && v === null && allowed(t, j, r));
+          if (to >= 0) slots[to] = t; else pool.push({ team: t, balls: 0 });
+        }
+      }
+      // Only a corner case (every remaining team barred from a top slot) leaves a gap.
+      const left = lottery.map(t => t.team).filter(t => !slots.includes(t));
+      return slots.map(v => v ?? left.shift());
+    }
+
+    // team -> [p(slot 1), …], exact. A walk over every set of teams already
+    // drawn (a bitmask: P[mask]), plus the rare states where a barred team has
+    // been moved into a later slot ahead of time (`held`, kept in a Map as
+    // sorted codes slot * 16 + team).
+    function odds(lottery, r) {
+      const n = lottery.length, w = lottery.map(t => t.balls), full = 1 << n;
+      const out = lottery.map(() => new Array(n).fill(0));
+      const ok = lottery.map(t => j => allowed(t.team, j, r));
+      const balls = new Float64Array(full), bits = new Uint8Array(full);
+      for (let m = 1; m < full; m++) {
+        const low = 31 - Math.clz32(m & -m);
+        balls[m] = balls[m & (m - 1)] + w[low]; bits[m] = bits[m & (m - 1)] + 1;
+      }
+      const total = balls[full - 1];
+      const P = new Float64Array(full); P[0] = 1;
+      let held = new Map();   // states for the current slot with a later slot taken
+      const hold = (map, mask, h, p) => {
+        const k = mask + '|' + h.join(',');
+        const e = map.get(k);
+        if (e) e.p += p; else map.set(k, { mask, h, p });
+      };
+      // Draw slot s from one state; `h` is its taken later slots.
+      const expand = (s, mask, h, p, next, redraw) => {
+        const has = j => h.some(c => c >> 4 === j);
+        const left = total - balls[mask];
+        for (let i = 0; i < n; i++) {
+          if (mask & (1 << i) || !w[i]) continue;
+          const q = p * w[i] / left, m = mask | (1 << i);
+          if (ok[i](s)) {
+            out[i][s] += q;
+            if (h.length) hold(next, m, h, q); else P[m] += q;
+            continue;
+          }
+          let j = s + 1;
+          while (j < n && (has(j) || !ok[i](j))) j++;
+          out[i][j] += q;
+          hold(redraw, m, [...h, j * 16 + i].sort((x, y) => x - y), q);
+        }
+      };
+      for (let s = 0; s < n; s++) {
+        const next = new Map();
+        const redraw = new Map();
+        for (let m = 0; m < full; m++) if (bits[m] === s && P[m]) expand(s, m, [], P[m], next, redraw);
+        // Held states and redraws both still need slot s drawn.
+        for (const e of redraw.values()) hold(held, e.mask, e.h, e.p);
+        for (let open = held; open.size; ) {
+          const again = new Map();
+          for (const { mask, h, p } of open.values()) {
+            if (h.some(c => c >> 4 === s)) {
+              const rest = h.filter(c => c >> 4 !== s);
+              if (rest.length) hold(next, mask, rest, p); else P[mask] += p;
+            } else expand(s, mask, h, p, next, again);
+          }
+          open = again;
+        }
+        held = next;
+      }
+      return Object.fromEntries(lottery.map((t, i) => [t.team, out[i]]));
+    }
+
+    async function owners(order1, order2) {
+      try {
+        const r = await fetch('/api/picks/resolve', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ year: state.draft, round1: order1, round2: order2 }),
+        });
+        return r.ok ? (await r.json()).owners || {} : {};
+      } catch { return {}; }
+    }
+
+    function ownerCell(orig, owner) {
+      const p = state.picks.find(x => x.year === state.draft && +x.round === 1 && x.orig === orig);
+      const who = owner || p?.owner || orig;
+      const leaf = p?.leaves?.find(l => l.team === who);
+      const sub = who === orig
+        ? (leaf ? `kept: ${leaf.description}` : '')
+        : (leaf ? leaf.description : `via ${orig}`);
+      if (who.includes('|') || who === '?') return `<span class="lot-sub">${esc(who)}</span>`;
+      return `<div class="lot-team">${logo(who)}<a href="/teams/${esc(who)}/">${esc(who)}</a></div>`
+        + (sub ? `<div class="lot-sub">${esc(sub)}</div>` : '');
+    }
+
+    async function renderOrder() {
+      const { lottery, rest } = field();
+      const drawn = state.result;
+      const order1 = [...(drawn || lottery.map(t => t.team)), ...rest.map(t => t.team)];
+      const order2 = [...lottery, ...rest].sort(worstFirst).map(t => t.team);
+      const own = await owners(order1, order2);
+      const by = Object.fromEntries([...lottery, ...rest].map(t => [t.team, t]));
+      const seed = Object.fromEntries(lottery.map(t => [t.team, t.seed]));
+      document.getElementById('order-title').textContent = drawn ? 'Lottery result' : 'Draft order before the draw';
+      const rows = order1.map((team, i) => {
+        const t = by[team], pick = i + 1;
+        let move = '';
+        if (drawn && i < LOTTERY) {
+          const d = seed[team] - pick;
+          move = d > 0 ? `<span class="lot-up">▲ ${d}</span>` : d < 0 ? `<span class="lot-down">▼ ${-d}</span>` : '<span class="lot-sub">–</span>';
+        }
+        return `<tr class="${i === LOTTERY ? 'lot-cut' : ''}${drawn && i < LOTTERY ? ' lot-new' : ''}" style="--i:${LOTTERY - 1 - Math.min(i, LOTTERY - 1)}">
+          <td class="num"><span class="lot-pick">${pick}</span></td>
+          <td><div class="lot-team">${logo(team)}<a href="/teams/${esc(team)}/">${esc(team)}</a></div></td>
+          <td class="num muted">${t.w}-${t.l}</td>
+          <td>${ownerCell(team, own[`1-${team}`])}</td>
+          <td class="num muted">${i < LOTTERY ? seed[team] : ''}</td>
+          <td class="num">${move}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('order').innerHTML = `<thead><tr>
+          <th class="num">Pick</th><th>Team</th><th class="num">W-L</th><th>Owner</th>
+          <th class="num" title="Lottery seed: worst record first">Seed</th><th class="num">${drawn ? 'Move' : ''}</th>
+        </tr></thead><tbody>${rows}</tbody>`;
+    }
+
+    function renderOdds() {
+      const { lottery } = field();
+      const r = restrictions();
+      const table = odds(lottery, r);
+      const fmt = p => (p < 0.0005 ? '' : (p * 100).toFixed(1));
+      const max = Math.max(...lottery.flatMap(t => table[t.team]));
+      const cols = [...Array(LOTTERY).keys()];
+      const head = `<thead><tr><th>Team</th><th class="num">W-L</th><th class="num">Balls</th><th class="num">Top 5</th>
+        ${cols.map(c => `<th class="num">${c + 1}</th>`).join('')}</tr></thead>`;
+      const body = lottery.map(t => {
+        const row = table[t.team];
+        const bar = [r.noTop1.has(t.team) ? 'no #1 (won it last draft)' : '', r.noTop5.has(t.team) ? 'no top 5 (top 5 the last two drafts)' : ''].filter(Boolean).join(', ');
+        const top5 = row.slice(0, 5).reduce((a, b) => a + b, 0);
+        return `<tr>
+          <td><div class="lot-team">${logo(t.team)}<a href="/teams/${esc(t.team)}/">${esc(t.team)}</a></div>${bar ? `<div class="lot-sub">${esc(bar)}</div>` : ''}</td>
+          <td class="num muted">${t.w}-${t.l}</td>
+          <td class="num">${t.balls}</td>
+          <td class="num strong">${fmt(top5)}</td>
+          ${row.map(p => `<td class="num${p ? ' ui-heat' : ''}" style="--heat:${(0.5 + 0.5 * p / max).toFixed(3)}">${fmt(p)}</td>`).join('')}
+        </tr>`;
+      }).join('');
+      document.getElementById('odds').innerHTML = head + `<tbody>${body}</tbody>`;
+    }
+
+    function renderLosers() {
+      const box = document.getElementById('losers');
+      box.innerHTML = ['East', 'West'].map(conf => {
+        const s = seedConference(conf);
+        const pair = [s[6], s[7]].filter(Boolean);
+        const cur = state.losers[conf] || s[7]?.team;
+        return `<label>${conf} 7-vs-8 loser
+          <select class="ui-select" data-conf="${conf}">${pair.map(t => `<option value="${esc(t.team)}"${t.team === cur ? ' selected' : ''}>${esc(t.team)}</option>`).join('')}</select></label>`;
+      }).join('');
+      box.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => {
+        state.losers[sel.dataset.conf] = sel.value;
+        state.result = null;
+        renderOdds();
+        renderAll();
+      }));
+    }
+
+    // The order and the buttons; the odds table only changes with the field.
+    function renderAll() {
+      renderOrder();
+      document.getElementById('reset').hidden = !state.result;
+      document.getElementById('sim').textContent = state.result ? 'Run it again' : 'Run the lottery';
+    }
+
+    (async () => {
+      const [po, picks] = await Promise.all([
+        fetch('/api/playoff-odds').then(r => { if (!r.ok) throw new Error(`standings ${r.status}`); return r.json(); }),
+        fetch('/api/picks').then(r => (r.ok ? r.json() : [])).catch(() => []),
+      ]);
+      state.teams = po.teams.map(t => ({ team: t.team, conf: t.conf, w: t.w, l: t.l, rating: t.rating ?? 0 }));
+      state.draft = 2000 + Number(String(po.season).split('-')[1]);
+      state.picks = picks;
+      const done = !po.games_left;
+      document.getElementById('note').textContent = done
+        ? `The ${state.draft} draft, from the final ${po.season} standings.`
+        : `The ${state.draft} draft if the season ended today: ${po.season} standings through ${po.date}.`;
+      renderLosers();
+      renderOdds();
+      renderAll();
+      const sim = document.getElementById('sim');
+      sim.disabled = false;
+      sim.onclick = () => { state.result = draw(field().lottery, restrictions()); renderAll(); };
+      document.getElementById('reset').onclick = () => { state.result = null; renderAll(); };
+    })().catch(e => {
+      document.getElementById('order').innerHTML = `<tbody><tr><td><div class="ui-empty">Couldn’t load the lottery: ${esc(e.message)}</div></td></tr></tbody>`;
+    });
+  </script>
+  <script src="/token-badge.js"></script>
+</body>
+</html>
