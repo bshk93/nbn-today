@@ -89,6 +89,8 @@ const PAGES = [
   { path: '/finances/?team=PHX#books', selector: '#ledger tbody tr', min: 10, what: 'one team\'s books' },
   { path: '/tradeblock/',             selector: 'table tbody tr',  min: 5,  what: 'blocked players' },
   { path: '/draft/',                  selector: 'table tbody tr',  min: 30, what: 'draft history' },
+  { path: '/lottery/',                selector: '#odds tbody tr', min: 16, what: 'the lottery odds' },
+  { path: '/lottery/',                selector: '#order tbody tr', min: 30, what: 'the first-round order' },
   { path: '/boxscores/',              selector: 'table tbody tr',  min: 5,  what: 'recent box scores' },
   // The sidebar is drawn by nav.js, which team.js injects late — the second
   // row is the one that catches nav.js running before its page list exists.

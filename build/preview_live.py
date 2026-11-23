@@ -17,7 +17,8 @@ localStorage and sent as a header, which this forwards.
 
 **Read-only by default.** /api is the LIVE API, so a POST/PUT/DELETE here is
 a real write — a theme bought from the account menu really spends NB¥. Writes
-are refused with a 403 unless you pass --allow-writes. Sign-in still works:
+are refused with a 403 unless you pass --allow-writes; the POSTs that only
+compute (/api/validate/*, /api/picks/resolve) go through. Sign-in still works:
 it reads /api/me, and the session/signal calls it also makes fail quietly.
 """
 import argparse
@@ -100,8 +101,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._as_nginx()
         self._proxy()
 
+    # POSTs that only compute and never write, so they're safe read-only.
+    READ_POSTS = ('/api/validate/', '/api/picks/resolve')
+
     def _write(self):
-        if not self.allow_writes:
+        if not self.allow_writes and not self.path.startswith(self.READ_POSTS):
             body = b'{"detail": "preview_live.py is read-only; pass --allow-writes to send writes to the live API"}'
             self.send_response(403)
             self.send_header('Content-Type', 'application/json')
