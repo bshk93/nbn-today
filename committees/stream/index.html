@@ -1198,6 +1198,8 @@
         flag.title = `A ${primary}'s secondary should be one step away, or a position 2K has listed for him. There are exceptions: `
           + 'set it only if you OK it. Marking it entered is your OK.';
         row.appendChild(flag);
+        // The team's lineup already starts him there, waiting on this OK.
+        if (i.starts_at) row.appendChild(span('pos-why', `(starts at ${i.starts_at} in their lineup)`));
       }
       if (i.jersey_changed) {
         row.appendChild(document.createTextNode(i.jersey ? ` · #${i.jersey} ` : ' · no number '));
@@ -1393,7 +1395,7 @@
       const rec = coachingSettings[team];
       const due = positionsDue(team);
       const odd = due.filter(i => i.legal === false);
-      if (odd.length && !confirm(`${odd.map(i => `${nbnPlayerName(i.name)} at ${i.secondary}`).join(', ')}: `
+      if (odd.length && !confirm(`${odd.map(i => `${nbnPlayerName(i.name)} at ${i.secondary}${i.starts_at ? ' (starting there)' : ''}`).join(', ')}: `
         + 'not legal under § 2.3. Marking entered means you OK the exception. Continue?')) {
         btn.disabled = false;
         return;
