@@ -7131,6 +7131,16 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     return POSITION_ORDER.filter(p => ok.has(p));
   }
 
+  // The slot a starter may take only through a secondary outside § 2.3 that
+  // no streamer has OK'd yet: it saves, and waits on the streamer (the API's
+  // pending_starts). Null when he has no such secondary.
+  function pendingStartPosition(slug) {
+    const secondary = effectiveSecondary(biosData[slug], attributesData[slug]);
+    if (!secondary || !POSITION_ORDER.includes(secondary)) return null;
+    const ok = startPositions(slug);
+    return ok && !ok.includes(secondary) ? secondary : null;
+  }
+
   // "PG" for a starter, "6th" for the bench. The stored key stays the bare
   // CS.MINUTES_SLOTS value; this is display only.
   function slotLabel(i) {
@@ -7446,13 +7456,25 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     startersNote.dataset.icon = 'warning';
     startersNote.hidden = true;
 
+    // A starter at a secondary the streamer hasn't OK'd yet saves, and is
+    // named here so the team knows the slot waits on the streamer.
+    const pendingNote = document.createElement('div');
+    pendingNote.className = 'ts-alert warning';
+    pendingNote.dataset.icon = 'warning';
+    pendingNote.hidden = true;
+
     function refreshStarters(minutes) {
       const bad = new Map();  // slug -> line
+      const waiting = [];
       let blocking = 0;
       CS.MINUTES_SLOTS.slice(0, STARTERS).forEach(slot => {
         const slug = minutes[slot] && minutes[slot].slug;
         const ok = slug ? startPositions(slug) : null;
         if (!ok || ok.includes(slot)) return;
+        if (pendingStartPosition(slug) === slot) {
+          waiting.push(`${displayNameFromBio((biosData[slug] || {}).name || '') || slug} at ${slot}`);
+          return;
+        }
         const saved = startMinutes[slot] && startMinutes[slot].slug === slug;
         if (!saved) blocking++;
         const name = displayNameFromBio((biosData[slug] || {}).name || '') || slug;
@@ -7464,6 +7486,10 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       });
       startersNote.hidden = !bad.size;
       startersNote.textContent = [...bad.values()].join('. ');
+      pendingNote.hidden = !waiting.length;
+      pendingNote.textContent = waiting.length
+        ? `Waiting on a streamer: ${waiting.join(', ')}. That secondary is outside § 2.3, so the start counts once a streamer OKs it by setting it in 2K.`
+        : '';
       saveBtn.disabled = blocking > 0;
       saveBtn.title = blocking ? 'A starter is out of position' : '';
     }
@@ -7491,7 +7517,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
       secNote.dataset.icon = 'warning';
       secNote.textContent = lines.length
         ? `Outside § 2.3, which allows one step from the primary or a position 2K has listed: ${lines.join(', ')}. `
-          + 'The streamer has to OK an exception before it counts, including for starting.'
+          + 'You can start him there now; it counts once a streamer OKs it.'
         : '';
     }
 
@@ -8300,6 +8326,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
     wrapEl.insertBefore(secNote, wrapEl.lastChild);
     wrapEl.insertBefore(twoWayNote, wrapEl.lastChild);
     wrapEl.insertBefore(startersNote, wrapEl.lastChild);
+    wrapEl.insertBefore(pendingNote, wrapEl.lastChild);
 
     cancelBtn.addEventListener('click', () => renderReadView());
 
