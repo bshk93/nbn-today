@@ -435,15 +435,21 @@
       ? `Entered into the game ${new Date(record.entered_at).toLocaleString()} by ${record.entered_by}`
       : 'Not yet entered into the game';
     status.textContent = `${savedLine} · ${enteredLine}${record.pending ? ' · PENDING ENTRY' : ''}`;
-    container.appendChild(status);
+    // `opts.hideStatus`: a past version (the Coaching tab's History) has its
+    // own who/when, and this line describes the record as it stands now.
+    if (!opts.hideStatus) container.appendChild(status);
 
     // `opts.showChanges`: highlight what differs from what a streamer last
     // entered into 2K (`entered_values`/`entered_minutes`, kept by the API),
     // so pending settings show only the edits to make. Nothing to compare
     // before a team's first entry.
-    const base = opts.showChanges && record.pending && record.entered_values
-      ? { values: record.entered_values || {}, minutes: record.entered_minutes || {} }
-      : null;
+    // `opts.base` ({values, minutes}) compares against any version instead:
+    // History highlights what a version changed from the one before it.
+    const base = opts.base
+      ? { values: opts.base.values || {}, minutes: opts.base.minutes || {} }
+      : opts.showChanges && record.pending && record.entered_values
+        ? { values: record.entered_values || {}, minutes: record.entered_minutes || {} }
+        : null;
     let changeCount = 0;
     const was = (now, then) => {
       if (!base || now === then) return undefined;
@@ -543,10 +549,52 @@
     }
   }
 
+  // What changed between two versions ({values, minutes}), for the Coaching
+  // tab's History: one entry per field and per player, {label, was, now}, in
+  // the order the profile reads. Minutes are compared by player rather than
+  // by slot, since moving one player shifts every slot under him: "Poole:
+  // SG 30 → 6th 28" is the change, not five slots that each look different.
+  // `prev` null (a team's first version) is no changes.
+  const slotLabel = slot => /^\d+$/.test(slot) ? `${slot}th` : slot;
+  function playerSpots(minutes) {
+    const out = {};
+    MINUTES_SLOTS.forEach(slot => {
+      const m = (minutes || {})[slot];
+      if (m && m.slug) out[m.slug] = `${slotLabel(slot)} · ${m.res ? 'RES' : `${Number(m.minutes) || 0} min`}`;
+    });
+    return out;
+  }
+  function diffVersions(prev, next, opts) {
+    opts = opts || {};
+    if (!prev) return [];
+    const out = [];
+    const pv = prev.values || {}, nv = (next && next.values) || {};
+    FIELD_GROUPS.forEach(group => group.fields.forEach(f => {
+      const was = fieldValueLabel(f, pv[f.key], group), now = fieldValueLabel(f, nv[f.key], group);
+      if (was !== now) out.push({ label: f.label, was, now });
+    }));
+    POINT_BUY_POOLS.forEach(pool => pool.fields.forEach(f => {
+      const was = fieldValueLabel(f, (pv[pool.key] || {})[f.key]), now = fieldValueLabel(f, (nv[pool.key] || {})[f.key]);
+      if (was !== now) out.push({ label: `${pool.label}: ${f.label}`, was, now });
+    }));
+    const a = playerSpots(prev.minutes), b = playerSpots(next && next.minutes);
+    const order = [];
+    MINUTES_SLOTS.forEach(slot => {
+      [(next && next.minutes || {})[slot], (prev.minutes || {})[slot]].forEach(m => {
+        if (m && m.slug && !order.includes(m.slug)) order.push(m.slug);
+      });
+    });
+    const name = slug => (opts.resolveName && opts.resolveName(slug)) || slug;
+    order.forEach(slug => {
+      if (a[slug] !== b[slug]) out.push({ label: name(slug), was: a[slug] || 'not listed', now: b[slug] || 'not listed', player: true });
+    });
+    return out;
+  }
+
   global.CoachingSettings = {
     FIELD_GROUPS, POINT_BUY_POOLS, MINUTES_SLOTS, MINUTES_BUDGET,
     poolTotal, poolRemaining, poolIssues, fieldMax, valuesIssues, minutesTotal, minutesRemaining, validityIssues,
-    emptyValues, emptyFieldValue, emptyMinutes, renderReadOnly, labelWithNote, noteIcon,
+    emptyValues, emptyFieldValue, emptyMinutes, renderReadOnly, labelWithNote, noteIcon, diffVersions,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
