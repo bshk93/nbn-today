@@ -282,6 +282,41 @@ const coachingConfigReady = new Promise(resolve => {
     .cs-cards-grid { column-width: 260px; column-gap: 1rem; }
   }
   .settings-card.note-card { display: block; margin-bottom: 2.5rem; }
+  /* History (setupCoachingHistory): every version, newest first. A ruled
+     list like the Rotation table; the date in the display face, what changed
+     as was → now, and a version opens in place with its changes highlighted. */
+  /* Coaching's own sub-tabs, Settings and History, under Front Office's
+     (showCoachingSub). The smaller size says it is the second level. */
+  .coaching-subnav { margin-bottom: var(--space-4); }
+  .coaching-subnav > button { font-size: var(--text-xs); padding-block: 0.3rem; }
+  #tab-coaching [data-csub]:not(button).sub-off { display: none !important; }
+  .chist-list { border-top: 1px solid var(--border); }
+  .chist-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 0.4rem 1rem; padding: 0.8rem 0; border-bottom: 1px solid var(--border-subtle, var(--border)); align-items: start; }
+  .chist-when { font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); text-transform: uppercase; letter-spacing: 0.02em; line-height: 1.15; color: var(--text-primary); }
+  .chist-when span { display: block; font-family: inherit; font-weight: 600; font-size: var(--text-xs); letter-spacing: 0; color: var(--text-muted); }
+  .chist-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.55rem; font-size: var(--text-sm); }
+  .chist-kind { font-weight: 700; color: var(--text-primary); }
+  .chist-toggle { margin-left: auto; }
+  .chist-kind::before { content: ''; display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%; margin-right: 0.45rem; vertical-align: 0.08em; background: var(--text-dim); }
+  .chist-row[data-kind="saved"] .chist-kind::before { background: var(--accent-light); }
+  .chist-row[data-kind="entered"] .chist-kind::before { background: var(--success); }
+  .chist-row[data-kind="note"] .chist-kind::before, .chist-row[data-kind="note_cleared"] .chist-kind::before { background: var(--gold); }
+  .chist-by { font-size: var(--text-xs); color: var(--text-muted); }
+  .chist-changes { list-style: none; margin: 0.4rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; font-size: var(--text-xs); color: var(--text-secondary); }
+  .chist-changes .lbl { color: var(--text-muted); }
+  .chist-changes s { color: var(--text-dim); text-decoration-thickness: 1px; }
+  .chist-changes .now { color: var(--text-primary); font-weight: 600; }
+  .chist-changes .more, .chist-quiet { color: var(--text-dim); font-size: var(--text-xs); margin-top: 0.4rem; }
+  .chist-games { margin-top: 0.45rem; font-size: var(--text-xs); color: var(--text-muted); }
+  .chist-games b { color: var(--text-secondary); font-weight: 600; }
+  .chist-note { margin-top: 0.35rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); color: var(--text-secondary); border-left: 2px solid var(--border); padding-left: 0.6rem; }
+  .chist-detail { margin-top: 0.75rem; }
+  .chist-more { margin-top: 0.9rem; }
+  @media (max-width: 640px) {
+    .chist-row { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+    .chist-when { display: flex; gap: 0.5rem; align-items: baseline; }
+    .chist-when span { display: inline; }
+  }
   .sn-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-sm); color: var(--text-primary); }
   .sn-meta { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--text-muted); }
   .sn-meta.open { color: var(--gold); }
@@ -1728,7 +1763,10 @@ document.body.innerHTML = `
       </div>
       <div class="tab-panel" id="tab-coaching" data-osub="coaching" hidden>
       <section>
-        <h2 class="section-title">Settings</h2>
+        <div class="ui-segmented tn-subnav coaching-subnav" id="coaching-subnav" role="group" aria-label="Coaching">
+          <button type="button" data-csub="settings" aria-pressed="true">Settings</button><button type="button" data-csub="history" aria-pressed="false">History</button>
+        </div>
+        <div data-csub="settings">
         <p class="section-sub">Your depth chart, jersey numbers and 2K coach profile. Whoever streams your games enters them into 2K.</p>
         <div class="settings-card note-card">
           <div class="settings-head">
@@ -1752,6 +1790,11 @@ document.body.innerHTML = `
             </div>
             <div id="coaching-settings-wrap"><div class="status">Loading…</div></div>
           </div>
+        </div>
+        </div>
+        <div data-csub="history" id="coaching-history-card" class="sub-off">
+          <p class="section-sub">Every version of your rotation, coach profile and note, and the games played on each. Only your team and the streamers can see it.</p>
+          <div id="coaching-history-wrap"><div class="status">Loading…</div></div>
         </div>
       </section>
       </div>
@@ -1835,7 +1878,19 @@ function showOfficeSub(name) {
   document.querySelectorAll('#office-subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.osub === name)));
   document.querySelectorAll('#office [data-osub]:not(button)').forEach(el => el.classList.toggle('sub-off', el.dataset.osub !== name));
 }
+// Coaching's sub-tabs: Settings (the note, rotation and coach profile) and
+// History. Linked as #coaching and #coaching-history.
+function showCoachingSub(name) {
+  if (name !== 'history') name = 'settings';
+  document.querySelectorAll('#coaching-subnav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.csub === name)));
+  document.querySelectorAll('#tab-coaching [data-csub]:not(button)').forEach(el => el.classList.toggle('sub-off', el.dataset.csub !== name));
+}
 function goToSection(name, smooth) {
+  if (name === 'coaching-history') {
+    if (!goToSection('coaching', smooth)) return false;
+    showCoachingSub('history');
+    return true;
+  }
   // A sub-tab name (#draft, #alltime, #franchise, #rivalries, ...) opens
   // History on that sub-tab.
   if (document.querySelector(`#history-subnav [data-sub="${name}"]`)) {
@@ -1891,6 +1946,10 @@ showOfficeSub('irl');
 document.querySelectorAll('#office-subnav button').forEach(b => b.addEventListener('click', () => {
   showOfficeSub(b.dataset.osub);
   history.replaceState(null, '', '#' + b.dataset.osub);
+}));
+document.querySelectorAll('#coaching-subnav button').forEach(b => b.addEventListener('click', () => {
+  showCoachingSub(b.dataset.csub);
+  history.replaceState(null, '', b.dataset.csub === 'history' ? '#coaching-history' : '#coaching');
 }));
 document.querySelectorAll('#history-subnav button').forEach(b => b.addEventListener('click', () => {
   showSub(b.dataset.sub);
@@ -8404,6 +8463,7 @@ function setupTeamSettingsTab(wrapId, rosterRows, biosData, attributesData, curr
         // it is open, apply what was saved here and redraw this section only.
         if (coachingTab.editing.profile) {
           if (coachingReq) coachingTab.record = await (await coachingReq).json();
+          refreshCoachingHistory();
           changed.forEach(({ slug, jerseyInput, secSel, take2k, rowBio }) => {
             if (take2k && take2k.value === '2k') biosData[slug] = { ...rowBio(), pos: undefined };
             const bio = biosData[slug] || (biosData[slug] = {});
@@ -8501,6 +8561,7 @@ function setupStreamerNote() {
       const rec = await r.json();
       note = rec && rec.text ? rec : null;
       renderRead();
+      refreshCoachingHistory();
     } catch {
       statusEl.textContent = 'Network error';
       buttons.forEach(b => { b.disabled = false; });
@@ -8546,6 +8607,175 @@ function setupStreamerNote() {
     .then(r => r.ok ? r.json() : {})
     .catch(() => ({}))
     .then(data => { note = (data && data[abbr]) || null; renderRead(); });
+}
+
+// Coaching History — every version of this team's rotation, coach profile
+// and note to the streamer (GET /api/coaching-history/{team}, nbn-api's
+// routers/coaching_history.py). Private like the rest of the tab: the team's
+// own role, plus streamers and admin. A save says what it changed from the
+// save before; an entry into 2K says what changed in the game, and lists the
+// games 2K played on it (matched on entered_at, the stamp game-starters.jsonl
+// puts on each game). Opening a version shows it whole, through the same
+// CoachingSettings.renderReadOnly as the profile above, with the changes
+// highlighted.
+let refreshCoachingHistory = () => {};
+const COACHING_HISTORY_PAGE = 15;
+const COACHING_HISTORY_CHANGES = 4;   // listed per version before "+N more"
+
+function setupCoachingHistory(biosData) {
+  const wrapEl = document.getElementById('coaching-history-wrap');
+  const CS = window.CoachingSettings;
+  if (!wrapEl) return;
+  const resolveName = slug => displayNameFromBio((biosData[slug] || {}).name || '') || slug;
+  const dateOf = iso => new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const timeOf = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const gameDay = d => new Date(`${d}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  let data = null;
+  let shown = COACHING_HISTORY_PAGE;
+  const open = new Set();   // `at|kind` of versions left open across a refresh
+
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  };
+  const badge = (text, variant) => el('span', `ui-badge${variant ? ` ui-badge--${variant}` : ''}`, text);
+
+  async function load() {
+    const token = getToken();
+    try {
+      const r = await fetch(`/api/coaching-history/${abbr}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!r.ok) throw new Error(String(r.status));
+      data = await r.json();
+    } catch {
+      wrapEl.innerHTML = '<div class="status">Couldn’t load the history.</div>';
+      return;
+    }
+    render();
+  }
+  refreshCoachingHistory = load;
+
+  function changesList(prev, ev) {
+    if (!prev) return el('div', 'chist-quiet', 'First version on record.');
+    // Rotation moves first: they are what a team changes most, and what a
+    // reader of the summary line is most often looking for.
+    const all = CS ? CS.diffVersions(prev, ev, { resolveName }) : [];
+    const diff = all.filter(d => d.player).concat(all.filter(d => !d.player));
+    if (!diff.length) return el('div', 'chist-quiet', prev.kind !== ev.kind ? 'Exactly as saved.'
+      : ev.kind === 'entered' ? 'Same as the last version entered.' : 'Saved again with no changes.');
+    const ul = el('ul', 'chist-changes');
+    diff.slice(0, COACHING_HISTORY_CHANGES).forEach(d => {
+      const li = el('li');
+      li.append(el('span', 'lbl', `${d.label} `), el('s', '', d.was), ' → ', el('span', 'now', d.now));
+      ul.appendChild(li);
+    });
+    if (diff.length > COACHING_HISTORY_CHANGES) {
+      ul.appendChild(el('li', 'more', `+${diff.length - COACHING_HISTORY_CHANGES} more — open the version to see all`));
+    }
+    return ul;
+  }
+
+  function gamesLine(ev, current) {
+    const games = (data.games || []).filter(g => g.source === 'entered' && g.entered_at === ev.at)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (!games.length) return current ? el('div', 'chist-games', 'No games played on it yet.') : null;
+    const line = el('div', 'chist-games');
+    line.appendChild(el('b', '', `${games.length} game${games.length === 1 ? '' : 's'} played on it`));
+    line.append(' · ' + games.map(g => `${gameDay(g.date)} ${g.home ? 'vs' : '@'} ${g.opp}`).join(' · '));
+    return line;
+  }
+
+  function render() {
+    const events = (data && data.events) || [];   // newest first
+    wrapEl.innerHTML = '';
+    if (!events.length) {
+      wrapEl.appendChild(el('div', 'chist-quiet', 'Nothing yet. Every save, every entry into 2K and every note will show up here.'));
+      return;
+    }
+
+    // Each version is compared with the one before it of the same kind (a
+    // save with the last save, an entry with the last entry), or, for the
+    // first of its kind, with whatever version came before it.
+    const prevOf = new Map();
+    const lastOfKind = {};
+    let lastAny = null;
+    events.slice().reverse().forEach(e => {
+      if (e.kind !== 'saved' && e.kind !== 'entered') return;
+      prevOf.set(e, lastOfKind[e.kind] || lastAny);
+      lastOfKind[e.kind] = lastAny = e;
+    });
+    const entered = new Set(events.filter(e => e.kind === 'entered').map(e => e.version).filter(Boolean));
+    const current = events.find(e => e.kind === 'entered');
+    const record = coachingTab.record;
+
+    const list = el('div', 'chist-list');
+    events.slice(0, shown).forEach(ev => {
+      const row = el('div', 'chist-row');
+      row.dataset.kind = ev.kind;
+      const when = el('div', 'chist-when', dateOf(ev.at));
+      when.appendChild(el('span', '', timeOf(ev.at)));
+      const body = el('div', 'chist-body');
+      const head = el('div', 'chist-head');
+      body.appendChild(head);
+      const isVersion = ev.kind === 'saved' || ev.kind === 'entered';
+      const label = { saved: 'Saved', entered: 'Entered into 2K', note: ev.text ? 'Note to the streamer' : 'Note deleted',
+        note_cleared: 'Note marked handled' }[ev.kind] || ev.kind;
+      head.appendChild(el('span', 'chist-kind', label));
+      head.appendChild(el('span', 'chist-by', `by ${ev.by || 'unknown'}`));
+
+      if (ev.kind === 'entered' && ev === current) head.appendChild(badge('In 2K now', 'success'));
+      if (ev.kind === 'saved') {
+        if (record && record.pending && record.updated_at === ev.at) head.appendChild(badge('Waiting for the streamer', 'warning'));
+        else if (entered.has(ev.at)) head.appendChild(badge('Entered'));
+        else if (!ev.seeded) head.appendChild(badge('Replaced before it was entered'));
+      }
+
+      if (isVersion) {
+        body.appendChild(changesList(prevOf.get(ev), ev));
+        if (ev.kind === 'entered') {
+          const g = gamesLine(ev, ev === current);
+          if (g) body.appendChild(g);
+        }
+        if (CS) {
+          const key = `${ev.at}|${ev.kind}`;
+          const toggle = el('button', 'ui-btn ui-btn--sm ui-btn--ghost chist-toggle', 'View');
+          toggle.type = 'button';
+          const detail = el('div', 'chist-detail');
+          detail.hidden = true;
+          const show = on => {
+            detail.hidden = !on;
+            toggle.textContent = on ? 'Hide' : 'View';
+            toggle.setAttribute('aria-expanded', String(on));
+            if (on && !detail.childElementCount) {
+              const prev = prevOf.get(ev);
+              CS.renderReadOnly(detail, { values: ev.values || {}, minutes: ev.minutes || {} },
+                { resolveName, hideStatus: true, base: prev ? { values: prev.values, minutes: prev.minutes } : undefined });
+            }
+            (on ? open.add(key) : open.delete(key));
+          };
+          toggle.addEventListener('click', () => show(detail.hidden));
+          head.appendChild(toggle);
+          body.appendChild(detail);
+          if (open.has(key)) show(true);
+        }
+      } else if (ev.text) {
+        body.appendChild(el('div', 'chist-note', ev.text));
+      }
+      row.append(when, body);
+      list.appendChild(row);
+    });
+    wrapEl.appendChild(list);
+
+    if (events.length > shown) {
+      const more = el('button', 'ui-btn ui-btn--sm chist-more', `Show ${Math.min(COACHING_HISTORY_PAGE, events.length - shown)} more`);
+      more.type = 'button';
+      more.addEventListener('click', () => { shown += COACHING_HISTORY_PAGE; render(); });
+      wrapEl.appendChild(more);
+    }
+  }
+
+  load();
 }
 
 // Coaching Settings tab — a team's 2K coach profile (schema in
@@ -8792,6 +9022,7 @@ function setupCoachingSettingsTab(wrapId, biosData) {
         if (coachingTab.editing.roster) {
           coachingTab.record = await resp.json();
           renderReadView();
+          refreshCoachingHistory();
           return;
         }
         statusEl.textContent = 'Saved!';
@@ -10095,7 +10326,7 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     document.getElementById('tab-coaching').hidden = false;
     showOfficeSub(location.hash === '#irl' ? 'irl' : 'coaching');
     watchPanel(document.getElementById('tab-coaching'));
-    if (location.hash === '#coaching') goToSection('coaching');
+    if (location.hash === '#coaching' || location.hash === '#coaching-history') goToSection(location.hash.slice(1));
   }
 
   // Signing in is the header's job (token-badge.js's Sign in button). This
@@ -10592,7 +10823,10 @@ function buildHistoricalRoster(allSeasons, teamAbbr, season) {
     coachingTab.record = coachingRecord;
     setupTeamSettingsTab('team-settings-wrap', rosterRows, biosData, attributesData, currentOvr);
     setupCoachingSettingsTab('coaching-settings-wrap', biosData);
-    if (canViewCoachingSettings(abbr)) setupStreamerNote();
+    if (canViewCoachingSettings(abbr)) {
+      setupStreamerNote();
+      setupCoachingHistory(biosData);
+    }
 
     setupDeadCapEditable(
       document.getElementById('dead-cap-edit-wrap'),
