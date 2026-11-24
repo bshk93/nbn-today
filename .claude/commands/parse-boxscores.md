@@ -65,6 +65,19 @@ so and go to step 7.
 
 ### 3. Transcribe every game twice, in two Sonnet subagents
 
+> **One-Opus mode.** Only when the person running this asks for it ("with one
+> Opus", "one Opus reader"); the default below is unchanged. Spawn **one**
+> reader with `model: "opus"`, same instructions, writing straight to
+> `<scratchpad>/night/<id>.txt`. Skip 3b: there is nothing to compare. Every
+> fresh re-read in 3b and step 5 also uses `model: "opus"`. A side with no
+> printed TOTAL row then has only the per-row checks (points from makes,
+> makes ≤ attempts, team points, minutes): its REB/AST/STL/BLK/TO/OR/FLS and
+> missed attempts are unchecked. Name those sides in the report, as step 5's
+> `[--]` lines already do. A re-read can't settle a column on such a side
+> (`reread` needs a TOTAL or two reads), so any flagged cell there goes to the
+> user. Why it exists: on 2026-11-23 two Sonnet readers agreed on about 20
+> wrong cells, and their re-reads cost twice what the reading did.
+
 Don't read the screenshots yourself. Spawn **two** `general-purpose` Agents with
 `model: "sonnet"` and `run_in_background: false`, **in one message** so they run
 side by side — reader A and reader B. Each gets the `ready` lines from step 2
