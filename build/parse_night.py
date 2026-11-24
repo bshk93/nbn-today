@@ -515,7 +515,9 @@ def cmd_crop(d: Path, gid: str) -> int:
     for p in imgs:
         with Image.open(p) as im:
             w, h = im.size
-            box = (int(w * 0.33), int(h * 0.12), int(w * 0.98), int(h * 0.95))
+            # Right and bottom stay at the edge: uploads are often trimmed
+            # tight, and any margin there cuts the FLS column or the TOTAL row.
+            box = (int(w * 0.33), int(h * 0.12), w, h)
             t = im.convert("RGB").crop(box)
             t = t.resize((t.width * 2, t.height * 2), Image.LANCZOS)
             out = p.with_name(p.stem + ".table.png")
