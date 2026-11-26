@@ -85,7 +85,7 @@
 
     /* Price chart (team rows, indexes, portfolio) */
     .pc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
-    .pc-read { min-width: 0; }
+    .pc-read { min-width: 0; position: relative; }
     .pc-val { font-family: var(--font-mono); font-size: var(--text-md); font-weight: 700; color: var(--text-primary); }
     .pc-chg { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; margin-left: 0.5rem; }
     .pc-sub { display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.15rem; min-height: 1.2em; }
@@ -104,6 +104,14 @@
     .pc-cmp-row .pc-val { font-size: var(--text-sm); }
     .pc-cmp-row .pc-chg { margin-left: 0; }
     .pc-cmp-note { font-family: var(--font-sans); font-size: var(--text-xs); color: var(--text-muted); }
+    /* Floats over the plot, so hovering a pin doesn't push the chart down. */
+    .pc-ev { position: absolute; top: 100%; left: 0; z-index: 2; margin-top: 0.3rem; width: max-content; max-width: min(28rem, 80vw); font-size: var(--text-xs); color: var(--text-secondary); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.5rem; pointer-events: none; }
+    .pc-ev-row { display: flex; align-items: baseline; gap: 0.35rem; }
+    .pc-pin { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; border: 2px solid; flex: none; align-self: center; }
+    .pc-pin.trade { border-color: var(--accent); }
+    .pc-pin.move { border-color: var(--text-secondary); }
+    .pc-pin.injury { border-color: var(--warning); }
+    .pc-foot .pc-pin { margin-left: 0.5rem; }
     .pc-key { display: inline-block; width: 0.8rem; height: 0.6rem; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--purple) 18%, transparent); }
     @media (max-width: 600px) {
       .pc-plot { height: 180px; }
@@ -331,6 +339,7 @@
 </div>
 
 <script src="/nav.js"></script>
+<script src="/names.js"></script>
 <script>
 const API = '/api';
 const TOKEN_KEY = 'nbn_token';
@@ -688,6 +697,7 @@ async function toggleChart(team) {
     if (!cRow.classList.contains('visible')) return;
     teamCharts[team] = mountPriceChart(host, ranges, 'All', {
       ticker: team,
+      events: () => loadTeamEvents(team),
       compare: {
         options: compareOptions(team),
         load: async t => { const h = await loadHistory(t); return [...h.games, ...h.now]; },
@@ -696,6 +706,63 @@ async function toggleChart(team) {
   } catch (e) {
     host.textContent = 'Failed to load chart.';
   }
+}
+
+// What happened to a team off the court, for the pins on its chart: trades,
+// signings, releases and injuries. [{date, kind: 'trade'|'move'|'injury', text}]
+const teamEventsCache = {};
+function loadTeamEvents(team) {
+  return teamEventsCache[team] ||= (async () => {
+    const get = u => fetch(u).then(x => x.ok ? x.json() : null).catch(() => null);
+    const [ledger, injuries] = await Promise.all([
+      get(`${API}/transactions?team=${team}&limit=2000`),
+      get(`${API}/injuries/history?team=${team}&limit=5000`),
+    ]);
+    const txns = ((ledger || {}).transactions || []).filter(t => !t.voided && t.date);
+    const slugs = new Set();
+    txns.forEach(t => {
+      const d = t.details || {};
+      if (d.player) slugs.add(d.player);
+      (d.transfers || []).forEach(tr => (tr.assets || []).forEach(a => a.slug && slugs.add(a.slug)));
+    });
+    const bios = slugs.size ? (await get(`${API}/players?slugs=${encodeURIComponent([...slugs].join(','))}`)) || {} : {};
+    const name = slug => (bios[slug] || {}).name ? nbnPlayerName(bios[slug].name) : slug;
+    const rnd = r => (r === 1 ? '1st' : r === 2 ? '2nd' : r + 'th');
+    const asset = a => a.type === 'player' ? name(a.slug)
+      : a.type === 'pick' ? `${a.year} ${a.orig} ${rnd(a.round)}${a.swap_with ? ' swap' : ''}`
+      : a.type === 'swap' ? `${a.year} ${rnd(a.round)} swap` : a.type;
+    const out = [];
+    for (const t of txns) {
+      const d = t.details || {};
+      const P = d.player ? name(d.player) : '';
+      let kind = 'move', text = null;
+      if (t.type === 'trade') {
+        const got = [], sent = [];
+        (d.transfers || []).forEach(tr => (tr.assets || []).forEach(a => {
+          if (tr.to_team === team) got.push(asset(a));
+          if (tr.from_team === team) sent.push(asset(a));
+        }));
+        if (!got.length && !sent.length) continue;
+        kind = 'trade';
+        text = 'Trade: ' + [got.length ? 'get ' + got.join(', ') : '', sent.length ? 'send ' + sent.join(', ') : ''].filter(Boolean).join(' · ');
+      } else if (!P) continue;
+      else if (t.type === 'sign' || t.type === 'sign_pick' || t.type === 'accept_qo') text = `Sign ${P}`;
+      else if (t.type === 'extension') text = `Extend ${P}`;
+      else if (t.type === 'release') text = `Release ${P}`;
+      else if (t.type === 'offer_sheet_decision') text = d.outcome === 'matched' ? `Match the offer sheet for ${P}` : `Lose ${P} to ${d.offering_team || d.signing_team || 'an offer sheet'}`;
+      else if (t.type === 'waiver_clear' && d.outcome === 'claimed' && d.claimed_by === team) text = `Claim ${P} off waivers`;
+      if (text) out.push({ date: t.date, kind, text });
+    }
+    for (const e of injuries || []) {
+      const who = e.name ? nbnPlayerName(e.name) : e.slug;
+      if (e.kind === 'healed') out.push({ date: e.date, kind: 'injury', text: `${who} back` });
+      else if (e.after && e.kind === 'new') {
+        const out_ = /^out$/i.test(e.after.status || '');
+        out.push({ date: e.date, kind: 'injury', text: `${who} ${out_ ? 'out' : 'hurt'}${e.after.duration ? ' ' + e.after.duration.toLowerCase() : ''}` });
+      }
+    }
+    return out.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  })();
 }
 
 // An open chart row is as wide as the part of the table you can see, not the
@@ -756,6 +823,13 @@ function alignCompare(base, other) {
 // ranges: [{label, pick() -> [{date, price, is_playoff?, diff?, opp?, season?}]}]
 // opts.compare ({options, load(ticker) -> points}) adds a Compare picker that
 // overlays a second ticker as % change; opts.ticker names the base one.
+// opts.events (async () -> [{date, kind, text}]) pins each event on the line at
+// the first game on or after it, the first price it could move. The All range
+// pins trades only, so six seasons of signings don't bury the line.
+const PIN_TONE = { trade: '--accent', move: '--text-secondary', injury: '--warning' };
+const PIN_RANK = { trade: 0, injury: 1, move: 2 };
+const PIN_NOUN = { trade: ['trade', 'trades'], move: ['signing or release', 'signings and releases'], injury: ['injury', 'injuries'] };
+const PIN_LABEL = { trade: 'Trade', move: 'Signing or release', injury: 'Injury' };
 function mountPriceChart(host, ranges, initial, opts = {}) {
   const unit = opts.unit || '';
   const cmpOpts = opts.compare;
@@ -779,6 +853,38 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
   const $ = sel => host.querySelector(sel);
   let chart = null, pts = [], rows = null, range = null;
   let cmp = null;   // { ticker, hist } while comparing
+  let events = null, pins = {};   // pins: view index -> events there
+
+  // Each event's game: the first point on or after its date ('~' is Now).
+  function placeEvents(evs) {
+    const all = ranges[ranges.length - 1].pick();
+    const keys = all.map(p => p.is_now ? '~' : p.date);
+    return evs.map(e => {
+      const k = keys.find(k => k >= e.date);
+      return k ? { ...e, at: k } : null;
+    }).filter(Boolean);
+  }
+  // At most three lines; the rest (opening night carries the whole offseason)
+  // are counted by kind.
+  function evLines(i) {
+    const evs = pins[i];
+    if (!evs) return '';
+    const div = document.createElement('div');
+    const shown = evs.length > 3 ? evs.slice(0, 2) : evs;
+    const rest = evs.slice(shown.length);
+    const count = {};
+    rest.forEach(e => { count[e.kind] = (count[e.kind] || 0) + 1; });
+    const more = rest.length ? [{ kind: rest[0].kind, text: 'and ' + Object.entries(count)
+      .map(([k, n]) => `${n} ${PIN_NOUN[k][n === 1 ? 0 : 1]}`).join(', ') }] : [];
+    [...shown, ...more].forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'pc-ev-row';
+      row.innerHTML = `<span class="pc-pin ${e.kind}"></span><span></span>`;
+      row.lastChild.textContent = e.text;
+      div.appendChild(row);
+    });
+    return `<span class="pc-ev">${div.innerHTML}</span>`;
+  }
 
   function readout(i) {
     if (rows) return readoutCompare(i);
@@ -787,7 +893,7 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
     const d = p.price - first;
     const pct = first > 0 ? d / first * 100 : 0;
     const sign = d >= 0 ? '+' : '−';
-    $('.pc-read').innerHTML = `<span class="pc-val"></span><span class="pc-chg ${chgClass(Math.round(d * 100))}"></span><span class="pc-sub"></span>`;
+    $('.pc-read').innerHTML = `<span class="pc-val"></span><span class="pc-chg ${chgClass(Math.round(d * 100))}"></span><span class="pc-sub"></span>${i == null ? '' : evLines(i)}`;
     $('.pc-val').textContent = fmtNBY(p.price) + unit;
     $('.pc-chg').textContent = `${sign}${fmtNBY(Math.abs(d))} (${sign}${Math.abs(pct).toFixed(1)}%)`;
     let sub;
@@ -815,7 +921,7 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
     let sub = i == null ? range.desc : (r.is_now ? 'Now' : fmtDay(r.date, true)) + (r.is_playoff ? ' · playoffs' : '');
     $('.pc-read').innerHTML = line('s1', opts.ticker, r.a, r.ap, r.aGame)
       + line('s2', cmp.ticker, r.b, r.bp, r.bGame)
-      + `<span class="pc-sub"></span>`;
+      + `<span class="pc-sub"></span>${i == null ? '' : evLines(i)}`;
     $('.pc-sub').textContent = sub;
   }
 
@@ -832,7 +938,19 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
     const tone = lastP > first + 0.004 ? '--market-positive' : lastP < first - 0.004 ? '--danger' : '--text-muted';
     const line = cssVar(tone);
     const playoff = view.map(p => !!p.is_playoff);
-    $('.pc-foot').innerHTML = playoff.some(Boolean) ? '<span class="pc-key"></span>Playoffs' : '';
+    pins = {};
+    if (events) {
+      const at = new Map(view.map((p, i) => [p.is_now ? '~' : p.date, i]));
+      for (const e of events) {
+        if (range.seasons && e.kind !== 'trade') continue;
+        const i = at.get(e.at);
+        if (i != null) (pins[i] ||= []).push(e);
+      }
+      Object.values(pins).forEach(evs => evs.sort((a, b) => PIN_RANK[a.kind] - PIN_RANK[b.kind]));
+    }
+    const kinds = Object.keys(PIN_RANK).filter(k => Object.values(pins).some(evs => evs.some(e => e.kind === k)));
+    $('.pc-foot').innerHTML = (playoff.some(Boolean) ? '<span class="pc-key"></span>Playoffs' : '')
+      + kinds.map(k => `<span class="pc-pin ${k}"></span>${PIN_LABEL[k]}${k === 'trade' && range.seasons ? 's' : ''}`).join('');
 
     // Season-start ticks on the long view, dates otherwise.
     const seasonStarts = range.seasons
@@ -874,7 +992,9 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
         maintainAspectRatio: false,
         animation: false,
         events: ['mousemove', 'mouseout', 'touchstart', 'touchmove', 'touchend'],
-        interaction: { mode: rows ? 'index' : 'nearest', axis: 'x', intersect: false },
+        // includeInvisible: the pointer just left of the first point (where
+        // opening night's pin sits) still finds it.
+        interaction: { mode: rows ? 'index' : 'nearest', axis: 'x', intersect: false, includeInvisible: true },
         layout: { padding: { top: 6 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         scales: {
@@ -959,6 +1079,18 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
             }
             ctx.restore();
           }
+          // Event pins: a ring on the base line, coloured by its biggest event.
+          const meta = c.getDatasetMeta(0).data;
+          ctx.save();
+          ctx.lineWidth = 2;
+          ctx.fillStyle = cssVar('--bg-card') || cssVar('--bg-page');
+          for (const [i, evs] of Object.entries(pins)) {
+            const pt = meta[i];
+            if (!pt || pt.skip) continue;
+            ctx.strokeStyle = cssVar(PIN_TONE[evs[0].kind]);
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          }
+          ctx.restore();
           const act = c.getActiveElements()[0];
           if (!act) return;
           ctx.save();
@@ -1001,7 +1133,13 @@ function mountPriceChart(host, ranges, initial, opts = {}) {
   });
   range = ranges.find(r => r.label === initial) || ranges[ranges.length - 1];
   draw();
-  return { destroy: () => chart && chart.destroy() };
+  let gone = false;
+  if (opts.events) opts.events().then(evs => {
+    if (gone || !evs.length) return;
+    events = placeEvents(evs);
+    draw();
+  }).catch(() => {});
+  return { destroy: () => { gone = true; chart && chart.destroy(); } };
 }
 
 // ── Portfolio ─────────────────────────────────────────────────────────────────
