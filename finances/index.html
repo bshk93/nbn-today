@@ -124,7 +124,28 @@
     .fv-years th { color: var(--text-muted); font-weight: 600; }
     .fv-sum { font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: var(--space-3); line-height: 1.6; }
     .fv-sum b { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
-    .fv-chart { position: relative; height: 240px; }
+    .fv-read { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.2rem 0.6rem; margin-bottom: var(--space-2); }
+    .fv-read-val { font-family: var(--font-mono); font-size: var(--text-lg); font-weight: 700; color: var(--text-primary); }
+    .fv-read-chg { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; }
+    .fv-read-chg.up, .fv-tt .up { color: var(--market-positive); }
+    .fv-read-chg.dn, .fv-tt .dn { color: var(--danger); }
+    .fv-read-sub { font-size: var(--text-xs); color: var(--text-muted); }
+    .fv-chart { position: relative; height: 300px; margin-bottom: var(--space-4); touch-action: pan-y; }
+    @media (max-width: 640px) { .fv-chart { height: 230px; } }
+    .fv-tt { position: absolute; z-index: 3; width: max-content; max-width: min(19rem, 85%); pointer-events: none; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem; font-size: var(--text-xs); color: var(--text-secondary); box-shadow: var(--shadow-overlay); }
+    .fv-tt-hd { display: flex; gap: 0.5rem; align-items: baseline; font-family: var(--font-mono); margin-bottom: 0.3rem; }
+    .fv-tt-hd span:first-child { font-family: var(--font-sans, inherit); color: var(--text-muted); }
+    .fv-tt-hd b { color: var(--text-primary); }
+    .fv-tt-ev { color: var(--text-primary); margin-bottom: 0.35rem; line-height: 1.45; }
+    .fv-tt-why { display: grid; grid-template-columns: auto 3.5rem auto; align-items: center; gap: 0.15rem 0.5rem; }
+    .fv-tt-why .bar { height: 6px; background: var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; }
+    .fv-tt-why .bar i { display: block; height: 100%; border-radius: var(--radius-sm); }
+    .fv-tt-why .bar i.up { background: var(--market-positive); }
+    .fv-tt-why .bar i.dn { background: var(--danger); }
+    .fv-tt-why .val { font-family: var(--font-mono); text-align: right; }
+    .fv-tt-note { color: var(--text-muted); margin-top: 0.3rem; }
+    .fv-more { margin-bottom: var(--space-3); }
+    .fv-more > summary { cursor: pointer; color: var(--text-secondary); font-weight: 600; font-size: var(--text-sm); margin-bottom: var(--space-3); }
     .up { color: var(--market-positive); }
     .dn { color: var(--danger); }
     .fv-how { margin-top: var(--space-6); }

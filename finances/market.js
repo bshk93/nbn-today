@@ -124,18 +124,24 @@
     const y0 = t.years[0];
     const tile = (label, value, c = '') => `<div class="fv-tile"><div class="ui-kicker">${label}</div><div class="ui-statline"><b class="${c}">${value}</b></div></div>`;
     const keyStats = `<div class="fv-tiles">
-        ${tile('Price', 'NB¥' + t.mkt.toFixed(2))}
         ${tile('Fair value', 'NB¥' + t.price.toFixed(2))}
         ${tile('vs fair', pct(t.prem * 100), cls(t.prem))}
         ${tile('Mkt cap', yen(t.mcap, 'B'))}
-        ${tile('Fair cap', yen(t.value, 'B'))}
         ${tile('Revenue', yen(y0.revenue))}
         ${tile('Profit', signedYen(y0.profit), cls(y0.profit))}
-        ${tile('EPS', 'NB¥' + t.eps.toFixed(2))}
         ${tile('P/E', t.pe == null ? 'n/m' : t.pe.toFixed(0))}
-        ${tile('P/S', t.ps == null ? '—' : t.ps.toFixed(1) + '×')}
-        ${tile('Season range', 'NB¥' + t.lo.toFixed(0) + '–' + t.hi.toFixed(0))}
       </div>`;
+    const days = history.filter(d => d.teams[t.team]);
+    const first = days.length ? px(days[0].teams[t.team]) : null;
+    const since = first ? (t.mkt / first - 1) * 100 : null;
+    const chartHtml = days.length >= 2 ? `
+      <div class="fv-read">
+        <span class="fv-read-val">NB¥${t.mkt.toFixed(2)}</span>
+        <span class="fv-read-chg ${cls(since)}">${arrow(since)} ${pct(since)}</span>
+        <span class="fv-read-sub">since ${esc(shortDate(days[0].date))} · hover a day to see why it moved</span>
+      </div>
+      <div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price by day"></canvas><div class="fv-tt" id="fv-tt" hidden></div></div>`
+      : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>';
     const picks = (t.picks || []).filter(p => p.round === 1);
     const nm = p => esc(p.name ? nbnPlayerName(p.name) : p.slug);
     const faLine = yrs.slice(1).map(y => {
@@ -153,7 +159,7 @@
         `${p.year} ${p.orig === t.team ? 'own' : esc(p.orig)}${p.share < 1 ? ` (theirs ${Math.round(p.share * 100)}% of the time)` : ''}, projected ${ord(p.slot)}, about ${Math.round(p.ovr)} OVR`).join('; ')}.</div>` : '';
     const mp = t.mood_parts;
     const moodLine = mp ? `<div class="fv-sum">Mood <b>${pct((t.mood || 0) * 100)}</b> over fair value: ${MOOD_PARTS.map(([k, label]) => `${label} ${pct(mp[k] * 100)}`).join(', ')}${Math.abs(mp.news + mp.form + mp.streak + mp.glow - (t.mood || 0)) > 1e-4 ? ', capped' : ''}.</div>` : '';
-    return keyStats + moodLine + edgeLine + pickLine + faHtml + `<div class="fv-sum">
+    return chartHtml + keyStats + `<details class="fv-more"><summary>Valuation detail</summary>` + moodLine + edgeLine + pickLine + faHtml + `<div class="fv-sum">
         Value <b>${yen(t.value, 'B')}</b> = PV of profit <b>${signedYen(t.pv_in - t.pv_out)}</b>
         + PV of a sale after ${last} <b>${yen(t.pv_sale, 'B')}</b>
         (sale price ${yen(t.sale, 'B')}, ${t.expected_titles.toFixed(2)} expected titles in its six-season brand window).
@@ -165,39 +171,144 @@
         Strength is the minutes-weighted OVR of the top eight. Later seasons count only who is under contract, re-signed or signed in free agency, aged a year per season; payroll shows how many players that is.
         Everything is valued as of opening night, so this season counts whole: what has been played at what the books show, the rest projected.
       </div>
-      <div class="fv-sum"><a href="#books" data-tab-link="books">See ${esc(t.team)}'s books</a>, every season since 20-21.</div>
-      ${history.length >= 2 ? `<div class="fv-chart"><canvas id="fv-canvas" aria-label="${t.team} price and fair value by day"></canvas></div>` : '<div class="muted" style="font-size:var(--text-xs)">The price chart appears once there are two days of history.</div>'}`;
+      </details>
+      <div class="fv-sum"><a href="#books" data-tab-link="books">See ${esc(t.team)}'s books</a>, every season since 20-21.</div>`;
   }
 
   function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  // A canvas gradient needs a plain colour, not color-mix().
+  function rgba(hex, a) {
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex);
+    if (!m) return 'transparent';
+    const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1];
+    return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+  }
+
+  const px = x => x.market ?? x.price;
+  const yenSh = v => (v > 0 ? '+' : v < 0 ? '−' : '') + 'NB¥' + Math.abs(v).toFixed(2);
+
+  // Why one day's price moved, in NB¥ a share, adding up to the move.
+  // price = fair value × (1 + mood), so the move is the fair value's change
+  // at yesterday's mood, split into the three PV pieces, plus today's fair
+  // value times the mood's change, split into its parts. Anything the parts
+  // don't cover (the 10% mood cap) is its own line, "Mood: other".
+  function moveParts(x, p) {
+    const shares = run.league.shares;
+    const m0 = px(p) / p.price - 1, m1 = px(x) / x.price - 1;
+    const k = (1 + m0) / shares;
+    const parts = [
+      ['Revenue outlook', (x.pv_in - p.pv_in) * k],
+      ['Costs', -(x.pv_out - p.pv_out) * k],
+      ['Resale value', (x.pv_sale - p.pv_sale) * k],
+    ];
+    const fvRest = (x.price - p.price) * (1 + m0) - parts.reduce((a, q) => a + q[1], 0);
+    if (Math.abs(fvRest) >= 0.005) parts.push(['Other', fvRest]);
+    let moodSum = 0;
+    if (x.mood_parts && p.mood_parts) {
+      for (const [key, label] of MOOD_PARTS) {
+        const v = x.price * (x.mood_parts[key] - p.mood_parts[key]);
+        moodSum += v;
+        parts.push([`Mood: ${label}`, v]);
+      }
+    }
+    const moodRest = x.price * (m1 - m0) - moodSum;
+    if (Math.abs(moodRest) >= 0.005) parts.push([x.mood_parts ? 'Mood: other' : 'Mood', moodRest]);
+    return parts.filter(q => Math.abs(q[1]) >= 0.005).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  }
+
+  function tooltipHtml(team, days, i) {
+    const b = days[i], x = b.teams[team];
+    const a = days[i - 1], p = a && a.teams[team];
+    const price = px(x);
+    const day = p ? (price / px(p) - 1) * 100 : null;
+    const dayName = new Date(b.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    let h = `<div class="fv-tt-hd"><span>${esc(dayName)}</span><b>NB¥${price.toFixed(2)}</b>${day == null ? '' : `<span class="${cls(day)}">${arrow(day)} ${pct(day, 2)}</span>`}</div>`;
+    const happened = (events[team] || {})[b.date];
+    if (happened) h += `<div class="fv-tt-ev">${happened.map(esc).join('<br>')}</div>`;
+    if (!p) return h + '<div class="fv-tt-note">Opening night</div>';
+    const parts = moveParts(x, p);
+    if (!parts.length) return h + `<div class="fv-tt-note">${happened ? 'No change in value' : 'No news, no change'}</div>`;
+    const big = Math.max(...parts.map(q => Math.abs(q[1])));
+    h += '<div class="fv-tt-why">' + parts.slice(0, 6).map(([label, v]) => `
+      <span class="lbl">${esc(label)}</span>
+      <span class="bar"><i class="${v > 0 ? 'up' : 'dn'}" style="width:${Math.max(4, Math.abs(v) / big * 100)}%"></i></span>
+      <span class="val ${cls(v)}">${yenSh(v)}</span>`).join('') + '</div>';
+    const dw = x.proj_w - p.proj_w;
+    const extra = [Math.abs(dw) >= 0.1 ? `${dw > 0 ? '+' : ''}${dw.toFixed(1)} projected wins` : '',
+                   x.payroll !== p.payroll ? `payroll ${signedYen(x.payroll - p.payroll)}` : ''].filter(Boolean);
+    if (extra.length) h += `<div class="fv-tt-note">${extra.join(' · ')}</div>`;
+    return h;
+  }
 
   function drawChart(team) {
     const el = document.getElementById('fv-canvas');
     if (!el || typeof Chart === 'undefined') return;
     if (chart) chart.destroy();
     const days = history.filter(d => d.teams[team]);
+    const prices = days.map(d => px(d.teams[team]));
+    const up = prices[prices.length - 1] >= prices[0];
+    const line = cssVar(up ? '--market-positive' : '--danger');
+    const tt = document.getElementById('fv-tt');
     chart = new Chart(el, {
       type: 'line',
       data: {
         labels: days.map(d => shortDate(d.date)),
-        datasets: [
-          { label: 'Price', data: days.map(d => d.teams[team].market ?? d.teams[team].price), borderColor: cssVar('--accent'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
-          { label: 'Fair value', data: days.map(d => d.teams[team].price), borderColor: cssVar('--text-muted'), borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 4, tension: 0.2 },
-        ],
+        datasets: [{
+          data: prices, borderColor: line, borderWidth: 2, tension: 0.15,
+          pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: line,
+          pointHoverBorderColor: cssVar('--bg-card'), pointHoverBorderWidth: 2,
+          fill: 'start',
+          backgroundColor: ({ chart: c }) => {
+            const a = c.chartArea;
+            if (!a) return 'transparent';
+            const g = c.ctx.createLinearGradient(0, a.top, 0, a.bottom);
+            g.addColorStop(0, rgba(line, 0.22));
+            g.addColorStop(1, rgba(line, 0));
+            return g;
+          },
+        }],
       },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
-        interaction: { mode: 'index', intersect: false },
+        interaction: { mode: 'index', intersect: false, includeInvisible: true },
         plugins: {
-          legend: { labels: { color: cssVar('--text-secondary'), boxWidth: 14 } },
-          tooltip: { callbacks: { label: c => `${c.dataset.label}: NB¥${c.parsed.y.toFixed(2)}` } },
+          legend: { display: false },
+          // The card is HTML beside the cursor: the reasons don't fit a canvas tooltip.
+          tooltip: {
+            enabled: false,
+            external: ({ chart: c, tooltip: t }) => {
+              if (!t.opacity || !t.dataPoints || !t.dataPoints.length) { tt.hidden = true; return; }
+              const i = t.dataPoints[0].dataIndex;
+              if (tt.dataset.i !== String(i)) { tt.innerHTML = tooltipHtml(team, days, i); tt.dataset.i = i; }
+              tt.hidden = false;
+              const a = c.chartArea, x = t.caretX;
+              const w = tt.offsetWidth;
+              tt.style.left = (x > (a.left + a.right) / 2 ? Math.max(0, x - w - 14) : Math.min(c.width - w, x + 14)) + 'px';
+              tt.style.top = a.top + 'px';
+            },
+          },
         },
         scales: {
-          x: { ticks: { color: cssVar('--text-muted'), maxTicksLimit: 8 }, grid: { display: false } },
-          y: { ticks: { color: cssVar('--text-muted'), callback: v => 'NB¥' + v }, grid: { color: cssVar('--border-subtle') } },
+          x: { ticks: { color: cssVar('--text-dim'), maxTicksLimit: 6, maxRotation: 0, font: { size: 10 } }, grid: { display: false }, border: { display: false } },
+          y: { position: 'right', ticks: { color: cssVar('--text-dim'), maxTicksLimit: 5, font: { size: 10 }, callback: v => '¥' + Number(v).toFixed(Math.abs(v) < 20 ? 1 : 0) },
+               grid: { color: cssVar('--border-subtle') }, border: { display: false } },
         },
       },
+      plugins: [{
+        id: 'fvCross',
+        afterDatasetsDraw(c) {
+          const act = c.getActiveElements()[0];
+          if (!act) return;
+          const { ctx, chartArea: a } = c;
+          ctx.save();
+          ctx.strokeStyle = cssVar('--text-muted');
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(act.element.x, a.top); ctx.lineTo(act.element.x, a.bottom); ctx.stroke();
+          ctx.restore();
+        },
+      }],
     });
+    el.addEventListener('mouseleave', () => { tt.hidden = true; });
   }
 
   // Day-over-day moves from the history, with what drove each: the PV of
@@ -387,6 +498,7 @@
       renderBody();
       renderHow();
       if (history.length) events = await loadEvents(games, history[0].date);
+      if (openTeam) drawChart(openTeam);
       const series = {};
       for (const day of history) {
         for (const [t, x] of Object.entries(day.teams)) (series[t] ||= []).push({ date: day.date, price: x.market ?? x.price });
