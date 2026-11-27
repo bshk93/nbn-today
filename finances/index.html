@@ -223,7 +223,10 @@
   <script src="/token-badge.js"></script>
   <script src="/names.js"></script>
   <script src="/feed-types.js"></script>
+  <script src="/team-colors.js"></script>
   <script src="/finances/daily-moves.js"></script>
+  <script src="/finances/heatmap.js"></script>
+  <script src="/finances/compare.js"></script>
   <script src="/finances/market-summary.js"></script>
   <script src="/finances/market.js"></script>
   <script>
@@ -646,6 +649,9 @@
       const p = new URLSearchParams();
       if (state.picked) p.set('team', state.team);
       if (seasons.length && state.season !== seasons[seasons.length - 1]) p.set('season', state.season);
+      // The market's comparison (finances/compare.js) keeps its pair here.
+      const vs = new URLSearchParams(location.search).get('vs');
+      if (vs) p.set('vs', vs);
       const tab = tabOf();
       return `${location.pathname}${String(p) ? '?' + p : ''}${tab === 'market' ? '' : '#' + tab}`;
     }

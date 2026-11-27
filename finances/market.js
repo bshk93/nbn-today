@@ -172,7 +172,7 @@
         Everything is valued as of opening night, so this season counts whole: what has been played at what the books show, the rest projected.
       </div>
       </details>
-      <div class="fv-sum"><a href="#books" data-tab-link="books">See ${esc(t.team)}'s books</a>, every season since 20-21.</div>`;
+      <div class="fv-sum"><a href="#books" data-tab-link="books">See ${esc(t.team)}'s books</a>, every season since 20-21, or <a href="#compare" data-compare="${t.team}">compare ${esc(t.team)} with another team</a>.</div>`;
   }
 
   function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
@@ -503,15 +503,22 @@
       for (const day of history) {
         for (const [t, x] of Object.entries(day.teams)) (series[t] ||= []).push({ date: day.date, price: x.market ?? x.price });
       }
+      FinHeatmap.mount(document.getElementById('market-map'), {
+        end: asOf, series, notes: events,
+        teams: run.teams.map(t => ({ team: t.team, mcap: t.mcap, price: t.mkt })),
+        onPick: pickRow,
+      });
       MarketSummary.mount(document.getElementById('market-summary'), { end: asOf, series, notes: events });
       const d = dailyFromHistory();
       DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, start: asOf, ...d });
+      FinCompare.mount(document.getElementById('compare-wrap'), { teams: run.teams, history, events, a: openTeam });
     } catch (e) {
       document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">Couldn't load the fair value.</td></tr>`;
     }
   }
   const SKELETON = `
     <div class="ui-header-actions fv-chips" id="chips"></div>
+    <div id="market-map"></div>
     <div id="market-summary"></div>
     <div id="daily-moves"></div>
     <div class="fv-wrap"><div class="ui-table-wrap" id="wrap">
@@ -520,10 +527,18 @@
         <tbody id="tbody"><tr><td class="ui-loading" colspan="13">Loading…</td></tr></tbody>
       </table>
     </div></div>
+    <div id="compare-wrap"></div>
     <details class="fv-how">
       <summary>How the price is worked out</summary>
       <div class="ui-prose" id="how"></div>
     </details>`;
+
+  // A tile on the market map opens that team's row and brings it into view.
+  function pickRow(team) {
+    if (openTeam !== team) { openTeam = team; onOpen(team); renderBody(); }
+    const tr = document.querySelector(`#tbody tr.row[data-team="${team}"]`);
+    if (tr) tr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   let onOpen = () => {};
   function mount(root, opts = {}) {
@@ -543,6 +558,8 @@
       renderBody();
     });
     document.getElementById('tbody').addEventListener('click', e => {
+      const cmp = e.target.closest('[data-compare]');
+      if (cmp) { e.preventDefault(); FinCompare.set(cmp.dataset.compare); return; }
       const tr = e.target.closest('tr.row');
       if (!tr) return;
       openTeam = openTeam === tr.dataset.team ? null : tr.dataset.team;
