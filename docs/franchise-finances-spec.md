@@ -311,7 +311,8 @@ Pinned as a test once built:
 
 A share price per franchise built on this ledger. Since 2026-11-06 it is the
 Market tab that `/finances` opens on (`finances/market.js`, with
-`finances/market-summary.js` and `finances/daily-moves.js`); it started as the
+`finances/heatmap.js`, `finances/indexes.js`, `finances/market-summary.js` and
+`finances/compare.js`); it started as the
 hidden `/invest/fair/`, which now redirects (`redirects.js`). Wall Street (`/invest`) is a
 separate market and is unchanged. The model is the docstring of
 `nbn-api/routers/fair_value.py`, pinned by `tests/test_fair_value.py`. It
