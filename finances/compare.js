@@ -79,7 +79,7 @@
     { grp: 'Books, this season' },
     { label: 'Revenue', get: t => t.years[0].revenue, fmt: t => yen(t.years[0].revenue), better: 1 },
     { label: 'Payroll', get: t => t.years[0].payroll, fmt: t => yen(t.years[0].payroll), better: 0 },
-    { label: 'Tax', get: t => t.years[0].tax, fmt: t => yen(t.years[0].tax), better: -1 },
+    { label: 'Tax', get: t => t.years[0].tax - (t.years[0].tax_share || 0), fmt: t => t.years[0].tax > 0 || !t.years[0].tax_share ? yen(t.years[0].tax) : `<span class="${cls(1)}">+${yen(t.years[0].tax_share)}</span>`, better: -1 },
     { label: 'Profit', get: t => t.years[0].profit, fmt: t => `<span class="${cls(t.years[0].profit)}">${(t.years[0].profit > 0 ? '+' : '') + yen(t.years[0].profit)}</span>`, better: 1 },
     { label: 'Market', get: t => t.years[0].market, fmt: t => t.years[0].market == null ? '—' : t.years[0].market.toFixed(2) + '×', better: 1 },
     { label: 'Buzz', get: t => t.years[0].buzz, fmt: t => t.years[0].buzz == null ? '—' : pct(t.years[0].buzz * 100, 0), better: 1 },
