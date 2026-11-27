@@ -2694,7 +2694,9 @@ async function generateMinimumContractRows() {
   })) return;
 
   const signDate = document.getElementById('f-date').value || nbnToday();
-  const proration = startSeason === currentSeasonStr() ? minimumProration(signDate) : null;
+  // Only a 1-year deal is prorated: a multi-year deal pays a full Year 1
+  // (killerdawg7, 2026-11-27).
+  const proration = isOneYearDeal && startSeason === currentSeasonStr() ? minimumProration(signDate) : null;
   let season = startSeason;
   const rows = [];
   for (let i = 0; i < totalYears; i++) {
