@@ -905,6 +905,7 @@ function blurbBoardInner() {
       <div class="panel-note">Claim a team and write it whenever you like — you don't have to
         wait for voting to close. Tap a team for its roster and recent games.</div>
       ${myClaimsHtml()}
+      ${openClaimsHtml()}
     </div>
     <table class="ctable">
       <thead><tr><th>Team</th><th>Blurb</th></tr></thead>
@@ -929,6 +930,22 @@ function myClaimsHtml() {
   return `<div class="my-claims"><span class="tools-label">Your teams</span>${mine.map(([t, b]) =>
     `<button class="claim-chip${b.body ? ' done' : ''}" onclick="editBlurb('${t}')" title="${b.body ? 'Written — tap to edit' : 'Not written yet'}">`
     + `${logo(t)}${t}${b.body ? ' <i class="ui-icon ui-icon--check" aria-hidden="true"></i>' : ''}</button>`).join('')}</div>`;
+}
+
+// Every team nobody has claimed yet, so a voter looking for one to write sees
+// them at a glance instead of scanning thirty rows for a Claim button. A team
+// released with text still on it counts as open: the API lets anyone claim it.
+// Tapping a chip claims the team (giving it back is one button on the row).
+function openClaimsHtml() {
+  if (!BLURB_PHASES.includes(state.article.phase)) return '';
+  const blurbs = state.article.blurbs || {};
+  const open = Object.keys(TEAMS).sort().filter(t => !blurbs[t]?.claimed_by);
+  if (!open.length) return '<div class="my-claims"><span class="tools-label">Up for grabs</span><span class="blurb-open">Every team is claimed</span></div>';
+  const canClaim = isVoter() || isEditor();
+  return `<div class="my-claims"><span class="tools-label">Up for grabs · ${open.length}</span>${open.map(t =>
+    canClaim
+      ? `<button class="claim-chip open" onclick="claimBlurb('${t}')" title="Claim ${escHtml(TEAMS[t])}">${logo(t)}${t}</button>`
+      : `<span class="claim-chip">${logo(t)}${t}</span>`).join('')}</div>`;
 }
 
 function teamCell(team, extra = '') {
@@ -985,6 +1002,7 @@ function renderConsensus(host) {
         the average share a rank (T) — nobody sets the order by hand.
         ${isVoter() || isEditor() ? 'Claim a team to write its blurb. ' : ''}Tap a team for its roster and recent games.</div>
       ${myClaimsHtml()}
+      ${openClaimsHtml()}
     </div>
     <table class="ctable ctable-consensus">
       <thead><tr>
