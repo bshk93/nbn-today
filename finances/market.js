@@ -463,7 +463,7 @@
         onPick: pickRow,
       });
       MarketSummary.mount(document.getElementById('market-summary'), { end: asOf, series, notes: events });
-      FinIndexes.mount(document.getElementById('indexes'), { end: asOf, series, members: await membersReady, onPick: pickRow });
+      FinIndexes.mount(document.getElementById('indexes'), { end: asOf, series, notes: events, members: await membersReady, onPick: pickRow });
       FinCompare.mount(document.getElementById('compare-wrap'), { teams: run.teams, history, events, a: openTeam });
     } catch (e) {
       document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">Couldn't load the fair value.</td></tr>`;
