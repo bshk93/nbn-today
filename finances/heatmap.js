@@ -58,8 +58,8 @@
   const fmt = (p, dp = 1) => (p > 0 ? '▲ +' : p < 0 ? '▼ ' : '') + p.toFixed(dp) + '%';
   const bn = v => 'NB¥' + (v / 1e9).toFixed(2) + 'B';
 
-  // Same tint as the daily moves: strength by size against the window's
-  // biggest move, so a quiet window still shows its shape.
+  // Strength by size against the window's biggest move, so a quiet window
+  // still shows its shape.
   function tint(p, scale) {
     if (!p) return '';
     const a = Math.min(1, Math.abs(p) / scale);

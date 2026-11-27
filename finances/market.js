@@ -311,57 +311,8 @@
     el.addEventListener('mouseleave', () => { tt.hidden = true; });
   }
 
-  // Day-over-day moves from the history, with what drove each: the PV of
-  // revenue, of costs, or of the sale, whichever moved most.
-  // How each driver reads in a note. `d` is its effect on value, so costs
-  // that rose show as the (negative) value they took.
+  // The mood's parts, in the order the tooltip and the detail list them.
   const MOOD_PARTS = [['news', 'news'], ['form', 'recent form'], ['streak', 'streak'], ['glow', "last season's finals"]];
-  const DRIVER = {
-    revenue: d => `revenue outlook ${signedYen(d)}`,
-    costs: d => d > 0 ? `costs down, value ${signedYen(d)}` : `costs up, value ${signedYen(d)}`,
-    sale: d => `resale value ${signedYen(d)}`,
-  };
-
-  // A day with no fair-value move: the part of the mood that moved most.
-  function quietNote(x, p) {
-    const a = x.mood_parts, b = p.mood_parts;
-    if (!a || !b) return 'no news';
-    const [k, d] = MOOD_PARTS.map(([k]) => [k, a[k] - b[k]]).sort((m, n) => Math.abs(n[1]) - Math.abs(m[1]))[0];
-    if (Math.abs(d) < 0.0005) return 'no news';
-    if (k === 'news') return 'no news, last news fading';
-    if (k === 'glow') return "no news, last season's finals fading";
-    return `no news, ${MOOD_PARTS.find(m => m[0] === k)[1]} ${pct(d * 100)}`;
-  }
-  function dailyFromHistory() {
-    const days = [], teams = {};
-    for (let i = 1; i < history.length; i++) {
-      const a = history[i - 1], b = history[i];
-      days.push(b.date);
-      for (const [t, x] of Object.entries(b.teams)) {
-        const p = a.teams[t];
-        if (!p) continue;
-        teams[t] ||= {};
-        const drivers = [
-          ['revenue', x.pv_in - p.pv_in],
-          ['costs', -(x.pv_out - p.pv_out)],
-          ['sale', x.pv_sale - p.pv_sale],
-        ].sort((m, n) => Math.abs(n[1]) - Math.abs(m[1]));
-        const [name, d] = drivers[0];
-        const dw = x.proj_w - p.proj_w;
-        // What happened leads; the money that moved is the note only on a day nothing did.
-        const happened = (events[t] || {})[b.date];
-        const fvMove = (x.price / p.price - 1) * 100;
-        let note = happened ? happened.join(' · ')
-          : Math.abs(fvMove) < 0.05 ? quietNote(x, p) : DRIVER[name](d);
-        if (!happened && Math.abs(dw) >= 0.1) note += ` · ${dw > 0 ? '+' : ''}${dw.toFixed(1)} projected wins`;
-        if (!happened && x.payroll !== p.payroll) note += ` · payroll ${signedYen(x.payroll - p.payroll)}`;
-        if (b.backfill) note += ' · rebuilt';
-        teams[t][b.date] = { pct: ((x.market ?? x.price) / (p.market ?? p.price) - 1) * 100, note };
-      }
-    }
-    return { days, teams };
-  }
-
   function renderHow() {
     const L = run.league;
     const rebuilt = history.filter(d => d.backfill).map(d => d.date);
@@ -377,10 +328,10 @@
       <p><b>Free agency.</b> Everyone who leaves, across the league, is the free agent pool. Best first, each signs with whoever offers the most: cap room, else the mid-level exception the team's payroll allows. Between equal offers he picks the better team. His price is what this past summer's signings paid for his OVR (an 80 about NB¥11M, an 84 about NB¥18M, an 88 about NB¥30M), up to the max. He will take somewhat less rather than not sign, and he never goes back to the team that let him go. So cap room is worth something, but only when there is someone worth more than the mid-level to spend it on. Spots still empty are filled by a ${L.replacement_ovr} OVR player at ${yen(L.replacement_salary)}.</p>
       <p><b>Playoff edge.</b> Some front offices' teams do better in the playoffs than their regular season says they should, and keep doing it. Everyone on a team's staff (owner, GM or coach) carries a record from every playoff series they were on staff for: won or lost, against what the two teams' point differentials predicted. A short record counts for little; it grows with more series. A team's edge is the average of its current staff's, and it adds to the team in playoff series only, in every projected season. The best edge is about two points a game, which takes an even series to about 60%. Someone who changes teams takes their record along.</p>
       <p>The <b>sale price</b> is most of a franchise's value. ${Math.round((1 - L.sale_profit_weight) * 100)}% of it is the ledger's valuation (league multiple × average revenue over the projected seasons × title brand), and ${Math.round(L.sale_profit_weight * 100)}% prices the team's average projected profit instead, at a fixed multiple set so the average team sells for about the same. Every figure grows with the salary cap from 27-28, so revenue keeps pace with payroll, and from then most of the national TV money is local TV, which follows the team's market. That share is how payroll reaches the sale: a team deep in the tax sells for less than one with the same crowds under the cap.</p>
-      <p>Because every price is valued as of opening night, nothing drifts as the season goes by: a price moves only when something happens. At the start of a new season the valuation date moves a year on and every price steps up with it, so compare across seasons against the NBN 30. A day's move is labelled with what happened to the team; on a day with no news it is the market's mood, or the piece of fair value that moved most: revenue, costs or sale. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
+      <p>Because every price is valued as of opening night, nothing drifts as the season goes by: a price moves only when something happens. At the start of a new season the valuation date moves a year on and every price steps up with it, so compare across seasons against the NBN 30. Hover a day on a team's chart to see what happened to it and which parts of the price moved. A day is the day its games were played: a box score posted the next morning moves its own day, not the next.</p>
       ${rebuilt.length ? `<p>The model started on 2026-10-24. Earlier days (${esc(rebuilt[0])} to ${esc(rebuilt[rebuilt.length - 1])}) were rebuilt afterwards from each day's games, with today's rosters and contracts. Nothing bigger than a depth signing changed in that window.</p>` : ''}
       <p><b>Price and fair value.</b> Fair value is what the franchise is worth, and it only moves when something happens. The price is what a share would trade at: fair value plus the market's mood, which is the market chasing what is recent. Every part of it comes from real results, nothing is random: <b>news</b> (a move in fair value, from a trade, an injury or a game, is overdone by 60% and given back over a few weeks), <b>form</b> (1% for each win in the last ten games above what the model expected going into them, up to 6%), a <b>streak</b> of four or more games (0.75% a game past three, up to 3%), and last season's finalists' <b>glow</b> (5% for the champion, 2% for the runner-up, gone by game 41). The whole mood is capped at 10% either way. So a day with no game and no news barely moves a price. Nothing here can be traded.</p>
-      <p>The <b>NBN 30</b> is the average price of all 30 franchises, the league's index. Market cap, P/S and P/E read the way they do for a real stock.</p>
+      <p>The <b>NBN 30</b> is the average price of all 30 franchises, the league's index. The <b>Indexes</b> panel prices Wall Street's groups (each conference and division, Texas, California and the AA Group's teams) the way Wall Street does: each starts at 100 and moves each day by the average of its teams' moves. Market cap, P/S and P/E read the way they do for a real stock.</p>
       <p><b>The columns</b></p>
       <dl class="fv-cols">${COLS.filter(c => c.tip).map(c => `<dt>${esc(c.label)}</dt><dd>${esc(c.tip)}</dd>`).join('')}</dl>
       <p class="muted">Model ${esc(run.model)}, computed ${esc(new Date(run.computed_at).toLocaleString())}.</p>`;
@@ -466,12 +417,15 @@
     return out;
   }
 
+  let membersReady = Promise.resolve([]);
   async function init() {
     try {
       const [r, h] = await Promise.all([
         fetch(`${API}/fair-value`).then(x => x.ok ? x.json() : null),
         fetch(`${API}/fair-value/history`).then(x => x.ok ? x.json() : { days: [] }),
       ]);
+      // Owner tenures, for the owners' index. Fetched now, used at the end.
+      membersReady = fetch(`${API}/members/public`).then(x => x.ok ? x.json() : []).catch(() => []);
       const games = r ? await fetch(`${API}/boxscores/games?season=${encodeURIComponent(r.season)}`).then(x => x.ok ? x.json() : []).catch(() => []) : [];
       if (!r) {
         document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">No fair value has been computed yet. It runs hourly with the playoff odds.</td></tr>`;
@@ -509,8 +463,7 @@
         onPick: pickRow,
       });
       MarketSummary.mount(document.getElementById('market-summary'), { end: asOf, series, notes: events });
-      const d = dailyFromHistory();
-      DailyMoves.mount(document.getElementById('daily-moves'), { title: `Daily moves · ${run.season}`, start: asOf, ...d });
+      FinIndexes.mount(document.getElementById('indexes'), { end: asOf, series, members: await membersReady, onPick: pickRow });
       FinCompare.mount(document.getElementById('compare-wrap'), { teams: run.teams, history, events, a: openTeam });
     } catch (e) {
       document.getElementById('tbody').innerHTML = `<tr><td class="ui-empty" colspan="13">Couldn't load the fair value.</td></tr>`;
@@ -520,7 +473,7 @@
     <div class="ui-header-actions fv-chips" id="chips"></div>
     <div id="market-map"></div>
     <div id="market-summary"></div>
-    <div id="daily-moves"></div>
+    <div id="indexes"></div>
     <div class="fv-wrap"><div class="ui-table-wrap" id="wrap">
       <table class="ui-table ui-table--dense ui-table--sticky-first fv-table">
         <thead><tr id="thgroup"></tr><tr id="thead"></tr></thead>
