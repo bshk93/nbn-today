@@ -367,16 +367,14 @@ be checked from the site. Decided 2026-10-04 to keep it off-site for now and
 revisit both together; a server-side draw would record the odds and the random
 value on the final record.
 
-### [P2] Lottery in the pick models
-`playoff_odds.py` (`draft_samples`) and `fair_value.py` (`pick_odds`) order
-each simulated draft fewest wins first, as if NBN had no lottery. It has one:
-the NBA's, which from 2027 is the 3-2-1 format `/lottery` draws. So a
-franchise's share price over-values its own bottom-three pick and gives a
-play-in team's pick no lottery chance. Put the draw from
-`lottery/index.html` (`field()` and `draw()`) into the sampler in Python.
-Also unfinished on `/lottery`: `PRIOR_TOP5` has only MIN for 2025 (the
-other four top-5 origs aren't in the data), so a team barred from the top 5
-in 2027 for 2025 and 2026 may show as eligible.
+### [P3] Lottery pick models: repeat-pick bars, and `/lottery`'s missing 2025 top 5
+The share price's pick odds draw the 3-2-1 lottery on every simulated season
+(`playoff_odds.lottery_order`, 2026-11-27), but without the 3-2-1 format's bars on a team
+drawing #1 or the top 5 again, which need past drafts the simulation doesn't
+carry (`lottery/index.html` `restrictions()` has the rule). Also unfinished on
+`/lottery`: `PRIOR_TOP5` has only MIN for 2025 (the other four top-5 origs
+aren't in the data), so a team barred from the top 5 in 2027 for 2025 and
+2026 may show as eligible.
 
 ### [P2] Conditional trade + extension has no workflow
 § 6.2's conditional trade + extension — Team A submits the extension pitch on
