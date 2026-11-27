@@ -148,6 +148,8 @@
     .c-narrow { display: none; font-size: var(--text-xs); color: var(--text-dim); font-family: var(--font-mono); }
     .claim-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--bg-page); border: 1px solid var(--border); color: var(--text-secondary); font-family: var(--font-mono); font-size: var(--text-xs); padding: 0.15rem 0.5rem; }
     .claim-chip img { width: 16px; height: 16px; object-fit: contain; }
+    button.claim-chip.open { cursor: pointer; border-style: dashed; }
+    button.claim-chip.open:hover { border-color: var(--accent); color: var(--text-primary); border-style: solid; }
     .claim-chip.done { border-color: color-mix(in srgb, var(--success) 40%, transparent); color: var(--success); }
     .blurb-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.7rem; align-items: start; }
     .blurb-grid textarea { min-height: 260px; }
