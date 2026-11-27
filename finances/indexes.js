@@ -63,7 +63,9 @@
   .ix-badge { font-size: var(--text-xs); font-weight: 700; font-family: var(--font-mono); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.05rem 0.3rem; color: var(--text-muted); margin-left: 0.4rem; }
   .ix-spark { display: block; }
   .ix-table tr.ix-row.open td { background: var(--bg-page); }
-  .ix-detail > td { white-space: normal; padding: var(--space-3) var(--space-4) !important; border-left: 3px solid var(--accent); }
+  .ix-detail > td { white-space: normal; padding: 0 !important; }
+  .ix-detail-in { position: sticky; left: 0; box-sizing: border-box; padding: var(--space-3) var(--space-4); border-left: 3px solid var(--accent); }
+  @media (max-width: 640px) { .ix-detail-in { padding: var(--space-3) var(--space-2); } }
   .ix-table tbody tr.ix-detail:hover > td { background: transparent; }
   .ix-tt-team { color: var(--text-primary); font-weight: 700; }
   .ix-tt-team small { color: var(--text-muted); font-weight: 400; }
@@ -280,7 +282,7 @@
         </tr>`;
         if (open === r.ticker) {
           const since = (last / 100 - 1) * 100;
-          body += `<tr class="ix-detail"><td colspan="7">
+          body += `<tr class="ix-detail"><td colspan="7"><div class="ix-detail-in">
             <div class="fv-read">
               <span class="fv-read-val">${last.toFixed(2)}</span>
               <span class="fv-read-chg ${cls(since)}">${fmt(since)}</span>
@@ -290,7 +292,7 @@
             <div class="ix-chips">${r.now.map(t => {
             const m = teamMove(t, 1);
             return `<span class="ix-chip" data-team="${t}" role="button" tabindex="0" title="Open ${t}"><img src="/logos/sm/logo-${t.toLowerCase()}.webp" alt="" onerror="this.style.display='none'"><b>${t}</b><span class="m ${cls(m)}">${fmt(m, 2)}</span><span class="m">· season ${fmt(teamMove(t, Infinity))}</span></span>`;
-          }).join('')}</div></td></tr>`;
+          }).join('')}</div></div></td></tr>`;
         }
       }
       el.innerHTML = `<div class="ix">
@@ -301,9 +303,22 @@
         </table></div>
         <div class="ix-note">Wall Street's indexes, on these prices. Each starts at 100 and moves each day by the average of its teams' moves, so every team counts the same. AA Group counts a team only while one of its owners held it. Click an index to see its chart and teams.</div>
       </div>`;
+      fit();
       const r = open && rows.find(x => x.ticker === open);
       if (r) chart = drawChart(el.querySelector('#ix-canvas'), el.querySelector('#ix-tt'), r, notes);
     }
+
+    // The table scrolls sideways on a phone; hold the open chart to the
+    // visible width, as the team rows do (fitDetail in finances/market.js).
+    function fit() {
+      const d = el.querySelector('.ix-detail-in'), wrap = el.querySelector('.ui-table-wrap');
+      if (d && wrap) d.style.width = wrap.clientWidth + 'px';
+    }
+    let w = 0;
+    new ResizeObserver(() => {
+      const wrap = el.querySelector('.ui-table-wrap');
+      if (wrap && wrap.clientWidth !== w) { w = wrap.clientWidth; fit(); if (chart) chart.resize(); }
+    }).observe(el);
 
     el.addEventListener('click', e => {
       const chip = e.target.closest('.ix-chip');
