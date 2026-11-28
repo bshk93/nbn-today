@@ -475,6 +475,7 @@
           ${line('Jersey patch', r => r.JERSEY_PATCH ? `<span class="fo-patch">${esc(r.JERSEY_PATCH)}</span>` : '—')}
           ${line('Average crowd', r => r.HOME_GAMES ? r.AVG_ATTENDANCE.toLocaleString() : '—')}
           ${line('Sellouts', r => r.HOME_GAMES ? r.SELLOUTS : '—')}
+          ${line('Ticket price', r => r.TICKET_PRICE ? 'NB¥' + Math.round(r.TICKET_PRICE) : '—')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Revenue</td></tr>
           ${line('Ticket sales', r => money(r.GATE))}
           ${line('Playoff ticket sales', r => r.PLAYOFF_GATE ? money(r.PLAYOFF_GATE) : '—')}
@@ -490,6 +491,7 @@
           ${payrollEra('Dead money (released players)', r => r.DEAD_MONEY ? money(r.DEAD_MONEY, 1) : '—', 'fo-sub')}
           ${payrollEra('Luxury tax', r => r.LUXURY_TAX ? money(r.LUXURY_TAX) : '—')}
           ${payrollEra('Arena costs', r => money(r.ARENA_OPS))}
+          ${payrollEra('Team operations', r => money(r.TEAM_OPS))}
           ${payrollEra('Profit', r => signed(r.PROFIT), 'fo-total')}
           <tr class="fo-head"><td colspan="${seasons.length + 1}">Franchise</td></tr>
           ${line('Value', r => money(r.VALUE), 'fo-total')}
@@ -516,7 +518,7 @@
       document.querySelectorAll('#board tbody tr').forEach(tr =>
         tr.addEventListener('click', () => pickTeam(tr.dataset.team)));
       document.getElementById('model-note').textContent =
-        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)} with a market of 1.0×. Winning grows a market and losing shrinks it, which scales ticket prices, merchandise and local TV. Buzz is the team's form over its last ten games, by margin and against who: it moves ticket prices game to game, and a season of it moves the market. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll affects profit only, not value.`;
+        `Model ${model}. Every franchise started 20-21 at ${money(START_VALUE)} with a market of 1.0×. Winning grows a market and losing shrinks it, which scales ticket prices, merchandise and local TV. National TV is shared equally. Ticket prices also follow last season's crowds: a team that filled its arena charges more, and one that didn't cuts prices to fill seats. Buzz is the team's form over its last ten games, by margin and against who: it moves ticket prices game to game, and a season of it moves the market. Value is the last three seasons' revenue times a multiple, plus a bump for recent titles. Payroll and the costs of running the team (coaches, travel, scouting: the same for everyone) affect profit only, not value.`;
     }
 
     // ── Owners: best stewards and money pits ───────────────────────────────
