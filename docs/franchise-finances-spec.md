@@ -619,6 +619,14 @@ value together, so the season's prices were rebuilt once:
   fell about 6% (148 → 139), since every team now pays the operating cost;
   the rebuild moved the whole season with it, so it is not a day's move.
 
+**fv9, the same day.** CLE fell 27% on 2026-11-06 with no real news: a
+ratings update raised its projected payroll ¥3M, the tax (it is deep in the
+brackets, ~¥6.7 a ¥1) made that ¥21M, and the sale priced the loss at ~15×.
+`SALE_LOSS_FLOOR` went 0.5 → 0.75, so a team losing that much is priced at the
+floor (a buyer would cut payroll, not pay for the losses) and the day became
+about −8%, the rest being the extra tax in the three projected seasons. Only
+CLE is at the floor (59 → ~82); spread and mean unchanged.
+
 ## Open
 
 - The constants above are first guesses. Tune them against the sanity checks
