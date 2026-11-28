@@ -108,7 +108,9 @@ ROTY, ¥30M for a title.
 ### 4. Media
 
 National TV ¥150M, the same for everyone, plus local TV and sponsors at
-¥80M × market (v3). One `MEDIA` column holds both. Plus the **NBNTV bonus**:
+¥80M × market (v3). The same split in every season: from 2026-10-29 to
+2026-11-28 most of the national deal went local from 27-28, which v5 undid
+(see "Model v5" below). One `MEDIA` column holds both. Plus the **NBNTV bonus**:
 ¥1.5M per streamed game the team plays in (home or away), from 26-27 on.
 
 The stream bonus starts in 26-27 because stream flags only exist from then.
@@ -184,6 +186,7 @@ Shown as "Share of other teams' luxury tax".
 | "Luxury tax" | NBA-style brackets over the first apron (NBN has no separate tax line): 1.5×, 1.75×, 2.5×, 3.25×, then +0.5× a bracket. A bracket is 3.5% of the season's cap, so it grows with it. Before v2 it was a flat 1.5× over each apron | "Luxury tax" |
 | Dead money | the team's deadcap for that season | "Dead money (released players)" |
 | Arena ops | ¥0.8M per home game | "Arena costs" |
+| Team operations | ¥100M a season, the same for every team (v5): coaches, front office, travel, scouting | "Team operations" |
 
 **Payroll is money, not cap.** `salary` and `salary_ex_holds` are cap
 figures and carry placeholders nobody is paid: UFA/RFA holds, draft-rights
@@ -583,6 +586,38 @@ price toward the middle (moving ¥100M of it local: ~4.8x). Two were taken:
   → +50%; LAC −50% → −67%, WAS −33% → −46%, CHA −30% → −43%. The mean price
   is unchanged and the order follows market: DET and BOS, under 0.9, drop
   past SAC and CLE.
+
+## Model v5 and fv8 (2026-11-28)
+
+The user asked for more realism. Three changes, in the ledger and in fair
+value together, so the season's prices were rebuilt once:
+
+- **National TV is shared again.** ¥150M national and ¥80M × market local in
+  every season (`media_revenue`). The NBA splits its national deal equally,
+  and it is what keeps small markets afloat; the fv6 move to local TV made a
+  small market look like a far worse business than any real team.
+- **Team operations, ¥100M a season** (`TEAM_OPS`, in `TEAM_OPS` and
+  `EXPENSES`; fair value adds it to `ops`). Before it the league's mean margin
+  was 38% (26-27: ¥155M profit on ¥404M); after it, 14% (¥56M), with CLE, LAC
+  and CHA losing money. It is flat, so it hits small markets hardest. Payroll
+  era only, like every expense, so no valuation history moved.
+- **Ticket prices follow demand** (`ticket_demand`, `priced_fill`). A
+  season's price is TICKET × (1 + last season's average fill − the league's),
+  within 0.85–1.20, and every point the price rises takes half a point off
+  each game's fill. A team that sold out raises prices until it nearly
+  doesn't; one in a rebuild cuts them. 26-27's base prices run ¥54 (CHA) to
+  ¥221 (PHX), market included (`TICKET_PRICE`, market × demand × money level,
+  before buzz). This does move gate, so the ledger's valuation history moved
+  with it (flavor; the spread is unchanged at 2.6×). Fair value takes this
+  season's demand from the ledger's last season, a later season's from the
+  season before's projected fill (`ticket_multipliers`, `game_fill`).
+- **The sale, retuned.** With profit a third of what it was and far more
+  levered, `SALE_PROFIT_MULTIPLE` is re-measured at 6.37 (league revenue over
+  profit on 2026-11-28) and `SALE_PROFIT_WEIGHT` drops 0.35 → 0.2, which
+  keeps the spread about where fv7 had it: 4.3× against 3.8×, 4th best over
+  4th worst 2.19 against 2.13 (0.35 would have been 8.1×). The mean price
+  fell about 6% (148 → 139), since every team now pays the operating cost;
+  the rebuild moved the whole season with it, so it is not a day's move.
 
 ## Open
 

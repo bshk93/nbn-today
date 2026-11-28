@@ -127,7 +127,7 @@ SCHEMA = {
          "STARS", "MARKET", "BUZZ", "HOME_GAMES", "AVG_ATTENDANCE", "SELLOUTS", "GATE",
          "PLAYOFF_HOME_GAMES", "PLAYOFF_GATE", "CONCESSIONS", "MERCH", "MEDIA",
          "NBNTV", "TITLE_BONUS", "TAX_SHARE", "REVENUE", "PAYROLL", "LUXURY_TAX", "ARENA_OPS",
-         "PROFIT", "VALUE", "VALUE_CHANGE"],
+         "TEAM_OPS", "PROFIT", "TICKET_PRICE", "VALUE", "VALUE_CHANGE"],
         30, "finances/index.html",
     ),
     "data/franchise-owners.csv": (
