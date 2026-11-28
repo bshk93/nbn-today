@@ -330,11 +330,23 @@ for three seasons plus a sale at the ledger's own valuation.
 change, `nbn-api/rebuild_fair_value.py` reprices the season so the change
 doesn't read as a day's move. Each hourly run records what it priced
 (rosters, dead cap, contract fields, OVRs, the pick store, cap levels, the
-schedule, staff edges) in `fair-value-inputs/` in NBS_DATA_DIR, and a rebuild
-reads only that record; a day with none stops it before anything is written.
-Game results and injury reports are dated, so a day counts those by game or
-report date. A correction (a fixed tenure, ladder or contract) counts from the
-day it was made, as it did live.
+schedule) in `fair-value-inputs/` in NBS_DATA_DIR, and a rebuild reads only
+that record; a day with none stops it before anything is written. Game
+results, injury reports and staff tenures are dated, so a day counts those by
+their own dates.
+
+**Corrections count back to the start** (the user's call, 2026-11-28). A
+record is the league as it stood; a rebuild applies every later fix to the
+days before it, wherever the fixed field still held the value the fix
+replaced. A fix is a write by a script, the office CLI, a direct bio edit
+(`PUT /api/players/{slug}`) or the pick-structure tool, read from the edit
+log (`is_correction` in `fair_value.py`). Everything else (transactions, FA,
+PDC and TRC paths, waivers, direct roster or pick edits, timers) is a real
+move and keeps its date: in doubt it is a move, because applying a move back
+is the bug this replaced. A pick fix made the same day as a real pick move is
+not applied back, and the rebuild says so. A rating fixed in place reaches
+the days that used it; a new rating is a move. `rebuild_fair_value.py` lists
+every correction it applied.
 
 This replaced a rebuild that read today's files for every day. The fv7 rebuild
 (2026-11-27) put Brunson on WAS and Harden on SAS from opening night, gave
