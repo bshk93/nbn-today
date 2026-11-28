@@ -326,10 +326,25 @@ doesn't. A pure DCF gives nonsense here (most teams' profit is small or
 negative, and the ledger's values are 15-20× revenue), so the model is profit
 for three seasons plus a sale at the ledger's own valuation.
 
-**Its history can't be rebuilt.** It reads today's rosters, contracts and
-OVRs, which keep no past states, so its series starts on the day it was first
-deployed. That is why the snapshot is kept, and why a formula change only
-affects days after it.
+**A rebuilt day is priced on its own league, never today's.** After a model
+change, `nbn-api/rebuild_fair_value.py` reprices the season so the change
+doesn't read as a day's move. Each hourly run records what it priced
+(rosters, dead cap, contract fields, OVRs, the pick store, cap levels, the
+schedule, staff edges) in `fair-value-inputs/` in NBS_DATA_DIR, and a rebuild
+reads only that record; a day with none stops it before anything is written.
+Game results and injury reports are dated, so a day counts those by game or
+report date. A correction (a fixed tenure, ladder or contract) counts from the
+day it was made, as it did live.
+
+This replaced a rebuild that read today's files for every day. The fv7 rebuild
+(2026-11-27) put Brunson on WAS and Harden on SAS from opening night, gave
+October November's ratings, and erased both trades from the chart. The days
+before recording began (opening night to 2026-11-28) were recorded by
+`backfill_fair_value_inputs.py` from the backup repo and the edit log, and
+checked against the rows the live run wrote. Two limits: the gate so far comes
+from the ledger's attendance file, which credits last season's All-NBN stars to
+a player's current team for the whole season (under 0.05% of a price), and a
+day the hourly run never ran has no record, so it stays missing.
 
 **Before it could carry NB¥** (the backlog item that decides this):
 
